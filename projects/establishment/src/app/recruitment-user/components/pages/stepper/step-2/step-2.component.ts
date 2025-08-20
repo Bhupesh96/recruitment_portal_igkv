@@ -69,7 +69,7 @@ interface Parameter {
     | 'TO'
     | 'DP';
   parameter_display_order: number;
-  isRequired?: boolean;
+  is_mandatory?: string;
 }
 
 interface Note {
@@ -100,6 +100,8 @@ export class Step2Component implements OnInit {
   errorMessage: string | null = null;
   years: number[] = Array.from({ length: 2025 - 1900 + 1 }, (_, i) => 2025 - i);
   filePaths: Map<string, string> = new Map();
+  existingDetailIds: Map<string, number> = new Map();
+  existingParameterIds: Map<string, number> = new Map();
 
   constructor(
     private fb: FormBuilder,
@@ -115,7 +117,6 @@ export class Step2Component implements OnInit {
   ngOnInit(): void {
     this.loadFormData().subscribe({
       next: () => {
-        // Now, getParameterValuesAndPatch() is called after loadFormData() successfully completes.
         this.getParameterValuesAndPatch();
       },
       error: (err) => {
@@ -126,7 +127,7 @@ export class Step2Component implements OnInit {
       },
     });
   }
-  // Helper methods
+
   getUniqueKey(sub: Subheading, index: number): string {
     return `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${index}`;
   }
@@ -145,20 +146,22 @@ export class Step2Component implements OnInit {
     return this.form.get(`qualifications${key}`) as FormArray;
   }
 
-  getFilePath(key: string, paramId: number): string | null {
-    return this.filePaths.get(`${key}_${paramId}`) || null;
+  getFilePath(key: string, paramId: number, rowIndex: number): string | null {
+    const fileKey = `${key}_${paramId}_${rowIndex}`;
+    return this.filePaths.get(fileKey) || null;
   }
 
   sanitizeFileUrl(filePath: string): SafeUrl {
-    const fileName =
-      filePath
-        .split('/')
-        .pop()
-        ?.replace(/(\.pdf)+$/, '.pdf') || '';
+    let fileName = filePath.split('/').pop() || '';
+    fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
     const url = `http://192.168.1.57:3500/recruitment/24000001/${fileName}`;
     return this.sanitizer.bypassSecurityTrustUrl(url);
   }
-  // File handling
+
+  getFileName(filePath: string): string {
+    return filePath.split('/').pop() || 'Unknown File';
+  }
+
   onFileChange(
     event: Event,
     index: number,
@@ -170,20 +173,20 @@ export class Step2Component implements OnInit {
       const file = input.files[0];
       const formArray = this.form.get(arrayName) as FormArray;
       const control = formArray.at(index) as FormGroup;
-      control.get(fieldName)?.setValue(file);
+      control.get(fieldName)?.setValue(file, { emitEvent: false });
 
       const key = arrayName.replace('qualifications', '');
       const param = this.parameters.find(
         (p) => p.score_field_parameter_name === fieldName
       );
       if (param) {
-        this.filePaths.delete(`${key}_${param.m_rec_score_field_parameter_id}`);
+        const fileKey = `${key}_${param.m_rec_score_field_parameter_id}_${index}`;
+        this.filePaths.delete(fileKey);
       }
       this.cdr.markForCheck();
     }
   }
 
-  // Form building and data loading
   private buildFormControls(): void {
     this.form.addControl(
       'heading',
@@ -227,7 +230,8 @@ export class Step2Component implements OnInit {
     );
 
     params.forEach((param) => {
-      const validators: ValidatorFn[] = isSelected ? [Validators.required] : [];
+      const validators: ValidatorFn[] =
+        isSelected && param.is_mandatory === 'Y' ? [Validators.required] : [];
 
       if (param.score_field_parameter_name === 'Percentage Obtained') {
         validators.push(
@@ -259,12 +263,19 @@ export class Step2Component implements OnInit {
     const formArray = this.form.get(arrayName) as FormArray;
     formArray.controls.forEach((control) => {
       const group = control as FormGroup;
-      Object.keys(group.controls).forEach((controlName) => {
+      const params = this.getParameters(
+        sub.m_rec_score_field_id,
+        sub.a_rec_adv_post_detail_id
+      );
+
+      params.forEach((param) => {
+        const controlName = param.score_field_parameter_name;
         const ctrl = group.get(controlName);
         if (ctrl) {
-          const validators: ValidatorFn[] = isSelected
-            ? [Validators.required]
-            : [];
+          const validators: ValidatorFn[] =
+            isSelected && param.is_mandatory === 'Y'
+              ? [Validators.required]
+              : [];
           if (controlName === 'Percentage Obtained') {
             validators.push(
               Validators.min(0),
@@ -297,12 +308,11 @@ export class Step2Component implements OnInit {
         this.heading = headingList[0];
         console.log('🔍 Heading:', this.heading);
 
-        // Only process subheadings for our specific heading
         return this.HTTP.getParam(
           '/master/get/getSubHeadingByParentScoreField',
           {
             a_rec_adv_main_id,
-            score_field_parent_id: this.heading.m_rec_score_field_id, // Use the heading's ID
+            score_field_parent_id: this.heading.m_rec_score_field_id,
             a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
           },
           'recruitement'
@@ -342,10 +352,11 @@ export class Step2Component implements OnInit {
         this.errorMessage = 'Error loading form: ' + error.message;
         this.loading = false;
         this.cdr.markForCheck();
-        return [];
+        throw error;
       })
     );
   }
+
   private getParameterValuesAndPatch(): void {
     console.log('🔍 Complete Heading Data:', this.heading);
     this.HTTP.getParam(
@@ -360,9 +371,14 @@ export class Step2Component implements OnInit {
       next: (res: HttpResponse<any>) => {
         console.log(
           'Parameter Values for step-2',
-          JSON.stringify(res.body?.data)
+          JSON.stringify(res.body?.data, null, 2)
         );
         const saved = res.body?.data || [];
+
+        this.filePaths.clear();
+        this.existingDetailIds.clear();
+        this.existingParameterIds.clear();
+
         saved.forEach((item: any) => {
           const key = `${item.m_rec_score_field_id}_${
             item.a_rec_adv_post_detail_id
@@ -372,6 +388,22 @@ export class Step2Component implements OnInit {
               s.a_rec_adv_post_detail_id === item.a_rec_adv_post_detail_id
           )}`;
 
+          this.existingDetailIds.set(
+            `${item.m_rec_score_field_id}_${item.a_rec_adv_post_detail_id}`,
+            item.a_rec_app_score_field_detail_id
+          );
+          this.existingParameterIds.set(
+            `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}_0`,
+            item.a_rec_app_score_field_parameter_detail_id
+          );
+
+          if (item.parameter_value?.includes('.pdf')) {
+            this.filePaths.set(
+              `${key}_${item.m_rec_score_field_parameter_id}_0`,
+              item.parameter_value
+            );
+          }
+
           const formArray = this.form.get(`qualifications${key}`) as FormArray;
           if (formArray?.at(0)) {
             const control = formArray.at(0) as FormGroup;
@@ -379,7 +411,9 @@ export class Step2Component implements OnInit {
             if (item.a_rec_app_score_field_detail_id) {
               control
                 .get('a_rec_app_score_field_detail_id')
-                ?.setValue(item.a_rec_app_score_field_detail_id);
+                ?.setValue(item.a_rec_app_score_field_detail_id, {
+                  emitEvent: false,
+                });
             }
 
             const paramIdControl = `param_${item.m_rec_score_field_parameter_id}_id`;
@@ -389,7 +423,9 @@ export class Step2Component implements OnInit {
             ) {
               control
                 .get(paramIdControl)
-                ?.setValue(item.a_rec_app_score_field_parameter_detail_id);
+                ?.setValue(item.a_rec_app_score_field_parameter_detail_id, {
+                  emitEvent: false,
+                });
             }
 
             const fieldName = this.parameters.find(
@@ -399,12 +435,12 @@ export class Step2Component implements OnInit {
             )?.score_field_parameter_name;
 
             if (fieldName && control.get(fieldName)) {
-              if (item.parameter_value.includes('/')) {
-                const controlKey = `${key}_${item.m_rec_score_field_parameter_id}`;
-                this.filePaths.set(controlKey, item.parameter_value);
-                control.get(fieldName)?.setValue(null);
+              if (item.parameter_value.includes('.pdf')) {
+                control.get(fieldName)?.setValue(null, { emitEvent: false });
               } else {
-                control.get(fieldName)?.setValue(item.parameter_value);
+                control
+                  .get(fieldName)
+                  ?.setValue(item.parameter_value, { emitEvent: false });
               }
               this.form
                 .get(`is${key}Selected`)
@@ -422,8 +458,24 @@ export class Step2Component implements OnInit {
     });
   }
 
+  private generateFilePath(
+    registrationNo: number,
+    file: File,
+    scoreFieldId: number,
+    parameterId: number,
+    displayOrder: number,
+    rowIndex: number
+  ): string {
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const baseName = file.name.split('.').slice(0, -1).join('.');
+    const fileName = `${timestamp}_scorecard_${scoreFieldId}_${parameterId}_${displayOrder}_${rowIndex}.${fileExtension}`;
+    return `recruitment/${registrationNo}/${fileName}`;
+  }
+
   submitForm(): void {
     const registrationNo = 24000001;
+    const a_rec_adv_main_id = 95;
     const formData = new FormData();
     const newDetails: any[] = [];
     const existingDetails: any[] = [];
@@ -431,69 +483,15 @@ export class Step2Component implements OnInit {
     const existingParameters: any[] = [];
     let parentCalculatedValue = 0;
 
-    // First pass - calculate total values for parent record
     this.subheadings.forEach((sub, index) => {
       const key = this.getUniqueKey(sub, index);
       if (!this.form.get(`is${key}Selected`)?.value) return;
 
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
-      formArray.controls.forEach((control) => {
+      formArray.controls.forEach((control, rowIndex) => {
         const group = control as FormGroup;
         const percentage = +group.get('Percentage Obtained')?.value || 0;
 
-        const scoreResult = this.utils.calculateScore(
-          1, // Method 1 for education
-          {
-            educations: [
-              {
-                scoreFieldId: sub.m_rec_score_field_id,
-                weight: sub.score_field_field_weightage,
-                inputValue: percentage,
-                maxValue: sub.score_field_field_marks,
-              },
-            ],
-          },
-          this.heading?.score_field_field_marks || 60
-        );
-
-        parentCalculatedValue += scoreResult.score_field_calculated_value;
-      });
-    });
-
-    // Prepare parent record - always update if child records exist
-    const parentRecord = {
-      registration_no: registrationNo,
-      a_rec_app_main_id: 95,
-      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id,
-      score_field_parent_id: 0,
-      m_rec_score_field_id: this.heading?.m_rec_score_field_id,
-      m_rec_score_field_method_id: 1, // Must match your database constraints
-      score_field_value: this.heading?.score_field_field_marks,
-      score_field_actual_value: parentCalculatedValue,
-      score_field_calculated_value: Math.min(
-        parentCalculatedValue,
-        this.heading?.score_field_field_marks || 60
-      ),
-      verify_remark: 'Not Verified',
-      action_type: 'U', // Always update parent when children exist
-      action_date: new Date().toISOString(),
-      action_ip_address: '127.0.0.1',
-      delete_flag: 'N',
-    };
-    formData.append('parentScore', JSON.stringify(parentRecord));
-
-    // Second pass - process child records and parameters
-    this.subheadings.forEach((sub, index) => {
-      const key = this.getUniqueKey(sub, index);
-      if (!this.form.get(`is${key}Selected`)?.value) return;
-
-      const formArray = this.form.get(`qualifications${key}`) as FormArray;
-      formArray.controls.forEach((control) => {
-        const group = control as FormGroup;
-        const formValues = group.getRawValue();
-        const percentage = +formValues['Percentage Obtained'] || 0;
-
-        // Calculate scores for each qualification
         const scoreResult = this.utils.calculateScore(
           1,
           {
@@ -509,38 +507,41 @@ export class Step2Component implements OnInit {
           this.heading?.score_field_field_marks || 60
         );
 
-        // Prepare detail record
+        parentCalculatedValue += scoreResult.score_field_calculated_value;
+
+        const formValues = group.getRawValue();
+        const detailKey = `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}`;
+        const existingDetailId = this.existingDetailIds.get(detailKey);
+
         const detail = {
-          ...(formValues['a_rec_app_score_field_detail_id'] && {
-            a_rec_app_score_field_detail_id:
-              formValues['a_rec_app_score_field_detail_id'],
+          ...(existingDetailId && {
+            a_rec_app_score_field_detail_id: existingDetailId,
           }),
           registration_no: registrationNo,
-          a_rec_app_main_id: 95,
+          a_rec_app_main_id: a_rec_adv_main_id,
           a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
           score_field_parent_id: sub.score_field_parent_id,
           m_rec_score_field_id: sub.m_rec_score_field_id,
-          m_rec_score_field_method_id: 1, // Must match parent's method ID
+          m_rec_score_field_method_id: 1,
           score_field_value: percentage,
           score_field_actual_value: scoreResult.score_field_actual_value,
           score_field_calculated_value:
             scoreResult.score_field_calculated_value,
+          field_marks: sub.score_field_field_marks || 0,
+          field_weightage: sub.score_field_field_weightage || 0,
           verify_remark: 'Not Verified',
-          action_type: formValues['a_rec_app_score_field_detail_id']
-            ? 'U'
-            : 'C',
+          action_type: existingDetailId ? 'U' : 'C',
           action_date: new Date().toISOString(),
           action_ip_address: '127.0.0.1',
+          action_remark: existingDetailId
+            ? 'data updated from recruitment form'
+            : 'data inserted from recruitment form',
+          action_by: 1,
           delete_flag: 'N',
         };
 
-        // Add to appropriate array
-        (detail.a_rec_app_score_field_detail_id
-          ? existingDetails
-          : newDetails
-        ).push(detail);
+        (existingDetailId ? existingDetails : newDetails).push(detail);
 
-        // Process parameters
         this.getParameters(
           sub.m_rec_score_field_id,
           sub.a_rec_adv_post_detail_id
@@ -550,12 +551,8 @@ export class Step2Component implements OnInit {
           const isFile = paramValue instanceof File;
           const paramId =
             formValues[`param_${param.m_rec_score_field_parameter_id}_id`];
-          const filePathKey = `${key}_${param.m_rec_score_field_parameter_id}`;
-
-          // Clean filename if it's a file
-          const cleanFileName = isFile
-            ? paramValue.name.replace(/(\.pdf)+$/, '.pdf')
-            : null;
+          const fileKey = `${key}_${param.m_rec_score_field_parameter_id}_${rowIndex}`;
+          const existingFilePath = this.filePaths.get(fileKey);
 
           const parameter = {
             ...(paramId && {
@@ -567,30 +564,88 @@ export class Step2Component implements OnInit {
             m_rec_score_field_parameter_id:
               param.m_rec_score_field_parameter_id,
             parameter_value: isFile
-              ? `recruitment/${registrationNo}/${cleanFileName}`
-              : this.filePaths.get(filePathKey) || String(paramValue || ''),
+              ? this.generateFilePath(
+                  registrationNo,
+                  paramValue,
+                  sub.m_rec_score_field_id,
+                  param.m_rec_score_field_parameter_id,
+                  param.parameter_display_order,
+                  rowIndex
+                )
+              : existingFilePath && !paramValue
+              ? existingFilePath
+              : String(paramValue ?? 'Not Provided'),
             parameter_display_no: param.parameter_display_order,
+            unique_parameter_display_no: String(param.parameter_display_order),
             verify_remark: 'Not Verified',
+            active_status: 'Y',
             action_type: paramId ? 'U' : 'C',
             action_date: new Date().toISOString(),
             action_ip_address: '127.0.0.1',
+            action_remark: paramId
+              ? 'parameter updated from recruitment form'
+              : 'parameter inserted from recruitment form',
+            action_by: 1,
             delete_flag: 'N',
           };
 
           (paramId ? existingParameters : newParameters).push(parameter);
 
           if (isFile) {
-            formData.append(
-              `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.parameter_display_order}`,
-              paramValue,
-              `recruitment/${registrationNo}/${cleanFileName}`
-            );
+            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.parameter_display_order}_${rowIndex}`;
+            formData.append(fileControlName, paramValue, paramValue.name);
+          } else if (existingFilePath && !paramValue) {
+            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.parameter_display_order}_${rowIndex}`;
+            formData.append(fileControlName, existingFilePath);
           }
         });
       });
     });
 
-    // Save records
+    const parentRecord = {
+      registration_no: registrationNo,
+      a_rec_app_main_id: a_rec_adv_main_id,
+      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 244,
+      score_field_parent_id: 0,
+      m_rec_score_field_id: this.heading?.m_rec_score_field_id,
+      m_rec_score_field_method_id: 1,
+      score_field_value: this.heading?.score_field_field_marks || 60,
+      score_field_actual_value: parentCalculatedValue,
+      score_field_calculated_value: Math.min(
+        parentCalculatedValue,
+        this.heading?.score_field_field_marks || 60
+      ),
+      field_marks: this.heading?.score_field_field_marks || 60,
+      field_weightage: this.heading?.score_field_field_weightage || 0,
+      verify_remark: 'Not Verified',
+      action_type: 'U',
+      action_date: new Date().toISOString(),
+      action_ip_address: '127.0.0.1',
+      action_remark: 'parent data updated from recruitment form',
+      action_by: 1,
+      delete_flag: 'N',
+    };
+    formData.append('parentScore', JSON.stringify(parentRecord));
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'submitForm_prepared_data',
+          newDetails,
+          existingDetails,
+          newParameters,
+          existingParameters,
+          parentRecord,
+          formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
+            key,
+            value: value instanceof File ? value.name : value,
+          })),
+        },
+        null,
+        2
+      )
+    );
+
     if (newDetails.length > 0 || newParameters.length > 0) {
       this.saveRecords(
         registrationNo,
@@ -611,7 +666,7 @@ export class Step2Component implements OnInit {
     }
 
     if (newDetails.length === 0 && existingDetails.length === 0) {
-      alert('No data to save. Please add at least one record.');
+      alert('No data to save. Please select at least one qualification.');
       return;
     }
 
@@ -631,13 +686,9 @@ export class Step2Component implements OnInit {
     payload.append('scoreFieldParameterList', JSON.stringify(parameters));
     payload.append('parentScore', formData.get('parentScore') as string);
 
-    // Add directory structure information
-    payload.append('fileDirectory', `recruitment/${registrationNo}`);
-
-    // Copy files with proper paths
     Array.from(formData.entries()).forEach(([key, value]) => {
-      if (value instanceof File) {
-        payload.append(key, value, value.name);
+      if (key.startsWith('file_')) {
+        payload.append(key, value);
       }
     });
 
@@ -646,13 +697,52 @@ export class Step2Component implements OnInit {
       payload,
       'recruitement'
     ).subscribe({
-      next: () => {
+      next: (res) => {
+        console.log(
+          JSON.stringify(
+            { event: `${endpoint}_success`, response: res.body?.data },
+            null,
+            2
+          )
+        );
+
+        if (res.body?.data) {
+          details.forEach((detail, index) => {
+            if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
+              this.existingDetailIds.set(
+                `${detail.m_rec_score_field_id}_${detail.a_rec_adv_post_detail_id}`,
+                res.body.data[index].a_rec_app_score_field_detail_id
+              );
+            }
+          });
+
+          parameters.forEach((param, index) => {
+            if (
+              res.body.data[index]?.a_rec_app_score_field_parameter_detail_id
+            ) {
+              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.unique_parameter_display_no}`;
+              this.existingParameterIds.set(
+                paramKey,
+                res.body.data[index].a_rec_app_score_field_parameter_detail_id
+              );
+            }
+          });
+        }
+
         alert('Data saved successfully!');
         this.getParameterValuesAndPatch();
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        alert(`Error: ${err.message}`);
-        console.error('Save failed:', err);
+        console.error(
+          JSON.stringify(
+            { event: `${endpoint}_error`, error: err.message },
+            null,
+            2
+          )
+        );
+        alert(`Error saving data: ${err.message}`);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -669,7 +759,7 @@ export class Step2Component implements OnInit {
     }, {} as { [key: string]: any });
 
     const emitData = {
-      ...this.form.value,
+      ...this.form.getRawValue(),
       _isValid: this.form.valid,
       heading: this.heading,
       subheadings: subheadingsData,

@@ -142,7 +142,7 @@
                       *ngIf="
                         form.get(
                           'is' + getUniqueKey(subheading, i) + 'Selected'
-                        )?.value
+                        )?.value && param.is_mandatory === 'Y'
                       "
                       class="text-red-600"
                       >*</span
@@ -207,7 +207,8 @@
                           !group.get(param.score_field_parameter_name)?.value &&
                           getFilePath(
                             getUniqueKey(subheading, i),
-                            param.m_rec_score_field_parameter_id
+                            param.m_rec_score_field_parameter_id,
+                            j
                           ) as filePath
                         "
                       >
@@ -230,7 +231,7 @@
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
-                          View Uploaded File
+                        View Uploaded File
                         </a>
                       </ng-container>
 
@@ -290,6 +291,8 @@
             </div>
           </div>
         </div>
+
+       
       </div>
     </form>
   </div>

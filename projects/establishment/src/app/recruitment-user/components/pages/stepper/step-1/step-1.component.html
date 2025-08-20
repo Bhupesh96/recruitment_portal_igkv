@@ -1,6 +1,5 @@
 <form [formGroup]="form" class="w-full font-['Source Sans Pro',sans-serif]">
   <div class="space-y-8 text-sm text-gray-700">
-    <!-- Applicant name -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -19,31 +18,42 @@
         Applicant name
       </h6>
       <div class="grid md:grid-cols-4 gap-4">
-        <select
-          formControlName="Salutation_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-        >
-          <option value="" disabled selected>Select Salutation</option>
-          <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
-            {{ sal.salutation_name_e }}
-          </option>
-        </select>
-
-        <input
-          formControlName="Applicant_First_Name_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="First name"
-        />
-        <input
-          formControlName="Applicant_Middle_Name_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Middle name"
-        />
-        <input
-          formControlName="Applicant_Last_Name_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Last name"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Salutation (English)</label>
+          <select
+            formControlName="Salutation_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          >
+            <option value="" disabled selected>Select Salutation</option>
+            <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
+              {{ sal.salutation_name_e }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">First Name</label>
+          <input
+            formControlName="Applicant_First_Name_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="First name"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Middle Name</label>
+          <input
+            formControlName="Applicant_Middle_Name_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Middle name"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Last Name</label>
+          <input
+            formControlName="Applicant_Last_Name_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Last name"
+          />
+        </div>
       </div>
       <div
         *ngIf="
@@ -56,35 +66,45 @@
       </div>
 
       <div class="grid md:grid-cols-4 gap-4 mt-4">
-        <select
-          formControlName="Salutation_H"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-        >
-          <option value="" disabled selected>Salutation</option>
-          <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
-            {{ sal.salutation_name_h }}
-          </option>
-        </select>
-
-        <input
-          formControlName="Applicant_First_Name_H"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="First name (Hindi)"
-        />
-        <input
-          formControlName="Applicant_Middle_Name_H"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Middle name (Hindi)"
-        />
-        <input
-          formControlName="Applicant_Last_Name_H"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Last name (Hindi)"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Salutation (Hindi)</label>
+          <select
+            formControlName="Salutation_H"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          >
+            <option value="" disabled selected>Salutation</option>
+            <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
+              {{ sal.salutation_name_h }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">First Name (Hindi)</label>
+          <input
+            formControlName="Applicant_First_Name_H"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="First name (Hindi)"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Middle Name (Hindi)</label>
+          <input
+            formControlName="Applicant_Middle_Name_H"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Middle name (Hindi)"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Last Name (Hindi)</label>
+          <input
+            formControlName="Applicant_Last_Name_H"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Last name (Hindi)"
+          />
+        </div>
       </div>
     </div>
 
-    <!-- Basic Details -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -103,40 +123,46 @@
         Basic Details
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
-        <select
-          formControlName="a_rec_adv_main_id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option
-            *ngFor="let adv of advertisementList"
-            [value]="adv.a_rec_adv_main_id"
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Advertisement</label>
+          <select
+            formControlName="a_rec_adv_main_id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ adv.advertisment_name }}
-          </option>
-        </select>
-
-        <select
-          formControlName="post_code"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option *ngFor="let post of postList" [value]="post.post_code">
-            {{ post.post_name }}
-          </option>
-        </select>
-
-        <select
-          formControlName="subject_id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select Subject</option>
-          <option
-            *ngFor="let subject of subjectList"
-            [ngValue]="subject.subject_id"
+            <option
+              *ngFor="let adv of advertisementList"
+              [value]="adv.a_rec_adv_main_id"
+            >
+              {{ adv.advertisment_name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Post</label>
+          <select
+            formControlName="post_code"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ subject.Subject_Name_E }}
-          </option>
-        </select>
-
+            <option *ngFor="let post of postList" [value]="post.post_code">
+              {{ post.post_name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Subject</label>
+          <select
+            formControlName="subject_id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="" disabled selected>Select Subject</option>
+            <option
+              *ngFor="let subject of subjectList"
+              [ngValue]="subject.subject_id"
+            >
+              {{ subject.Subject_Name_E }}
+            </option>
+          </select>
+        </div>
         <div>
           <label class="block mb-1 text-gray-600 text-sm font-medium"
             >Gender*</label
@@ -171,18 +197,24 @@
             >
           </div>
         </div>
-        <input
-          type="date"
-          formControlName="DOB"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-        />
-        <input
-          type="text"
-          formControlName="age"
-          readonly
-          [class.border-red-500]="form.get('age')?.errors"
-          class="border rounded px-3 py-2 mt-1 w-full bg-gray-100"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Date of Birth</label>
+          <input
+            type="date"
+            formControlName="DOB"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Age</label>
+          <input
+            type="text"
+            formControlName="age"
+            readonly
+            [class.border-red-500]="form.get('age')?.errors"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+        </div>
 
         <div
           class="text-red-500 text-sm mt-1"
@@ -190,43 +222,57 @@
         >
           You must be at least 18 years old.
         </div>
-        <input
-          formControlName="Applicant_Father_Name_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Father's name*"
-        />
-        <input
-          formControlName="Applicant_Mother_Name_E"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Mother's name*"
-        />
-        <select
-          formControlName="religion_code"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select Religion</option>
-          <option
-            *ngFor="let religion of religionList"
-            [value]="religion.religion_code"
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Father's name*</label>
+          <input
+            formControlName="Applicant_Father_Name_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Father's name*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Mother's name*</label>
+          <input
+            formControlName="Applicant_Mother_Name_E"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Mother's name*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Religion</label>
+          <select
+            formControlName="religion_code"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ religion.religion_name }}
-          </option>
-        </select>
+            <option value="" disabled selected>Select Religion</option>
+            <option
+              *ngFor="let religion of religionList"
+              [value]="religion.religion_code"
+            >
+              {{ religion.religion_name }}
+            </option>
+          </select>
+        </div>
 
-        <input
-          formControlName="Identification_Mark1"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Identification Mark 1*"
-        />
-        <input
-          formControlName="Identification_Mark2"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Identification Mark 2*"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Identification Mark 1*</label>
+          <input
+            formControlName="Identification_Mark1"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Identification Mark 1*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Identification Mark 2*</label>
+          <input
+            formControlName="Identification_Mark2"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Identification Mark 2*"
+          />
+        </div>
       </div>
     </div>
 
-    <!-- Additional Information -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -245,7 +291,6 @@
         Additional Information
       </h6>
 
-      <!-- Responsive Grid -->
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
         <div>
           <label class="block mb-1 text-gray-600 text-sm font-medium"
@@ -420,22 +465,9 @@
             </label>
           </div>
         </div>
-
-        <!-- Checkbox spanning both columns in mobile and all columns in desktop -->
-        <!-- <div class="col-span-2 md:col-span-3">
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              formControlName="applying_trough_proper_channel"
-              class="mr-2 text-blue-600 focus:ring-blue-600"
-            />
-            Applying through proper channel and submitting advance copy
-          </label>
-        </div> -->
       </div>
     </div>
 
-    <!-- Address -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -460,56 +492,74 @@
         Permanent Address
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
-        <input
-          formControlName="Permanent_Address1"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Address*"
-        />
-        <input
-          formControlName="Permanent_City"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="City*"
-        />
-        <select
-          formControlName="Permanent_Country_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled>Select Country</option>
-          <option
-            *ngFor="let country of countryList"
-            [value]="country.country_id"
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Address*</label>
+          <input
+            formControlName="Permanent_Address1"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Address*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">City*</label>
+          <input
+            formControlName="Permanent_City"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="City*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Country</label>
+          <select
+            formControlName="Permanent_Country_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ country.country_name }}
-          </option>
-        </select>
-        <select
-          formControlName="Permanent_State_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select State</option>
-          <option *ngFor="let state of stateList" [value]="state.state_id">
-            {{ state.name }}
-          </option>
-        </select>
-
-        <select
-          formControlName="Permanent_District_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select District</option>
-          <option
-            *ngFor="let district of districtList"
-            [value]="district.district_id"
+            <option value="" disabled>Select Country</option>
+            <option
+              *ngFor="let country of countryList"
+              [value]="country.country_id"
+            >
+              {{ country.country_name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">State</label>
+          <select
+            formControlName="Permanent_State_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ district.district_name }}
-          </option>
-        </select>
+            <option value="" disabled selected>Select State</option>
+            <option *ngFor="let state of stateList" [value]="state.state_id">
+              {{ state.name }}
+            </option>
+          </select>
+        </div>
 
-        <input
-          formControlName="Permanent_Pin_Code"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Pincode*"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">District</label>
+          <select
+            formControlName="Permanent_District_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="" disabled selected>Select District</option>
+            <option
+              *ngFor="let district of districtList"
+              [value]="district.district_id"
+            >
+              {{ district.district_name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Pincode*</label>
+          <input
+            formControlName="Permanent_Pin_Code"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Pincode*"
+          />
+        </div>
       </div>
       <div class="mt-4">
         <label class="flex items-center"
@@ -546,60 +596,77 @@
         Present Address
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
-        <input
-          formControlName="Current_Address1"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Address*"
-        />
-        <input
-          formControlName="Current_City"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="City*"
-        />
-        <select
-          formControlName="Current_Country_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled>Select Country</option>
-          <option
-            *ngFor="let country of countryList"
-            [value]="country.country_id"
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Address*</label>
+          <input
+            formControlName="Current_Address1"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Address*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">City*</label>
+          <input
+            formControlName="Current_City"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="City*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Country</label>
+          <select
+            formControlName="Current_Country_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ country.country_name }}
-          </option>
-        </select>
-        <select
-          formControlName="Current_State_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select State</option>
-          <option *ngFor="let state of stateList" [value]="state.state_id">
-            {{ state.name }}
-          </option>
-        </select>
-
-        <select
-          formControlName="Current_District_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select District</option>
-          <option
-            *ngFor="let district of districtList"
-            [value]="district.district_id"
+            <option value="" disabled>Select Country</option>
+            <option
+              *ngFor="let country of countryList"
+              [value]="country.country_id"
+            >
+              {{ country.country_name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">State</label>
+          <select
+            formControlName="Current_State_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ district.district_name }}
-          </option>
-        </select>
+            <option value="" disabled selected>Select State</option>
+            <option *ngFor="let state of stateList" [value]="state.state_id">
+              {{ state.name }}
+            </option>
+          </select>
+        </div>
 
-        <input
-          formControlName="Current_Pin_Code"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Pincode*"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">District</label>
+          <select
+            formControlName="Current_District_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="" disabled selected>Select District</option>
+            <option
+              *ngFor="let district of districtList"
+              [value]="district.district_id"
+            >
+              {{ district.district_name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Pincode*</label>
+          <input
+            formControlName="Current_Pin_Code"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Pincode*"
+          />
+        </div>
       </div>
     </div>
 
-    <!-- Contact -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -618,22 +685,27 @@
         Contact
       </h6>
       <div class="grid md:grid-cols-2 gap-4">
-        <input
-          type="email"
-          formControlName="Email_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Email Address*"
-        />
-        <input
-          type="tel"
-          formControlName="Mobile_No"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Mobile Number*"
-        />
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Email Address*</label>
+          <input
+            type="email"
+            formControlName="Email_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Email Address*"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Mobile Number*</label>
+          <input
+            type="tel"
+            formControlName="Mobile_No"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Mobile Number*"
+          />
+        </div>
       </div>
     </div>
 
-    <!-- Place of Birth -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -658,48 +730,58 @@
         Place of Birth
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
-        <input
-          formControlName="Birth_Place"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          placeholder="Village / City / Block"
-        />
-        <select
-          formControlName="Birth_Country_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled>Select Country</option>
-          <option
-            *ngFor="let country of countryList"
-            [value]="country.country_id"
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Village / City / Block</label>
+          <input
+            formControlName="Birth_Place"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Village / City / Block"
+          />
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">Country</label>
+          <select
+            formControlName="Birth_Country_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ country.country_name }}
-          </option>
-        </select>
-        <select
-          formControlName="Birth_State_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select State</option>
-          <option *ngFor="let state of stateList" [value]="state.state_id">
-            {{ state.name }}
-          </option>
-        </select>
-        <select
-          formControlName="Birth_District_Id"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
-        >
-          <option value="" disabled selected>Select District</option>
-          <option
-            *ngFor="let district of districtList"
-            [value]="district.district_id"
+            <option value="" disabled>Select Country</option>
+            <option
+              *ngFor="let country of countryList"
+              [value]="country.country_id"
+            >
+              {{ country.country_name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">State</label>
+          <select
+            formControlName="Birth_State_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            {{ district.district_name }}
-          </option>
-        </select>
+            <option value="" disabled selected>Select State</option>
+            <option *ngFor="let state of stateList" [value]="state.state_id">
+              {{ state.name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-1 text-gray-600 text-sm font-medium">District</label>
+          <select
+            formControlName="Birth_District_Id"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+          >
+            <option value="" disabled selected>Select District</option>
+            <option
+              *ngFor="let district of districtList"
+              [value]="district.district_id"
+            >
+              {{ district.district_name }}
+            </option>
+          </select>
+        </div>
       </div>
     </div>
-    <!-- Applicant Photo & Signature -->
-    <!-- Applicant Photo & Signature -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -719,7 +801,6 @@
       </h6>
 
       <div class="grid md:grid-cols-2 gap-6">
-        <!-- Photo Upload -->
         <div>
           <label class="block text-sm font-medium text-gray-700"
             >Upload Photo*</label
@@ -747,7 +828,6 @@
           </div>
         </div>
 
-        <!-- Signature Upload -->
         <div>
           <label class="block text-sm font-medium text-gray-700"
             >Upload Signature*</label
@@ -777,7 +857,6 @@
       </div>
     </div>
 
-    <!-- Language Details -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
@@ -824,11 +903,10 @@
                 {{ i + 1 }}
               </td>
 
-              <!-- Language Type Dropdown -->
               <td class="px-4 py-2 border border-gray-300">
                 <select
                   formControlName="m_rec_language_type_id"
-                  class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-500"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="">Select Type</option>
                   <option
@@ -840,11 +918,10 @@
                 </select>
               </td>
 
-              <!-- Language Dropdown -->
               <td class="px-4 py-2 border border-gray-300">
                 <select
                   formControlName="m_rec_language_id"
-                  class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-500"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="">Select Language</option>
                   <option *ngFor="let lang of languages" [ngValue]="lang.id">
@@ -853,11 +930,10 @@
                 </select>
               </td>
 
-              <!-- Language Skill Dropdown -->
               <td class="px-4 py-2 border border-gray-300">
                 <select
                   formControlName="m_rec_language_skill_id"
-                  class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-500"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="">Select Skill</option>
                   <option
@@ -869,7 +945,6 @@
                 </select>
               </td>
 
-              <!-- Remove Row Button -->
               <td class="px-4 py-2 border border-gray-300 text-center">
                 <button
                   type="button"
@@ -885,7 +960,6 @@
         </table>
       </div>
 
-      <!-- Add Button -->
       <div class="pt-2 text-right">
         <button
           type="button"

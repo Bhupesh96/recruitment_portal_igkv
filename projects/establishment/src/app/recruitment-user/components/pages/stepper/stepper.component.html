@@ -1,40 +1,20 @@
-<div
-  class="flex flex-col min-h-screen bg-gray-50 font-['Source Sans Pro',sans-serif]"
->
+<div class="flex flex-col min-h-screen bg-gray-50 font-['Source Sans Pro',sans-serif]">
   <!-- Sticky Header -->
   <app-header class="sticky top-0 z-50 bg-white shadow"></app-header>
 
   <!-- Hero Banner -->
-  <header
-    class="relative py-10 sm:py-12 flex flex-col items-center justify-center text-white bg-blue-900 overflow-hidden"
-  >
-    <div
-      class="absolute inset-0 z-0 grid grid-cols-6 gap-8 sm:gap-10 lg:gap-12 opacity-10 text-white px-6 sm:px-8 py-10 sm:py-12 pointer-events-none"
-    >
+  <header class="relative py-10 sm:py-12 flex flex-col items-center justify-center text-white bg-blue-900 overflow-hidden">
+    <div class="absolute inset-0 z-0 grid grid-cols-6 gap-8 sm:gap-10 lg:gap-12 opacity-10 text-white px-6 sm:px-8 py-10 sm:py-12 pointer-events-none">
       <!-- Repeat SVGs in a pattern -->
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
-        <path
-          d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z"
-        />
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z" />
       </svg>
 
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
         <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 13a4 4 0 118 0H4z" />
       </svg>
 
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
         <path
           fill-rule="evenodd"
           d="M5 4a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm4 3a1 1 0 100 2h2a1 1 0 100-2H9z"
@@ -43,29 +23,15 @@
       </svg>
 
       <!-- Repeat icons to fill the grid -->
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
-        <path
-          d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z"
-        />
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z" />
       </svg>
 
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
         <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 13a4 4 0 118 0H4z" />
       </svg>
 
-      <svg
-        class="w-8 h-8 sm:w-10 sm:h-10"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-      >
+      <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20">
         <path
           fill-rule="evenodd"
           d="M5 4a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm4 3a1 1 0 100 2h2a1 1 0 100-2H9z"
@@ -74,37 +40,24 @@
       </svg>
     </div>
     <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8">
-      <h1
-        class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight"
-      >
+      <h1 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
         Complete Your Job Application
       </h1>
-      <p
-        class="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto"
-      >
+      <p class="mt-3 sm:mt-4 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto">
         Fill out the step-by-step form to apply for your desired position.
       </p>
     </div>
   </header>
 
-  <!-- Stepper & Form Summary Section -->
-  <section
-    class="w-full max-w-[90rem] lg:max-w-[108rem] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 relative z-10 -mt-8 min-w-[320px]"
-  >
-    <div
-      class="bg-white rounded-lg shadow-lg px-4 sm:px-6 md:px-8 lg:px-10 pt-6 pb-8"
-    >
+  <!-- Stepper & Form Section (Full Width) -->
+  <section class="w-full max-w-[90rem] lg:max-w-[108rem] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 relative z-10 -mt-8 min-w-[320px]">
+    <div class="bg-white rounded-lg shadow-lg px-4 sm:px-6 md:px-8 lg:px-10 pt-6 pb-8">
       <!-- Stepper -->
-      <!-- Modern Centered Dot Stepper with Titles (Responsive) -->
       <div class="w-full flex justify-center py-4">
         <div class="bg-white px-2 sm:px-4 py-3 w-full max-w-6xl">
-          <div
-            class="w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2"
-          >
+          <div class="w-full overflow-x-auto sm:overflow-x-visible scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2">
             <div class="w-[768px] sm:w-full">
-              <div
-                class="flex items-center justify-between w-full space-x-3 px-2"
-              >
+              <div class="flex items-center justify-between w-full space-x-3 px-2">
                 <ng-container *ngFor="let step of steps; let i = index">
                   <div class="flex items-center space-x-1">
                     <!-- Step Circle with Number -->
@@ -146,158 +99,70 @@
         </div>
       </div>
 
-      <!-- Form + Summary with vertical separation -->
-      <div class="flex flex-col lg:flex-row gap-6">
-        <!-- Main Form Section -->
-        <div class="w-full lg:w-3/4 2xl:w-3/4">
-          <div class="space-y-6">
-            <app-step-1
-              [hidden]="currentStep !== 1"
-              (formData)="updateFormData(1, $event)"
-              [triggerValidation]="
-                formData[1] && formData[1]['_isValid'] === false
-              "
-            ></app-step-1>
+      <!-- Full Width Form Section -->
+      <div class="w-full">
+        <div class="space-y-6">
+          <app-step-1
+            [hidden]="currentStep !== 1"
+            (formData)="updateFormData(1, $event)"
+            [triggerValidation]="
+              formData[1] && formData[1]['_isValid'] === false
+            "
+          ></app-step-1>
 
-            <app-step-2
-              [hidden]="currentStep !== 2"
-              (formData)="updateFormData(2, $event)"
-            ></app-step-2>
+          <app-step-2
+            [hidden]="currentStep !== 2"
+            (formData)="updateFormData(2, $event)"
+          ></app-step-2>
 
-             <app-step-3
-              [hidden]="currentStep !== 3"
-              (formData)="updateFormData(3, $event)"
-            ></app-step-3>
-             <app-step-4
-              [hidden]="currentStep !== 4"
-              (formData)="updateFormData(4, $event)"
-            ></app-step-4>
-            <app-step-5
-              [hidden]="currentStep !== 5"
-              (formData)="updateFormData(5, $event)"
-            ></app-step-5>
-             <app-step-6
-              [hidden]="currentStep !== 6"
-              (formData)="updateFormData(6, $event)"
-            ></app-step-6>
-              <app-step-7
-              [hidden]="currentStep !== 7"
-              (formData)="updateFormData(7, $event)"
-            ></app-step-7>
-              <app-step-8
-              [hidden]="currentStep !== 8"
-              (formData)="updateFormData(8, $event)"
-            ></app-step-8>
-            <!-- Navigation -->
-            <div
-              class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200"
+          <app-step-3
+            [hidden]="currentStep !== 3"
+            (formData)="updateFormData(3, $event)"
+          ></app-step-3>
+          
+          <app-step-4
+            [hidden]="currentStep !== 4"
+            (formData)="updateFormData(4, $event)"
+          ></app-step-4>
+          
+          <app-step-5
+            [hidden]="currentStep !== 5"
+            (formData)="updateFormData(5, $event)"
+          ></app-step-5>
+          
+          <app-step-6
+            [hidden]="currentStep !== 6"
+            (formData)="updateFormData(6, $event)"
+          ></app-step-6>
+          
+          <app-step-7
+            [hidden]="currentStep !== 7"
+            (formData)="updateFormData(7, $event)"
+          ></app-step-7>
+          
+          <app-step-8
+            [hidden]="currentStep !== 8"
+            (formData)="updateFormData(8, $event)"
+          ></app-step-8>
+          
+          <!-- Navigation -->
+          <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
+            <button
+              class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              (click)="prevStep()"
+              [disabled]="currentStep === 1"
             >
-              <button
-                class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                (click)="prevStep()"
-                [disabled]="currentStep === 1"
-              >
-                ← Back
-              </button>
-              <button
-                class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                (click)="nextStep()"
-                [disabled]="currentStep === steps.length && !isFormValid()"
-              >
-                {{
-                  currentStep === steps.length ? "Finish" : "Save & Continue →"
-                }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vertical Line -->
-        <div
-          class="hidden lg:block w-px bg-gray-300 mx-2 my-2 border-dashed border-l-2 border-gray-300"
-        ></div>
-
-        <!-- Form Summary Section -->
-        <div class="hidden lg:flex lg:w-1/4 2xl:w-1/4 flex-col">
-          <div
-            class="bg-white rounded-xl shadow-sm w-full max-w-full self-start"
-          >
-            <h5
-              class="text-base sm:text-lg font-semibold text-blue-700 mb-6 flex items-center gap-2"
+              ← Back
+            </button>
+            <button
+              class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              (click)="nextStep()"
+              [disabled]="currentStep === steps.length && !isFormValid()"
             >
-              <svg
-                class="h-5 w-5 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              Application Summary
-            </h5>
-
-            <ng-container *ngIf="hasFormData(); else emptyPreview">
-              <div class="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-                <ng-container *ngFor="let step of steps; let i = index">
-                  <div
-                    *ngIf="formData[i + 1]"
-                    class="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition"
-                  >
-                    <h5
-                      class="text-sm font-semibold text-blue-600 mb-4 flex items-center gap-2"
-                    >
-                      <svg
-                        class="h-4 w-4 text-blue-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      {{ step }}
-                    </h5>
-
-                    <!-- True 2-column Table Style -->
-                    <div class="divide-y divide-gray-200 text-sm">
-                      <div
-                        *ngFor="let key of getFormDataKeys(i + 1)"
-                        class="flex justify-between items-start py-2"
-                      >
-                        <span class="text-gray-600 w-1/2 pr-4 font-medium">{{
-                          formatKey(key)
-                        }}</span>
-                        <span
-                          class="text-gray-900 w-1/2 break-words text-right"
-                        >
-                          {{ formatValue(formData[i + 1][key]) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
-              </div>
-            </ng-container>
-
-            <ng-template #emptyPreview>
-              <div class="text-center text-gray-500 py-8">
-                <h5 class="text-sm sm:text-base font-medium text-gray-800">
-                  No Data Entered
-                </h5>
-                <p class="text-xs sm:text-sm">
-                  Fill out the form to see your application summary here.
-                </p>
-              </div>
-            </ng-template>
+              {{
+                currentStep === steps.length ? "Finish" : "Save & Continue →"
+              }}
+            </button>
           </div>
         </div>
       </div>
