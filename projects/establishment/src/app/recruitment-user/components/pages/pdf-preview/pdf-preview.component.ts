@@ -15,7 +15,7 @@ interface Attachment {
 })
 export class PdfPreviewComponent implements OnInit {
   formData: { [key: number]: any } = {};
-
+  today: Date = new Date();
   constructor(
     private router: Router,
     private sharedDataService: SharedDataService

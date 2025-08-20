@@ -315,7 +315,7 @@ private getParameterValuesAndPatch(): void {
         this.score_field_title_name =
           data[0]?.score_field_title_name || 'Academic Excellence';
         const a_rec_adv_post_detail_id =
-          data[0]?.a_rec_adv_post_detail_id || 201;
+          data[0]?.a_rec_adv_post_detail_id || 244;
 
         this.HTTP.getData(
           `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
@@ -688,7 +688,7 @@ onFileChange(event: Event, index: number, controlName: string) {
         score_field_title_name:
           this.score_field_title_name || 'Academic Excellence',
         m_rec_score_field_id: 34,
-        a_rec_adv_post_detail_id: 201,
+        a_rec_adv_post_detail_id: 244,
       },
       subheadings: subheadingsData,
     };
@@ -740,7 +740,7 @@ onFileChange(event: Event, index: number, controlName: string) {
               registration_no: registrationNo,
               a_rec_app_main_id: a_rec_adv_main_id,
               a_rec_adv_post_detail_id:
-                subHeading.a_rec_adv_post_detail_id || 201,
+                subHeading.a_rec_adv_post_detail_id || 244,
               score_field_parent_id: subHeading.score_field_parent_id || 34,
               m_rec_score_field_id:
                 item.m_rec_score_field_id || subHeading.m_rec_score_field_id,

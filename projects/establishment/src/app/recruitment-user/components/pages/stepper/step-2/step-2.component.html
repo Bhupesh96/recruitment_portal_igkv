@@ -156,10 +156,7 @@
                       type="text"
                       [formControlName]="param.score_field_parameter_name"
                       [placeholder]="
-                        'e.g., ' +
-                        (param.score_field_parameter_name === 'University/Board'
-                          ? 'CBSE'
-                          : param.score_field_parameter_name)
+                        'Enter ' + param.score_field_parameter_name
                       "
                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />

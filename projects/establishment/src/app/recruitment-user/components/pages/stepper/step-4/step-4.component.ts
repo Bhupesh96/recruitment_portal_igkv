@@ -164,7 +164,7 @@ export class Step4Component implements OnInit {
 private getParameterValuesAndPatch(): void {
   const registrationNo = 24000001;
   const a_rec_adv_main_id = 95;
-  const score_field_parent_id = 3096;
+  const score_field_parent_id = 18;
 
   this.HTTP.getData(
     `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${score_field_parent_id}`,
@@ -304,7 +304,7 @@ private getParameterValuesAndPatch(): void {
 
   loadFormStructure() {
     const a_rec_adv_main_id = 95;
-    const m_rec_score_field_id = 3096;
+    const m_rec_score_field_id = 18;
 
     this.HTTP.getData(
       `/master/get/getHeadingByScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
@@ -315,7 +315,7 @@ private getParameterValuesAndPatch(): void {
         this.score_field_title_name =
           data[0]?.score_field_title_name || 'Academic Excellence';
         const a_rec_adv_post_detail_id =
-          data[0]?.a_rec_adv_post_detail_id || 201;
+          data[0]?.a_rec_adv_post_detail_id || 244;
 
         this.HTTP.getData(
           `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
@@ -687,8 +687,8 @@ onFileChange(event: Event, index: number, controlName: string) {
       heading: {
         score_field_title_name:
           this.score_field_title_name || 'Academic Excellence',
-        m_rec_score_field_id: 3096,
-        a_rec_adv_post_detail_id: 201,
+        m_rec_score_field_id: 18,
+        a_rec_adv_post_detail_id: 244,
       },
       subheadings: subheadingsData,
     };
@@ -740,8 +740,8 @@ onFileChange(event: Event, index: number, controlName: string) {
               registration_no: registrationNo,
               a_rec_app_main_id: a_rec_adv_main_id,
               a_rec_adv_post_detail_id:
-                subHeading.a_rec_adv_post_detail_id || 201,
-              score_field_parent_id: subHeading.score_field_parent_id || 3096,
+                subHeading.a_rec_adv_post_detail_id || 244,
+              score_field_parent_id: subHeading.score_field_parent_id || 18,
               m_rec_score_field_id:
                 item.m_rec_score_field_id || subHeading.m_rec_score_field_id,
               m_rec_score_field_method_id: 3,

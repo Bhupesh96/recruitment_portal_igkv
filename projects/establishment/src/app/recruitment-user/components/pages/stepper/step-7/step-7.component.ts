@@ -1,5 +1,17 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, Validators, AbstractControl } from '@angular/forms';
+import {
+  Component,
+  OnInit,
+  Output,
+  EventEmitter,
+  ChangeDetectorRef,
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  FormArray,
+  Validators,
+  AbstractControl,
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpService } from 'shared';
@@ -28,7 +40,7 @@ interface SavedParameter {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './step-7.component.html',
-  styleUrls: ['./step-7.component.scss']
+  styleUrls: ['./step-7.component.scss'],
 })
 export class Step7Component implements OnInit {
   @Output() formData = new EventEmitter<{ [key: string]: any }>();
@@ -54,7 +66,7 @@ export class Step7Component implements OnInit {
     private cdr: ChangeDetectorRef
   ) {
     this.form = this.fb.group({
-      attachments: this.fb.array([])
+      attachments: this.fb.array([]),
     });
   }
 
@@ -71,19 +83,19 @@ export class Step7Component implements OnInit {
 
   private checkFormValidity(): void {
     let isValid = true;
-    
+
     this.attachmentsArray.controls.forEach((control, index) => {
       const meta = this.attachmentMeta[index];
-      if (meta && this.isMandatory(meta)) {
-        const controlDoc = control.get('document');
-        const hasDocument = controlDoc?.value;
-        const hasExistingFile = this.filePaths.has(`${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`);
-        if (!hasDocument && !hasExistingFile) {
-          isValid = false;
-        }
-      }
+      // if (meta && this.isMandatory(meta)) {
+      //   const controlDoc = control.get('document');
+      //   const hasDocument = controlDoc?.value;
+      //   const hasExistingFile = this.filePaths.has(`${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`);
+      //   if (!hasDocument && !hasExistingFile) {
+      //     isValid = false;
+      //   }
+      // }
     });
-    
+
     this.formValid = isValid;
     this.formData.emit({ ...this.form.value, _isValid: this.formValid });
     this.cdr.detectChanges();
@@ -98,7 +110,8 @@ export class Step7Component implements OnInit {
       next: (res: any) => {
         if (res?.body?.data?.length > 0) {
           this.attachmentMeta = (res.body.data as AttachmentMeta[]).sort(
-            (a: AttachmentMeta, b: AttachmentMeta) => a.display_order_no - b.display_order_no
+            (a: AttachmentMeta, b: AttachmentMeta) =>
+              a.display_order_no - b.display_order_no
           );
           this.initializeForm();
           this.loadSavedParameterValues();
@@ -109,7 +122,7 @@ export class Step7Component implements OnInit {
       error: (err: any) => {
         console.error('Failed to load attachment fields:', err);
         this.initializeForm();
-      }
+      },
     });
   }
 
@@ -135,13 +148,13 @@ export class Step7Component implements OnInit {
     ).subscribe({
       next: (res: any) => {
         const savedData = this.normalizeApiResponse(res);
-        
+
         if (savedData.length > 0) {
           savedData.forEach((item: SavedParameter) => {
             const index = this.attachmentMeta.findIndex(
               (m) => m.m_rec_score_field_id === item.m_rec_score_field_id
             );
-            
+
             if (index !== -1) {
               if (item.a_rec_app_score_field_detail_id) {
                 this.existingDetailIds.set(
@@ -149,7 +162,7 @@ export class Step7Component implements OnInit {
                   item.a_rec_app_score_field_detail_id
                 );
               }
-              
+
               const paramKey = `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}`;
               if (item.a_rec_app_score_field_parameter_detail_id) {
                 this.existingParameterIds.set(
@@ -161,14 +174,14 @@ export class Step7Component implements OnInit {
               const formGroup = this.attachmentsArray.at(index);
               formGroup.patchValue({
                 remark: item.remark || '',
-                document: null
+                document: null,
               });
-              
-              if (item.parameter_value && item.parameter_value.includes('.pdf')) {
-                this.filePaths.set(
-                  paramKey,
-                  item.parameter_value
-                );
+
+              if (
+                item.parameter_value &&
+                item.parameter_value.includes('.pdf')
+              ) {
+                this.filePaths.set(paramKey, item.parameter_value);
               }
             }
           });
@@ -177,19 +190,19 @@ export class Step7Component implements OnInit {
       },
       error: (err: any) => {
         console.error('Failed to load saved parameter values:', err);
-      }
+      },
     });
   }
 
   private normalizeApiResponse(res: any): SavedParameter[] {
     let data = res?.body?.data || res?.data || [];
-    
+
     if (Array.isArray(data)) {
       return data;
     } else if (typeof data === 'object' && data !== null) {
       return [data];
     }
-    
+
     return [];
   }
 
@@ -204,7 +217,7 @@ export class Step7Component implements OnInit {
     return this.fb.group({
       name: [{ value: name, disabled: true }],
       document: [null, isMandatory ? [Validators.required] : []],
-      remark: ['']
+      remark: [''],
     });
   }
 
@@ -213,7 +226,7 @@ export class Step7Component implements OnInit {
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
       this.attachmentsArray.at(index).patchValue({ document: file });
-      
+
       const meta = this.attachmentMeta[index];
       if (meta) {
         const paramKey = `${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`;
@@ -245,7 +258,10 @@ export class Step7Component implements OnInit {
       const url = URL.createObjectURL(file);
       window.open(url, '_blank');
     } else {
-      const filePath = this.getFilePath(meta.m_rec_score_field_id, this.m_rec_score_field_parameter_id);
+      const filePath = this.getFilePath(
+        meta.m_rec_score_field_id,
+        this.m_rec_score_field_parameter_id
+      );
       if (filePath) {
         const safeUrl = this.sanitizeFileUrl(filePath);
         window.open(safeUrl as string, '_blank');
@@ -254,124 +270,136 @@ export class Step7Component implements OnInit {
   }
 
   async submit(): Promise<void> {
-  this.isSubmitting = true;
-  
-  try {
-    if (!this.formValid) {
-      const missingFields = this.getMissingFields();
-      alert(`Please fill all required fields:\n${missingFields.join('\n')}`);
-      return;
-    }
+    this.isSubmitting = true;
 
-    const { formData, hasDataToSave } = this.prepareSubmissionData();
-    if (!hasDataToSave) {
-      alert('No changes to save.');
-      return;
-    }
+    try {
+      if (!this.formValid) {
+        const missingFields = this.getMissingFields();
+        alert(`Please fill all required fields:\n${missingFields.join('\n')}`);
+        return;
+      }
 
-    const result = await this.HTTP.postForm(
-      this.existingDetailIds.size > 0
-        ? '/candidate/postFile/updateCandidateScoreCard'
-        : '/candidate/postFile/saveCandidateScoreCard',
-      formData,
-      'recruitement'
-    ).toPromise();
-    
-    this.updateIdsFromResponse(result);
-    alert('Data saved successfully!');
+      const { formData, hasDataToSave } = this.prepareSubmissionData();
+      if (!hasDataToSave) {
+        alert('No changes to save.');
+        return;
+      }
 
-    // Construct subheadings data for emission
-    const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
-      const key = `${meta.m_rec_score_field_id}_${meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id}_${index}`;
-      acc[key] = {
-        m_rec_score_field_id: meta.m_rec_score_field_id,
-        score_field_title_name: meta.score_field_name_e,
-        a_rec_adv_post_detail_id: meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id,
-      };
-      return acc;
-    }, {} as { [key: string]: any });
+      const result = await this.HTTP.postForm(
+        this.existingDetailIds.size > 0
+          ? '/candidate/postFile/updateCandidateScoreCard'
+          : '/candidate/postFile/saveCandidateScoreCard',
+        formData,
+        'recruitement'
+      ).toPromise();
 
-    const emitData = {
-      ...this.form.value,
-      _isValid: true,
-      heading: {
-        score_field_title_name: 'Other Attachments', // Adjust based on actual heading from API or requirement
-        m_rec_score_field_id: this.score_field_parent_id,
-        a_rec_adv_post_detail_id: this.a_rec_adv_post_detail_id,
-      },
-      subheadings: subheadingsData,
-      filePaths: Array.from(this.filePaths.entries()).reduce(
-        (obj, [key, value]) => {
-          obj[key] = value;
-          return obj;
+      this.updateIdsFromResponse(result);
+      alert('Data saved successfully!');
+
+      // Construct subheadings data for emission
+      const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
+        const key = `${meta.m_rec_score_field_id}_${
+          meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id
+        }_${index}`;
+        acc[key] = {
+          m_rec_score_field_id: meta.m_rec_score_field_id,
+          score_field_title_name: meta.score_field_name_e,
+          a_rec_adv_post_detail_id:
+            meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id,
+        };
+        return acc;
+      }, {} as { [key: string]: any });
+
+      const emitData = {
+        ...this.form.value,
+        _isValid: true,
+        heading: {
+          score_field_title_name: 'Other Attachments', // Adjust based on actual heading from API or requirement
+          m_rec_score_field_id: this.score_field_parent_id,
+          a_rec_adv_post_detail_id: this.a_rec_adv_post_detail_id,
         },
-        {} as { [key: string]: string }
-      ),
-    };
-
-    console.log('Emitting formData:', emitData);
-    this.formData.emit(emitData);
-  } catch (error: unknown) {
-    console.error('Submission error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    alert(`Failed to save data: ${errorMessage}`);
-
-    // Construct subheadings data for emission in error case
-    const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
-      const key = `${meta.m_rec_score_field_id}_${meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id}_${index}`;
-      acc[key] = {
-        m_rec_score_field_id: meta.m_rec_score_field_id,
-        score_field_title_name: meta.score_field_name_e,
-        a_rec_adv_post_detail_id: meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id,
+        subheadings: subheadingsData,
+        filePaths: Array.from(this.filePaths.entries()).reduce(
+          (obj, [key, value]) => {
+            obj[key] = value;
+            return obj;
+          },
+          {} as { [key: string]: string }
+        ),
       };
-      return acc;
-    }, {} as { [key: string]: any });
 
-    const emitData = {
-      ...this.form.value,
-      _isValid: false,
-      heading: {
-        score_field_title_name: 'Other Attachments', // Adjust based on actual heading from API or requirement
-        m_rec_score_field_id: this.score_field_parent_id,
-        a_rec_adv_post_detail_id: this.a_rec_adv_post_detail_id,
-      },
-      subheadings: subheadingsData,
-      filePaths: Array.from(this.filePaths.entries()).reduce(
-        (obj, [key, value]) => {
-          obj[key] = value;
-          return obj;
+      console.log('Emitting formData:', emitData);
+      this.formData.emit(emitData);
+    } catch (error: unknown) {
+      console.error('Submission error:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to save data: ${errorMessage}`);
+
+      // Construct subheadings data for emission in error case
+      const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
+        const key = `${meta.m_rec_score_field_id}_${
+          meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id
+        }_${index}`;
+        acc[key] = {
+          m_rec_score_field_id: meta.m_rec_score_field_id,
+          score_field_title_name: meta.score_field_name_e,
+          a_rec_adv_post_detail_id:
+            meta.a_rec_adv_post_detail_id || this.a_rec_adv_post_detail_id,
+        };
+        return acc;
+      }, {} as { [key: string]: any });
+
+      const emitData = {
+        ...this.form.value,
+        _isValid: false,
+        heading: {
+          score_field_title_name: 'Other Attachments', // Adjust based on actual heading from API or requirement
+          m_rec_score_field_id: this.score_field_parent_id,
+          a_rec_adv_post_detail_id: this.a_rec_adv_post_detail_id,
         },
-        {} as { [key: string]: string }
-      ),
-    };
+        subheadings: subheadingsData,
+        filePaths: Array.from(this.filePaths.entries()).reduce(
+          (obj, [key, value]) => {
+            obj[key] = value;
+            return obj;
+          },
+          {} as { [key: string]: string }
+        ),
+      };
 
-    console.log('Emitting formData on error:', emitData);
-    this.formData.emit(emitData);
-  } finally {
-    this.isSubmitting = false;
-    this.cdr.detectChanges();
+      console.log('Emitting formData on error:', emitData);
+      this.formData.emit(emitData);
+    } finally {
+      this.isSubmitting = false;
+      this.cdr.detectChanges();
+    }
   }
-}
 
   private getMissingFields(): string[] {
     const missingFields: string[] = [];
-    
+
     this.attachmentsArray.controls.forEach((control, index) => {
       const meta = this.attachmentMeta[index];
       if (meta && this.isMandatory(meta)) {
         const controlDoc = control.get('document');
         const hasDocument = controlDoc?.value;
-        const hasExistingFile = this.filePaths.has(`${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`);
+        const hasExistingFile = this.filePaths.has(
+          `${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`
+        );
         if (!hasDocument && !hasExistingFile) {
           missingFields.push(`- ${meta.score_field_name_e}`);
         }
       }
     });
-    
+
     return missingFields;
   }
 
-  private prepareSubmissionData(): { formData: FormData; hasDataToSave: boolean } {
+  private prepareSubmissionData(): {
+    formData: FormData;
+    hasDataToSave: boolean;
+  } {
     const formData = new FormData();
     let hasDataToSave = false;
     const scoreFieldDetailList: any[] = [];
@@ -384,17 +412,25 @@ export class Step7Component implements OnInit {
 
       if (!meta) return;
 
-      if (!formValues.document && !this.isMandatory(meta) && !formValues.remark) {
+      if (
+        !formValues.document &&
+        !this.isMandatory(meta) &&
+        !formValues.remark
+      ) {
         return;
       }
 
       hasDataToSave = true;
-      const existingDetailId = this.existingDetailIds.get(meta.m_rec_score_field_id);
+      const existingDetailId = this.existingDetailIds.get(
+        meta.m_rec_score_field_id
+      );
       const paramKey = `${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}`;
       const existingParamId = this.existingParameterIds.get(paramKey);
 
       const detail = {
-        ...(existingDetailId && { a_rec_app_score_field_detail_id: existingDetailId }),
+        ...(existingDetailId && {
+          a_rec_app_score_field_detail_id: existingDetailId,
+        }),
         registration_no: this.registrationNo,
         a_rec_app_main_id: this.a_rec_adv_main_id,
         a_rec_adv_post_detail_id: this.a_rec_adv_post_detail_id,
@@ -412,22 +448,27 @@ export class Step7Component implements OnInit {
         active_status: 'Y',
         action_type: existingDetailId ? 'U' : 'C',
         action_ip_address: '127.0.0.1',
-        action_remark: existingDetailId 
-          ? 'Data updated from Step 7 form' 
+        action_remark: existingDetailId
+          ? 'Data updated from Step 7 form'
           : 'Data inserted from Step 7 form',
         action_by: 1,
         delete_flag: 'N',
-        action_date: new Date().toISOString()
+        action_date: new Date().toISOString(),
       };
       scoreFieldDetailList.push(detail);
 
       const parameter = {
-        ...(existingParamId && { a_rec_app_score_field_parameter_detail_id: existingParamId }),
+        ...(existingParamId && {
+          a_rec_app_score_field_parameter_detail_id: existingParamId,
+        }),
         registration_no: this.registrationNo,
         score_field_parent_id: this.score_field_parent_id,
         m_rec_score_field_id: meta.m_rec_score_field_id,
         m_rec_score_field_parameter_id: this.m_rec_score_field_parameter_id,
-        parameter_value: this.getParameterValue(meta.m_rec_score_field_id, formValues.document),
+        parameter_value: this.getParameterValue(
+          meta.m_rec_score_field_id,
+          formValues.document
+        ),
         is_active: 'Y',
         parameter_display_no: meta.display_order_no,
         obt_marks: 0,
@@ -441,19 +482,29 @@ export class Step7Component implements OnInit {
           ? 'Parameter updated from Step 7 form'
           : 'Parameter inserted from Step 7 form',
         action_by: 1,
-        delete_flag: 'N'
+        delete_flag: 'N',
       };
       scoreFieldParameterList.push(parameter);
 
       if (formValues.document instanceof File) {
         const fileControlName = `file_${meta.m_rec_score_field_id}_${this.m_rec_score_field_parameter_id}_${meta.display_order_no}`;
-        formData.append(fileControlName, formValues.document, formValues.document.name);
+        formData.append(
+          fileControlName,
+          formValues.document,
+          formValues.document.name
+        );
       }
     });
 
     formData.append('registration_no', this.registrationNo.toString());
-    formData.append('scoreFieldDetailList', JSON.stringify(scoreFieldDetailList));
-    formData.append('scoreFieldParameterList', JSON.stringify(scoreFieldParameterList));
+    formData.append(
+      'scoreFieldDetailList',
+      JSON.stringify(scoreFieldDetailList)
+    );
+    formData.append(
+      'scoreFieldParameterList',
+      JSON.stringify(scoreFieldParameterList)
+    );
 
     return { formData, hasDataToSave };
   }
@@ -462,8 +513,10 @@ export class Step7Component implements OnInit {
     if (document instanceof File) {
       return document.name;
     }
-    
-    const filePath = this.filePaths.get(`${scoreFieldId}_${this.m_rec_score_field_parameter_id}`);
+
+    const filePath = this.filePaths.get(
+      `${scoreFieldId}_${this.m_rec_score_field_parameter_id}`
+    );
     return filePath ? this.getFileName(filePath) : 'Not Provided';
   }
 
@@ -473,7 +526,7 @@ export class Step7Component implements OnInit {
 
   private updateIdsFromResponse(res: any): void {
     const data = this.normalizeApiResponse(res);
-    
+
     data.forEach((item: any) => {
       if (item.a_rec_app_score_field_detail_id && item.m_rec_score_field_id) {
         this.existingDetailIds.set(
@@ -481,10 +534,12 @@ export class Step7Component implements OnInit {
           item.a_rec_app_score_field_detail_id
         );
       }
-      
-      if (item.a_rec_app_score_field_parameter_detail_id && 
-          item.m_rec_score_field_id && 
-          item.m_rec_score_field_parameter_id) {
+
+      if (
+        item.a_rec_app_score_field_parameter_detail_id &&
+        item.m_rec_score_field_id &&
+        item.m_rec_score_field_parameter_id
+      ) {
         const paramKey = `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}`;
         this.existingParameterIds.set(
           paramKey,

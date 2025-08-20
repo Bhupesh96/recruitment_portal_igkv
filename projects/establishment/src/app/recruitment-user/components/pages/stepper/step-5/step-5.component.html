@@ -60,9 +60,9 @@
         <!-- Subheading Sections -->
         <div
           *ngFor="let subheading of subheadings; let i = index"
-          class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
+          class="mt-4 bg-white rounded-lg border border-gray-200 shadow-sm p-3"
         >
-          <h6
+          <!-- <h6
             class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2 mb-4"
           >
             <svg
@@ -81,7 +81,7 @@
             <span class="break-words">{{
               subheading.score_field_title_name
             }}</span>
-          </h6>
+          </h6> -->
 
           <div
             [formArrayName]="
@@ -92,7 +92,7 @@
               '_' +
               i
             "
-            class="mt-4"
+            class="mt-1"
           >
             <div
               *ngIf="
@@ -101,7 +101,7 @@
                   subheading.a_rec_adv_post_detail_id
                 ).length
               "
-              class="text-center py-4 text-gray-600"
+              class="text-center py-2 text-gray-600"
             >
               No parameters available for this section.
             </div>
@@ -153,17 +153,7 @@
                       type="text"
                       [formControlName]="param.score_field_parameter_name"
                       [placeholder]="
-                        'e.g., ' +
-                        (param.score_field_parameter_name === 'University/Board'
-                          ? 'CBSE'
-                          : param.score_field_parameter_name === 'Degree'
-                          ? subheading.score_field_name_e
-                          : param.score_field_parameter_name === 'Subject/Group'
-                          ? 'Science'
-                          : param.score_field_parameter_name ===
-                            'Percentage Obtained'
-                          ? '77.00'
-                          : param.score_field_parameter_name)
+                        'Enter ' + param.score_field_parameter_name
                       "
                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     />
