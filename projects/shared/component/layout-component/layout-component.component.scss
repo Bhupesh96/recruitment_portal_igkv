@@ -1,0 +1,97 @@
+@use '@angular/material' as mat;
+
+.symbol {
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 0.475rem;
+}
+
+.symbol > img {
+  width: 100%;
+  flex-shrink: 0;
+  display: inline-block;
+  border-radius: 0.475rem;
+}
+
+.symbol.symbol-40px > img {
+  width: 40px;
+  height: 40px;
+}
+
+.btn-border {
+  border: 1px solid #2f2f2f !important;
+}
+
+
+.mat-expansion-panel:not([class*=mat-elevation-z]) {
+  box-shadow: unset !important;
+  border-radius: unset !important;
+  border-bottom: 1px solid #eee;
+}
+
+.mat-expansion-panel-header {
+  padding: 0 5px !important;
+}
+
+::ng-deep .mat-expansion-panel-body {
+  padding: 0 !important;
+}
+
+.menu-item:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.menu-link {
+  text-decoration: none !important;
+  color: var(--mat-expansion-header-text-color);
+}
+
+/* Custom backdrop styles */
+.mat-expansion-panel-header.mat-expanded {
+  height: 48px;
+}
+
+/* Hide the default caret icon and replace it with a search icon */
+::ng-deep ng-select.search {
+  margin-bottom: 0 !important;
+
+  .ng-arrow-wrapper {
+    display: none; /* Hide the default caret */
+  }
+
+  .ng-select .ng-select-container.ng-appearance-outline .ng-value {
+    margin-top: 1px !important;
+  }
+
+  .ng-dropdown-panel.ng-select-bottom {
+    top: calc(100% - 1px);
+  }
+
+  .ng-select-container.ng-appearance-outline {
+    min-height: 50px !important;
+  }
+
+  .ng-select-container {
+    padding-left: 30px; /* Adjust padding to make room for the icon */
+    position: relative;
+  }
+
+
+  .ng-select-container::before {
+    content: 'search'; /* Material Icon for the search icon */
+    font-family: 'Material Icons'; /* Use Material Icons */
+    position: absolute;
+    right: 10px; /* Adjust the position of the icon */
+    top: 55%;
+    transform: translateY(-50%); /* Vertically center the icon */
+    font-size: 25px; /* Adjust the size of the icon */
+    color: #000; /* Icon color */
+  }
+}
+
+.mat-expansion-panel.active {
+  .mat-expansion-panel-header-title {
+    color: #7239EA;
+  }
+}

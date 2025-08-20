@@ -1,0 +1,231 @@
+@import "variable";
+
+// Mat Card Modification Code
+mat-card-header {
+  //margin: 0 -15px !important;
+  border-bottom: 1px solid #ccc;
+  justify-content: space-between;
+  color: $primary_text;
+
+  h3 {
+    margin: 0 0 0 0;
+    padding: 5px 0;
+  }
+}
+
+mat-card-content {
+  margin-top: 10px;
+}
+
+.d-inline-flex > .tools, .mat-fab.mat-primary, .mat-flat-button.mat-primary, .mat-mini-fab.mat-primary, .mat-raised-button.mat-primary {
+  background-color: $primary_background;
+  color: #fff;
+}
+
+.mat-mdc-raised-button > .mat-icon {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.mat-paginator-page-size-select {
+  line-height: 3;
+  margin-top: -5px !important
+}
+
+
+mat-form-field {
+  width: 100%;
+}
+
+.mat-form-field-wrapper {
+  padding-bottom: 5px !important;
+}
+
+
+// Ng Select
+
+
+.ng-select .ng-clear-wrapper {
+  display: none !important;
+}
+
+.ng-select .ng-select-container .ng-value-container .ng-input > input {
+  caret-color: transparent !important;
+}
+
+.ng-select .ng-select-container.ng-appearance-outline .ng-placeholder {
+  //padding: 8px .25em !important;
+  //font-size: 14px;
+  padding: 0 0.6em !important;
+  margin-top: 9px;
+  font-family: var(--mdc-outlined-text-field-label-text-font, var(--mat-sys-body-large-font)), serif;
+  font-size: var(--mdc-outlined-text-field-label-text-size, var(--mat-sys-body-large-size));
+  font-weight: var(--mdc-outlined-text-field-label-text-weight, var(--mat-sys-body-large-weight));
+  letter-spacing: var(--mdc-outlined-text-field-label-text-tracking, var(--mat-sys-body-large-tracking));
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items .ng-option {
+  font-size: 15px !important;
+}
+
+
+.ng-select .ng-select-container.ng-appearance-outline {
+  min-height: 64px !important;
+}
+
+.ng-select .ng-select-container .ng-value-container .ng-input > input {
+  width: 85% !important;
+  padding: 8px !important;
+}
+
+.ng-select .ng-select-container.ng-appearance-outline .ng-value {
+  margin-top: 0.55em;
+  font-size: 15px;
+}
+
+.ng-select {
+  padding-bottom: 0.25em;
+  margin-top: -7px;
+  margin-bottom: 5px;
+}
+
+/* Border Color */
+.ng-select.ng-invalid.ng-touched .ng-select-container {
+  border-color: red;
+}
+
+/* Arrow Color */
+.ng-select.ng-invalid.ng-touched .ng-arrow-wrapper .ng-arrow {
+  border-color: red transparent transparent
+}
+
+/* Placeholder Color */
+.ng-select.ng-invalid.ng-touched .ng-select-container .ng-placeholder {
+  color: red;
+}
+
+.ng-select .ng-select-container.ng-appearance-outline:after {
+  border: solid 1px rgb(0 0 0 / 40%) !important;
+}
+
+.ng-select.ng-select.ng-invalid.ng-touched .ng-select-container.ng-appearance-outline:after {
+  border: solid 1px red !important;
+}
+
+.mat-error {
+  font-size: 12px;
+  margin-top: -5px;
+  margin-bottom: 5px;
+}
+
+
+table > thead:not(.mat-calendar-table-header) > tr > th {
+  background-color: $primary_background;
+  color: #fff !important;
+  font-weight: 500 !important;
+  vertical-align: middle;
+}
+
+table > tbody > tr > td {
+  vertical-align: middle;
+  text-align: center !important;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  text-align: center !important;
+  border-spacing: 0;
+}
+
+table .table-row {
+  padding: 2%;
+  height: 30px !important;
+}
+
+.mat-form-field-label {
+  overflow: unset !important;
+}
+
+.table > tbody > tr > td, .table > thead > tr > th, tr.mat-footer-row, tr.mat-header-row, tr.mat-row {
+  vertical-align: middle !important;
+  padding: 5px 10px;
+  text-align: left;
+}
+
+.table > thead > tr > td, .table > thead > tr > th, th.mat-header-cell {
+  text-align: center !important;
+  background-color: $primary_background;
+  color: #fff;
+  border: 1px solid $footer_background;
+  font-size: 14px;
+  letter-spacing: .5px
+}
+
+tr.mat-header-row {
+  height: 45px !important;
+}
+
+td.mat-cell:first-of-type, td.mat-footer-cell:first-of-type, th.mat-header-cell:first-of-type {
+  padding-left: 10px !important
+}
+
+td.mat-cell:last-of-type, td.mat-footer-cell:last-of-type, th.mat-header-cell:last-of-type {
+  padding-right: 10px !important
+}
+
+.d-inline-flex > .tools {
+  margin-bottom: 10px !important;
+  margin-top: -5px !important;
+  //margin-right: 10px !important;
+}
+
+.mat-mdc-form-field-hint-wrapper, .mat-mdc-form-field-error-wrapper {
+  padding: 0 !important;
+}
+
+.ng-select-error {
+  font-size: 12px;
+  margin-top: -7px;
+}
+
+.ng-select-error-7 {
+  font-size: 12px;
+  margin-top: -7px;
+}
+
+.total_row {
+  td {
+    color: red;
+    font-weight: bold;
+  }
+}
+
+.custom-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important; /* Dark background */
+  z-index: 1000 !important; /* Ensure it stays below the dialog */
+}
+
+@media (min-width: 992px) {
+  .header {
+    height: 20px !important;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .header-tablet-and-mobile-fixed .header {
+    background-color: #fff;
+  }
+}
+
+td.with_icon {
+  button {
+    width: 100%;
+    padding: 0 !important;
+
+  }
+
+  mat-icon {
+    line-height: 1.2 !important;
+  }
+}

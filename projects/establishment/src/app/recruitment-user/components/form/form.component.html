@@ -1,0 +1,1238 @@
+<div class="container max-w-5xl mx-auto p-8 bg-gray-50 min-h-screen">
+  <form
+    [formGroup]="registrationForm"
+    (ngSubmit)="onSubmit()"
+    class="bg-white border border-gray-200 rounded-lg"
+  >
+    <!-- Applicant Information -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Applicant Information
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Registration No. <span class="text-red-600">*</span></label
+        >
+        <input
+          type="text"
+          formControlName="registrationNo"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('registrationNo')?.hasError('required') &&
+            registrationForm.get('registrationNo')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+        <div
+          *ngIf="
+            registrationForm.get('registrationNo')?.hasError('pattern') &&
+            registrationForm.get('registrationNo')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Invalid number
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Degree Programme Type <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="degreeProgrammeType"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option
+            *ngFor="let type of degreeProgrammeTypes"
+            [value]="type.Degree_Programme_Type_Id"
+          >
+            {{ type.Degree_Programme_Type_Name_E }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('degreeProgrammeType')?.hasError('required') &&
+            registrationForm.get('degreeProgrammeType')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Applying for Degree Programme
+          <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="applyingForDegree"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option
+            *ngFor="let prog of degreeProgrammes"
+            [value]="prog.Degree_Programme_Id"
+          >
+            {{ prog.Degree_Programme_Name_E }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('applyingForDegree')?.hasError('required') &&
+            registrationForm.get('applyingForDegree')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Subject <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="subject"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option *ngFor="let sub of subjects" [value]="sub">{{ sub }}</option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('subject')?.hasError('required') &&
+            registrationForm.get('subject')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Information -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Personal Information
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Salutation <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="salutation"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option *ngFor="let sal of salutations" [value]="sal">
+            {{ sal }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('salutation')?.hasError('required') &&
+            registrationForm.get('salutation')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >First Name <span class="text-red-600">*</span></label
+        >
+        <input
+          type="text"
+          formControlName="firstName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('firstName')?.hasError('required') &&
+            registrationForm.get('firstName')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Middle Name</label
+        >
+        <input
+          type="text"
+          formControlName="middleName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900">Last Name</label>
+        <input
+          type="text"
+          formControlName="lastName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+      </div>
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Photo (30 KB to 50 KB) <span class="text-red-600">*</span></label
+        >
+        <div class="flex items-center gap-3">
+          <input
+            type="file"
+            id="photo-input"
+            (change)="onFileChange($event, 'photo')"
+            #photoInput
+            class="flex-grow text-sm border border-gray-300 rounded-md p-2"
+          />
+          <button
+            type="button"
+            (click)="uploadFile('photo')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+          >
+            Upload
+          </button>
+        </div>
+        <div *ngIf="photoPreview" class="mt-2 relative">
+          <img
+            [src]="photoPreview"
+            alt="Photo Preview"
+            class="w-24 h-24 object-cover rounded-md border border-gray-300"
+          />
+          <button
+            type="button"
+            (click)="removeFile('photo', photoInput)"
+            class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+          >
+            X
+          </button>
+        </div>
+        <div
+          *ngIf="
+            registrationForm.get('photo')?.hasError('required') &&
+            registrationForm.get('photo')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Photo is required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Signature (20 KB to 30 KB) <span class="text-red-600">*</span></label
+        >
+        <div class="flex items-center gap-3">
+          <input
+            type="file"
+            id="signature-input"
+            (change)="onFileChange($event, 'signature')"
+            #signatureInput
+            class="flex-grow text-sm border border-gray-300 rounded-md p-2"
+          />
+          <button
+            type="button"
+            (click)="uploadFile('signature')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+          >
+            Upload
+          </button>
+        </div>
+        <div *ngIf="signaturePreview" class="mt-2 relative">
+          <img
+            [src]="signaturePreview"
+            alt="Signature Preview"
+            class="w-24 h-24 object-cover rounded-md border border-gray-300"
+          />
+          <button
+            type="button"
+            (click)="removeFile('signature', signatureInput)"
+            class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+          >
+            X
+          </button>
+        </div>
+        <div
+          *ngIf="
+            registrationForm.get('signature')?.hasError('required') &&
+            registrationForm.get('signature')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Signature is required
+        </div>
+      </div>
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Father's Name <span class="text-red-600">*</span></label
+        >
+        <input
+          type="text"
+          formControlName="fathersName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('fathersName')?.hasError('required') &&
+            registrationForm.get('fathersName')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Mother's Name</label
+        >
+        <input
+          type="text"
+          formControlName="mothersName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('mothersName')?.hasError('required') &&
+            registrationForm.get('mothersName')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Guardian's Name</label
+        >
+        <input
+          type="text"
+          formControlName="guardiansName"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Date of Birth <span class="text-red-600">*</span></label
+        >
+        <input
+          type="date"
+          class="text"
+          formControlName="dateOfBirth"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('dateOfBirth')?.hasError('required') &&
+            registrationForm.get('dateOfBirth')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Gender <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="gender"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option *ngFor="let gender of genders" [value]="gender">
+            {{ gender }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('gender')?.hasError('required') &&
+            registrationForm.get('gender')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Category <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="category"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option *ngFor="let cat of categories" [value]="cat">
+            {{ cat }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('category')?.hasError('required') &&
+            registrationForm.get('category')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Nationality <span class="text-red-600">*</span></label
+        >
+        <select
+          formControlName="nationality"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        >
+          <option value="">Select</option>
+          <option *ngFor="let nat of nationalities" [value]="nat">
+            {{ nat }}
+          </option>
+        </select>
+        <div
+          *ngIf="
+            registrationForm.get('nationality')?.hasError('required') &&
+            registrationForm.get('nationality')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+      </div>
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="flex flex-col">
+        <label class="block text-sm font-medium text-gray-900"
+          >Do you have a CG Domicile Certificate?</label
+        >
+        <div class="mt-2 flex gap-6">
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="cgDomicile"
+              [value]="true"
+              class="mr-2 text-blue-600"
+            />
+            Yes</label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="cgDomicile"
+              [value]="false"
+              class="mr-2 text-blue-600"
+            />
+            No</label
+          >
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-sm font-medium text-gray-900"
+          >Have you ever been debarred from any University/Board?</label
+        >
+        <div class="mt-2 flex gap-6">
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="debarred"
+              [value]="true"
+              class="mr-2 text-blue-600"
+            />
+            Yes</label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="debarred"
+              [value]="false"
+              class="mr-2 text-blue-600"
+            />
+            No</label
+          >
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-sm font-medium text-gray-900"
+          >Have you studied PG from IGKV?</label
+        >
+        <div class="mt-2 flex gap-6">
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="studiedPGFromIGKV"
+              value="IGKV"
+              class="mr-2 text-blue-600"
+            />
+            IGKV</label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="studiedPGFromIGKV"
+              value="Other"
+              class="mr-2 text-blue-600"
+            />
+            Other</label
+          >
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <label class="block text-sm font-medium text-gray-900"
+          >Already Pursuing Ph.D from IGKV?</label
+        >
+        <div class="mt-2 flex gap-6">
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="pursuingPhDFromIGKV"
+              [value]="true"
+              class="mr-2 text-blue-600"
+            />
+            Yes</label
+          >
+          <label class="flex items-center"
+            ><input
+              type="radio"
+              formControlName="pursuingPhDFromIGKV"
+              [value]="false"
+              class="mr-2 text-blue-600"
+            />
+            No</label
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Address Details -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Address Details
+    </div>
+    <div class="p-6">
+      <div
+        class="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2 mb-6"
+      >
+        Correspondence Address
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Address Line 1 <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="corrAddressLine1"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('corrAddressLine1')?.hasError('required') &&
+              registrationForm.get('corrAddressLine1')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Address Line 2</label
+          >
+          <input
+            type="text"
+            formControlName="corrAddressLine2"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >District/City <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="corrDistrict"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('corrDistrict')?.hasError('required') &&
+              registrationForm.get('corrDistrict')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >State <span class="text-red-600">*</span></label
+          >
+          <select
+            formControlName="corrState"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          >
+            <option value="">Select</option>
+            <option *ngFor="let state of states" [value]="state">
+              {{ state }}
+            </option>
+          </select>
+          <div
+            *ngIf="
+              registrationForm.get('corrState')?.hasError('required') &&
+              registrationForm.get('corrState')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Pin Code <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="corrPinCode"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('corrPinCode')?.hasError('required') &&
+              registrationForm.get('corrPinCode')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+          <div
+            *ngIf="
+              registrationForm.get('corrPinCode')?.hasError('pattern') &&
+              registrationForm.get('corrPinCode')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Invalid PIN
+          </div>
+        </div>
+      </div>
+      <div class="mt-6">
+        <label class="flex items-center text-sm text-gray-900">
+          <input
+            type="checkbox"
+            formControlName="sameAsCorrespondence"
+            (change)="copyCorrespondenceAddress()"
+            class="mr-2 text-blue-600"
+          />
+          Same as Correspondence
+        </label>
+      </div>
+      <div
+        class="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2 mb-6 mt-6"
+      >
+        Permanent Address
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Address Line 1 <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="permAddressLine1"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('permAddressLine1')?.hasError('required') &&
+              registrationForm.get('permAddressLine1')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Address Line 2</label
+          >
+          <input
+            type="text"
+            formControlName="permAddressLine2"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >District/City <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="permDistrict"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('permDistrict')?.hasError('required') &&
+              registrationForm.get('permDistrict')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >State <span class="text-red-600">*</span></label
+          >
+          <select
+            formControlName="permState"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          >
+            <option value="">Select</option>
+            <option *ngFor="let state of states" [value]="state">
+              {{ state }}
+            </option>
+          </select>
+          <div
+            *ngIf="
+              registrationForm.get('permState')?.hasError('required') &&
+              registrationForm.get('permState')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-900"
+            >Pin Code <span class="text-red-600">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="permPinCode"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          />
+          <div
+            *ngIf="
+              registrationForm.get('permPinCode')?.hasError('required') &&
+              registrationForm.get('permPinCode')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Required
+          </div>
+          <div
+            *ngIf="
+              registrationForm.get('permPinCode')?.hasError('pattern') &&
+              registrationForm.get('permPinCode')?.touched
+            "
+            class="text-red-600 text-xs mt-1"
+          >
+            Invalid PIN
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Contact Information
+    </div>
+    <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Mobile No. (10 digits only)
+          <span class="text-red-600">*</span></label
+        >
+        <input
+          type="text"
+          formControlName="mobileNo"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('mobileNo')?.hasError('required') &&
+            registrationForm.get('mobileNo')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+        <div
+          *ngIf="
+            registrationForm.get('mobileNo')?.hasError('pattern') &&
+            registrationForm.get('mobileNo')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Invalid number
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >E-mail <span class="text-red-600">*</span></label
+        >
+        <input
+          type="email"
+          formControlName="email"
+          class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+        />
+        <div
+          *ngIf="
+            registrationForm.get('email')?.hasError('required') &&
+            registrationForm.get('email')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Required
+        </div>
+        <div
+          *ngIf="
+            registrationForm.get('email')?.hasError('email') &&
+            registrationForm.get('email')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          Invalid email
+        </div>
+      </div>
+    </div>
+
+    <!-- Examination Center Preferences -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Examination Center Preferences
+    </div>
+    <div class="p-6">
+      <p class="text-xs text-gray-600 italic mb-6">
+        * The final allotment of exam centre will be decided by university.
+      </p>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]">
+          <label class="block text-sm font-medium text-gray-900"
+            >Preference {{ i }}</label
+          >
+          <select
+            [formControlName]="'examCentre' + i"
+            class="mt-1 block w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-blue-600 focus:border-blue-600"
+          >
+            <option value="">Select</option>
+            <option *ngFor="let centre of examCentres" [value]="centre">
+              {{ centre }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic Qualifications -->
+    <div
+      class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+    >
+      Academic Qualifications
+    </div>
+    <div class="p-6">
+      <div class="flex flex-col mb-6">
+        <label class="block text-sm font-medium text-gray-900">PG Exam</label>
+        <div class="mt-2 flex flex-wrap gap-6">
+          <label *ngFor="let status of examStatus" class="flex items-center">
+            <input
+              type="radio"
+              formControlName="pgExamStatus"
+              [value]="status"
+              class="mr-2 text-blue-600"
+            />{{ status }}</label
+          >
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-900"
+          >Appearing Certificate (Not mandatory)</label
+        >
+        <div class="flex items-center gap-3">
+          <input
+            type="file"
+            id="certificate-input"
+            (change)="onFileChange($event, 'appearingCertificate')"
+            accept=".pdf"
+            #certificateInput
+            class="flex-grow text-sm border border-gray-300 rounded-md p-2"
+          />
+          <button
+            type="button"
+            (click)="uploadFile('appearingCertificate')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+          >
+            Upload
+          </button>
+        </div>
+        <div
+          *ngIf="registrationForm.get('appearingCertificate')?.value"
+          class="mt-2 flex items-center gap-3 bg-gray-100 p-3 rounded-md"
+        >
+          <span>{{ registrationForm.get("appearingCertificate")?.value }}</span>
+          <button
+            type="button"
+            (click)="removeFile('appearingCertificate', certificateInput)"
+            class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+          >
+            X
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto mt-6">
+        <table class="w-full border border-gray-200 text-sm">
+          <thead>
+            <tr class="bg-gray-100">
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Name of Examination
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Board/University
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Roll No./UE ID
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Year of Passing
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Obtained Marks
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Max Marks
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Percentage
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Degree Programme
+              </th>
+              <th
+                class="border border-gray-200 p-3 text-left font-semibold text-gray-900"
+              >
+                Subject/Group
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr formGroupName="hscDetails" class="even:bg-gray-50">
+              <td class="border border-gray-200 p-3">HSC (10th)</td>
+              <td>
+                <select
+                  formControlName="board"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option value="CG Board">CG Board</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="Open School">Open School</option>
+                  <option value="Other">Other</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="rollNo"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="year"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option *ngFor="let year of years" [value]="year">
+                    {{ year }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="obtainedMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="maxMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="percentage"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="degreeProgramme"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  formControlName="subject"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+            </tr>
+            <tr formGroupName="hsscDetails" class="even:bg-gray-50">
+              <td class="border border-gray-200 p-3">HSSC (12th)</td>
+              <td>
+                <select
+                  formControlName="board"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option value="CG Board">CG Board</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="Open School">Open School</option>
+                  <option value="Other">Other</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="rollNo"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="year"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option *ngFor="let year of years" [value]="year">
+                    {{ year }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="obtainedMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="maxMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="percentage"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="degreeProgramme"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  formControlName="subject"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+            </tr>
+            <tr formGroupName="bachelorDetails" class="even:bg-gray-50">
+              <td class="border border-gray-200 p-3">Bachelor's Degree</td>
+              <td>
+                <select
+                  formControlName="board"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option value="IGKV">IGKV</option>
+                  <option value="Other">Other</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="rollNo"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="year"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                  <option *ngFor="let year of years" [value]="year">
+                    {{ year }}
+                  </option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="obtainedMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="maxMarks"
+                  class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-600 focus:border-blue-600"
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  formControlName="percentage"
+                  class="text-sm focus:ring-blue-500 focus:border-blue-600 w-full border border-gray-300 rounded-md p-2"
+                />
+              </td>
+              <td>
+                <select
+                  formControlName="degreeProgramme"
+                  class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  formControlName="subject"
+                  class="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-600 focus:border-blue-600"
+                >
+                  <option value="">Select</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Employment Status -->
+      <div
+        class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+      >
+        Employment Status
+      </div>
+      <div class="p-6">
+        <p class="text-xs text-gray-600 mb-6">
+          Note: In-service/sponsored applicants must provide a No Objection
+          Certificate during counseling.
+        </p>
+        <div class="flex flex-col">
+          <label class="block text-sm font-medium text-gray-900"
+            >Are you currently?</label
+          >
+          <div class="mt-2 flex flex-wrap gap-6">
+            <label
+              *ngFor="let status of employmentStatus"
+              class="flex items-center"
+            >
+              <input
+                type="radio"
+                formControlName="employmentStatus"
+                [value]="status"
+                class="mr-2 text-blue-600 focus:ring-blue-600"
+              />
+              {{ status }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Applicant Declaration -->
+      <div
+        class="bg-[#547792] text-white p-4 text-base font-sans font-semibold capitalize tracking-normal"
+      >
+        Applicant Declaration
+      </div>
+      <div class="p-6">
+        <label class="flex items-center text-sm text-gray-900">
+          <input
+            type="checkbox"
+            formControlName="declaration"
+            class="mr-2 text-blue-600"
+          />
+          I, hereby certify that the information provided is accurate and
+          complete to the best of my knowledge.
+        </label>
+        <div
+          *ngIf="
+            registrationForm.get('declaration')?.hasError('required') &&
+            registrationForm.get('declaration')?.touched
+          "
+          class="text-red-600 text-xs mt-1"
+        >
+          You must agree to the declaration
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="p-6 flex justify-end">
+        <button
+          type="submit"
+          [disabled]="!registrationForm.valid"
+          class="bg-blue-600 text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  </form>
+</div>

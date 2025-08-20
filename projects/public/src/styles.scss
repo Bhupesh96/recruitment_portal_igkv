@@ -1,0 +1,163 @@
+@import "@ng-select/ng-select/themes/material.theme.css";
+$yellow: #ffc260;
+$blue: #536dfe;
+$light-blue: #798dfe;
+$white-blue: #b1bcff;
+$pink: #ff4081;
+$dark-pink: #ff0f60;
+$green: #3cd4a0;
+$dark-grey: #4a4a4a;
+$light-grey: #b9b9b9;
+$grey: #6e6e6e;
+$error-color: rgb(255 64 129);
+
+$white-35: rgba(255, 255, 255, 0.35);
+$white-80: #ffffff80;
+
+$gray-08: rgba(110, 110, 110, 0.8);
+$gray-06: rgba(110, 110, 110, 0.6);
+
+$black-08: rgba(0, 0, 0, 0.08);
+
+$pink-15: rgba(255, 92, 147, 0.15);
+$blue-15: rgba(83, 109, 254, 0.15);
+$green-15: rgba(60, 212, 160, 0.15);
+$yellow-15: rgba(255, 194, 96, 0.15);
+$violet-15: rgba(144, 19, 254, 0.15);
+
+$shadow-white: #e8eafc;
+$shadow-grey: #b2b2b21a;
+
+$background-color: #f6f7ff;
+
+$primary-color: #084569;
+$fw-normal: 500;
+
+$fs-xs: 11.2px;
+$fs-small: 14px;
+$fs-normal: 16px;
+
+$medium: 768px;
+$small: 576px;
+$large: 992px;
+
+//== Footer
+$footer-link-color: $blue;
+$footer-icon-color: $gray-06;
+$footer-icon-background-color-hover: $black-08;
+
+.auth-page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+
+  @media (max-width: $medium) {
+    flex-direction: column;
+  }
+
+  &__content-block {
+    width: 37%;
+    height: 100%;
+    background-color: #ededed;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    overflow: auto;
+
+    @media (max-width: $medium) {
+      width: 100%;
+    }
+  }
+
+  &__content-wrapper {
+    width: 95%;
+    height: 100%;
+    padding: 16px;
+    overflow-x: hidden;
+    @media (max-width: $small) {
+      width: 100%;
+    }
+
+    @media (min-width: $medium) and (max-width: $large) {
+      width: 100%;
+    }
+  }
+
+  &__group {
+    margin-top: 5px;
+  }
+
+  &__group-title {
+    margin-top: 10px;
+    font-size: 24px;
+    font-weight: $fw-normal;
+    letter-spacing: -0.7px;
+    text-align: center;
+    line-height: 37px;
+    color: $dark-grey;
+  }
+
+  &__border-wrapper {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+  }
+
+  &__border-line {
+    height: 1px;
+    width: 100%;
+    background-color: $light-grey;
+    opacity: 0.3;
+  }
+
+  &__border-title {
+    font-size: $fs-xs;
+    padding: 0 16px;
+    margin: 0;
+    color: $dark-grey;
+  }
+
+  &__logo {
+    width: 63%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(
+      rgba(0, 0, 0, 0.5) 100%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
+    //background-size: 100% 100%;
+    background-size: cover;
+    background-position: right;
+    @media (max-width: $medium) {
+      display: none;
+    }
+  }
+
+  &__logo-wrapper {
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  &__logo-img {
+    margin-bottom: 50px;
+    padding: 0.5%;
+  }
+
+  &__logo_main-img {
+    padding: 0.5%;
+  }
+
+  &__footer-title {
+    font-size: 10px;
+    opacity: 0.7;
+
+    a {
+      text-decoration: none;
+    }
+  }
+}

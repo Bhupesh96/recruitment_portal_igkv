@@ -1,0 +1,207 @@
+<div class="section" *ngIf="formdata[5]?.heading && getSubHeadingKeys(formdata[5]?.subHeadings).length > 0">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        {{ formdata[5]?.heading?.score_field_title_name || "RESEARCH PUBLICATION" }}
+      </div>
+      <div style="border-bottom: 1px solid black">
+        <ng-container
+          *ngFor="
+            let subHeadingKey of getSubHeadingKeys(formdata[5]?.subHeadings)
+          "
+        >
+          <ng-container *ngIf="hasPublicationsOrDetails(subHeadingKey)">
+            <div style="break-inside: avoid">
+              <div
+                style="
+                  padding: 4px 8px;
+                  font-weight: 600;
+                  border-bottom: 1px solid black;
+                  background-color: #f3f4f6;
+                  background-image: linear-gradient(#f3f4f6, #f3f4f6);
+                "
+              >
+                {{ formdata[5]?.subheadings?.[subHeadingKey]?.score_field_title_name || formatSubHeadingTitle(subHeadingKey) }}
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(8, minmax(0, 1fr));
+                  border-top: 1px solid black;
+                  background-color: #d1d5db;
+                  background-image: linear-gradient(#d1d5db, #d1d5db);
+                  font-weight: 600;
+                "
+              >
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Author
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Title of Paper
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Name of Journal
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Name of Author(s)
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Publication Year
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Volume
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  NAAS Rating
+                </div>
+                <div style="padding: 4px 8px">Peer Review</div>
+              </div>
+              <ng-container
+                *ngFor="let publication of getPublications(subHeadingKey)"
+              >
+                <ng-container
+                  *ngFor="
+                    let _ of [].constructor(
+                      publication.value.count > 0 ? publication.value.count : 0
+                    )
+                  "
+                >
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(8, minmax(0, 1fr));
+                      border-bottom: 1px solid black;
+                    "
+                  >
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{ formatKey(publication.key) }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "title_of_paper"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "name_of_journal"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "name_of_author_s_"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "publication_year"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "volume"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "naas_rating"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div style="padding: 4px 8px">
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "peer_review"
+                        ) || "-"
+                      }}
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-container
+                *ngFor="let detail of getPublicationDetails(subHeadingKey)"
+              >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(8, minmax(0, 1fr));
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    Publication
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.title_of_paper || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.name_of_journal || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.name_of_author_s_ || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.publication_year || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.volume || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.naas_rating || "-" }}
+                  </div>
+                  <div style="padding: 4px 8px">
+                    {{ detail.peer_review || "-" }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,217 @@
+<div class="d-flex flex-column flex-root">
+  <div class="page d-flex flex-row flex-column-fluid">
+    <div id="kt_aside" class="aside aside-extended bg-white" data-kt-drawer="true" data-kt-drawer-name="aside"
+         data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="auto"
+         data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_aside_toggle">
+      <!--begin::Primary-->
+      <div class="aside-primary d-flex flex-column align-items-lg-center flex-row-auto">
+        <!--begin::Logo-->
+        <div class="aside-logo d-none d-lg-flex flex-column align-items-center flex-column-auto py-10"
+             id="kt_aside_logo">
+          <a href="">
+            <img alt="Logo" src="https://igkv.ac.in/images/AngWeb/Photos/home-footer-igkv-logo.png" style="width: 50px"/>
+          </a>
+        </div>
+        <!--end::Logo-->
+        <!--begin::Nav-->
+        <div class="aside-nav d-flex flex-column align-items-center flex-column-fluid w-100 pt-5 pt-lg-0"
+             id="kt_aside_nav">
+          <div class="hover-scroll-y mb-10" data-kt-scroll="true"
+               data-kt-scroll-height="auto" data-kt-scroll-wrappers="#kt_aside_nav"
+               data-kt-scroll-dependencies="#kt_aside_logo, #kt_aside_footer" data-kt-scroll-offset="0px">
+            <ul class="nav flex-column">
+              @for (module of moduleList; track $index) {
+                <li class="nav-item mb-2"
+                    [matTooltip]="module.module_name" matTooltipPosition="right">
+                  <a class="nav-link btn btn-custom btn-icon" [class.active]="selectedModule_id==module.module_id"
+                     data-bs-toggle="tab"
+                     href="#menu_{{module.module_id}}" (click)="setStep(0);">
+                    <mat-icon class="text-white">{{ module.module_icon || 'home' }}</mat-icon>
+                  </a>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+        <!--end::Nav-->
+        <!--begin::Footer-->
+        <div class="aside-footer d-flex flex-column align-items-center flex-column-auto" id="kt_aside_footer">
+          <div class="mb-3">
+            <div (click)="toggleFullScreen()" class="btn btn-icon btn-custom btn-border" matTooltip="Full Screen"
+                 matTooltipPosition="right">
+              <mat-icon *ngIf="!isFullScreen" class="text-white">fullscreen</mat-icon>
+              <mat-icon *ngIf="isFullScreen" class="text-white">fullscreen_exit</mat-icon>
+            </div>
+          </div>
+          <!--          <div class="mb-3">-->
+          <!--            <div (click)="postDialog()" class="btn btn-icon btn-custom btn-border" matTooltip="Change Post"-->
+          <!--                 matTooltipPosition="right">-->
+          <!--              <mat-icon class="text-white">memory</mat-icon>-->
+          <!--            </div>-->
+          <!--          </div>-->
+          <div class="mb-10">
+            <div [matMenuTriggerFor]="menu" class="cursor-pointer symbol symbol-40px" matTooltip="User profile"
+                 matTooltipPosition="right">
+              <img src="dummy.jpg" alt="image"/>
+            </div>
+          </div>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="logout()">
+              <mat-icon>power_settings_new</mat-icon>
+              <span>Logout</span>
+            </button>
+            <button mat-menu-item disabled>
+              <mat-icon>ac_unit</mat-icon>
+              <span>Change Password</span>
+            </button>
+          </mat-menu>
+        </div>
+        <!--end::Footer-->
+      </div>
+      <!--end::Primary-->
+      <!--begin::Secondary-->
+      <div class="aside-secondary d-flex flex-row-fluid">
+        <div class="aside-workspace my-5 p-5" id="kt_aside_wordspace">
+          <div class="d-flex h-100 flex-column">
+            <div class="flex-column-auto pt-0 px-5" id="kt_aside_secondary_header">
+              <ng-select appearance="outline" class="search" (change)="selectPage($event)">
+                <ng-container *ngFor="let i of searchList">
+                  <ng-option [value]="i">{{ i.name }}</ng-option>
+                </ng-container>
+              </ng-select>
+            </div>
+            <hr class="mb-0">
+            <div class="flex-column-fluid hover-scroll-y" data-kt-scroll="true" data-kt-scroll-activate="true"
+                 data-kt-scroll-height="auto" data-kt-scroll-wrappers="#kt_aside_wordspace"
+                 data-kt-scroll-dependencies="#kt_aside_secondary_footer, #kt_aside_secondary_header"
+                 data-kt-scroll-offset="0px">
+              <div class="tab-content">
+                @for (module of moduleList; track $index) {
+                  <div class="tab-pane fade" [class.show]="selectedModule_id==module.module_id"
+                       [class.active]="selectedModule_id==module.module_id" id="menu_{{module.module_id}}"
+                       role="tabpanel">
+                    <div class="menu menu-column menu-fit menu-state-primary fw-bold fs-6 px-1 my-5 my-lg-0"
+                         id="kt_aside_menu" data-kt-menu="true">
+                      <div id="kt_aside_menu_wrapper" class="menu-fit">
+                        <ng-container *ngFor="let menu of module.menu;let menu_i=index">
+                          @if (menu.children == 1) {
+                            <mat-accordion>
+                              <mat-expansion-panel [expanded]="step() === menu_i + 1" (opened)="setStep(menu_i + 1) ">
+                                <mat-expansion-panel-header>
+                                  <mat-panel-title>
+                                    <span class="menu-icon me-2">
+                                        <mat-icon>{{ menu.icon || 'home' }}</mat-icon>
+                                    </span>
+                                    <span class="menu-title">{{ menu.name }}</span>
+                                  </mat-panel-title>
+                                </mat-expansion-panel-header>
+                                <!-- Panel Body with Menu Items -->
+                                <div *ngFor="let sub of menu.child; let sub_i = index">
+                                  <div class="menu-item">
+                                    <a class="menu-link" [class.active]="window.location.pathname == sub.route"
+                                       (click)="selectPage(sub)">
+                                      <!--                                      <mat-icon class="me-2">{{ sub.icon || 'keyboard_arrow_right' }}</mat-icon>-->
+                                      <mat-icon class="me-2">keyboard_arrow_right</mat-icon>
+                                      <span class="menu-title">{{ sub.name }}</span>
+                                    </a>
+                                  </div>
+                                </div>
+                              </mat-expansion-panel>
+                            </mat-accordion>
+                          } @else {
+                            <mat-accordion>
+                              <mat-expansion-panel [class.active]="window.location.pathname == menu.route" hideToggle
+                                                   (click)="selectPage(menu)">
+                                <mat-expansion-panel-header>
+                                  <mat-panel-title>
+                                    <span class="menu-icon me-2">
+                                        <mat-icon>{{ menu.icon || 'home' }}</mat-icon>
+                                    </span>
+                                    <span class="menu-title">{{ menu.name }}</span>
+                                  </mat-panel-title>
+                                </mat-expansion-panel-header>
+                              </mat-expansion-panel>
+                            </mat-accordion>
+                          }
+                        </ng-container>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+            <div class="flex-column-auto pt-10 px-5" id="kt_aside_secondary_footer">
+              <button (click)="userManual()" type="button"
+                      class="btn btn-bg-light btn-flex btn-active-color-primary flex-center w-100">
+                <mat-icon class="me-3">cloud_download</mat-icon>
+                <span class="btn-label">User Manual</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!--end::Workspace-->
+      </div>
+      <!--end::Secondary-->
+      <!--begin::Aside Toggle-->
+      <button
+        class="aside-toggle btn btn-sm btn-icon bg-body btn-color-gray-600 btn-active-primary position-absolute translate-middle start-100 end-0 bottom-0 shadow-sm d-none d-lg-flex"
+        style="margin-bottom: 1.35rem" (click)="toggleSidebar()">
+        <!--begin::Svg Icon | path: icons/duotune/arrows/arr063.svg-->
+        <span class="svg-icon svg-icon-2 rotate-180">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+								<rect opacity="0.5" x="6" y="11" width="13" height="2" rx="1" fill="black"/>
+								<path
+                  d="M8.56569 11.4343L12.75 7.25C13.1642 6.83579 13.1642 6.16421 12.75 5.75C12.3358 5.33579 11.6642 5.33579 11.25 5.75L5.70711 11.2929C5.31658 11.6834 5.31658 12.3166 5.70711 12.7071L11.25 18.25C11.6642 18.6642 12.3358 18.6642 12.75 18.25C13.1642 17.8358 13.1642 17.1642 12.75 16.75L8.56569 12.5657C8.25327 12.2533 8.25327 11.7467 8.56569 11.4343Z"
+                  fill="black"/>
+							</svg>
+						</span>
+        <!--end::Svg Icon-->
+      </button>
+      <!--end::Aside Toggle-->
+    </div>
+    <div class="wrapper d-flex flex-column flex-row-fluid" id="kt_wrapper">
+      <div id="kt_header" class="header" data-kt-sticky="true" data-kt-sticky-name="header"
+           data-kt-sticky-offset="{default: '200px', lg: '300px'}" style="animation-duration: 0.3s;top: 0;"
+           data-kt-sticky-enabled="true">
+        <div class="container-xxl d-flex align-items-center justify-content-between" id="kt_header_container">
+          <div class="d-flex d-lg-none align-items-center ms-n2 me-2">
+            <div class="btn btn-icon btn-active-icon-primary" id="kt_aside_toggle">
+              <mat-icon>menu</mat-icon>
+            </div>
+            <a [routerLink]="['/']">
+              <img alt="Logo" src="igkv_logo.png" class="p-1" style="width: 40px"/>
+            </a>
+          </div>
+          <div class="d-flex d-lg-none">
+            <div class="mx-2">
+              <div (click)="toggleFullScreen()" class="btn btn-icon btn-custom btn-border" matTooltip="Full Screen"
+                   matTooltipPosition="below">
+                <mat-icon *ngIf="!isFullScreen">fullscreen</mat-icon>
+                <mat-icon *ngIf="isFullScreen">fullscreen_exit</mat-icon>
+              </div>
+            </div>
+            <div [matMenuTriggerFor]="menu" class="cursor-pointer symbol symbol-40px" matTooltip="User profile"
+                 matTooltipPosition="below">
+              <img src="dummy.jpg" alt="image"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
+        <div class="container-xxl" id="kt_content_container">
+          <app-loader></app-loader>
+          <router-outlet></router-outlet>
+          <!--          <div-->
+          <!--            class="engage-toolbar d-flex position-fixed bg-white px-0 fw-bold zindex-6 top-25 end-0 transform-90 mt-20 gap-2">-->
+          <!--            <button class="engage-explore-toggle engage-btn btn shadow-sm fs-6 px-4 rounded-top-0"-->
+          <!--                    (click)="checkDesignation()">-->
+          <!--              <span id="kt_explore_toggle_label">Designation	</span>-->
+          <!--            </button>-->
+          <!--            &lt;!&ndash;end::Exolore drawer toggle&ndash;&gt;-->
+          <!--          </div>-->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

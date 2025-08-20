@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>Select Designation</h2>
+<mat-dialog-content>
+  <hr class="mt-0">
+  <mat-selection-list [(ngModel)]="selectedDesignation" name="shoes" [multiple]="false">
+    @for (post of designationList; track $index) {
+      <mat-list-option [value]="post.designation_id">{{ post.designation_name }}</mat-list-option>
+    }
+  </mat-selection-list>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button class="btn btn-light btn-sm" mat-dialog-close>Cancel</button>
+  <button class="btn btn-active-primary btn-border btn-sm ms-2" (click)="setDesignation()">Select Designation</button>
+</mat-dialog-actions>

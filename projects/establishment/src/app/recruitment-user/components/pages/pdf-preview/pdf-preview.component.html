@@ -1,0 +1,1272 @@
+<style>
+  @page {
+    size: A4;
+    margin: 6mm; /* uniform margin */
+    border: 0.5pt solid black;
+  }
+
+  .a4-container {
+    width: 595.28pt; /* 210mm */
+    padding: 17.01pt; /* 6mm */
+    box-sizing: border-box;
+    background-color: white;
+  }
+  .section {
+    break-inside: avoid;
+    margin-bottom: 11.34pt; /* 4mm */
+  }
+  /* Force background colors in print */
+  @media print {
+    .bg-gray-300 {
+      background-color: #d1d5db !important;
+      background-image: linear-gradient(#d1d5db, #d1d5db) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .bg-gray-100 {
+      background-color: #f3f4f6 !important;
+      background-image: linear-gradient(#f3f4f6, #f3f4f6) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    table,
+    div.grid {
+      break-inside: avoid;
+    }
+  }
+</style>
+<div class="a4-container">
+  <!-- Header -->
+  <div class="section">
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        border: 1px solid black;
+        padding: 4px 8px;
+      "
+    >
+      <div style="width: 70px; height: 70px">
+        <img
+          src="assets/logo.png"
+          alt="Logo"
+          style="width: 100%; height: 100%; object-fit: contain"
+        />
+      </div>
+      <div style="text-align: center; flex: 1; line-height: 1.2">
+        <div
+          style="font-size: 16px; font-weight: bold; text-transform: uppercase"
+        >
+          Indira Gandhi Krishi Vishwavidyalaya
+        </div>
+        <div
+          style="
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin: 4px 0;
+          "
+        >
+          KRISHAK NAGAR, RAIPUR (CHHATTISGARH) - 492012
+        </div>
+        <div
+          style="
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 4px 0;
+          "
+        >
+          इंदिरा गांधी कृषि विश्वविद्यालय, रायपुर (छत्तीसगढ़)-४९२०१२
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="section">
+    <div style="border-top: 2px solid black; margin: 8px 0"></div>
+    <div style="text-align: center; flex: 1; line-height: 1.2; margin: 8px 0">
+      <div style="font-size: 10pt; font-weight: 900; text-transform: uppercase">
+        APPLICATION FORM FOR {{ formData[1]?.advertisment_name || "-" }}
+      </div>
+      <div
+        style="
+          font-size: 10pt;
+          font-weight: 800;
+          margin-top: 2pt;
+          line-height: 1;
+        "
+      >
+        (PAY SCALE RS.56100-177500 + GP 5400)
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration and Photo -->
+  <div class="section">
+    <div style="border: 1px solid black; padding: 8px; margin: 8px 0">
+      <div style="display: flex">
+        <div style="flex: 1">
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 2px;
+              font-size: 11px;
+              line-height: 1.4;
+            "
+          >
+            <div>
+              <span style="font-weight: 600">Registration No.</span>:
+              {{ formData[1]?.registration_no || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Registration Date</span>:
+              {{ formData[1]?.registration_date || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Applied Post</span>:
+              {{ formData[1]?.post_name || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Applied Subject</span>:
+              {{ formData[1]?.Subject_Name_E || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Payment Reference No. (IGKV)</span
+              >:
+              {{ formData[1]?.payment_ref || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Payment Date</span>:
+              {{ formData[1]?.payment_date || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Amount</span>:
+              {{ formData[1]?.payment_amount || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Bank Reference No.</span>:
+              {{ formData[1]?.bank_ref || "-" }}
+            </div>
+          </div>
+        </div>
+        <div style="margin-left: 8px">
+          <div style="border: 1px solid black; width: 100px; height: 100px">
+            <img
+              [src]="getFileUrl(formData[1]?.candidate_photo)"
+              alt="Photo"
+              style="width: 100%; height: 100%; object-fit: cover"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Basic Details -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        Applicant Basic Detail
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
+          padding: 4px 8px;
+          margin: 8px 0;
+        "
+      >
+        <div>
+          <span style="font-weight: 600">Full Name (Eng)</span>:
+          {{ formData[1]?.Salutation_E_Name }}
+          {{ formData[1]?.Applicant_First_Name_E }}
+          {{ formData[1]?.Applicant_Middle_Name_E }}
+          {{ formData[1]?.Applicant_Last_Name_E }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Full Name (Hin)</span>:
+          {{ formData[1]?.Salutation_H_Name }}
+          {{ formData[1]?.Applicant_First_Name_H }}
+          {{ formData[1]?.Applicant_Middle_Name_H }}
+          {{ formData[1]?.Applicant_Last_Name_H }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Gender</span>:
+          {{ formData[1]?.Gender_Id }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Date of Birth</span>:
+          {{ formData[1]?.DOB }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Age (as on 31/01/2025)</span>:
+          {{ formData[1]?.age }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Father's Name</span>:
+          {{ formData[1]?.Applicant_Father_Name_E }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Mother's Name</span>:
+          {{ formData[1]?.Applicant_Mother_Name_E }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Identification Mark 1</span>:
+          {{ formData[1]?.Identification_Mark1 }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Identification Mark 2</span>:
+          {{ formData[1]?.Identification_Mark2 }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Are You Married?</span>:
+          {{ formData[1]?.Is_Married_YN === "Y" ? "Yes" : "No" }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Bonafide CG Resident</span>:
+          {{ formData[1]?.Is_CG_Domocile === "Y" ? "Yes" : "No" }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Disability</span>:
+          {{ formData[1]?.Is_Disability === "Y" ? "Yes" : "No" }}
+        </div>
+        <div>
+          <span style="font-weight: 600">In-Service</span>:
+          {{ formData[1]?.In_Service_YN === "Y" ? "Yes" : "No" }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Local Language Knowledge</span>:
+          {{ formData[1]?.Is_Local_Lang_Knowledge === "Y" ? "Yes" : "No" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permanent Address -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+        "
+      >
+        Permanent Address:
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
+          margin-top: 4px;
+        "
+      >
+        <div>
+          <span style="font-weight: 600">Address</span>:
+          {{ formData[1]?.Permanent_Address1 }}
+        </div>
+        <div>
+          <span style="font-weight: 600">City</span>:
+          {{ formData[1]?.Permanent_City }}
+        </div>
+        <div>
+          <span style="font-weight: 600">District</span>:
+          {{ formData[1]?.Permanent_District_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">State</span>:
+          {{ formData[1]?.Permanent_State_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Country</span>:
+          {{ formData[1]?.Permanent_Country_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Pincode</span>:
+          {{ formData[1]?.Permanent_Pin_Code }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Present Address -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+        "
+      >
+        Present Address (For Correspondence):
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
+          margin-top: 4px;
+        "
+      >
+        <div>
+          <span style="font-weight: 600">Address</span>:
+          {{ formData[1]?.Current_Address1 }}
+        </div>
+        <div>
+          <span style="font-weight: 600">City</span>:
+          {{ formData[1]?.Current_City }}
+        </div>
+        <div>
+          <span style="font-weight: 600">District</span>:
+          {{ formData[1]?.Current_District_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">State</span>:
+          {{ formData[1]?.Current_State_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Country</span>:
+          {{ formData[1]?.Current_Country_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Pincode</span>:
+          {{ formData[1]?.Current_Pin_Code }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Mobile Number</span>:
+          {{ formData[1]?.Mobile_No }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Email</span>:
+          {{ formData[1]?.Email_Id }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Birth Place -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+        "
+      >
+        Birth Place:
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
+          margin-top: 4px;
+        "
+      >
+        <div>
+          <span style="font-weight: 600">Village/City/Block</span>:
+          {{ formData[1]?.Birth_Place }}
+        </div>
+        <div>
+          <span style="font-weight: 600">District</span>:
+          {{ formData[1]?.Birth_District_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">State</span>:
+          {{ formData[1]?.Birth_State_Name }}
+        </div>
+        <div>
+          <span style="font-weight: 600">Country</span>:
+          {{ formData[1]?.Birth_Country_Name }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Details -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        Language Detail:
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          border-top: 1px solid black;
+          border-bottom: 1px solid black;
+          font-weight: 600;
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+        "
+      >
+        <div style="border-right: 1px solid black; padding: 4px 8px">S.No.</div>
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          Language Type
+        </div>
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          Language
+        </div>
+        <div style="padding: 4px 8px">Language Skill</div>
+      </div>
+      <div
+        *ngFor="let lang of formData[1]?.languages; let i = index"
+        style="
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          border-bottom: 1px solid black;
+        "
+      >
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          {{ i + 1 }}
+        </div>
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          {{ lang.language_type }}
+        </div>
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          {{ lang.language_name }}
+        </div>
+        <div style="padding: 4px 8px">{{ lang.language_skill }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Educational Qualification -->
+  <div class="section" *ngIf="formData[2]?.heading && getQualificationSections().length > 0">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        {{ formData[2]?.heading?.score_field_title_name || "EDUCATIONAL QUALIFICATION" }}
+      </div>
+      <div style="border-bottom: 1px solid black">
+        <!-- Iterate over qualification sections -->
+        <ng-container *ngFor="let qualSection of getQualificationSections()">
+          <ng-container
+            *ngIf="
+              qualSection.isSelected && qualSection.qualifications.length > 0
+            "
+          >
+            <div style="break-inside: avoid">
+              <div
+                style="
+                  padding: 4px 8px;
+                  font-weight: 600;
+                  border-bottom: 1px solid black;
+                  background-color: #f3f4f6;
+                  background-image: linear-gradient(#f3f4f6, #f3f4f6);
+                "
+              >
+                {{ formData[2]?.subheadings?.[qualSection.key]?.score_field_title_name || qualSection.title }}
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(7, minmax(0, 1fr));
+                  border-top: 1px solid black;
+                  background-color: #d1d5db;
+                  background-image: linear-gradient(#d1d5db, #d1d5db);
+                  font-weight: 600;
+                "
+              >
+                <div
+                  style="
+                    border-right: 1px solid black;
+                    padding: 4px 8px;
+                    word-break: break-word;
+                    white-space: normal;
+                  "
+                >
+                  Name of university/Institute/Board
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Name of degree
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Subject(s)<br />(major)/Group
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Division
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Passing Year
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Percentage Obtained
+                </div>
+                <div style="padding: 4px 8px">OGPA (If any)</div>
+              </div>
+              <ng-container *ngFor="let detail of qualSection.qualifications">
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(7, minmax(0, 1fr));
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail["University/Board"] || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.Degree || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail["Subject/Group"] || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.Division || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail["Passing Year"] || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail["Percentage Obtained"] || "-" }}
+                  </div>
+                  <div style="padding: 4px 8px">
+                    {{ detail.OGPA || "-" }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Academic Achievements -->
+  <div class="section" *ngIf="formData[3]?.heading && getSubHeadingKeys(formData[3]?.subHeadings).length > 0">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        {{ formData[3]?.heading?.score_field_title_name || "ACADEMIC ACHIEVEMENTS" }}
+      </div>
+      <div style="border-bottom: 1px solid black">
+        <ng-container
+          *ngFor="
+            let subHeadingKey of getSubHeadingKeys(formData[3]?.subHeadings)
+          "
+        >
+          <ng-container *ngIf="hasAchievementsOrDetails(subHeadingKey)">
+            <div style="break-inside: avoid">
+              <div
+                style="
+                  padding: 4px 8px;
+                  font-weight: 600;
+                  border-bottom: 1px solid black;
+                  background-color: #f3f4f6;
+                  background-image: linear-gradient(#f3f4f6, #f3f4f6);
+                "
+              >
+                {{ formData[3]?.subheadings?.[subHeadingKey]?.score_field_title_name || formatSubHeadingTitle(subHeadingKey) }}
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  border-top: 1px solid black;
+                  background-color: #d1d5db;
+                  background-image: linear-gradient(#d1d5db, #d1d5db);
+                  font-weight: 600;
+                "
+              >
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Achievement Type
+                </div>
+                <div style="padding: 4px 8px">Description</div>
+              </div>
+              <ng-container
+                *ngFor="let achievement of getAchievements(subHeadingKey)"
+              >
+                <ng-container
+                  *ngFor="
+                    let _ of [].constructor(
+                      achievement.value.count > 0 ? achievement.value.count : 0
+                    )
+                  "
+                >
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, 1fr);
+                      border-bottom: 1px solid black;
+                    "
+                  >
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{ formatKey(achievement.key) }}
+                    </div>
+                    <div style="padding: 4px 8px">
+                      {{ formatKey(achievement.key) }}
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-container
+                *ngFor="let detail of getAchievementDetails(subHeadingKey)"
+              >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.description__if_any_ || "-" }}
+                  </div>
+                  <div style="padding: 4px 8px">
+                    {{ detail.description__if_any_ || "-" }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+ 
+
+  <!-- Performance in Extra-Curricular Activities -->
+  <div class="section" *ngIf="formData[6]?.heading && getSubHeadingKeys(formData[6]?.subHeadings).length > 0">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        {{ formData[6]?.heading?.score_field_title_name || "PERFORMANCE IN EXTRA-CURRICULAR ACTIVITIES" }}
+      </div>
+      <div style="border-bottom: 1px solid black">
+        <ng-container
+          *ngFor="
+            let subHeadingKey of getSubHeadingKeys(formData[6]?.subHeadings)
+          "
+        >
+          <ng-container *ngIf="hasActivitiesOrDetails(subHeadingKey)">
+            <div style="break-inside: avoid">
+              <div
+                style="
+                  padding: 4px 8px;
+                  font-weight: 600;
+                  border-bottom: 1px solid black;
+                  background-color: #f3f4f6;
+                  background-image: linear-gradient(#f3f4f6, #f3f4f6);
+                "
+              >
+                {{ formData[6]?.subheadings?.[subHeadingKey]?.score_field_title_name || formatSubHeadingTitle(subHeadingKey) }}
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  border-top: 1px solid black;
+                  background-color: #d1d5db;
+                  background-image: linear-gradient(#d1d5db, #d1d5db);
+                  font-weight: 600;
+                "
+              >
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Activity Type
+                </div>
+                <div style="padding: 4px 8px">Description</div>
+              </div>
+              <ng-container
+                *ngFor="let activity of getActivities(subHeadingKey)"
+              >
+                <ng-container
+                  *ngFor="
+                    let _ of [].constructor(
+                      activity.value.count > 0 ? activity.value.count : 0
+                    )
+                  "
+                >
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(2, 1fr);
+                      border-bottom: 1px solid black;
+                    "
+                  >
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{ formatKey(activity.key) }}
+                    </div>
+                    <div style="padding: 4px 8px">
+                      {{
+                        getActivityDescription(subHeadingKey, activity.key) ||
+                          "-"
+                      }}
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-container
+                *ngFor="let detail of getActivityDetails(subHeadingKey)"
+              >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    Activity
+                  </div>
+                  <div style="padding: 4px 8px">
+                    {{ detail.description || "-" }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Research Publication -->
+  <div class="section" *ngIf="formData[4]?.heading && getSubHeadingKeys(formData[4]?.subHeadings).length > 0">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+        "
+      >
+        {{ formData[4]?.heading?.score_field_title_name || "RESEARCH PUBLICATION" }}
+      </div>
+      <div style="border-bottom: 1px solid black">
+        <ng-container
+          *ngFor="
+            let subHeadingKey of getSubHeadingKeys(formData[4]?.subHeadings)
+          "
+        >
+          <ng-container *ngIf="hasPublicationsOrDetails(subHeadingKey)">
+            <div style="break-inside: avoid">
+              <div
+                style="
+                  padding: 4px 8px;
+                  font-weight: 600;
+                  border-bottom: 1px solid black;
+                  background-color: #f3f4f6;
+                  background-image: linear-gradient(#f3f4f6, #f3f4f6);
+                "
+              >
+                {{ formData[4]?.subheadings?.[subHeadingKey]?.score_field_title_name || formatSubHeadingTitle(subHeadingKey) }}
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(8, minmax(0, 1fr));
+                  border-top: 1px solid black;
+                  background-color: #d1d5db;
+                  background-image: linear-gradient(#d1d5db, #d1d5db);
+                  font-weight: 600;
+                "
+              >
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Author
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Title of Paper
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Name of Journal
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Name of Author(s)
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Publication Year
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  Volume
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  NAAS Rating
+                </div>
+                <div style="padding: 4px 8px">Peer Review</div>
+              </div>
+              <ng-container
+                *ngFor="let publication of getPublications(subHeadingKey)"
+              >
+                <ng-container
+                  *ngFor="
+                    let _ of [].constructor(
+                      publication.value.count > 0 ? publication.value.count : 0
+                    )
+                  "
+                >
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: repeat(8, minmax(0, 1fr));
+                      border-bottom: 1px solid black;
+                    "
+                  >
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{ formatKey(publication.key) }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "title_of_paper"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "name_of_journal"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "name_of_author_s_"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "publication_year"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "volume"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div
+                      style="border-right: 1px solid black; padding: 4px 8px"
+                    >
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "naas_rating"
+                        ) || "-"
+                      }}
+                    </div>
+                    <div style="padding: 4px 8px">
+                      {{
+                        getPublicationDetail(
+                          subHeadingKey,
+                          publication.key,
+                          "peer_review"
+                        ) || "-"
+                      }}
+                    </div>
+                  </div>
+                </ng-container>
+              </ng-container>
+              <ng-container
+                *ngFor="let detail of getPublicationDetails(subHeadingKey)"
+              >
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(8, minmax(0, 1fr));
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    Publication
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.title_of_paper || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.name_of_journal || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.name_of_author_s_ || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.publication_year || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.volume || "-" }}
+                  </div>
+                  <div style="border-right: 1px solid black; padding: 4px 8px">
+                    {{ detail.naas_rating || "-" }}
+                  </div>
+                  <div style="padding: 4px 8px">
+                    {{ detail.peer_review || "-" }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+<!-- Experience Section -->
+<div class="section" *ngIf="formData[5]?.heading && formData[5]?.qualifications3145_72_0?.length > 0">
+  <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+    <div
+      style="
+        background-color: #d1d5db;
+        background-image: linear-gradient(#d1d5db, #d1d5db);
+        font-weight: 600;
+        padding: 4px 8px;
+        border-bottom: 1px solid black;
+      "
+    >
+      {{ formData[5]?.heading?.score_field_title_name || "EXPERIENCE" }}
+    </div>
+    <div style="border-bottom: 1px solid black">
+      <div style="break-inside: avoid">
+        <div
+          style="
+            padding: 4px 8px;
+            font-weight: 600;
+            border-bottom: 1px solid black;
+            background-color: #f3f4f6;
+            background-image: linear-gradient(#f3f4f6, #f3f4f6);
+          "
+        >
+          {{ formData[5]?.subheadings?.['3145_72_0']?.score_field_title_name || "Teaching/Scientific Experience" }}
+        </div>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            border-top: 1px solid black;
+            background-color: #d1d5db;
+            background-image: linear-gradient(#d1d5db, #d1d5db);
+            font-weight: 600;
+          "
+        >
+          <div style="border-right: 1px solid black; padding: 4px 8px">
+            Name of Post Held
+          </div>
+          <div style="border-right: 1px solid black; padding: 4px 8px">
+            Pay Scale
+          </div>
+          <div style="border-right: 1px solid black; padding: 4px 8px">
+            Organization Name & Address
+          </div>
+          <div style="border-right: 1px solid black; padding: 4px 8px">
+            Period From
+          </div>
+          <div style="border-right: 1px solid black; padding: 4px 8px">
+            Period To
+          </div>
+          <div style="padding: 4px 8px">
+            Type of Employment
+          </div>
+        </div>
+        <ng-container *ngFor="let experience of formData[5]?.qualifications3145_72_0">
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(6, minmax(0, 1fr));
+              border-bottom: 1px solid black;
+            "
+          >
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ experience['Name of Post Held'] || "-" }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ experience['Pay Scale'] || "-" }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ experience['Organization Name & Address'] || "-" }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ experience['Period From'] || "-" }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ experience['Period To'] || "-" }}
+            </div>
+            <div style="padding: 4px 8px">
+              {{ experience['Type of Employement'] || "-" }}
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- Other Attachments Section -->
+<div class="section" *ngIf="formData[7]?.heading && hasAttachmentsWithRemarks()">
+  <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+    <div
+      style="
+        background-color: #d1d5db;
+        background-image: linear-gradient(#d1d5db, #d1d5db);
+        font-weight: 600;
+        padding: 4px 8px;
+        border-bottom: 1px solid black;
+      "
+    >
+      {{ formData[7]?.heading?.score_field_title_name || "OTHER ATTACHMENTS" }}
+    </div>
+    <div style="border-bottom: 1px solid black">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 40px 2fr 1fr;
+          border-top: 1px solid black;
+          background-color: #d1d5db;
+          background-image: linear-gradient(#d1d5db, #d1d5db);
+          font-weight: 600;
+        "
+      >
+        <div style="border-right: 1px solid black; padding: 4px 8px">S.No.</div>
+        <div style="border-right: 1px solid black; padding: 4px 8px">
+          Attachment Type
+        </div>
+        <div style="padding: 4px 8px">Remark</div>
+      </div>
+      <ng-container *ngFor="let attachment of formData[7]?.attachments; let i = index">
+        <ng-container *ngIf="attachment.remark && attachment.remark.trim() !== '' && getAttachmentType(i)">
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 40px 2fr 1fr;
+              border-bottom: 1px solid black;
+            "
+          >
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ getSerialNumber(i) }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ getAttachmentType(i) }}
+            </div>
+            <div style="padding: 4px 8px">
+              {{ attachment.remark }}
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+  <!-- Declaration -->
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div
+        style="
+          text-align: center;
+          font-weight: 600;
+          padding: 4px 8px;
+          border-bottom: 1px solid black;
+          background-color: #f3f4f6;
+          background-image: linear-gradient(#f3f4f6, #f3f4f6);
+        "
+      >
+        DECLARATION
+      </div>
+      <div style="padding: 8px">
+        <p style="margin-bottom: 8px">
+          I declare that the entries made in this application form are true and
+          correct to the best of my knowledge and belief. He/she agrees to
+          accept entire process of recruitment and conditions laid down in the
+          general terms and conditions mentioned in advertisement.
+        </p>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            margin-top: 16px;
+          "
+        >
+          <div>
+            <div><span style="font-weight: 600">Place</span>: JABALPUR</div>
+            <div><span style="font-weight: 600">Date</span>: 07-01-2025</div>
+          </div>
+          <div></div>
+          <div style="text-align: center">
+            <img
+              [src]="getFileUrl(formData[1]?.candidate_signature)"
+              alt="Signature"
+              style="width: 80px; height: auto; margin: 0 auto"
+            />
+            <div style="font-size: 10px; margin-top: 4px">
+              Signature of the Applicant
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remarks of the Present Employer -->
+      <div style="border-top: 1px solid black; margin-top: 16px">
+        <div
+          style="
+            text-align: center;
+            font-weight: 600;
+            padding: 4px 8px;
+            background-color: #f3f4f6;
+            background-image: linear-gradient(#f3f4f6, #f3f4f6);
+            border-bottom: 1px solid black;
+          "
+        >
+          REMARKS OF THE PRESENT EMPLOYER
+        </div>
+        <div
+          style="
+            text-align: center;
+            font-size: 10px;
+            font-style: italic;
+            margin-bottom: 8px;
+          "
+        >
+          (In case of those who are already in service)
+        </div>
+        <div style="padding: 8px">
+          <p style="margin-bottom: 8px">
+            The applicant
+            <strong
+              >{{ formData[1]?.Salutation_E_Name }}
+              {{ formData[1]?.Applicant_First_Name_E }}
+              {{ formData[1]?.Applicant_Middle_Name_E }}
+              {{ formData[1]?.Applicant_Last_Name_E }}</strong
+            >
+            is holding a permanent/temporary post of
+            <span
+              style="
+                display: inline-block;
+                border-bottom: 1px solid black;
+                width: 128px;
+              "
+              >{{ formData[8]?.current_post }}</span
+            >
+            in the scale of Rs.
+            <span
+              style="
+                display: inline-block;
+                border-bottom: 1px solid black;
+                width: 96px;
+              "
+              >{{ formData[8]?.salary_scale }}</span
+            >
+            per month. His/Her application is forwarded and he/she will be
+            relieved in case he/she is selected for the post applied for.
+          </p>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              margin-top: 16px;
+            "
+          >
+            <div>
+              <div>
+                Place
+                <span
+                  style="
+                    display: inline-block;
+                    border-bottom: 1px solid black;
+                    width: 96px;
+                  "
+                  >{{ formData[8]?.employer_place }}</span
+                >
+              </div>
+              <div>
+                Date
+                <span
+                  style="
+                    display: inline-block;
+                    border-bottom: 1px solid black;
+                    width: 96px;
+                  "
+                  >{{ formData[8]?.employer_date }}</span
+                >
+              </div>
+            </div>
+            <div></div>
+            <div style="text-align: center">
+              <div style="margin-bottom: 4px">Signature</div>
+              <div style="font-size: 10px">
+                Designation of Officer (with official Seal)
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

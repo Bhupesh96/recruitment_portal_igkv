@@ -1,0 +1,48 @@
+<mat-card>
+  <mat-card-header class="d-flex flex-wrap align-items-center">
+    <h3 class="w-100 w-sm-auto flex-grow-1" mat-card-title>
+      <ng-content select=".card-header"></ng-content>
+    </h3>
+
+    <ng-container *ngIf="options.is_filter" class="me-auto">
+      <input placeholder="Search" class="form-control search-data ms-auto me-3" [(ngModel)]="filterText"
+             (keyup)="onFilterChange(filterText)">
+    </ng-container>
+
+    <div class="d-inline-flex">
+      <button *ngIf="options.button.includes('print')" mat-raised-button color="primary" matTooltip="Print" (click)="printData()" class="tools mx-auto ms-1"> <mat-icon>print</mat-icon> </button>
+      <button *ngIf="options.button.includes('pdf')" mat-raised-button color="primary" matTooltip="PDF" (click)="getPdf()" class="tools mx-auto ms-1"> <mat-icon>picture_as_pdf</mat-icon></button>
+      <button *ngIf="options.button.includes('copy')" mat-raised-button color="primary" matTooltip="Copy" (click)="copyTableData()" class="tools mx-auto ms-1"> <mat-icon>content_copy</mat-icon></button>
+      <button *ngIf="options.button.includes('excel')" mat-raised-button color="primary" matTooltip="Excel" (click)="getExcel()" class="tools mx-auto ms-1">  <mat-icon>cloud_download</mat-icon></button>
+    </div>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="table-responsive" #print_content>
+      <table class="table table-bordered" #table>
+        <thead>
+        <ng-container *ngTemplateOutlet="headerTemplate"></ng-container>
+        </thead>
+        <tbody>
+        <tr *ngIf="!options.is_read">
+          <td colspan="10"><b>लोड हो रहा कृपया प्रतीक्षा करे|</b></td>
+        </tr>
+        <tr *ngIf="options.is_read && options.listLength == 0">
+          <td colspan="10"><b>जानकारी उपलब्ध नहीं है|</b></td>
+        </tr>
+        <ng-container *ngIf="options.is_read && options.listLength > 0">
+          <ng-container *ngFor="let row of (options.is_pagination
+                ? filteredData.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+                : filteredData);let i = index">
+            <ng-container *ngTemplateOutlet="rowTemplate; context: { $implicit: row, index: i }"></ng-container>
+          </ng-container>
+        </ng-container>
+        </tbody>
+      </table>
+    </div>
+    <ng-container *ngIf="options.is_pagination">
+      <mat-paginator [length]="totalItems" [pageSize]="pageSize" [pageSizeOptions]="[10, 20, 50, 200]"
+                     (page)="onPageChange($event)">
+      </mat-paginator>
+    </ng-container>
+  </mat-card-content>
+</mat-card>

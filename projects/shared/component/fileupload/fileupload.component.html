@@ -1,0 +1,11 @@
+<mat-form-field appearance="outline">
+  <mat-label>Pdf File</mat-label>
+  <div>
+    <mat-toolbar>
+      <input matInput [value]="file ? file.name : ''" readonly
+             style="font-size: 14px"/>
+    </mat-toolbar>
+    <input class="file-input form-control" style="width: 100%" id="fileInput" name="fileInput" type="file"
+           accept=".pdf">
+  </div>
+</mat-form-field>

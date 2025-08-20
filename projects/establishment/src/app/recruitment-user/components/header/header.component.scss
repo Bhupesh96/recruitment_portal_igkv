@@ -1,0 +1,74 @@
+.header-container {
+  background-color: white;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      text-align: left;
+    }
+  }
+
+  .university-logo {
+    height: 3rem;
+    width: auto;
+
+    @media (min-width: 768px) {
+      height: 3.25rem;
+      margin-right: 1rem;
+    }
+  }
+
+  .university-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    @media (min-width: 768px) {
+      align-items: flex-start; /* Keep left alignment for the container */
+      text-align: left;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      font-family: 'UnifrakturCook', cursive;
+
+      @media (min-width: 768px) {
+        font-size: 1.75rem;
+      }
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      font-family: 'UnifrakturCook', cursive;
+      margin-top: 0.25rem;
+
+      @media (min-width: 768px) {
+        font-size: 1.25rem;
+        /* Center Hindi text relative to English text */
+        display: table; /* Use table layout to center based on content width */
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  }
+}

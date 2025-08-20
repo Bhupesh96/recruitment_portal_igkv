@@ -1,0 +1,1404 @@
+import {
+  Component,
+  OnInit,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+} from '@angular/core';
+import { isDevMode } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+  FormArray,
+  Validators,
+  AbstractControl,
+  FormControl,
+} from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { forkJoin, of } from 'rxjs'; // Import 'of'
+import { HttpService, SharedModule } from 'shared';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { UtilsService } from '../../utils.service';
+
+interface DetailFormGroup {
+  type: FormControl<string | null>;
+  [key: string]: FormControl<string | File | null>;
+}
+
+@Component({
+  selector: 'app-step-3',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    HttpClientModule,
+    SharedModule,
+  ],
+  templateUrl: './step-3.component.html',
+  styleUrls: ['./step-3.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Step3Component implements OnInit {
+  @Output() formData = new EventEmitter<{ [key: string]: any }>();
+  form: FormGroup;
+  isEditing: boolean = false; // Changed to false by default
+  subHeadings: any[] = [];
+  subHeadingRows: { [key: string]: any[] } = {};
+  parameters: any[] = [];
+  heading: any;
+  score_field_title_name: string | undefined;
+  filePaths: Map<string, string> = new Map();
+  existingDetailIds: Map<string, number> = new Map();
+  existingParameterIds: Map<string, number> = new Map();
+  rowsToCreate = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private HTTP: HttpService,
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef,
+    private utils: UtilsService
+  ) {
+    this.form = this.fb.group({
+      subHeadings: this.fb.group({}),
+      details: this.fb.array<FormGroup<DetailFormGroup>>([]),
+    });
+  }
+
+  get detailsArray(): FormArray<FormGroup<DetailFormGroup>> {
+    return this.form.get('details') as FormArray<FormGroup<DetailFormGroup>>;
+  }
+
+  ngOnInit(): void {
+    console.log(
+      JSON.stringify(
+        {
+          event: 'ngOnInit',
+          formValue: this.form.getRawValue(),
+          subHeadings: this.subHeadings,
+          parameters: this.parameters,
+          subHeadingRows: this.subHeadingRows,
+          filePaths: Object.fromEntries(this.filePaths),
+          existingDetailIds: Object.fromEntries(this.existingDetailIds),
+          existingParameterIds: Object.fromEntries(this.existingParameterIds),
+        },
+        null,
+        2
+      )
+    );
+    this.loadFormStructure();
+    this.form.valueChanges.subscribe((values) => {
+      console.log(
+        JSON.stringify(
+          { event: 'formValueChanges', formValue: values },
+          null,
+          2
+        )
+      );
+    });
+  }
+
+  normalizeControlName(name: any): string {
+    return typeof name === 'string'
+      ? name.toLowerCase().replace(/[^a-z0-9_]/gi, '_')
+      : '';
+  }
+
+  hasParameter(parameterName: string): boolean {
+    return this.parameters.some(
+      (p) => p.score_field_parameter_name === parameterName
+    );
+  }
+
+  hasSubHeadingRows(subHeadingId: number): boolean {
+    const key = subHeadingId.toString();
+    return !!this.subHeadingRows[key]?.length;
+  }
+
+  getCountOptions(maxRows: number | undefined): number[] {
+    const count = maxRows && maxRows > 0 ? maxRows : 10;
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }
+
+  getCheckboxName(detailForm: AbstractControl): string {
+    const typeValue = detailForm.get('type')?.value;
+    for (const subHeading of this.subHeadings) {
+      const item = subHeading.items.find(
+        (item: any) => item.m_rec_score_field_id.toString() === typeValue
+      );
+      if (item) {
+        return item.score_field_name_e || typeValue || '';
+      }
+    }
+    return typeValue || '';
+  }
+
+  isRowType(detailForm: AbstractControl, subHeadingId: number): boolean {
+    const typeValue = detailForm.get('type')?.value;
+    const subHeading = this.subHeadings.find(
+      (sub) => sub.m_rec_score_field_id === subHeadingId
+    );
+
+    const isMatch =
+      subHeading?.items.some(
+        (item: any) =>
+          item.m_rec_score_field_id.toString() === typeValue?.toString()
+      ) || false;
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'isRowType_check',
+          subHeadingId,
+          typeValue,
+          isMatch,
+          subHeadingItems:
+            subHeading?.items.map((item: any) => ({
+              m_rec_score_field_id: item.m_rec_score_field_id,
+              score_field_name_e: item.score_field_name_e,
+            })) || [],
+        },
+        null,
+        2
+      )
+    );
+
+    return isMatch;
+  }
+
+  getFilePath(
+    scoreFieldId: string | null | undefined,
+    paramId: number,
+    rowIndex: number
+  ): string | null {
+    if (!scoreFieldId) return null;
+    const paramKey = `${scoreFieldId}_${paramId}_${rowIndex}`;
+    return this.filePaths.get(paramKey) || null;
+  }
+
+  sanitizeFileUrl(filePath: string): SafeUrl {
+    let fileName = filePath.split('\\').pop() || '';
+    fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
+    const url = `http://192.168.1.57:3500/${fileName}`;
+    return this.sanitizer.bypassSecurityTrustUrl(url);
+  }
+
+  getFileName(filePath: string): string {
+    return filePath.split('\\').pop() || 'Unknown File';
+  }
+
+  private getParameterValuesAndPatch(): void {
+    const registrationNo = 24000001;
+    const a_rec_adv_main_id = 41;
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'getParameterValuesAndPatch_start',
+          registrationNo,
+          a_rec_adv_main_id,
+          formValue: this.form.getRawValue(),
+          subHeadings: this.subHeadings.map((sub) => ({
+            m_rec_score_field_id: sub.m_rec_score_field_id,
+            score_field_title_name: sub.score_field_title_name,
+            items: sub.items.map((item: any) => ({
+              m_rec_score_field_id: item.m_rec_score_field_id,
+              score_field_parent_id: item.score_field_parent_id,
+              normalizedKey: item.normalizedKey,
+            })),
+            parameters: sub.parameters,
+          })),
+          parameters: this.parameters,
+        },
+        null,
+        2
+      )
+    );
+
+    const apiRequests = this.subHeadings.flatMap((sub) =>
+      sub.items.map((item: any) =>
+        this.HTTP.getData(
+          `/candidate/get/getParameterValues?registrationNo=${registrationNo}&a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${item.score_field_parent_id}&m_rec_score_field_id=${item.m_rec_score_field_id}`,
+          'recruitement'
+        )
+      )
+    );
+
+    if (apiRequests.length === 0) {
+      console.log('No API requests to make, initializing with defaults.');
+      this.initializeFormWithDefaults();
+      return;
+    }
+
+    forkJoin(apiRequests).subscribe({
+      next: (responses: any[]) => {
+        const savedData = responses.flatMap(
+          (res) => res.body?.data || res.data || []
+        );
+        console.log('API Response Data:', JSON.stringify(savedData, null, 2));
+
+        if (savedData.length === 0) {
+          console.log('No data returned from API, initializing with defaults');
+          this.initializeFormWithDefaults();
+          this.cdr.detectChanges();
+          return;
+        }
+
+        // Clear existing IDs before re-populating them
+        this.existingDetailIds.clear();
+        this.existingParameterIds.clear();
+        this.filePaths.clear();
+
+        interface ApiResponseItem {
+          a_rec_app_score_field_detail_id: number;
+          m_rec_score_field_id: number;
+          m_rec_score_field_parameter_id: number;
+          parameter_value: string;
+          parameter_display_no: number;
+          a_rec_app_score_field_parameter_detail_id: number;
+          score_field_value: number;
+          score_field_parent_id: number;
+          [key: string]: any;
+        }
+
+        // Process data to build a map for patching
+        const detailsMap = new Map<
+          string,
+          {
+            detailId: number;
+            parameters: ApiResponseItem[];
+            rowIndex: number;
+          }[]
+        >();
+
+        // Group by m_rec_score_field_id and a_rec_app_score_field_detail_id
+        const groupedByScoreField: { [key: string]: ApiResponseItem[] } =
+          savedData.reduce(
+            (
+              acc: { [key: string]: ApiResponseItem[] },
+              item: ApiResponseItem
+            ) => {
+              const scoreFieldId = item.m_rec_score_field_id.toString();
+              if (!acc[scoreFieldId]) {
+                acc[scoreFieldId] = [];
+              }
+              acc[scoreFieldId].push(item);
+              return acc;
+            },
+            {}
+          );
+
+        // Process each scoreFieldId
+        (
+          Object.entries(groupedByScoreField) as [string, ApiResponseItem[]][]
+        ).forEach(([scoreFieldId, items]) => {
+          // Get the score_field_value (number of rows)
+          const scoreFieldValue = items[0]?.score_field_value || 1;
+          const detailId = items[0]?.a_rec_app_score_field_detail_id;
+
+          // Find the subHeading for parameter count
+          const subHeading = this.subHeadings.find((sub) =>
+            sub.items.some(
+              (item: any) =>
+                item.m_rec_score_field_id.toString() === scoreFieldId
+            )
+          );
+          const paramCount = subHeading?.parameters.length || 1;
+
+          // Sort items by a_rec_app_score_field_parameter_detail_id to take the latest attachment
+          items.sort(
+            (a, b) =>
+              b.a_rec_app_score_field_parameter_detail_id -
+              a.a_rec_app_score_field_parameter_detail_id
+          );
+
+          // Group items into rows based on description__if_any_ for JRF
+          const rows: {
+            detailId: number;
+            parameters: ApiResponseItem[];
+            rowIndex: number;
+          }[] = [];
+          let currentRow: ApiResponseItem[] = [];
+          let rowIndex = 0;
+          let currentDescription = '';
+
+          items.forEach((item) => {
+            const isDescription =
+              item.m_rec_score_field_parameter_id ===
+              (scoreFieldId === '3108' ? 2300 : 2299);
+            if (isDescription && currentRow.length > 0) {
+              // Start a new row when a new description is encountered
+              rows.push({
+                detailId,
+                parameters: [...currentRow],
+                rowIndex: rowIndex++,
+              });
+              currentRow = [];
+            }
+            currentRow.push(item);
+            if (isDescription) {
+              currentDescription = item.parameter_value;
+            }
+          });
+
+          // Add the last row
+          if (currentRow.length > 0) {
+            rows.push({
+              detailId,
+              parameters: [...currentRow],
+              rowIndex: rowIndex++,
+            });
+          }
+
+          // Ensure the number of rows matches score_field_value
+          while (rows.length < scoreFieldValue) {
+            rows.push({
+              detailId,
+              parameters: [],
+              rowIndex: rows.length,
+            });
+          }
+
+          // Limit rows to score_field_value to avoid extra rows
+          rows.splice(scoreFieldValue);
+
+          // For 3089, keep only the latest attachment
+          if (scoreFieldId === '3089') {
+            rows.forEach((row) => {
+              const attachments = row.parameters.filter(
+                (p) => p.m_rec_score_field_parameter_id === 2316
+              );
+              if (attachments.length > 1) {
+                // Keep only the latest attachment
+                const latestAttachment = attachments[0]; // Already sorted by ID
+                row.parameters = row.parameters.filter(
+                  (p) =>
+                    p.m_rec_score_field_parameter_id !== 2316 ||
+                    p.a_rec_app_score_field_parameter_detail_id ===
+                      latestAttachment.a_rec_app_score_field_parameter_detail_id
+                );
+              }
+            });
+          }
+
+          detailsMap.set(scoreFieldId, rows);
+
+          // Store file paths and parameter IDs
+          rows.forEach((row, rIndex) => {
+            row.parameters.forEach((item) => {
+              const paramKey = `${scoreFieldId}_${item.m_rec_score_field_parameter_id}_${rIndex}`;
+              this.existingParameterIds.set(
+                paramKey,
+                item.a_rec_app_score_field_parameter_detail_id
+              );
+              if (item.parameter_value.includes('.pdf')) {
+                this.filePaths.set(paramKey, item.parameter_value);
+              }
+            });
+          });
+
+          // Store detail ID
+          this.existingDetailIds.set(scoreFieldId, detailId);
+        });
+
+        // Log detailsMap for debugging
+        console.log(
+          JSON.stringify(
+            {
+              event: 'detailsMap_structure',
+              detailsMap: Array.from(detailsMap.entries()).map(
+                ([key, value]) => ({
+                  scoreFieldId: key,
+                  rows: value,
+                })
+              ),
+            },
+            null,
+            2
+          )
+        );
+
+        // Update counts in the form based on the fetched data
+        this.subHeadings.forEach((subHeading) => {
+          const groupName = subHeading.m_rec_score_field_id.toString();
+          const subGroup = this.form.get(
+            `subHeadings.${groupName}`
+          ) as FormGroup;
+
+          subHeading.items.forEach((item: any) => {
+            const itemId = item.m_rec_score_field_id.toString();
+            const detailGroups = detailsMap.get(itemId);
+            const scoreFieldData = groupedByScoreField[itemId];
+            const count =
+              scoreFieldData?.[0]?.score_field_value ||
+              (detailGroups ? detailGroups.length : 0);
+            const control = subGroup.get(`${item.normalizedKey}.count`);
+            if (control) {
+              control.setValue(count > 0 ? count.toString() : null, {
+                emitEvent: false,
+              });
+            }
+            if (count > 0) {
+              this.existingDetailIds.set(itemId, detailGroups![0].detailId);
+            }
+          });
+        });
+
+        // Generate details table
+        this.generateDetailsTable(detailsMap);
+
+        console.log(
+          'Form state after patching:',
+          JSON.stringify(this.form.getRawValue(), null, 2)
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Prefill failed', JSON.stringify(err, null, 2));
+        this.initializeFormWithDefaults();
+        this.cdr.detectChanges();
+      },
+    });
+  }
+  private initializeFormWithDefaults(): void {
+    this.subHeadings.forEach((subHeading) => {
+      const groupName = subHeading.m_rec_score_field_id.toString();
+      const subGroup = this.form.get(`subHeadings.${groupName}`) as FormGroup;
+
+      subHeading.items.forEach((item: any) => {
+        subGroup
+          .get(`${item.normalizedKey}.count`)
+          ?.setValue(null, { emitEvent: false });
+      });
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'initializeFormWithDefaults',
+          formValue: this.form.getRawValue(),
+        },
+        null,
+        2
+      )
+    );
+
+    this.generateDetailsTable(new Map());
+    this.cdr.markForCheck();
+  }
+
+  loadFormStructure() {
+    const a_rec_adv_main_id = 41;
+    const m_rec_score_field_id = 8;
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'loadFormStructure_start',
+          a_rec_adv_main_id,
+          m_rec_score_field_id,
+        },
+        null,
+        2
+      )
+    );
+
+    this.HTTP.getData(
+      `/master/get/getHeadingByScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
+      'recruitement'
+    ).subscribe({
+      next: (headingResponse: any) => {
+        const data = headingResponse.body?.data || headingResponse.data || [];
+        this.heading = data[0];
+        this.score_field_title_name =
+          this.heading?.score_field_title_name || 'Academic Excellence';
+        const a_rec_adv_post_detail_id =
+          this.heading?.a_rec_adv_post_detail_id || 72;
+
+        console.log(
+          JSON.stringify(
+            {
+              event: 'loadFormStructure_heading',
+              heading: this.heading,
+              score_field_title_name: this.score_field_title_name,
+              a_rec_adv_post_detail_id,
+            },
+            null,
+            2
+          )
+        );
+
+        this.HTTP.getData(
+          `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
+          'recruitement'
+        ).subscribe({
+          next: (subHeadingResponse: any) => {
+            const subHeadingData = subHeadingResponse.body?.data || [];
+            this.subHeadings = subHeadingData.map((sub: any) => ({
+              ...sub,
+              items: [],
+              parameters: [],
+            }));
+
+            this.subHeadings.forEach((sub) => {
+              this.subHeadingRows[sub.m_rec_score_field_id.toString()] = [];
+            });
+
+            console.log(
+              JSON.stringify(
+                {
+                  event: 'loadFormStructure_subHeadings',
+                  subHeadings: this.subHeadings,
+                },
+                null,
+                2
+              )
+            );
+
+            const itemRequests = this.subHeadings.map((sub) =>
+              this.HTTP.getData(
+                `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${sub.m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
+                'recruitement'
+              )
+            );
+
+            forkJoin(itemRequests).subscribe({
+              next: (itemResponses) => {
+                itemResponses.forEach((res, index) => {
+                  const itemData = res.body?.data || [];
+                  this.subHeadings[index].items = itemData.map((item: any) => ({
+                    ...item,
+                    normalizedKey: this.normalizeControlName(
+                      item.score_field_name_e
+                    ),
+                  }));
+                  this.setupSubHeadingForm(this.subHeadings[index]);
+                });
+
+                console.log(
+                  JSON.stringify(
+                    {
+                      event: 'loadFormStructure_subHeadingItems',
+                      subHeadings: this.subHeadings,
+                      formValue: this.form.getRawValue(),
+                    },
+                    null,
+                    2
+                  )
+                );
+
+                const paramRequests = this.subHeadings.map((sub) =>
+                  this.HTTP.getData(
+                    `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${sub.m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
+                    'recruitement'
+                  )
+                );
+
+                forkJoin(paramRequests).subscribe({
+                  next: (paramResponses) => {
+                    paramResponses.forEach((res, index) => {
+                      const paramData = res.body?.data || [];
+                      this.subHeadings[index].parameters = paramData
+                        .map((param: any) => ({
+                          ...param,
+                          normalizedKey: this.normalizeControlName(
+                            param.score_field_parameter_name
+                          ),
+                        }))
+                        .sort(
+                          (a: any, b: any) =>
+                            (a.parameter_display_order || 0) -
+                            (b.parameter_display_order || 0)
+                        );
+                    });
+
+                    this.parameters = this.subHeadings
+                      .flatMap((sub) => sub.parameters)
+                      .filter(
+                        (param, index, self) =>
+                          self.findIndex(
+                            (p) =>
+                              p.m_rec_score_field_parameter_id ===
+                              param.m_rec_score_field_parameter_id
+                          ) === index
+                      );
+
+                    console.log(
+                      JSON.stringify(
+                        {
+                          event: 'loadFormStructure_parameters',
+                          subHeadings: this.subHeadings.map((sub) => ({
+                            m_rec_score_field_id: sub.m_rec_score_field_id,
+                            score_field_title_name: sub.score_field_title_name,
+                            items: sub.items,
+                            parameters: sub.parameters,
+                          })),
+                          globalParameters: this.parameters,
+                        },
+                        null,
+                        2
+                      )
+                    );
+
+                    this.getParameterValuesAndPatch();
+                  },
+                  error: (err) => {
+                    this.parameters = [];
+                    console.log(
+                      JSON.stringify(
+                        {
+                          event: 'loadFormStructure_parameters_error',
+                          error: err.message,
+                          parameters: this.parameters,
+                        },
+                        null,
+                        2
+                      )
+                    );
+                    this.getParameterValuesAndPatch();
+                  },
+                });
+              },
+              error: (err) => {
+                this.subHeadings = [];
+                console.log(
+                  JSON.stringify(
+                    {
+                      event: 'loadFormStructure_subHeadings_error',
+                      error: err.message,
+                      subHeadings: this.subHeadings,
+                    },
+                    null,
+                    2
+                  )
+                );
+                this.getParameterValuesAndPatch();
+              },
+            });
+          },
+          error: (err) => {
+            this.score_field_title_name = 'Academic Excellence';
+            console.log(
+              JSON.stringify(
+                {
+                  event: 'loadFormStructure_heading_error',
+                  error: err.message,
+                  score_field_title_name: this.score_field_title_name,
+                },
+                null,
+                2
+              )
+            );
+            this.getParameterValuesAndPatch();
+          },
+        });
+      },
+      error: (err) => {
+        this.score_field_title_name = 'Academic Excellence';
+        console.log(
+          JSON.stringify(
+            {
+              event: 'loadFormStructure_heading_error',
+              error: err.message,
+              score_field_title_name: this.score_field_title_name,
+            },
+            null,
+            2
+          )
+        );
+        this.getParameterValuesAndPatch();
+      },
+    });
+  }
+
+  setupSubHeadingForm(subHeading: any) {
+    const groupName = subHeading.m_rec_score_field_id.toString();
+    const subGroup: any = {};
+
+    subHeading.items.forEach((item: any) => {
+      subGroup[item.normalizedKey] = this.fb.group({
+        count: [{ value: null, disabled: !this.isEditing }],
+      });
+    });
+
+    (this.form.get('subHeadings') as FormGroup).setControl(
+      groupName,
+      this.fb.group(subGroup)
+    );
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'setupSubHeadingForm',
+          groupName,
+          subGroup: this.form.get(`subHeadings.${groupName}`)?.getRawValue(),
+        },
+        null,
+        2
+      )
+    );
+  }
+
+  toggleEdit() {
+    this.isEditing = !this.isEditing;
+    this.subHeadings.forEach((subHeading) => {
+      const groupName = subHeading.m_rec_score_field_id.toString();
+      const subGroup = this.form.get(`subHeadings.${groupName}`) as FormGroup;
+      subHeading.items.forEach((item: any) => {
+        const countControl = subGroup.get(`${item.normalizedKey}.count`);
+        if (this.isEditing) {
+          countControl?.enable();
+        } else {
+          countControl?.disable();
+        }
+      });
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'toggleEdit',
+          isEditing: this.isEditing,
+          formValue: this.form.getRawValue(),
+        },
+        null,
+        2
+      )
+    );
+
+    if (!this.isEditing) {
+      this.generateDetailsTable(new Map());
+    }
+    this.cdr.markForCheck();
+  }
+
+  generateDetailsTable(
+    dataMap: Map<
+      string,
+      { detailId: number; parameters: any[]; rowIndex: number }[]
+    >
+  ) {
+    // Clear existing details array
+    while (this.detailsArray.length > 0) {
+      this.detailsArray.removeAt(0);
+    }
+
+    this.subHeadingRows = {};
+    const detailsArrayToAdd: FormGroup<DetailFormGroup>[] = [];
+
+    // Build existingDataFromMap with correct parameter mapping
+    const existingDataFromMap: { type: string; values: any[] }[] = [];
+    dataMap.forEach((detailGroups, type) => {
+      const mappedValues = detailGroups.map((detailGroup, index) => {
+        const row: any = {};
+        // Initialize all parameters with empty strings
+        const subHeading = this.subHeadings.find((sub) =>
+          sub.items.some(
+            (item: any) => item.m_rec_score_field_id.toString() === type
+          )
+        );
+        subHeading?.parameters.forEach((param: any) => {
+          row[param.normalizedKey] = '';
+        });
+        // Map actual parameters
+        detailGroup.parameters.forEach((param: any) => {
+          const paramDef = subHeading?.parameters.find(
+            (def: any) =>
+              def.m_rec_score_field_parameter_id ===
+              param.m_rec_score_field_parameter_id
+          );
+          if (paramDef) {
+            row[paramDef.normalizedKey] = param.parameter_value.includes('.pdf')
+              ? 'existing_file'
+              : param.parameter_value;
+          }
+        });
+        return row;
+      });
+      existingDataFromMap.push({ type, values: mappedValues });
+    });
+
+    this.subHeadings.forEach((subHeading) => {
+      const groupName = subHeading.m_rec_score_field_id.toString();
+      const subGroupRaw =
+        (
+          this.form.get(['subHeadings', groupName]) as FormGroup
+        )?.getRawValue() || {};
+      this.subHeadingRows[groupName] = [];
+
+      subHeading.items.forEach((item: any) => {
+        const key = item.normalizedKey;
+        const count = parseInt(subGroupRaw[key]?.count, 10) || 0;
+
+        if (count > 0) {
+          const scoreFieldId = item.m_rec_score_field_id.toString();
+          this.subHeadingRows[groupName].push({
+            type: scoreFieldId,
+            count: count,
+          });
+
+          const existingRowsData = existingDataFromMap.find(
+            (d) => d.type === scoreFieldId
+          );
+
+          // Create form groups for each row
+          for (let i = 0; i < count; i++) {
+            const detailGroup: DetailFormGroup = {
+              type: this.fb.control({ value: scoreFieldId, disabled: true }, [
+                Validators.required,
+              ]),
+            };
+
+            // Get the data for the current row
+            const existingData = existingRowsData?.values[i] || {};
+
+            // Ensure all parameters are initialized
+            subHeading.parameters.forEach((param: any) => {
+              const controlName = param.normalizedKey;
+              const paramValue = existingData[controlName] || '';
+              detailGroup[controlName] = this.fb.control({
+                value: paramValue,
+                disabled: !this.isEditing,
+              });
+            });
+
+            detailsArrayToAdd.push(this.fb.group(detailGroup));
+          }
+        }
+      });
+    });
+
+    detailsArrayToAdd.forEach((group, index) => {
+      console.log(
+        JSON.stringify(
+          {
+            event: 'generateDetailsTable_formGroup',
+            index,
+            groupValue: group.getRawValue(),
+          },
+          null,
+          2
+        )
+      );
+      this.detailsArray.push(group);
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'generateDetailsTable_after_patching',
+          detailsArray: this.detailsArray.getRawValue(),
+          formValue: this.form.getRawValue(),
+          existingDataFromMap,
+        },
+        null,
+        2
+      )
+    );
+    this.cdr.markForCheck();
+  }
+
+  onFileChange(event: Event, index: number, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const param = this.parameters.find(
+        (p) => p.normalizedKey === controlName
+      );
+      const scoreFieldId = this.detailsArray.at(index).get('type')?.value;
+
+      let paramKey: string | null = null;
+      if (param && scoreFieldId) {
+        paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}_${index}`;
+        if (
+          this.filePaths.has(paramKey) ||
+          this.detailsArray.at(index).get(controlName)?.value
+        ) {
+          alert('Only one file is allowed per parameter per row.');
+          input.value = '';
+          return;
+        }
+      }
+
+      this.detailsArray.at(index).patchValue({ [controlName]: file });
+      if (paramKey) {
+        this.filePaths.delete(paramKey);
+      }
+
+      console.log(
+        JSON.stringify(
+          {
+            event: 'onFileChange',
+            index,
+            controlName,
+            fileName: file?.name,
+            formValue: this.form.getRawValue(),
+            filePaths: Object.fromEntries(this.filePaths),
+          },
+          null,
+          2
+        )
+      );
+      this.cdr.markForCheck();
+    }
+  }
+
+  submit() {
+    const isDev = isDevMode();
+    const anySelected = this.detailsArray.length > 0;
+
+    const subheadingsData = this.subHeadings.reduce((acc, sub) => {
+      acc[sub.m_rec_score_field_id] = {
+        m_rec_score_field_id: sub.m_rec_score_field_id,
+        score_field_title_name: sub.score_field_title_name,
+        a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+        items: sub.items.map((item: any) => ({
+          m_rec_score_field_id: item.m_rec_score_field_id,
+          score_field_name_e: item.score_field_name_e,
+          normalizedKey: item.normalizedKey,
+        })),
+      };
+      return acc;
+    }, {} as { [key: string]: any });
+
+    const emitData = {
+      ...this.form.getRawValue(),
+      _isValid: isDev || this.form.valid,
+      heading: this.heading,
+      subheadings: subheadingsData,
+    };
+
+    console.log(
+      JSON.stringify(
+        { event: 'submit', emitData, formValid: this.form.valid },
+        null,
+        2
+      )
+    );
+
+    this.formData.emit(emitData);
+
+    if (isDev || anySelected) {
+      this.saveToDatabase();
+    } else {
+      console.log(
+        JSON.stringify(
+          { event: 'submit_no_data', message: 'No data to save' },
+          null,
+          2
+        )
+      );
+      alert('Please select at least one count for an item.');
+    }
+  }
+
+  saveToDatabase() {
+    const registrationNo = 24000001;
+    const a_rec_adv_main_id = 41;
+    const formData = new FormData();
+
+    const newDetails: any[] = [];
+    const existingDetails: any[] = [];
+    const newParameters: any[] = [];
+    const existingParameters: any[] = [];
+
+    const quantityInputs: any[] = [];
+    this.subHeadings.forEach((subHeading) => {
+      const groupName = subHeading.m_rec_score_field_id.toString();
+      const subGroupRaw =
+        (
+          this.form.get(['subHeadings', groupName]) as FormGroup
+        )?.getRawValue() || {};
+      subHeading.items.forEach((item: any) => {
+        const key = item.normalizedKey;
+        const count = parseInt(subGroupRaw[key]?.count, 10) || 0;
+        if (count > 0) {
+          quantityInputs.push({
+            scoreFieldId: item.m_rec_score_field_id,
+            quantity: count,
+            weightage: subHeading.score_field_field_weightage,
+            scoreFieldMarks: item.score_field_field_marks,
+            a_rec_adv_post_detail_id: item.a_rec_adv_post_detail_id,
+          });
+        }
+      });
+    });
+
+    let parentRecord: any = {};
+    if (this.heading) {
+      const headingId = this.heading.m_rec_score_field_id;
+      const isParentAndChildSame = this.subHeadings.some(
+        (sub) => sub.m_rec_score_field_id === headingId
+      );
+
+      if (!isParentAndChildSame) {
+        const scoreResult = this.utils.calculateScore(
+          3,
+          { quantityInputs },
+          this.heading.score_field_field_marks || 0
+        );
+        parentRecord = {
+          registration_no: registrationNo,
+          a_rec_app_main_id: a_rec_adv_main_id,
+          a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
+          score_field_parent_id: 0,
+          m_rec_score_field_id: this.heading.m_rec_score_field_id,
+          m_rec_score_field_method_id: 3,
+          score_field_value: scoreResult.score_field_value,
+          score_field_actual_value: scoreResult.score_field_actual_value,
+          score_field_calculated_value:
+            scoreResult.score_field_calculated_value,
+          verify_remark: 'Not Verified',
+          action_type: 'U',
+          action_date: new Date().toISOString(),
+          action_ip_address: '127.0.0.1',
+          delete_flag: 'N',
+        };
+        formData.append('parentScore', JSON.stringify(parentRecord));
+      }
+    }
+
+    const processedDetails = new Map<
+      number,
+      { count: number; detail: any; rows: any[] }
+    >();
+    this.detailsArray.controls.forEach((rowControl, rowIndex) => {
+      const typeValue = rowControl.get('type')?.value;
+      if (typeValue) {
+        const scoreFieldId = Number(typeValue);
+        const subHeading = this.subHeadings.find((sub) =>
+          sub.items.some(
+            (item: any) => item.m_rec_score_field_id === scoreFieldId
+          )
+        );
+        const item = subHeading?.items.find(
+          (item: any) => item.m_rec_score_field_id === scoreFieldId
+        );
+
+        let detailEntry = processedDetails.get(scoreFieldId);
+        if (!detailEntry) {
+          const existingDetailId = this.existingDetailIds.get(typeValue);
+          const detail = {
+            ...(existingDetailId && {
+              a_rec_app_score_field_detail_id: existingDetailId,
+            }),
+            registration_no: registrationNo,
+            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_adv_post_detail_id:
+              subHeading?.a_rec_adv_post_detail_id || 72,
+            score_field_parent_id: subHeading?.m_rec_score_field_id,
+            m_rec_score_field_id: scoreFieldId,
+            m_rec_score_field_method_id: 3,
+            score_field_value: 0, // This will be updated later
+            score_field_actual_value: 0,
+            score_field_calculated_value: 0,
+            field_marks: item?.score_field_field_marks,
+            field_weightage: item?.score_field_field_weightage,
+            remark: existingDetailId ? 'row updated' : 'row inserted',
+            unique_parameter_display_no: String(
+              subHeading?.score_field_display_no || 0
+            ),
+            verify_remark: 'Not Verified',
+            active_status: 'Y',
+            action_type: existingDetailId ? 'U' : 'C',
+            action_ip_address: '127.0.0.1',
+            action_remark: existingDetailId
+              ? 'data updated from recruitment form'
+              : 'data inserted from recruitment form',
+            action_by: 1,
+            delete_flag: 'N',
+          };
+          detailEntry = { count: 0, detail, rows: [] };
+          processedDetails.set(scoreFieldId, detailEntry);
+        }
+        detailEntry.count++;
+        detailEntry.rows.push({ rowControl, rowIndex });
+      }
+    });
+
+    processedDetails.forEach((entry) => {
+      entry.detail.score_field_value = entry.count;
+      if (entry.detail.action_type === 'C') {
+        newDetails.push(entry.detail);
+      } else {
+        existingDetails.push(entry.detail);
+      }
+
+      entry.rows.forEach(({ rowControl, rowIndex }) => {
+        const scoreFieldId = entry.detail.m_rec_score_field_id.toString();
+        const subHeading = this.subHeadings.find(
+          (sub) =>
+            sub.m_rec_score_field_id === entry.detail.score_field_parent_id
+        );
+        const processedParams = new Set<number>();
+
+        subHeading?.parameters.forEach((param: any) => {
+          if (processedParams.has(param.m_rec_score_field_parameter_id)) {
+            return;
+          }
+          processedParams.add(param.m_rec_score_field_parameter_id);
+
+          const paramValue = rowControl.getRawValue()[param.normalizedKey];
+          const isFile = paramValue instanceof File;
+          const displayOrder = param.parameter_display_order || 0;
+          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}_${rowIndex}`;
+          const existingParamId = this.existingParameterIds.get(paramKey);
+          const existingFilePath = this.filePaths.get(paramKey);
+
+          const parameter = {
+            ...(existingParamId && {
+              a_rec_app_score_field_parameter_detail_id: existingParamId,
+            }),
+            registration_no: registrationNo,
+            score_field_parent_id: entry.detail.score_field_parent_id,
+            m_rec_score_field_id: entry.detail.m_rec_score_field_id,
+            m_rec_score_field_parameter_id:
+              param.m_rec_score_field_parameter_id,
+            parameter_value: isFile
+              ? paramValue?.name ?? ''
+              : existingFilePath && !paramValue
+              ? existingFilePath
+              : String(paramValue ?? 'Not Provided'),
+            is_active: 'Y',
+            parameter_display_no: displayOrder,
+            unique_parameter_display_no: String(displayOrder),
+            verify_remark: 'Not Verified',
+            active_status: 'Y',
+            action_type: existingParamId ? 'U' : 'C',
+            action_date: new Date().toISOString(),
+            action_ip_address: '127.0.0.1',
+            action_remark: existingParamId
+              ? 'parameter updated from recruitment form'
+              : 'parameter inserted from recruitment form',
+            action_by: 1,
+            delete_flag: 'N',
+          };
+
+          if (existingParamId) {
+            existingParameters.push(parameter);
+          } else {
+            newParameters.push(parameter);
+          }
+
+          if (isFile) {
+            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${displayOrder}_${rowIndex}`;
+            formData.append(fileControlName, paramValue, paramValue.name);
+          } else if (existingFilePath && !paramValue) {
+            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${displayOrder}_${rowIndex}`;
+            formData.append(fileControlName, existingFilePath);
+          }
+        });
+      });
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'saveToDatabase_prepared_data',
+          newDetails,
+          existingDetails,
+          newParameters,
+          existingParameters,
+          formDataEntries: Array.from(formData.entries()).map(
+            ([key, value]) => ({
+              key,
+              value: value instanceof File ? value.name : value,
+            })
+          ),
+        },
+        null,
+        2
+      )
+    );
+
+    if (newDetails.length > 0) {
+      this.saveNewRecords(registrationNo, formData, newDetails, newParameters);
+    }
+
+    if (existingDetails.length > 0) {
+      this.updateExistingRecords(
+        registrationNo,
+        formData,
+        existingDetails,
+        existingParameters
+      );
+    }
+
+    if (newDetails.length === 0 && existingDetails.length === 0) {
+      console.log(
+        JSON.stringify(
+          { event: 'saveToDatabase_no_data', message: 'No data to save' },
+          null,
+          2
+        )
+      );
+      alert('No data to save. Please add at least one record.');
+    }
+  }
+
+  private saveNewRecords(
+    registrationNo: number,
+    formData: FormData,
+    details: any[],
+    parameters: any[]
+  ) {
+    const saveFormData = new FormData();
+    saveFormData.append('registration_no', registrationNo.toString());
+    saveFormData.append('scoreFieldDetailList', JSON.stringify(details));
+    saveFormData.append('scoreFieldParameterList', JSON.stringify(parameters));
+    saveFormData.append('parentScore', formData.get('parentScore') as string);
+
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      if (key.startsWith('file_')) {
+        saveFormData.append(key, value);
+      }
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'saveNewRecords',
+          registrationNo,
+          details,
+          parameters,
+          saveFormDataEntries: Array.from(saveFormData.entries()).map(
+            ([key, value]) => ({
+              key,
+              value: value instanceof File ? value.name : value,
+            })
+          ),
+        },
+        null,
+        2
+      )
+    );
+
+    this.HTTP.postForm(
+      '/candidate/postFile/saveCandidateScoreCard',
+      saveFormData,
+      'recruitement'
+    ).subscribe({
+      next: (res) => {
+        console.log(
+          JSON.stringify(
+            { event: 'saveNewRecords_success', response: res.body?.data },
+            null,
+            2
+          )
+        );
+
+        if (res.body?.data) {
+          details.forEach((detail, index) => {
+            if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
+              this.existingDetailIds.set(
+                detail.m_rec_score_field_id.toString(),
+                res.body.data[index].a_rec_app_score_field_detail_id
+              );
+            }
+          });
+
+          parameters.forEach((param, index) => {
+            if (
+              res.body.data[index]?.a_rec_app_score_field_parameter_detail_id
+            ) {
+              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.unique_parameter_display_no}`;
+              this.existingParameterIds.set(
+                paramKey,
+                res.body.data[index].a_rec_app_score_field_parameter_detail_id
+              );
+            }
+          });
+        }
+
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.log(
+          JSON.stringify(
+            { event: 'saveNewRecords_error', error: err.message },
+            null,
+            2
+          )
+        );
+        alert('Error saving new records: ' + err.message);
+      },
+    });
+  }
+
+  private updateExistingRecords(
+    registrationNo: number,
+    formData: FormData,
+    details: any[],
+    parameters: any[]
+  ) {
+    const updateFormData = new FormData();
+    updateFormData.append('registration_no', registrationNo.toString());
+    updateFormData.append('scoreFieldDetailList', JSON.stringify(details));
+    updateFormData.append(
+      'scoreFieldParameterList',
+      JSON.stringify(parameters)
+    );
+    updateFormData.append('parentScore', formData.get('parentScore') as string);
+
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      if (key.startsWith('file_')) {
+        updateFormData.append(key, value);
+      }
+    });
+
+    console.log(
+      JSON.stringify(
+        {
+          event: 'updateExistingRecords',
+          registrationNo,
+          details,
+          parameters,
+          updateFormDataEntries: Array.from(updateFormData.entries()).map(
+            ([key, value]) => ({
+              key,
+              value: value instanceof File ? value.name : value,
+            })
+          ),
+        },
+        null,
+        2
+      )
+    );
+
+    this.HTTP.postForm(
+      '/candidate/postFile/updateCandidateScoreCard',
+      updateFormData,
+      'recruitement'
+    ).subscribe({
+      next: (res) => {
+        console.log(
+          JSON.stringify(
+            {
+              event: 'updateExistingRecords_success',
+              response: res.body?.data,
+            },
+            null,
+            2
+          )
+        );
+        alert('Data saved successfully!');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.log(
+          JSON.stringify(
+            { event: 'updateExistingRecords_error', error: err.message },
+            null,
+            2
+          )
+        );
+        alert('Error updating records: ' + err.message);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+}

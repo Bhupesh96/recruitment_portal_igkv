@@ -1,0 +1,365 @@
+<div class="container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-4">
+    <p>Loading form data...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && errorMessage" class="text-center py-4 text-red-600">
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Form Content -->
+  <div
+    *ngIf="!loading && !errorMessage"
+    class="w-full font-['Source Sans Pro',sans-serif]"
+  >
+    <form [formGroup]="form" (ngSubmit)="submitForm()">
+      <div class="space-y-8 text-sm text-gray-700">
+        <!-- Notes Section -->
+        <div
+          *ngIf="notes.length"
+          class="p-4 bg-blue-50 border border-blue-200 rounded-md"
+        >
+          <ul class="list-disc list-inside space-y-2">
+            <li *ngFor="let note of notes">
+              <strong>NOTE:</strong> {{ note.message }}
+            </li>
+          </ul>
+        </div>
+
+        <!-- Heading -->
+        <h5
+          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
+        >
+          <svg
+            class="h-5 w-5 text-blue-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 14l9-5-9-5-9 5 9 5z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
+            />
+          </svg>
+          {{
+            heading?.score_field_title_name ||
+              "Educational Qualification Detail"
+          }}
+        </h5>
+
+        <!-- Subheading Sections -->
+        <div
+          *ngFor="let subheading of subheadings; let i = index"
+          class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
+        >
+          <h6
+            class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2 mb-4"
+          >
+            <svg
+              class="h-5 w-5 text-blue-600 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span class="break-words">{{
+              subheading.score_field_title_name
+            }}</span>
+          </h6>
+
+          <div
+            [formArrayName]="
+              'qualifications' +
+              subheading.m_rec_score_field_id +
+              '_' +
+              subheading.a_rec_adv_post_detail_id +
+              '_' +
+              i
+            "
+            class="mt-4"
+          >
+            <div
+              *ngIf="
+                !getParameters(
+                  subheading.m_rec_score_field_id,
+                  subheading.a_rec_adv_post_detail_id
+                ).length
+              "
+              class="text-center py-4 text-gray-600"
+            >
+              No parameters available for this section.
+            </div>
+
+            <div
+              *ngFor="
+                let group of getQualifications(
+                  subheading.m_rec_score_field_id +
+                    '_' +
+                    subheading.a_rec_adv_post_detail_id +
+                    '_' +
+                    i
+                ).controls;
+                let j = index
+              "
+              [formGroupName]="j"
+              class="space-y-6 mb-6 p-4 border border-gray-200 rounded-md"
+            >
+              <input
+                type="hidden"
+                formControlName="a_rec_app_score_field_detail_id"
+              />
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div
+                  *ngFor="
+                    let param of getParameters(
+                      subheading.m_rec_score_field_id,
+                      subheading.a_rec_adv_post_detail_id
+                    )
+                  "
+                >
+                  <input
+                    type="hidden"
+                    [formControlName]="
+                      'param_' + param.m_rec_score_field_parameter_id + '_id'
+                    "
+                  />
+
+                  <label class="block text-sm font-medium text-gray-600">
+                    {{ param.score_field_parameter_name }}
+                    <span class="text-red-600">*</span>
+                  </label>
+
+                  <ng-container [ngSwitch]="param.score_field_control_type">
+                    <!-- Text Input -->
+                    <input
+                      *ngSwitchCase="'T'"
+                      type="text"
+                      [formControlName]="param.score_field_parameter_name"
+                      [placeholder]="
+                        'e.g., ' +
+                        (param.score_field_parameter_name === 'University/Board'
+                          ? 'CBSE'
+                          : param.score_field_parameter_name === 'Degree'
+                          ? subheading.score_field_name_e
+                          : param.score_field_parameter_name === 'Subject/Group'
+                          ? 'Science'
+                          : param.score_field_parameter_name ===
+                            'Percentage Obtained'
+                          ? '77.00'
+                          : param.score_field_parameter_name)
+                      "
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+
+                    <!-- Dropdown (Division) -->
+                    <select
+                      *ngSwitchCase="'DE'"
+                      [formControlName]="param.score_field_parameter_name"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="">Select</option>
+                      <option value="Contractual">Contractual</option>
+                      <option value="Government">Government</option>
+                      <option value="Private">Private</option>
+                    </select>
+
+                    <!-- Year Dropdown -->
+                    <select
+                      *ngSwitchCase="'DY'"
+                      [formControlName]="param.score_field_parameter_name"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      <option value="">Select Year</option>
+                      <option *ngFor="let year of years" [value]="year">
+                        {{ year }}
+                      </option>
+                    </select>
+
+                    <!-- Date Input -->
+                    <input
+                      *ngSwitchCase="'DT'"
+                      type="date"
+                      [formControlName]="param.score_field_parameter_name"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+
+                    <!-- File Upload -->
+                    <ng-container *ngSwitchCase="'A'">
+                      <input
+                        type="file"
+                        (change)="
+                          onFileSelected(
+                            $event,
+                            j,
+                            'qualifications' +
+                              subheading.m_rec_score_field_id +
+                              '_' +
+                              subheading.a_rec_adv_post_detail_id +
+                              '_' +
+                              i,
+                            param.score_field_parameter_name
+                          )
+                        "
+                        accept="application/pdf,image/*"
+                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+
+                      <ng-container
+                        *ngIf="
+                          !group.get(param.score_field_parameter_name)?.value &&
+                          getFilePath(
+                            subheading.m_rec_score_field_id +
+                              '_' +
+                              subheading.a_rec_adv_post_detail_id +
+                              '_' +
+                              i,
+                            param.m_rec_score_field_parameter_id,
+                            j
+                          ) as filePath
+                        "
+                      >
+                        <a
+                          [href]="sanitizeFileUrl(filePath)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="mt-1 text-xs text-blue-600 hover:underline flex items-center"
+                        >
+                          <svg
+                            class="h-4 w-4 text-blue-600 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          View Uploaded File
+                        </a>
+                      </ng-container>
+                    </ng-container>
+                    <!-- Fallback -->
+                    <input
+                      *ngSwitchDefault
+                      type="text"
+                      [formControlName]="param.score_field_parameter_name"
+                      [placeholder]="
+                        'Enter ' + param.score_field_parameter_name
+                      "
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                  </ng-container>
+
+                  <!-- Validation Error -->
+                  <div
+                    *ngIf="
+                      group.get(param.score_field_parameter_name)?.touched &&
+                      group.get(param.score_field_parameter_name)?.invalid
+                    "
+                    class="text-red-600 text-xs mt-1"
+                  >
+                    {{ param.score_field_parameter_name }} is required
+                  </div>
+
+                  <!-- Uploaded File Name -->
+                  <div
+                    *ngIf="
+                      group.get(param.score_field_parameter_name)?.value &&
+                      param.score_field_control_type === 'A'
+                    "
+                    class="mt-1 text-xs flex items-center text-gray-600"
+                  >
+                    <svg
+                      class="h-4 w-4 text-blue-600 mr-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12l2 2 4-4m5 4a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {{
+                      group.get(param.score_field_parameter_name)?.value.name
+                    }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Remove button for additional entries (not the first one) -->
+              <div *ngIf="j > 0" class="flex justify-end">
+                <button
+                  type="button"
+                  (click)="removeQualification(subheading, i, j)"
+                  class="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm flex items-center"
+                >
+                  <svg
+                    class="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <!-- Add More Experience Button -->
+            <div class="mt-4">
+              <button
+                type="button"
+                (click)="addQualification(subheading, i)"
+                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center"
+              >
+                <svg
+                  class="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Add More Experience
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
