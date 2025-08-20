@@ -145,13 +145,14 @@ export class Step3Component implements OnInit {
   }
 
   getFilePath(
-    scoreFieldId: string | null | undefined,
-    paramId: number
+    scoreFieldId: string | null | undefined, // Add undefined here
+    paramId: number,
+    rowIndex: number
   ): string | null {
     if (!scoreFieldId) return null;
-    return this.filePaths.get(`${scoreFieldId}_${paramId}`) || null;
+    const key = `${scoreFieldId}_${paramId}_${rowIndex}`;
+    return this.filePaths.get(key) || null;
   }
-
   sanitizeFileUrl(filePath: string): SafeUrl {
     let fileName = filePath.split('\\').pop() || '';
     fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
@@ -456,172 +457,213 @@ export class Step3Component implements OnInit {
     this.cdr.markForCheck();
   }
 
-generateDetailsTable(savedData: any[] = []) {
-  console.log('saved data for generating table ', JSON.stringify(savedData, null, 2));
-  if (this.isGeneratingTable) {
-    return;
-  }
+  generateDetailsTable(savedData: any[] = []) {
+    console.log(
+      'saved data for generating table ',
+      JSON.stringify(savedData, null, 2)
+    );
 
-  this.isGeneratingTable = true;
-
-  try {
-    // Preserve existing valid data, including files
-    const existingData: { [key: string]: any[] } = {};
-    const existingFiles: { [key: string]: File | null } = {};
-    this.detailsArray.controls.forEach((control, index) => {
-      const typeValue = control.get('type')?.value;
-      if (typeValue && control.valid) {
-        if (!existingData[typeValue]) {
-          existingData[typeValue] = [];
-        }
-        const rowData = control.getRawValue();
-        existingData[typeValue].push(rowData);
-
-        const parameters = this.getParametersForSubHeading(typeValue);
-        parameters.forEach((param: any) => {
-          const controlName = param.normalizedKey;
-          if (rowData[controlName] instanceof File) {
-            existingFiles[`${typeValue}_${param.m_rec_score_field_parameter_id}_${index}`] = rowData[controlName];
-          }
-        });
-      }
-    });
-
-    // Preserve existing filePaths
-    const preservedFilePaths = new Map(this.filePaths);
-
-    // Clear existing details
-    while (this.detailsArray.length > 0) {
-      this.detailsArray.removeAt(0);
+    if (this.isGeneratingTable) {
+      return;
     }
 
-    // Reset subHeadingDetails
-    this.subHeadingDetails = {};
-    this.subHeadings.forEach((sub) => {
-      const key = sub.m_rec_score_field_id.toString();
-      this.subHeadingDetails[key] = this.subHeadingDetails[key] || [];
-    });
+    this.isGeneratingTable = true;
 
-    this.subHeadings.forEach((subHeading) => {
-      const groupName = subHeading.m_rec_score_field_id.toString();
-      const subGroup = this.form.get(['subHeadings', groupName]) as FormGroup;
-      const parametersForSubHeading = this.getParametersForSubHeading(groupName);
+    try {
+      // Preserve existing valid data, including files
+      const existingData: { [key: string]: any[] } = {};
+      const existingFiles: { [key: string]: File | null } = {};
 
-      if (!subGroup || parametersForSubHeading.length === 0) {
-        if (isDevMode()) {
-          console.log(`Skipping subHeading ${groupName}: No subGroup or parameters`);
+      // Preserve existing filePaths FIRST
+      const preservedFilePaths = new Map(this.filePaths);
+
+      this.detailsArray.controls.forEach((control, index) => {
+        const typeValue = control.get('type')?.value;
+        if (typeValue && control.valid) {
+          if (!existingData[typeValue]) {
+            existingData[typeValue] = [];
+          }
+          const rowData = control.getRawValue();
+          existingData[typeValue].push(rowData);
+
+          const parameters = this.getParametersForSubHeading(typeValue);
+          parameters.forEach((param: any) => {
+            const controlName = param.normalizedKey;
+            if (rowData[controlName] instanceof File) {
+              existingFiles[
+                `${typeValue}_${param.m_rec_score_field_parameter_id}_${index}`
+              ] = rowData[controlName];
+            }
+          });
         }
-        return;
+      });
+
+      // Clear existing details
+      while (this.detailsArray.length > 0) {
+        this.detailsArray.removeAt(0);
       }
 
-      const subGroupRaw = subGroup.getRawValue() || {};
+      // Reset subHeadingDetails
+      this.subHeadingDetails = {};
+      this.subHeadings.forEach((sub) => {
+        const key = sub.m_rec_score_field_id.toString();
+        this.subHeadingDetails[key] = this.subHeadingDetails[key] || [];
+      });
 
-      subHeading.items.forEach((item: any) => {
-        const key = item.normalizedKey;
-        const control = subGroupRaw[key];
-        const count = control?.count ? parseInt(control.count, 10) : 0;
+      // Restore filePaths BEFORE creating new form controls
+      this.filePaths = preservedFilePaths;
 
-        if (isNaN(count) || count <= 0) {
+      this.subHeadings.forEach((subHeading) => {
+        const groupName = subHeading.m_rec_score_field_id.toString();
+        const subGroup = this.form.get(['subHeadings', groupName]) as FormGroup;
+        const parametersForSubHeading =
+          this.getParametersForSubHeading(groupName);
+
+        if (!subGroup || parametersForSubHeading.length === 0) {
           if (isDevMode()) {
-            console.log(`No rows for item ${key} in subHeading ${groupName}: count=${count}`);
+            console.log(
+              `Skipping subHeading ${groupName}: No subGroup or parameters`
+            );
           }
           return;
         }
 
-        const typeValue = item.m_rec_score_field_id.toString();
+        const subGroupRaw = subGroup.getRawValue() || {};
 
-        // Find saved rows for this subheading type
-        const savedRowsForType = savedData.filter((d) => d.m_rec_score_field_id.toString() === typeValue);
+        subHeading.items.forEach((item: any) => {
+          const key = item.normalizedKey;
+          const control = subGroupRaw[key];
+          const count = control?.count ? parseInt(control.count, 10) : 0;
 
-        // Sort by parameter_sequence_id to ensure correct order
-        savedRowsForType.sort((a, b) => a.parameter_sequence_id - b.parameter_sequence_id);
-
-        // Group into logical rows based on number of parameters
-        const parametersPerRow = parametersForSubHeading.length || 1;
-        const logicalRows: any[][] = [];
-        for (let i = 0; i < savedRowsForType.length; i += parametersPerRow) {
-          logicalRows.push(savedRowsForType.slice(i, i + parametersPerRow));
-        }
-
-        if (isDevMode()) {
-          console.log(`Logical rows for type ${typeValue}:`, JSON.stringify(logicalRows, null, 2));
-        }
-
-        // Create form rows based on count
-        for (let i = 0; i < count; i++) {
-          const detailGroup: DetailFormGroup = {
-            type: this.fb.control({ value: typeValue, disabled: true }, [Validators.required]),
-          };
-
-          parametersForSubHeading.forEach((param: any) => {
-            const controlName = param.normalizedKey;
-            detailGroup[controlName] = this.fb.control(
-              '',
-              param.is_mandatory === 'Y' ? [Validators.required] : []
-            );
-          });
-
-          const newGroup = this.fb.group(detailGroup);
-          this.detailsArray.push(newGroup);
-
-          if (!this.subHeadingDetails[groupName]) {
-            this.subHeadingDetails[groupName] = [];
+          if (isNaN(count) || count <= 0) {
+            if (isDevMode()) {
+              console.log(
+                `No rows for item ${key} in subHeading ${groupName}: count=${count}`
+              );
+            }
+            return;
           }
-          this.subHeadingDetails[groupName].push(newGroup);
 
-          // Restore local cached values
-          const cachedRow = existingData[typeValue]?.[i];
-          if (cachedRow) {
-            Object.keys(cachedRow).forEach((key) => {
-              if (key !== 'type' && newGroup.get(key)) {
-                const control = newGroup.get(key);
-                if (control && !control.disabled) {
-                  control.setValue(cachedRow[key], { emitEvent: false });
-                }
-              }
-            });
+          const typeValue = item.m_rec_score_field_id.toString();
+
+          // Find saved rows for this subheading type
+          const savedRowsForType = savedData.filter(
+            (d) => d.m_rec_score_field_id.toString() === typeValue
+          );
+
+          // Sort by parameter_sequence_id to ensure correct order
+          savedRowsForType.sort(
+            (a, b) => a.parameter_sequence_id - b.parameter_sequence_id
+          );
+
+          // Group into logical rows based on number of parameters
+          const parametersPerRow = parametersForSubHeading.length || 1;
+          const logicalRows: any[][] = [];
+          for (let i = 0; i < savedRowsForType.length; i += parametersPerRow) {
+            logicalRows.push(savedRowsForType.slice(i, i + parametersPerRow));
+          }
+
+          if (isDevMode()) {
+            console.log(
+              `Logical rows for type ${typeValue}:`,
+              JSON.stringify(logicalRows, null, 2)
+            );
+          }
+
+          // Create form rows based on count
+          for (let i = 0; i < count; i++) {
+            const detailGroup: DetailFormGroup = {
+              type: this.fb.control({ value: typeValue, disabled: true }, [
+                Validators.required,
+              ]),
+            };
 
             parametersForSubHeading.forEach((param: any) => {
-              const fileKey = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
-              if (existingFiles[fileKey]) {
-                newGroup.get(param.normalizedKey)?.setValue(existingFiles[fileKey], { emitEvent: false });
-              }
+              const controlName = param.normalizedKey;
+              detailGroup[controlName] = this.fb.control(
+                '',
+                param.is_mandatory === 'Y' ? [Validators.required] : []
+              );
             });
-          }
 
-          // Prefill from API savedData
-          const savedRowGroup = logicalRows[i];
-          if (savedRowGroup) {
-            savedRowGroup.forEach((savedRow) => {
-              parametersForSubHeading.forEach((param: any) => {
-                if (savedRow.m_rec_score_field_parameter_id === param.m_rec_score_field_parameter_id) {
-                  const paramValue = savedRow.parameter_value;
-                  const controlName = param.normalizedKey;
-                  const key = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
-                  if (paramValue?.includes('.pdf')) {
-                    this.filePaths.set(key, paramValue);
-                    newGroup.get(controlName)?.setValue(null, { emitEvent: false });
-                  } else {
-                    newGroup.get(controlName)?.setValue(paramValue, { emitEvent: false });
+            const newGroup = this.fb.group(detailGroup);
+            this.detailsArray.push(newGroup);
+
+            if (!this.subHeadingDetails[groupName]) {
+              this.subHeadingDetails[groupName] = [];
+            }
+            this.subHeadingDetails[groupName].push(newGroup);
+
+            // Prefill from API savedData FIRST
+            const savedRowGroup = logicalRows[i];
+            if (savedRowGroup) {
+              console.log(
+                `👉 Patching savedRowGroup for type=${typeValue}, rowIndex=${i}`,
+                JSON.stringify(savedRowGroup, null, 2)
+              );
+              savedRowGroup.forEach((savedRow) => {
+                parametersForSubHeading.forEach((param: any) => {
+                  if (
+                    savedRow.m_rec_score_field_parameter_id ===
+                    param.m_rec_score_field_parameter_id
+                  ) {
+                    const paramValue = savedRow.parameter_value;
+                    const controlName = param.normalizedKey;
+                    const key = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
+                    console.log(
+                      `🔄 Setting control for paramId=${param.m_rec_score_field_parameter_id}, control=${controlName}, key=${key}, value=${paramValue}`
+                    );
+
+                    if (paramValue?.includes('.pdf')) {
+                      // Store file path and set control to null for file inputs
+                      this.filePaths.set(key, paramValue);
+                      newGroup
+                        .get(controlName)
+                        ?.setValue(null, { emitEvent: false });
+                    } else {
+                      newGroup
+                        .get(controlName)
+                        ?.setValue(paramValue, { emitEvent: false });
+                    }
+                  }
+                });
+              });
+            }
+
+            // Then restore local cached values (overwrite API data if needed)
+            const cachedRow = existingData[typeValue]?.[i];
+            if (cachedRow) {
+              Object.keys(cachedRow).forEach((key) => {
+                if (key !== 'type' && newGroup.get(key)) {
+                  const control = newGroup.get(key);
+                  if (control && !control.disabled) {
+                    control.setValue(cachedRow[key], { emitEvent: false });
                   }
                 }
               });
-            });
+
+              parametersForSubHeading.forEach((param: any) => {
+                const fileKey = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
+                if (existingFiles[fileKey]) {
+                  newGroup
+                    .get(param.normalizedKey)
+                    ?.setValue(existingFiles[fileKey], { emitEvent: false });
+                  // Remove the file path if we have a new file
+                  this.filePaths.delete(fileKey);
+                }
+              });
+            }
           }
-        }
+        });
       });
-    });
 
-    // Restore filePaths
-    this.filePaths = preservedFilePaths;
-
-    this.cdr.detectChanges();
-  } catch (error) {
-    console.error('Error generating details table:', error);
-  } finally {
-    this.isGeneratingTable = false;
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Error generating details table:', error);
+    } finally {
+      this.isGeneratingTable = false;
+    }
   }
-}
   onFileChange(event: Event, index: number, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -635,8 +677,7 @@ generateDetailsTable(savedData: any[] = []) {
         const param = parameters.find((p) => p.normalizedKey === controlName);
         if (param) {
           const scoreFieldId = detailType;
-          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}`;
-          // Only clear the filePath if a new file is uploaded for this specific parameter
+          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}_${index}`;
           if (this.filePaths.has(paramKey)) {
             this.filePaths.delete(paramKey);
           }
@@ -646,7 +687,24 @@ generateDetailsTable(savedData: any[] = []) {
       this.cdr.markForCheck();
     }
   }
+  private generateFilePath(
+    registrationNo: number,
+    file: File,
+    scoreFieldId: number,
+    parameterId: number,
+    displayOrder: number,
+    rowIndex: number
+  ): string {
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const baseName = file.name.split('.').slice(0, -1).join('.');
 
+    // Generate a unique filename
+    const fileName = `${timestamp}_scorecard_${scoreFieldId}_${parameterId}_${displayOrder}_${rowIndex}.${fileExtension}`;
+
+    // Return the full path structure
+    return `recruitment/${registrationNo}/${fileName}`;
+  }
   submit() {
     const isDev = isDevMode();
     const anySelected = this.detailsArray.length > 0;
@@ -850,7 +908,14 @@ generateDetailsTable(savedData: any[] = []) {
             m_rec_score_field_parameter_id:
               param.m_rec_score_field_parameter_id,
             parameter_value: isFile
-              ? paramValue?.name ?? ''
+              ? this.generateFilePath(
+                  registrationNo,
+                  paramValue,
+                  entry.detail.m_rec_score_field_id,
+                  param.m_rec_score_field_parameter_id,
+                  displayOrder,
+                  rowIndex
+                )
               : existingFilePath && !paramValue
               ? existingFilePath
               : String(paramValue ?? 'Not Provided'),
