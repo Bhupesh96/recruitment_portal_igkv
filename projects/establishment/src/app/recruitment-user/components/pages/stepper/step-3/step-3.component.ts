@@ -50,8 +50,8 @@ export class Step3Component implements OnInit {
   private isGeneratingTable: boolean = false;
   subHeadingParameters: { [key: string]: any[] } = {};
   subHeadingDetails: { [key: string]: FormGroup<DetailFormGroup>[] } = {};
-  // New property to organize rows by subheading
   heading: any;
+
   constructor(
     private fb: FormBuilder,
     private HTTP: HttpService,
@@ -145,7 +145,7 @@ export class Step3Component implements OnInit {
   }
 
   getFilePath(
-    scoreFieldId: string | null | undefined, // Add undefined here
+    scoreFieldId: string | null | undefined,
     paramId: number,
     rowIndex: number
   ): string | null {
@@ -153,6 +153,7 @@ export class Step3Component implements OnInit {
     const key = `${scoreFieldId}_${paramId}_${rowIndex}`;
     return this.filePaths.get(key) || null;
   }
+
   sanitizeFileUrl(filePath: string): SafeUrl {
     let fileName = filePath.split('\\').pop() || '';
     fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
@@ -168,14 +169,12 @@ export class Step3Component implements OnInit {
     const registrationNo = 24000001;
     const a_rec_adv_main_id = 95;
 
-    // collect all subheading ids from your structure
-    const subheadingIds = Object.keys(this.subHeadingDetails); // e.g. ["33", "3088"]
+    const subheadingIds = Object.keys(this.subHeadingDetails);
 
     if (subheadingIds.length === 0) {
       return;
     }
 
-    // create API requests for each subheading id
     const requests = subheadingIds.map((subId) =>
       this.HTTP.getData(
         `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${subId}`,
@@ -185,17 +184,15 @@ export class Step3Component implements OnInit {
 
     forkJoin(requests).subscribe({
       next: (responses: any[]) => {
-        // merge all API responses into one flat array
         const savedData = responses.flatMap(
           (res) => res.body?.data || res.data || []
         );
 
         console.log(
-          '✅ Combined savedData for Step-2:',
+          '✅ Combined savedData for Step-3:',
           JSON.stringify(savedData, null, 2)
         );
 
-        // Reset counts first
         this.subHeadings.forEach((subHeading) => {
           const groupName = subHeading.m_rec_score_field_id.toString();
           const subGroup = this.form.get(
@@ -209,10 +206,8 @@ export class Step3Component implements OnInit {
           });
         });
 
-        // Clear old file paths
         this.filePaths.clear();
 
-        // Prepare existing detail & parameter ids + counts
         if (savedData.length > 0) {
           savedData.forEach((item: any) => {
             this.existingDetailIds.set(
@@ -232,7 +227,6 @@ export class Step3Component implements OnInit {
             }
           });
 
-          // set counts based on saved rows
           this.subHeadings.forEach((subHeading) => {
             const groupName = subHeading.m_rec_score_field_id.toString();
             const subGroup = this.form.get(
@@ -265,7 +259,6 @@ export class Step3Component implements OnInit {
           });
         }
 
-        // ✅ Now generate details table with savedData for prefill
         this.generateDetailsTable(savedData);
       },
       error: (err) => {
@@ -274,14 +267,14 @@ export class Step3Component implements OnInit {
       },
     });
   }
+
   private initializeFormWithDefaults(): void {
     this.subHeadings.forEach((subHeading) => {
       const groupName = subHeading.m_rec_score_field_id.toString();
       const subGroup = this.form.get(`subHeadings.${groupName}`) as FormGroup;
 
       subHeading.items.forEach((item: any) => {
-        const key = item.normalizedKey;
-        subGroup.get(`${key}.count`)?.setValue('', { emitEvent: false });
+        subGroup.get(`${item.normalizedKey}.count`)?.setValue('', { emitEvent: false });
       });
     });
 
@@ -299,9 +292,13 @@ export class Step3Component implements OnInit {
     ).subscribe({
       next: (headingResponse: any) => {
         const data = headingResponse.body?.data || headingResponse.data || [];
+        console.log('Heading Data:', JSON.stringify(data, null, 2));
         this.heading = data[0];
         this.score_field_title_name =
           data[0]?.score_field_title_name || 'Academic Excellence';
+        if (!data[0]?.score_field_field_marks) {
+          console.warn('Warning: Heading score_field_field_marks is missing or zero');
+        }
         const a_rec_adv_post_detail_id =
           data[0]?.a_rec_adv_post_detail_id || 244;
 
@@ -470,11 +467,9 @@ export class Step3Component implements OnInit {
     this.isGeneratingTable = true;
 
     try {
-      // Preserve existing valid data, including files
       const existingData: { [key: string]: any[] } = {};
       const existingFiles: { [key: string]: File | null } = {};
 
-      // Preserve existing filePaths FIRST
       const preservedFilePaths = new Map(this.filePaths);
 
       this.detailsArray.controls.forEach((control, index) => {
@@ -498,19 +493,16 @@ export class Step3Component implements OnInit {
         }
       });
 
-      // Clear existing details
       while (this.detailsArray.length > 0) {
         this.detailsArray.removeAt(0);
       }
 
-      // Reset subHeadingDetails
       this.subHeadingDetails = {};
       this.subHeadings.forEach((sub) => {
         const key = sub.m_rec_score_field_id.toString();
         this.subHeadingDetails[key] = this.subHeadingDetails[key] || [];
       });
 
-      // Restore filePaths BEFORE creating new form controls
       this.filePaths = preservedFilePaths;
 
       this.subHeadings.forEach((subHeading) => {
@@ -546,17 +538,14 @@ export class Step3Component implements OnInit {
 
           const typeValue = item.m_rec_score_field_id.toString();
 
-          // Find saved rows for this subheading type
           const savedRowsForType = savedData.filter(
             (d) => d.m_rec_score_field_id.toString() === typeValue
           );
 
-          // Sort by parameter_sequence_id to ensure correct order
           savedRowsForType.sort(
             (a, b) => a.parameter_sequence_id - b.parameter_sequence_id
           );
 
-          // Group into logical rows based on number of parameters
           const parametersPerRow = parametersForSubHeading.length || 1;
           const logicalRows: any[][] = [];
           for (let i = 0; i < savedRowsForType.length; i += parametersPerRow) {
@@ -570,7 +559,6 @@ export class Step3Component implements OnInit {
             );
           }
 
-          // Create form rows based on count
           for (let i = 0; i < count; i++) {
             const detailGroup: DetailFormGroup = {
               type: this.fb.control({ value: typeValue, disabled: true }, [
@@ -594,7 +582,6 @@ export class Step3Component implements OnInit {
             }
             this.subHeadingDetails[groupName].push(newGroup);
 
-            // Prefill from API savedData FIRST
             const savedRowGroup = logicalRows[i];
             if (savedRowGroup) {
               console.log(
@@ -615,7 +602,6 @@ export class Step3Component implements OnInit {
                     );
 
                     if (paramValue?.includes('.pdf')) {
-                      // Store file path and set control to null for file inputs
                       this.filePaths.set(key, paramValue);
                       newGroup
                         .get(controlName)
@@ -630,7 +616,6 @@ export class Step3Component implements OnInit {
               });
             }
 
-            // Then restore local cached values (overwrite API data if needed)
             const cachedRow = existingData[typeValue]?.[i];
             if (cachedRow) {
               Object.keys(cachedRow).forEach((key) => {
@@ -648,7 +633,6 @@ export class Step3Component implements OnInit {
                   newGroup
                     .get(param.normalizedKey)
                     ?.setValue(existingFiles[fileKey], { emitEvent: false });
-                  // Remove the file path if we have a new file
                   this.filePaths.delete(fileKey);
                 }
               });
@@ -664,6 +648,7 @@ export class Step3Component implements OnInit {
       this.isGeneratingTable = false;
     }
   }
+
   onFileChange(event: Event, index: number, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -687,6 +672,7 @@ export class Step3Component implements OnInit {
       this.cdr.markForCheck();
     }
   }
+
   private generateFilePath(
     registrationNo: number,
     file: File,
@@ -699,12 +685,10 @@ export class Step3Component implements OnInit {
     const fileExtension = file.name.split('.').pop();
     const baseName = file.name.split('.').slice(0, -1).join('.');
 
-    // Generate a unique filename
     const fileName = `${timestamp}_scorecard_${scoreFieldId}_${parameterId}_${displayOrder}_${rowIndex}.${fileExtension}`;
-
-    // Return the full path structure
     return `recruitment/${registrationNo}/${fileName}`;
   }
+
   submit() {
     const isDev = isDevMode();
     const anySelected = this.detailsArray.length > 0;
@@ -754,13 +738,12 @@ export class Step3Component implements OnInit {
     const newParameters: any[] = [];
     const existingParameters: any[] = [];
 
+    // Prepare quantity inputs for parent and child calculations
     const quantityInputs: any[] = [];
     this.subHeadings.forEach((subHeading) => {
       const groupName = subHeading.m_rec_score_field_id.toString();
       const subGroupRaw =
-        (
-          this.form.get(['subHeadings', groupName]) as FormGroup
-        )?.getRawValue() || {};
+        (this.form.get(['subHeadings', groupName]) as FormGroup)?.getRawValue() || {};
       subHeading.items.forEach((item: any) => {
         const key = item.normalizedKey;
         const count = parseInt(subGroupRaw[key]?.count, 10) || 0;
@@ -768,14 +751,17 @@ export class Step3Component implements OnInit {
           quantityInputs.push({
             scoreFieldId: item.m_rec_score_field_id,
             quantity: count,
-            weightage: subHeading.score_field_field_weightage,
-            scoreFieldMarks: item.score_field_field_marks,
-            a_rec_adv_post_detail_id: item.a_rec_adv_post_detail_id,
+            weightage: item.score_field_field_weightage || subHeading.score_field_field_weightage || 0,
+            scoreFieldMarks: item.score_field_field_marks || 0,
+            a_rec_adv_post_detail_id: item.a_rec_adv_post_detail_id || subHeading.a_rec_adv_post_detail_id,
           });
         }
       });
     });
 
+    console.log('Quantity Inputs for Parent:', JSON.stringify(quantityInputs, null, 2));
+
+    // Parent record calculation
     let parentRecord: any = {};
     if (this.heading) {
       const headingId = this.heading.m_rec_score_field_id;
@@ -784,22 +770,26 @@ export class Step3Component implements OnInit {
       );
 
       if (!isParentAndChildSame) {
+        const parentMaxMarks = this.heading.score_field_field_marks || 20; // Fallback to 20 if undefined
+        console.log('Parent Max Marks:', parentMaxMarks);
         const scoreResult = this.utils.calculateScore(
           3,
           { quantityInputs },
-          this.heading.score_field_field_marks || 0
+          parentMaxMarks
         );
+        console.log('Parent Score Result:', JSON.stringify(scoreResult, null, 2));
         parentRecord = {
           registration_no: registrationNo,
           a_rec_app_main_id: a_rec_adv_main_id,
-          a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
+          a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id || 244,
           score_field_parent_id: 0,
           m_rec_score_field_id: this.heading.m_rec_score_field_id,
           m_rec_score_field_method_id: 3,
           score_field_value: scoreResult.score_field_value,
           score_field_actual_value: scoreResult.score_field_actual_value,
-          score_field_calculated_value:
-            scoreResult.score_field_calculated_value,
+          score_field_calculated_value: scoreResult.score_field_calculated_value,
+          field_marks: parentMaxMarks,
+          field_weightage: this.heading.score_field_field_weightage || 0,
           verify_remark: 'Not Verified',
           action_type: 'U',
           action_date: new Date().toISOString(),
@@ -810,6 +800,7 @@ export class Step3Component implements OnInit {
       }
     }
 
+    // Child record calculations
     const processedDetails = new Map<
       number,
       { count: number; detail: any; rows: any[] }
@@ -837,15 +828,15 @@ export class Step3Component implements OnInit {
             registration_no: registrationNo,
             a_rec_app_main_id: a_rec_adv_main_id,
             a_rec_adv_post_detail_id:
-              subHeading?.a_rec_adv_post_detail_id || 72,
+              subHeading?.a_rec_adv_post_detail_id || 244,
             score_field_parent_id: subHeading?.m_rec_score_field_id,
             m_rec_score_field_id: scoreFieldId,
             m_rec_score_field_method_id: 3,
-            score_field_value: 0, // This will be updated later
-            score_field_actual_value: 0,
-            score_field_calculated_value: 0,
-            field_marks: item?.score_field_field_marks,
-            field_weightage: item?.score_field_field_weightage,
+            score_field_value: 0, // Updated below
+            score_field_actual_value: 0, // Updated below
+            score_field_calculated_value: 0, // Updated below
+            field_marks: item?.score_field_field_marks || 0,
+            field_weightage: item?.score_field_field_weightage || subHeading?.score_field_field_weightage || 0,
             remark: existingDetailId ? 'row updated' : 'row inserted',
             unique_parameter_display_no: String(
               subHeading?.score_field_display_no || 0
@@ -869,7 +860,35 @@ export class Step3Component implements OnInit {
     });
 
     processedDetails.forEach((entry) => {
-      entry.detail.score_field_value = entry.count;
+      const subHeading = this.subHeadings.find(
+        (sub) => sub.m_rec_score_field_id === entry.detail.score_field_parent_id
+      );
+      const item = subHeading?.items.find(
+        (item: any) => item.m_rec_score_field_id === entry.detail.m_rec_score_field_id
+      );
+
+      // Calculate score for this child record
+      const scoreResult = this.utils.calculateQuantityBasedScore(
+        [
+          {
+            scoreFieldId: entry.detail.m_rec_score_field_id,
+            quantity: entry.count,
+            weightage: item?.score_field_field_weightage || subHeading?.score_field_field_weightage || 0,
+            scoreFieldMarks: item?.score_field_field_marks || 0,
+          },
+        ],
+        item?.score_field_field_marks || 0
+      );
+
+      console.log(
+        `Child Score Result for scoreFieldId ${entry.detail.m_rec_score_field_id}:`,
+        JSON.stringify(scoreResult, null, 2)
+      );
+
+      entry.detail.score_field_value = scoreResult.score_field_value;
+      entry.detail.score_field_actual_value = scoreResult.score_field_actual_value;
+      entry.detail.score_field_calculated_value = scoreResult.score_field_calculated_value;
+
       if (entry.detail.action_type === 'C') {
         newDetails.push(entry.detail);
       } else {
@@ -1156,39 +1175,5 @@ export class Step3Component implements OnInit {
         this.cdr.markForCheck();
       },
     });
-  }
-  private updateIdMaps(response: any) {
-    if (response.body?.data) {
-      if (response.body.data.new_details) {
-        response.body.data.new_details.forEach((detail: any) => {
-          if (
-            detail.a_rec_app_score_field_detail_id &&
-            detail.m_rec_score_field_id
-          ) {
-            this.existingDetailIds.set(
-              detail.m_rec_score_field_id.toString(),
-              detail.a_rec_app_score_field_detail_id
-            );
-          }
-        });
-      }
-
-      if (response.body.data.new_parameters) {
-        response.body.data.new_parameters.forEach((param: any) => {
-          if (
-            param.a_rec_app_score_field_parameter_detail_id &&
-            param.m_rec_score_field_id &&
-            param.m_rec_score_field_parameter_id
-          ) {
-            const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}`;
-            this.existingParameterIds.set(
-              paramKey,
-              param.a_rec_app_score_field_parameter_detail_id
-            );
-          }
-        });
-      }
-    }
-    this.cdr.markForCheck();
   }
 }

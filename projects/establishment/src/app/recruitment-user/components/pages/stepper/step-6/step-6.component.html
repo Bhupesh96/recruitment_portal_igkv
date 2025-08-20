@@ -167,11 +167,17 @@
             >
               <thead class="bg-blue-700 text-white">
                 <tr>
-                  <th class="px-4 py-2 text-left text-xs font-medium tracking-wide">
+                  <th
+                    class="px-4 py-2 text-left text-xs font-medium tracking-wide"
+                  >
                     Item Name
                   </th>
                   <th
-                    *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)"
+                    *ngFor="
+                      let param of getParametersForSubHeading(
+                        subHeading.m_rec_score_field_id
+                      )
+                    "
                     class="px-4 py-2 text-left text-xs font-medium tracking-wide"
                   >
                     {{ param.score_field_parameter_name }}
@@ -181,7 +187,12 @@
               <tbody class="divide-y divide-gray-100">
                 <!-- Use the new method to get rows for this specific subheading -->
                 <tr
-                  *ngFor="let detailForm of getRowsForSubHeading(subHeading.m_rec_score_field_id); let i = index"
+                  *ngFor="
+                    let detailForm of getRowsForSubHeading(
+                      subHeading.m_rec_score_field_id
+                    );
+                    let i = index
+                  "
                   [formGroup]="detailForm"
                   class="hover:bg-blue-50/50 transition"
                 >
@@ -194,7 +205,11 @@
                     />
                   </td>
                   <td
-                    *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)"
+                    *ngFor="
+                      let param of getParametersForSubHeading(
+                        subHeading.m_rec_score_field_id
+                      )
+                    "
                     class="px-4 py-2.5 text-sm"
                   >
                     <ng-container [ngSwitch]="param.score_field_control_type">
@@ -236,9 +251,7 @@
                             onFileChange($event, i, param.normalizedKey)
                           "
                           accept=".pdf,.jpg,.jpeg,.png"
-                          [attr.data-file-input]="
-                            param.normalizedKey + '-' + i
-                          "
+                          [attr.data-file-input]="param.normalizedKey + '-' + i"
                         />
                         <!-- Display saved file if it exists and no new file is selected -->
                         <ng-container
@@ -246,7 +259,8 @@
                             !detailForm.get(param.normalizedKey)?.value &&
                             getFilePath(
                               detailForm.get('type')?.value,
-                              param.m_rec_score_field_parameter_id
+                              param.m_rec_score_field_parameter_id,
+                              i
                             ) as filePath
                           "
                         >
@@ -291,8 +305,6 @@
           </div>
         </div>
       </ng-container>
-
-      
     </form>
   </div>
 </section>
