@@ -229,7 +229,7 @@ export class Step3Component implements OnInit {
     );
 
     if (apiRequests.length === 0) {
-      console.log('No API requests to make, initializing with defaults.');
+      
       this.initializeFormWithDefaults();
       return;
     }
@@ -239,10 +239,10 @@ export class Step3Component implements OnInit {
         const savedData = responses.flatMap(
           (res) => res.body?.data || res.data || []
         );
-        console.log('API Response Data:', JSON.stringify(savedData, null, 2));
+        
 
         if (savedData.length === 0) {
-          console.log('No data returned from API, initializing with defaults');
+          
           this.initializeFormWithDefaults();
           this.cdr.detectChanges();
           return;
@@ -458,7 +458,7 @@ export class Step3Component implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Prefill failed', JSON.stringify(err, null, 2));
+        
         this.initializeFormWithDefaults();
         this.cdr.detectChanges();
       },

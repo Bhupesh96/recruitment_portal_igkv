@@ -28,6 +28,14 @@
           </ul>
         </div>
 
+        <!-- Mandatory Subheading Validation Error -->
+        <div
+          *ngIf="form.get('mandatorySubheadingsSelected')?.invalid && form.get('mandatorySubheadingsSelected')?.touched"
+          class="text-red-600 text-xs mt-1"
+        >
+          At least one mandatory qualification must be selected.
+        </div>
+
         <!-- Heading -->
         <h5
           class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
@@ -87,6 +95,10 @@
                 />
               </svg>
               {{ subheading.score_field_title_name }}
+              <span
+                *ngIf="subheading.score_field_is_mandatory === '1'"
+                class="text-red-600"
+              >*</span>
             </h6>
           </div>
 
@@ -132,7 +144,7 @@
                   <input
                     type="hidden"
                     [formControlName]="
-                      'param_' + param.m_rec_score_field_parameter_id + '_id'
+                      'param_' + param.m_rec_score_field_parameter_new_id + '_id'
                     "
                   />
 
@@ -145,102 +157,41 @@
                         )?.value && param.is_mandatory === 'Y'
                       "
                       class="text-red-600"
-                      >*</span
-                    >
+                    >*</span>
                   </label>
 
-                  <ng-container [ngSwitch]="param.score_field_control_type">
-                    <!-- Text Input -->
+                  <ng-container *ngIf="param.isDatatype === 'attachment'; else controlTypeSwitch">
+                    <!-- File Upload for isDatatype 'attachment' -->
                     <input
-                      *ngSwitchCase="'T'"
-                      type="text"
-                      [formControlName]="param.score_field_parameter_name"
-                      [placeholder]="
-                        'Enter ' + param.score_field_parameter_name
+                      type="file"
+                      (change)="
+                        onFileChange(
+                          $event,
+                          j,
+                          'qualifications' + getUniqueKey(subheading, i),
+                          param.score_field_parameter_name
+                        )
                       "
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      accept="application/pdf,image/*"
+                      class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
 
-                    <!-- Dropdown -->
-                    <select
-                      *ngSwitchCase="'D'"
-                      [formControlName]="param.score_field_parameter_name"
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    <!-- Show existing file -->
+                    <ng-container
+                      *ngIf="
+                        !group.get(param.score_field_parameter_name)?.value &&
+                        getFilePath(
+                          getUniqueKey(subheading, i),
+                          param.m_rec_score_field_parameter_new_id,
+                          j
+                        ) as filePath
+                      "
                     >
-                      <option value="">Select</option>
-                      <option value="First">First</option>
-                      <option value="Second">Second</option>
-                      <option value="Third">Third</option>
-                    </select>
-
-                    <!-- Year Dropdown -->
-                    <select
-                      *ngSwitchCase="'DY'"
-                      [formControlName]="param.score_field_parameter_name"
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    >
-                      <option value="">Select Year</option>
-                      <option *ngFor="let year of years" [value]="year">
-                        {{ year }}
-                      </option>
-                    </select>
-
-                    <!-- File Upload -->
-                    <ng-container *ngSwitchCase="'A'">
-                      <input
-                        type="file"
-                        (change)="
-                          onFileChange(
-                            $event,
-                            j,
-                            'qualifications' + getUniqueKey(subheading, i),
-                            param.score_field_parameter_name
-                          )
-                        "
-                        accept="application/pdf,image/*"
-                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-
-                      <!-- Show existing file -->
-                      <ng-container
-                        *ngIf="
-                          !group.get(param.score_field_parameter_name)?.value &&
-                          getFilePath(
-                            getUniqueKey(subheading, i),
-                            param.m_rec_score_field_parameter_id,
-                            j
-                          ) as filePath
-                        "
-                      >
-                        <a
-                          [href]="sanitizeFileUrl(filePath)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="mt-2 text-xs text-blue-600 hover:underline flex items-center"
-                        >
-                          <svg
-                            class="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                        View Uploaded File
-                        </a>
-                      </ng-container>
-
-                      <!-- Show newly selected file -->
-                      <div
-                        *ngIf="
-                          group.get(param.score_field_parameter_name)?.value
-                        "
-                        class="mt-2 text-xs text-blue-600 flex items-center"
+                      <a
+                        [href]="sanitizeFileUrl(filePath)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="mt-2 text-xs text-blue-600 hover:underline flex items-center"
                       >
                         <svg
                           class="h-4 w-4 mr-1"
@@ -252,27 +203,166 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                           />
                         </svg>
-                        {{
-                          group.get(param.score_field_parameter_name)?.value
-                            .name
-                        }}
-                      </div>
+                        View Uploaded File
+                      </a>
                     </ng-container>
 
-                    <!-- Default Input -->
-                    <input
-                      *ngSwitchDefault
-                      type="text"
-                      [formControlName]="param.score_field_parameter_name"
-                      [placeholder]="
-                        'Enter ' + param.score_field_parameter_name
+                    <!-- Show newly selected file -->
+                    <div
+                      *ngIf="
+                        group.get(param.score_field_parameter_name)?.value
                       "
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
+                      class="mt-2 text-xs text-blue-600 flex items-center"
+                    >
+                      <svg
+                        class="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {{
+                        group.get(param.score_field_parameter_name)?.value
+                          .name
+                      }}
+                    </div>
                   </ng-container>
+
+                  <ng-template #controlTypeSwitch>
+                    <ng-container [ngSwitch]="param.score_field_control_type">
+                      <!-- Text/Number Input -->
+                      <input
+                        *ngSwitchCase="'T'"
+                        [type]="param.isDatatype === 'number' ? 'number' : 'text'"
+                        [formControlName]="param.score_field_parameter_name"
+                        [placeholder]="
+                          'Enter ' + param.score_field_parameter_name
+                        "
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+
+                      <!-- Dropdown -->
+                      <select
+                        *ngSwitchCase="'D'"
+                        [formControlName]="param.score_field_parameter_name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="">Select</option>
+                        <option value="First">First</option>
+                        <option value="Second">Second</option>
+                        <option value="Third">Third</option>
+                      </select>
+
+                      <!-- Year Dropdown -->
+                      <select
+                        *ngSwitchCase="'DY'"
+                        [formControlName]="param.score_field_parameter_name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="">Select Year</option>
+                        <option *ngFor="let year of years" [value]="year">
+                          {{ year }}
+                        </option>
+                      </select>
+
+                      <!-- File Upload for control_type 'A' -->
+                      <ng-container *ngSwitchCase="'A'">
+                        <input
+                          type="file"
+                          (change)="
+                            onFileChange(
+                              $event,
+                              j,
+                              'qualifications' + getUniqueKey(subheading, i),
+                              param.score_field_parameter_name
+                            )
+                          "
+                          accept="application/pdf,image/*"
+                          class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+
+                        <!-- Show existing file -->
+                        <ng-container
+                          *ngIf="
+                            !group.get(param.score_field_parameter_name)?.value &&
+                            getFilePath(
+                              getUniqueKey(subheading, i),
+                              param.m_rec_score_field_parameter_new_id,
+                              j
+                            ) as filePath
+                          "
+                        >
+                          <a
+                            [href]="sanitizeFileUrl(filePath)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="mt-2 text-xs text-blue-600 hover:underline flex items-center"
+                          >
+                            <svg
+                              class="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            View Uploaded File
+                          </a>
+                        </ng-container>
+
+                        <!-- Show newly selected file -->
+                        <div
+                          *ngIf="
+                            group.get(param.score_field_parameter_name)?.value
+                          "
+                          class="mt-2 text-xs text-blue-600 flex items-center"
+                        >
+                          <svg
+                            class="h-4 w-4 mr-1"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          {{
+                            group.get(param.score_field_parameter_name)?.value
+                              .name
+                          }}
+                        </div>
+                      </ng-container>
+
+                      <!-- Default Input -->
+                      <input
+                        *ngSwitchDefault
+                        [type]="param.isDatatype === 'number' ? 'number' : 'text'"
+                        [formControlName]="param.score_field_parameter_name"
+                        [placeholder]="
+                          'Enter ' + param.score_field_parameter_name
+                        "
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      />
+                    </ng-container>
+                  </ng-template>
 
                   <!-- Validation Error -->
                   <div
@@ -292,7 +382,15 @@
           </div>
         </div>
 
-       
+        <!-- Submit Button -->
+        <div class="mt-8">
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          >
+            Submit
+          </button>
+        </div>
       </div>
     </form>
   </div>

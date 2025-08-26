@@ -17,9 +17,11 @@ import {
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, forkJoin } from 'rxjs';
-import { switchMap, tap, catchError } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { switchMap, tap, catchError, map } from 'rxjs/operators';
 import { HttpService, SharedModule } from 'shared';
+import { UtilsService } from '../../utils.service';
+import { AlertService } from 'shared';
 
 interface Heading {
   a_rec_adv_main_id: number;
@@ -33,6 +35,8 @@ interface Heading {
   score_field_name_e: string;
   score_field_flag: string | null;
   message: string;
+  score_field_field_marks: number;
+  score_field_field_weightage: number;
 }
 
 interface Subheading {
@@ -47,6 +51,8 @@ interface Subheading {
   score_field_parent_id: number;
   m_rec_score_field_method_id: number;
   score_field_display_no: number;
+  score_field_field_marks: number;
+  score_field_field_weightage: number;
 }
 
 interface Parameter {
@@ -106,7 +112,9 @@ export class Step5Component implements OnInit {
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
     private HTTP: HttpService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private utils: UtilsService,
+    private alertService: AlertService
   ) {
     this.form = this.fb.group({});
   }
@@ -147,8 +155,8 @@ export class Step5Component implements OnInit {
       '/candidate/get/getParameterValues',
       {
         registration_no: 24000001,
-        a_rec_app_main_id: 41,
-        score_field_parent_id: this.heading?.score_field_parent_id,
+        a_rec_app_main_id: 96,
+        score_field_parent_id: this.heading?.m_rec_score_field_id,
       },
       'recruitement'
     ).subscribe({
@@ -179,12 +187,6 @@ export class Step5Component implements OnInit {
           }
           detailGroup.items.push(item);
         });
-
-        // Log grouped records
-        console.log(
-          'Grouped records:',
-          Array.from(recordsByKeyAndDetailId.entries())
-        );
 
         // Clear existing FormArray controls
         this.subheadings.forEach((subheading, index) => {
@@ -225,16 +227,14 @@ export class Step5Component implements OnInit {
               paramGroups.get(uniqueDisplayNo)!.push(item);
             });
 
-            // Select parameters based on recordIndex (first set for recordIndex 0, second for recordIndex 1)
+            // Select parameters based on recordIndex
             const paramMap: Map<number, any> = new Map();
             paramGroups.forEach((groupItems, uniqueDisplayNo) => {
-              // Sort by a_rec_app_score_field_parameter_detail_id to ensure consistent order
               groupItems.sort(
                 (a, b) =>
                   a.a_rec_app_score_field_parameter_detail_id -
                   b.a_rec_app_score_field_parameter_detail_id
               );
-              // Select the parameter for the current recordIndex
               const selectedItem =
                 groupItems[recordIndex] || groupItems[groupItems.length - 1];
               paramMap.set(
@@ -242,12 +242,6 @@ export class Step5Component implements OnInit {
                 selectedItem
               );
             });
-
-            // Log selected parameters
-            console.log(
-              `Selected parameters for detailId ${detailId} (recordIndex ${recordIndex}):`,
-              Array.from(paramMap.entries())
-            );
 
             // Patch form group with selected parameters
             paramMap.forEach((item) => {
@@ -278,6 +272,9 @@ export class Step5Component implements OnInit {
               }
             });
 
+            // Calculate experience for this record
+            this.calculateExperienceForRecord(group, subheading);
+
             formArray.push(group);
           });
 
@@ -285,20 +282,42 @@ export class Step5Component implements OnInit {
           if (formArray.length === 0) {
             formArray.push(this.createQualificationGroup(subheading));
           }
-
-          // Log formArray values
-          console.log(`FormArray for ${key}:`, formArray.value);
         });
 
         this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Prefill failed', err);
         this.errorMessage = 'Failed to load saved data: ' + err.message;
+        this.alertService.alert(true, this.errorMessage, 3000);
         this.cdr.markForCheck();
       },
     });
   }
+
+  private calculateExperienceForRecord(
+    group: FormGroup,
+    subheading: Subheading
+  ): void {
+    const fromDate = group.get('Period From')?.value;
+    const toDate = group.get('Period To')?.value;
+
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+
+      // Calculate experience using UtilsService
+      const experience = this.utils.calculateDuration(
+        from,
+        to,
+        subheading.score_field_field_weightage || 1,
+        'decimalYears'
+      );
+
+      // Store the calculated value (you might want to display this or use it in calculations)
+      group.get('calculated_experience')?.setValue(experience);
+    }
+  }
+
   addQualification(subheading: Subheading, index: number): void {
     const key = this.getUniqueKey(subheading, index);
     const qualificationsArray = this.getQualifications(key);
@@ -327,7 +346,6 @@ export class Step5Component implements OnInit {
     const key = this.getUniqueKey(subheading, subheadingIndex);
     const qualificationsArray = this.getQualifications(key);
     const group = qualificationsArray.at(qualificationIndex) as FormGroup;
-    const formValues = group.getRawValue();
 
     // Clear filePaths for removed group
     this.getParameters(
@@ -352,6 +370,7 @@ export class Step5Component implements OnInit {
     );
 
     group.addControl('a_rec_app_score_field_detail_id', this.fb.control(''));
+    group.addControl('calculated_experience', this.fb.control(0)); // For storing calculated experience
 
     params.forEach((param) => {
       const validators = this.getParamValidators(param);
@@ -369,97 +388,114 @@ export class Step5Component implements OnInit {
       );
     });
 
+    // Add value change listeners for date fields to recalculate experience
+    const fromDateControl = group.get('Period From');
+    const toDateControl = group.get('Period To');
+
+    if (fromDateControl && toDateControl) {
+      fromDateControl.valueChanges.subscribe(() =>
+        this.recalculateExperience(group, sub)
+      );
+      toDateControl.valueChanges.subscribe(() =>
+        this.recalculateExperience(group, sub)
+      );
+    }
+
     return group;
+  }
+
+  private recalculateExperience(
+    group: FormGroup,
+    subheading: Subheading
+  ): void {
+    this.calculateExperienceForRecord(group, subheading);
   }
 
   private getParamValidators(param: Parameter): ValidatorFn[] {
     const validators: ValidatorFn[] = [Validators.required];
-    if (param.score_field_parameter_name === 'Passing Year') {
-      validators.push(
-        Validators.min(1900),
-        Validators.max(2025),
-        Validators.pattern('^[0-9]{4}$')
-      );
-    } else if (param.score_field_parameter_name === 'Percentage Obtained') {
-      validators.push(
-        Validators.min(0),
-        Validators.max(100),
-        Validators.pattern('^[0-9]+.?[0-9]{0,2}$')
-      );
+    if (
+      param.score_field_parameter_name === 'Period From' ||
+      param.score_field_parameter_name === 'Period To'
+    ) {
+      validators.push(this.dateValidator());
     }
     return validators;
   }
 
-private loadFormData(): Observable<void> {
-  const a_rec_adv_main_id = 95;
-  const m_rec_score_field_id = 32;
+  private dateValidator(): ValidatorFn {
+    return (control) => {
+      if (!control.value) return null;
 
-  // First API call - get heading
-  const headingRequest = this.HTTP.getParam(
-    '/master/get/getHeadingByScoreField',
-    { a_rec_adv_main_id, m_rec_score_field_id },
-    'recruitement'
-  ) as Observable<HttpResponse<ApiResponse<Heading>>>;
+      const date = new Date(control.value);
+      if (isNaN(date.getTime())) {
+        return { invalidDate: true };
+      }
 
-  return headingRequest.pipe(
-    switchMap((headingRes: HttpResponse<ApiResponse<Heading>>) => {
-      const headingList = headingRes.body?.data || [];
-      if (!headingList.length) throw new Error('No heading data found');
+      return null;
+    };
+  }
 
-      this.heading = headingList[0];
-      console.log('🔍 Heading:', this.heading);
+  private loadFormData(): Observable<void> {
+    const a_rec_adv_main_id = 96;
+    const m_rec_score_field_id = 32;
 
-      // Second API call - get parameters
-      return this.HTTP.getParam(
-        '/master/get/getSubHeadingParameterByParentScoreField',
-        {
-          a_rec_adv_main_id,
-          m_rec_score_field_id: this.heading!.m_rec_score_field_id,
-          a_rec_adv_post_detail_id: this.heading!.a_rec_adv_post_detail_id,
-        },
-        'recruitement'
-      ).pipe(
-        tap((parameterResponse) => {
-          // The response contains parameters
-          this.parameters = parameterResponse.body?.data || [];
-          
-          // Create subheadings array from heading data
-          this.subheadings = [{
-            a_rec_adv_main_id: a_rec_adv_main_id, // Add the missing property
+    const headingRequest = this.HTTP.getParam(
+      '/master/get/getHeadingByScoreField',
+      { a_rec_adv_main_id, m_rec_score_field_id },
+      'recruitement'
+    ) as Observable<HttpResponse<ApiResponse<Heading>>>;
+
+    return headingRequest.pipe(
+      switchMap((headingRes: HttpResponse<ApiResponse<Heading>>) => {
+        const headingList = headingRes.body?.data || [];
+        if (!headingList.length) throw new Error('No heading data found');
+
+        this.heading = headingList[0];
+
+        return this.HTTP.getParam(
+          '/master/get/getSubHeadingByParentScoreField',
+          {
+            a_rec_adv_main_id,
+            score_field_parent_id: this.heading!.m_rec_score_field_id,
+            a_rec_adv_post_detail_id: this.heading!.a_rec_adv_post_detail_id,
+          },
+          'recruitement'
+        ) as Observable<HttpResponse<ApiResponse<Subheading>>>;
+      }),
+      switchMap((subheadingRes: HttpResponse<ApiResponse<Subheading>>) => {
+        this.subheadings = subheadingRes.body?.data || [];
+
+        return this.HTTP.getParam(
+          '/master/get/getSubHeadingParameterByParentScoreField',
+          {
+            a_rec_adv_main_id,
             m_rec_score_field_id: this.heading!.m_rec_score_field_id,
             a_rec_adv_post_detail_id: this.heading!.a_rec_adv_post_detail_id,
-            score_field_parent_id: this.heading!.score_field_parent_id,
-            score_field_parent_code: this.heading!.score_field_parent_code,
-            m_rec_score_field_method_id: this.heading!.m_rec_score_field_method_id,
-            score_field_display_no: this.heading!.score_field_display_no,
-            score_field_title_name: this.heading!.score_field_title_name,
-            score_field_name_e: this.heading!.score_field_name_e,
-            score_field_flag: this.heading!.score_field_flag,
-            message: this.heading!.message
-          }];
-
-          console.log('🔍 Subheadings:', this.subheadings);
-          console.log('🔍 Parameters:', this.parameters);
-          
-          this.buildFormControls();
-          this.loading = false;
-          this.cdr.markForCheck();
-        })
-      );
-    }),
-    catchError((error) => {
-      this.errorMessage = 'Error loading form: ' + error.message;
-      this.loading = false;
-      this.cdr.markForCheck();
-      throw error;
-    })
-  );
-}
+          },
+          'recruitement'
+        ) as Observable<HttpResponse<ApiResponse<Parameter>>>;
+      }),
+      tap((parameterRes: HttpResponse<ApiResponse<Parameter>>) => {
+        this.parameters = parameterRes.body?.data || [];
+        this.buildFormControls();
+        this.loading = false;
+        this.cdr.markForCheck();
+      }),
+      map(() => {}),
+      catchError((error) => {
+        this.errorMessage = 'Error loading form: ' + error.message;
+        this.alertService.alert(true, this.errorMessage, 3000);
+        this.loading = false;
+        this.cdr.markForCheck();
+        throw error;
+      })
+    );
+  }
 
   getParameters(score_field_id: number, post_detail_id: number): Parameter[] {
-    return this.parameters
-      .filter((p) => p.a_rec_adv_post_detail_id === post_detail_id)
-      .sort((a, b) => a.parameter_display_order - b.parameter_display_order);
+    return [...this.parameters].sort(
+      (a, b) => a.parameter_display_order - b.parameter_display_order
+    );
   }
 
   getQualifications(key: string): FormArray {
@@ -493,10 +529,12 @@ private loadFormData(): Observable<void> {
       const file = input.files[0];
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
-        alert(
-          'Invalid file type. Only PDF, JPG, JPEG, or PNG files are allowed.'
+        this.alertService.alert(
+          true,
+          'Invalid file type. Only PDF, JPG, JPEG, or PNG files are allowed.',
+          3000
         );
-        input.value = ''; // Clear the input
+        input.value = '';
         return;
       }
 
@@ -526,6 +564,7 @@ private loadFormData(): Observable<void> {
     const existingDetails: any[] = [];
     const newParameters: any[] = [];
     const existingParameters: any[] = [];
+    let parentCalculatedValue = 0;
 
     this.subheadings.forEach((sub, index) => {
       const key = this.getUniqueKey(sub, index);
@@ -537,21 +576,47 @@ private loadFormData(): Observable<void> {
         const detailId = formValues['a_rec_app_score_field_detail_id'];
         const isExistingRecord = !!detailId;
 
+        // Calculate experience for this record
+        const fromDate = formValues['Period From'];
+        const toDate = formValues['Period To'];
+        let calculatedExperience = 0;
+
+        if (fromDate && toDate) {
+          const from = new Date(fromDate);
+          const to = new Date(toDate);
+
+          // Calculate experience using UtilsService
+          calculatedExperience = this.utils.calculateDuration(
+            from,
+            to,
+            sub.score_field_field_weightage || 1,
+            'decimalYears'
+          );
+        }
+
+        // Cap the experience at the subheading's maximum marks
+        const finalExperience = Math.min(
+          calculatedExperience,
+          sub.score_field_field_marks || 0
+        );
+
+        parentCalculatedValue += finalExperience;
+
         const detail = {
           ...(isExistingRecord && {
             a_rec_app_score_field_detail_id: detailId,
           }),
           registration_no: registrationNo,
-          a_rec_app_main_id: 41,
+          a_rec_app_main_id: 96,
           a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
           score_field_parent_id: sub.score_field_parent_id,
           m_rec_score_field_id: sub.m_rec_score_field_id,
-          m_rec_score_field_method_id: 2,
-          score_field_value: +formValues['Percentage Obtained'] || 0,
-          score_field_actual_value: 0,
-          score_field_calculated_value: 0,
-          field_marks: 0,
-          field_weightage: 0,
+          m_rec_score_field_method_id: 2, // Experience calculation method
+          score_field_value: calculatedExperience,
+          score_field_actual_value: calculatedExperience,
+          score_field_calculated_value: finalExperience,
+          field_marks: sub.score_field_field_marks || 0,
+          field_weightage: sub.score_field_field_weightage || 0,
           remark: isExistingRecord ? 'row updated' : 'row inserted',
           unique_parameter_display_no: String(sub.score_field_display_no),
           verify_remark: 'Not Verified',
@@ -581,7 +646,6 @@ private loadFormData(): Observable<void> {
           const paramId =
             formValues[`param_${param.m_rec_score_field_parameter_id}_id`];
           const isParamUpdate = !!paramId;
-          const paramKey = `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${param.m_rec_score_field_parameter_id}`;
           const fileKey = `${key}_${param.m_rec_score_field_parameter_id}_${rowIndex}`;
           const existingFilePath = this.filePaths.get(fileKey);
 
@@ -642,8 +706,34 @@ private loadFormData(): Observable<void> {
       });
     });
 
+    // Create parent record
+    const parentRecord = {
+      registration_no: registrationNo,
+      a_rec_app_main_id: 96,
+      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 246,
+      score_field_parent_id: 0,
+      m_rec_score_field_id: this.heading?.m_rec_score_field_id,
+      m_rec_score_field_method_id: 2,
+      score_field_value: parentCalculatedValue,
+      score_field_actual_value: parentCalculatedValue,
+      score_field_calculated_value: Math.min(
+        parentCalculatedValue,
+        this.heading?.score_field_field_marks || 10
+      ),
+      field_marks: this.heading?.score_field_field_marks || 10,
+      field_weightage: this.heading?.score_field_field_weightage || 0,
+      verify_remark: 'Not Verified',
+      action_type: 'U',
+      action_date: new Date().toISOString(),
+      action_ip_address: '127.0.0.1',
+      action_remark: 'parent data updated from recruitment form',
+      action_by: 1,
+      delete_flag: 'N',
+    };
+
     const formData = new FormData();
     formData.append('registration_no', registrationNo.toString());
+    formData.append('parentScore', JSON.stringify(parentRecord));
 
     // Add files to FormData
     this.subheadings.forEach((sub, index) => {
@@ -681,53 +771,60 @@ private loadFormData(): Observable<void> {
 
     // Save new records if any
     if (newDetails.length > 0) {
-      this.saveNewRecords(registrationNo, formData, newDetails, newParameters);
+      this.saveRecords(
+        registrationNo,
+        formData,
+        newDetails,
+        newParameters,
+        'saveCandidateScoreCard'
+      );
     }
 
     // Update existing records if any
     if (existingDetails.length > 0) {
-      this.updateExistingRecords(
+      this.saveRecords(
         registrationNo,
         formData,
         existingDetails,
-        existingParameters
+        existingParameters,
+        'updateCandidateScoreCard'
       );
     }
 
     // If no records to save or update
     if (newDetails.length === 0 && existingDetails.length === 0) {
-      alert('No data to save or update.');
+      this.alertService.alert(true, 'No data to save or update.', 3000);
     }
   }
 
-  private saveNewRecords(
+  private saveRecords(
     registrationNo: number,
     formData: FormData,
     details: any[],
-    parameters: any[]
+    parameters: any[],
+    endpoint: string
   ): void {
-    const saveFormData = new FormData();
-    saveFormData.append('registration_no', registrationNo.toString());
-    saveFormData.append('scoreFieldDetailList', JSON.stringify(details));
-    saveFormData.append('scoreFieldParameterList', JSON.stringify(parameters));
+    const payload = new FormData();
+    payload.append('registration_no', registrationNo.toString());
+    payload.append('scoreFieldDetailList', JSON.stringify(details));
+    payload.append('scoreFieldParameterList', JSON.stringify(parameters));
+    payload.append('parentScore', formData.get('parentScore') as string);
 
-    // Copy files with correct control names
+    // Copy files
     Array.from(formData.entries()).forEach(([key, value]) => {
       if (value instanceof File) {
-        saveFormData.append(key, value, key);
+        payload.append(key, value, key);
       }
     });
 
     this.HTTP.postForm(
-      '/candidate/postFile/saveCandidateScoreCard',
-      saveFormData,
+      `/candidate/postFile/${endpoint}`,
+      payload,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        console.log('New records saved successfully:', res);
-
-        // Update ID maps with new IDs
-        if (res.body?.data) {
+        // Check if res.body.data is an array before using forEach
+        if (res.body?.data && Array.isArray(res.body.data)) {
           res.body.data.forEach((item: any, index: number) => {
             if (
               item.a_rec_app_score_field_detail_id &&
@@ -749,53 +846,41 @@ private loadFormData(): Observable<void> {
               );
             }
           });
+        } else {
+          // Handle the case where the data is a single object or not an array.
+          // If it's a single object, process it here.
+          if (res.body?.data) {
+            const item = res.body.data;
+            // Example of handling a single item:
+            if (item.a_rec_app_score_field_detail_id) {
+              // Find the matching detail to get the old key
+              const matchedDetail = details.find(
+                (d) =>
+                  d.a_rec_adv_post_detail_id ===
+                    item.a_rec_adv_post_detail_id &&
+                  d.m_rec_score_field_id === item.m_rec_score_field_id
+              );
+              if (matchedDetail) {
+                const oldKey = `${matchedDetail.m_rec_score_field_id}_${matchedDetail.a_rec_adv_post_detail_id}`;
+                this.existingDetailIds.set(
+                  oldKey,
+                  item.a_rec_app_score_field_detail_id
+                );
+              }
+            }
+          }
         }
 
+        this.alertService.alert(false, 'Data saved successfully!', 3000);
         this.emitFormData();
         this.getParameterValuesAndPatch();
       },
       error: (err) => {
-        console.error('Error saving new records:', err);
-        alert('Error saving new records: ' + err.message);
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  private updateExistingRecords(
-    registrationNo: number,
-    formData: FormData,
-    details: any[],
-    parameters: any[]
-  ): void {
-    const updateFormData = new FormData();
-    updateFormData.append('registration_no', registrationNo.toString());
-    updateFormData.append('scoreFieldDetailList', JSON.stringify(details));
-    updateFormData.append(
-      'scoreFieldParameterList',
-      JSON.stringify(parameters)
-    );
-
-    // Copy files with correct control names
-    Array.from(formData.entries()).forEach(([key, value]) => {
-      if (value instanceof File) {
-        updateFormData.append(key, value, key);
-      }
-    });
-
-    this.HTTP.postForm(
-      '/candidate/postFile/updateCandidateScoreCard',
-      updateFormData,
-      'recruitement'
-    ).subscribe({
-      next: (res) => {
-        console.log('Existing records updated successfully:', res);
-        this.emitFormData();
-        this.getParameterValuesAndPatch();
-      },
-      error: (err) => {
-        console.error('Error updating records:', err);
-        alert('Error updating records: ' + err.message);
+        this.alertService.alert(
+          true,
+          `Error saving data: ${err.message}`,
+          3000
+        );
         this.cdr.markForCheck();
       },
     });
@@ -831,8 +916,7 @@ private loadFormData(): Observable<void> {
         {} as { [key: string]: string }
       ),
     };
-
-    console.log('Emitting formData:', emitData);
+ console.log('📤 Step5 form emitting data:', JSON.stringify(emitData, null, 2));
     this.formData.emit(emitData);
     this.cdr.markForCheck();
   }

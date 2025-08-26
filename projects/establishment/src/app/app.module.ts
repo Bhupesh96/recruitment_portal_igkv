@@ -9,9 +9,11 @@ import { CommonModule } from '@angular/common';
 import { AppComponent } from './app.component';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
+import { Step9Component } from './recruitment-user/components/pages/stepper/step-9/step-9.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, PdfDownloadComponent],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,

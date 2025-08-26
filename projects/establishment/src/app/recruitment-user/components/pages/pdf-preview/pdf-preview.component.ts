@@ -23,11 +23,9 @@ export class PdfPreviewComponent implements OnInit {
 
   ngOnInit(): void {
     this.formData = this.sharedDataService.getFormData();
-    console.log('data for step 3 ', this.formData[5]);
+
     if (Object.keys(this.formData).length > 0) {
-      console.log('✅ Loaded PDF preview formData:', this.formData);
     } else {
-      console.warn('⚠️ No form data found in shared service.');
     }
   }
 

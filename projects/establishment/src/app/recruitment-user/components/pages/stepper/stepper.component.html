@@ -144,7 +144,10 @@
             [hidden]="currentStep !== 8"
             (formData)="updateFormData(8, $event)"
           ></app-step-8>
-          
+           <app-step-9
+            [hidden]="currentStep !== 9"
+            (formData)="updateFormData(9, $event)"
+          ></app-step-9>
           <!-- Navigation -->
           <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">
             <button

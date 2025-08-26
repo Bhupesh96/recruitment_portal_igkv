@@ -94,10 +94,10 @@ export class UtilsService {
     };
 
     // 🟢 Console logs
-    // console.log('🟢 JSON Each Experience Details:', JSON.stringify(result.details, null, 2));
-    // console.log('Score_field_value (Total Days):', result.totalDays);
-    // console.log('Score_field_actual_value (Decimal Years):', result.totalDecimalYears);
-    // console.log('Score_field_calculated_value:', result.score_field_calculated_value);
+    //
+    //
+    //
+    //
 
     return result;
   }
@@ -205,7 +205,7 @@ export class UtilsService {
   }
 
   //Qauntity Calculation Method
-calculateQuantityBasedScore(
+  calculateQuantityBasedScore(
     quantityScoreInput: {
       scoreFieldId: number;
       quantity: number;
@@ -227,7 +227,7 @@ calculateQuantityBasedScore(
   } {
     let totalFinalMarks = 0;
 
-    const details = quantityScoreInput.map(input => {
+    const details = quantityScoreInput.map((input) => {
       const actualMarks = +(input.quantity * input.weightage).toFixed(2);
       const calculatedMarks = Math.min(actualMarks, input.scoreFieldMarks);
       totalFinalMarks += actualMarks;
@@ -237,14 +237,14 @@ calculateQuantityBasedScore(
         weightage: input.weightage,
         scoreFieldMarks: input.scoreFieldMarks,
         actualMarks,
-        calculatedMarks
+        calculatedMarks,
       };
     });
     const cappedFinal = Math.min(totalFinalMarks, parentScoreFieldMarks);
     return {
       total_actual_value: +totalFinalMarks.toFixed(2),
       score_field_calculated_value: +cappedFinal.toFixed(2),
-      details
+      details,
     };
   }
 }

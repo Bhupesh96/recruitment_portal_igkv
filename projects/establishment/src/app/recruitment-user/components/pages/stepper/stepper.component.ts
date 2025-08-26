@@ -12,9 +12,11 @@ import { Step5Component } from './step-5/step-5.component';
 import { Step6Component } from './step-6/step-6.component';
 import { Step7Component } from './step-7/step-7.component';
 import { Step8Component } from './step-8/step-8.component';
+import { Step9Component } from './step-9/step-9.component';
 import { HeaderComponent } from '../../header/header.component';
 import { FooterComponent } from '../../footer/footer.component';
 import html2pdf from 'html2pdf.js';
+import { AlertService } from 'shared';
 
 @Component({
   selector: 'app-stepper',
@@ -33,7 +35,8 @@ import html2pdf from 'html2pdf.js';
     Step6Component,
     Step7Component,
     Step8Component,
-  ],
+    Step9Component
+],
   templateUrl: './stepper.component.html',
   styleUrls: ['./stepper.component.scss'],
   animations: [
@@ -62,7 +65,7 @@ export class StepperComponent {
   @ViewChild(Step5Component, { static: false }) step5Component?: Step5Component;
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
   @ViewChild(Step7Component, { static: false }) step7Component?: Step7Component;
-
+  @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
   steps = [
     'Personal Info',
     'Education',
@@ -72,6 +75,7 @@ export class StepperComponent {
     'Performance',
     'Documents',
     'Submission',
+    'Preview',
   ];
   showPdfPreview: boolean = false;
   currentStep = 1;
@@ -79,65 +83,57 @@ export class StepperComponent {
 
   constructor(
     private router: Router,
-    private sharedDataService: SharedDataService
+    private sharedDataService: SharedDataService,
+    private alertService: AlertService
   ) {}
 
-  nextStep() {
+async nextStep() {
     if (this.currentStep === 1) {
       if (this.step1Component) {
-      
         this.step1Component.submitForm();
       } else {
-        console.warn('Step1Component is not available yet.');
       }
     } else if (this.currentStep === 2) {
       if (this.step2Component) {
-      
         this.step2Component.submitForm();
       } else {
-        console.warn('Step2Component is not available yet.');
       }
     } else if (this.currentStep === 3) {
       if (this.step3Component) {
-      
         this.step3Component.submit();
       } else {
-        console.warn('Step3Component is not available yet.');
       }
     } else if (this.currentStep === 5) {
       if (this.step5Component) {
-      
         this.step5Component.submitForm();
       } else {
-        console.warn('Step4Component is not available yet.');
       }
     } else if (this.currentStep === 4) {
       if (this.step4Component) {
-       
         this.step4Component.submit();
       } else {
-        console.warn('Step4Component is not available yet.');
       }
     } else if (this.currentStep === 6) {
       if (this.step6Component) {
-       
         this.step6Component.submit();
       } else {
-        console.warn('Step6Component is not available yet.');
       }
     } else if (this.currentStep === 7) {
       if (this.step7Component) {
-       
         this.step7Component.submit();
       } else {
-        console.warn('Step7Component is not available yet.');
       }
+    } else if (this.currentStep === 9) {
+    if (this.step9Component) {
+      this.step9Component.submit();
+    } else {
+      // Handle case where component is not available
     }
+  }
 
-    if (isDevMode() || this.isFormValid()) {
+    if (this.isFormValid()) {
       if (this.currentStep < this.steps.length) {
         this.currentStep++;
-    
       } else {
         this.finish();
       }
@@ -167,18 +163,32 @@ export class StepperComponent {
     return stepData && Object.keys(stepData).length > 0;
   }
 
-  finish() {
-    // Save formData to the shared service
-    this.sharedDataService.setFormData(this.formData);
-    this.router.navigate(['/pdf-preview']);
-  
+  // First, modify the finish method to be an async function.
+ async finish() {
+    // Use a confirmation dialog before proceeding.
+    const confirmationResult = await this.alertService.confirmAlert(
+      'Confirm Submission',
+      'Are you sure you want to submit the form?',
+      'question'
+    );
+
+    // Check if the user confirmed (clicked "Yes").
+    if (confirmationResult.isConfirmed) {
+      // If confirmed, show success message and stay on the preview step
+      this.alertService.alert(true, 'Your application has been submitted successfully!');
+      
+      // You could also reset the form here if needed
+      // this.resetForm();
+    } else {
+      // If not confirmed (clicked "No" or closed the dialog), show a message.
+      this.alertService.alert(false, 'Submission cancelled.');
+    }
   }
 
   updateFormData(step: number, data: { [key: string]: any }) {
     this.formData[step] = { ...data };
-  
+
     if (step === this.currentStep && !data['_isValid']) {
-      console.warn(`Step ${step} is invalid.`);
     }
   }
 

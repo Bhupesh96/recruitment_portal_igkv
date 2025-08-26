@@ -16,7 +16,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpService } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-
+import { AlertService } from 'shared';
 interface AttachmentMeta {
   score_field_name_e: string;
   display_order_no: number;
@@ -48,7 +48,7 @@ export class Step7Component implements OnInit {
   attachmentMeta: AttachmentMeta[] = [];
   filePaths: Map<string, string> = new Map();
   registrationNo = 24000001;
-  a_rec_adv_main_id = 95;
+  a_rec_adv_main_id = 96;
   score_field_parent_id = 3147;
   a_rec_adv_post_detail_id = 72;
   m_rec_score_field_method_id = 1;
@@ -63,7 +63,8 @@ export class Step7Component implements OnInit {
     private fb: FormBuilder,
     private HTTP: HttpService,
     private sanitizer: DomSanitizer,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private alertService: AlertService
   ) {
     this.form = this.fb.group({
       attachments: this.fb.array([]),
@@ -120,7 +121,6 @@ export class Step7Component implements OnInit {
         }
       },
       error: (err: any) => {
-        console.error('Failed to load attachment fields:', err);
         this.initializeForm();
       },
     });
@@ -188,9 +188,7 @@ export class Step7Component implements OnInit {
           this.checkFormValidity();
         }
       },
-      error: (err: any) => {
-        console.error('Failed to load saved parameter values:', err);
-      },
+      error: (err: any) => {},
     });
   }
 
@@ -275,13 +273,16 @@ export class Step7Component implements OnInit {
     try {
       if (!this.formValid) {
         const missingFields = this.getMissingFields();
-        alert(`Please fill all required fields:\n${missingFields.join('\n')}`);
+        this.alertService.alert(
+          false,
+          `Please fill all required fields:\n${missingFields.join('\n')}`
+        );
         return;
       }
 
       const { formData, hasDataToSave } = this.prepareSubmissionData();
       if (!hasDataToSave) {
-        alert('No changes to save.');
+        this.alertService.alert(false, 'No changes to save.');
         return;
       }
 
@@ -294,7 +295,7 @@ export class Step7Component implements OnInit {
       ).toPromise();
 
       this.updateIdsFromResponse(result);
-      alert('Data saved successfully!');
+      this.alertService.alert(false, 'Data saved successfully!');
 
       // Construct subheadings data for emission
       const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
@@ -327,14 +328,15 @@ export class Step7Component implements OnInit {
           {} as { [key: string]: string }
         ),
       };
-
-      console.log('Emitting formData:', emitData);
+      console.log(
+        '📤 Step7 form emitting data:',
+        JSON.stringify(emitData, null, 2)
+      );
       this.formData.emit(emitData);
     } catch (error: unknown) {
-      console.error('Submission error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to save data: ${errorMessage}`);
+      this.alertService.alert(false, 'Failed to save data: ' + errorMessage);
 
       // Construct subheadings data for emission in error case
       const subheadingsData = this.attachmentMeta.reduce((acc, meta, index) => {
@@ -368,7 +370,6 @@ export class Step7Component implements OnInit {
         ),
       };
 
-      console.log('Emitting formData on error:', emitData);
       this.formData.emit(emitData);
     } finally {
       this.isSubmitting = false;
@@ -442,7 +443,7 @@ export class Step7Component implements OnInit {
         score_field_calculated_value: 0,
         field_marks: 0,
         field_weightage: 0,
-        remark: formValues.remark || 'Attachment uploaded',
+        remark: formValues.remark,
         unique_parameter_display_no: String(meta.display_order_no),
         verify_remark: 'Not Verified',
         active_status: 'Y',

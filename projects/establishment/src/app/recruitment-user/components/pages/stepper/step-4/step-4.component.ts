@@ -22,6 +22,7 @@ import { forkJoin } from 'rxjs';
 import { HttpService } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { UtilsService } from '../../utils.service';
+import { AlertService } from 'shared';
 
 interface DetailFormGroup {
   type: FormControl<string | null>;
@@ -57,7 +58,8 @@ export class Step4Component implements OnInit {
     private HTTP: HttpService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    private utils: UtilsService
+    private utils: UtilsService,
+    private alertService: AlertService
   ) {
     this.form = this.fb.group({
       subHeadings: this.fb.group({}),
@@ -77,7 +79,6 @@ export class Step4Component implements OnInit {
     });
     this.form.valueChanges.subscribe((values) => {
       if (isDevMode()) {
-        console.log('Form values:', JSON.stringify(values, null, 2));
       }
     });
   }
@@ -99,12 +100,7 @@ export class Step4Component implements OnInit {
     const key = subHeadingId.toString();
     const hasRows = !!this.subHeadingDetails[key]?.length;
     if (isDevMode()) {
-      console.log(
-        `hasSubHeadingRows(${subHeadingId}):`,
-        hasRows,
-        this.subHeadingDetails[key]
-      );
-    }
+          }
     return hasRows;
   }
 
@@ -135,7 +131,6 @@ export class Step4Component implements OnInit {
     const key = subHeadingId.toString();
     const rows = this.subHeadingDetails[key] || [];
     if (isDevMode()) {
-      console.log(`getRowsForSubHeading(${subHeadingId}):`, rows);
     }
     return rows;
   }
@@ -167,7 +162,7 @@ export class Step4Component implements OnInit {
 
   private getParameterValuesAndPatch(): void {
     const registrationNo = 24000001;
-    const a_rec_adv_main_id = 95;
+    const a_rec_adv_main_id = 96;
 
     const subheadingIds = Object.keys(this.subHeadingDetails);
 
@@ -188,11 +183,7 @@ export class Step4Component implements OnInit {
           (res) => res.body?.data || res.data || []
         );
 
-        console.log(
-          '✅ Combined savedData for step-4:',
-          JSON.stringify(savedData, null, 2)
-        );
-
+        
         this.subHeadings.forEach((subHeading) => {
           const groupName = subHeading.m_rec_score_field_id.toString();
           const subGroup = this.form.get(
@@ -262,7 +253,6 @@ export class Step4Component implements OnInit {
         this.generateDetailsTable(savedData);
       },
       error: (err) => {
-        console.error('❌ Prefill failed', err);
         this.initializeFormWithDefaults();
       },
     });
@@ -274,7 +264,9 @@ export class Step4Component implements OnInit {
       const subGroup = this.form.get(`subHeadings.${groupName}`) as FormGroup;
 
       subHeading.items.forEach((item: any) => {
-        subGroup.get(`${item.normalizedKey}.count`)?.setValue('', { emitEvent: false });
+        subGroup
+          .get(`${item.normalizedKey}.count`)
+          ?.setValue('', { emitEvent: false });
       });
     });
 
@@ -283,7 +275,7 @@ export class Step4Component implements OnInit {
   }
 
   loadFormStructure() {
-    const a_rec_adv_main_id = 95;
+    const a_rec_adv_main_id = 96;
     const m_rec_score_field_id = 18;
 
     this.HTTP.getData(
@@ -292,15 +284,14 @@ export class Step4Component implements OnInit {
     ).subscribe({
       next: (headingResponse: any) => {
         const data = headingResponse.body?.data || headingResponse.data || [];
-        console.log('Heading Data:', JSON.stringify(data, null, 2));
+
         this.heading = data[0];
         this.score_field_title_name =
           data[0]?.score_field_title_name || 'Academic Excellence';
         if (!data[0]?.score_field_field_marks) {
-          console.warn('Warning: Heading score_field_field_marks is missing or zero');
         }
         const a_rec_adv_post_detail_id =
-          data[0]?.a_rec_adv_post_detail_id || 244;
+          data[0]?.a_rec_adv_post_detail_id || 246;
 
         this.HTTP.getData(
           `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
@@ -368,11 +359,7 @@ export class Step4Component implements OnInit {
                     this.subHeadings[index].m_rec_score_field_id.toString();
                   this.subHeadingParameters[subHeadingId] = paramData;
                   if (isDevMode()) {
-                    console.log(
-                      `Parameters for subHeading ${subHeadingId}:`,
-                      JSON.stringify(paramData, null, 2)
-                    );
-                  }
+                                      }
                 });
 
                 this.getParameterValuesAndPatch();
@@ -455,11 +442,7 @@ export class Step4Component implements OnInit {
   }
 
   generateDetailsTable(savedData: any[] = []) {
-    console.log(
-      'saved data for generating table ',
-      JSON.stringify(savedData, null, 2)
-    );
-
+    
     if (this.isGeneratingTable) {
       return;
     }
@@ -513,10 +496,7 @@ export class Step4Component implements OnInit {
 
         if (!subGroup || parametersForSubHeading.length === 0) {
           if (isDevMode()) {
-            console.log(
-              `Skipping subHeading ${groupName}: No subGroup or parameters`
-            );
-          }
+                      }
           return;
         }
 
@@ -529,10 +509,7 @@ export class Step4Component implements OnInit {
 
           if (isNaN(count) || count <= 0) {
             if (isDevMode()) {
-              console.log(
-                `No rows for item ${key} in subHeading ${groupName}: count=${count}`
-              );
-            }
+                          }
             return;
           }
 
@@ -553,11 +530,7 @@ export class Step4Component implements OnInit {
           }
 
           if (isDevMode()) {
-            console.log(
-              `Logical rows for type ${typeValue}:`,
-              JSON.stringify(logicalRows, null, 2)
-            );
-          }
+                      }
 
           for (let i = 0; i < count; i++) {
             const detailGroup: DetailFormGroup = {
@@ -584,11 +557,7 @@ export class Step4Component implements OnInit {
 
             const savedRowGroup = logicalRows[i];
             if (savedRowGroup) {
-              console.log(
-                `👉 Patching savedRowGroup for type=${typeValue}, rowIndex=${i}`,
-                JSON.stringify(savedRowGroup, null, 2)
-              );
-              savedRowGroup.forEach((savedRow) => {
+                            savedRowGroup.forEach((savedRow) => {
                 parametersForSubHeading.forEach((param: any) => {
                   if (
                     savedRow.m_rec_score_field_parameter_id ===
@@ -597,10 +566,7 @@ export class Step4Component implements OnInit {
                     const paramValue = savedRow.parameter_value;
                     const controlName = param.normalizedKey;
                     const key = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
-                    console.log(
-                      `🔄 Setting control for paramId=${param.m_rec_score_field_parameter_id}, control=${controlName}, key=${key}, value=${paramValue}`
-                    );
-
+                    
                     if (paramValue?.includes('.pdf')) {
                       this.filePaths.set(key, paramValue);
                       newGroup
@@ -643,7 +609,6 @@ export class Step4Component implements OnInit {
 
       this.cdr.detectChanges();
     } catch (error) {
-      console.error('Error generating details table:', error);
     } finally {
       this.isGeneratingTable = false;
     }
@@ -714,23 +679,26 @@ export class Step4Component implements OnInit {
         score_field_title_name:
           this.score_field_title_name || 'Academic Excellence',
         m_rec_score_field_id: 18,
-        a_rec_adv_post_detail_id: 244,
+        a_rec_adv_post_detail_id: 246,
       },
       subheadings: subheadingsData,
     };
-
+ console.log('📤 Step4 form emitting data:', JSON.stringify(emitData, null, 2));
     this.formData.emit(emitData);
 
     if (isDev || anySelected) {
       this.saveToDatabase();
     } else {
-      alert('Please select at least one count for an item.');
+      this.alertService.alert(
+        true,
+        'Please select at least one count for an item.'
+      );
     }
   }
 
   saveToDatabase() {
     const registrationNo = 24000001;
-    const a_rec_adv_main_id = 95;
+    const a_rec_adv_main_id = 96;
     const formData = new FormData();
 
     const newDetails: any[] = [];
@@ -743,7 +711,9 @@ export class Step4Component implements OnInit {
     this.subHeadings.forEach((subHeading) => {
       const groupName = subHeading.m_rec_score_field_id.toString();
       const subGroupRaw =
-        (this.form.get(['subHeadings', groupName]) as FormGroup)?.getRawValue() || {};
+        (
+          this.form.get(['subHeadings', groupName]) as FormGroup
+        )?.getRawValue() || {};
       subHeading.items.forEach((item: any) => {
         const key = item.normalizedKey;
         const count = parseInt(subGroupRaw[key]?.count, 10) || 0;
@@ -751,15 +721,18 @@ export class Step4Component implements OnInit {
           quantityInputs.push({
             scoreFieldId: item.m_rec_score_field_id,
             quantity: count,
-            weightage: item.score_field_field_weightage || subHeading.score_field_field_weightage || 0,
+            weightage:
+              item.score_field_field_weightage ||
+              subHeading.score_field_field_weightage ||
+              0,
             scoreFieldMarks: item.score_field_field_marks || 0,
-            a_rec_adv_post_detail_id: item.a_rec_adv_post_detail_id || subHeading.a_rec_adv_post_detail_id,
+            a_rec_adv_post_detail_id:
+              item.a_rec_adv_post_detail_id ||
+              subHeading.a_rec_adv_post_detail_id,
           });
         }
       });
     });
-
-    console.log('Quantity Inputs for Parent:', JSON.stringify(quantityInputs, null, 2));
 
     // Parent record calculation
     let parentRecord: any = {};
@@ -771,23 +744,25 @@ export class Step4Component implements OnInit {
 
       if (!isParentAndChildSame) {
         const parentMaxMarks = this.heading.score_field_field_marks || 20; // Fallback to 20 if undefined
-        console.log('Parent Max Marks:', parentMaxMarks);
+
         const scoreResult = this.utils.calculateScore(
           3,
           { quantityInputs },
           parentMaxMarks
         );
-        console.log('Parent Score Result:', JSON.stringify(scoreResult, null, 2));
+
         parentRecord = {
           registration_no: registrationNo,
           a_rec_app_main_id: a_rec_adv_main_id,
-          a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id || 244,
+          a_rec_adv_post_detail_id:
+            this.heading.a_rec_adv_post_detail_id || 246,
           score_field_parent_id: 0,
           m_rec_score_field_id: this.heading.m_rec_score_field_id,
           m_rec_score_field_method_id: 3,
           score_field_value: scoreResult.score_field_value,
           score_field_actual_value: scoreResult.score_field_actual_value,
-          score_field_calculated_value: scoreResult.score_field_calculated_value,
+          score_field_calculated_value:
+            scoreResult.score_field_calculated_value,
           field_marks: parentMaxMarks,
           field_weightage: this.heading.score_field_field_weightage || 0,
           verify_remark: 'Not Verified',
@@ -828,7 +803,7 @@ export class Step4Component implements OnInit {
             registration_no: registrationNo,
             a_rec_app_main_id: a_rec_adv_main_id,
             a_rec_adv_post_detail_id:
-              subHeading?.a_rec_adv_post_detail_id || 244,
+              subHeading?.a_rec_adv_post_detail_id || 246,
             score_field_parent_id: subHeading?.m_rec_score_field_id,
             m_rec_score_field_id: scoreFieldId,
             m_rec_score_field_method_id: 3,
@@ -836,7 +811,10 @@ export class Step4Component implements OnInit {
             score_field_actual_value: 0, // Updated below
             score_field_calculated_value: 0, // Updated below
             field_marks: item?.score_field_field_marks || 0,
-            field_weightage: item?.score_field_field_weightage || subHeading?.score_field_field_weightage || 0,
+            field_weightage:
+              item?.score_field_field_weightage ||
+              subHeading?.score_field_field_weightage ||
+              0,
             remark: existingDetailId ? 'row updated' : 'row inserted',
             unique_parameter_display_no: String(
               subHeading?.score_field_display_no || 0
@@ -864,7 +842,8 @@ export class Step4Component implements OnInit {
         (sub) => sub.m_rec_score_field_id === entry.detail.score_field_parent_id
       );
       const item = subHeading?.items.find(
-        (item: any) => item.m_rec_score_field_id === entry.detail.m_rec_score_field_id
+        (item: any) =>
+          item.m_rec_score_field_id === entry.detail.m_rec_score_field_id
       );
 
       // Calculate score for this child record
@@ -873,21 +852,22 @@ export class Step4Component implements OnInit {
           {
             scoreFieldId: entry.detail.m_rec_score_field_id,
             quantity: entry.count,
-            weightage: item?.score_field_field_weightage || subHeading?.score_field_field_weightage || 0,
+            weightage:
+              item?.score_field_field_weightage ||
+              subHeading?.score_field_field_weightage ||
+              0,
             scoreFieldMarks: item?.score_field_field_marks || 0,
           },
         ],
         item?.score_field_field_marks || 0
       );
 
-      console.log(
-        `Child Score Result for scoreFieldId ${entry.detail.m_rec_score_field_id}:`,
-        JSON.stringify(scoreResult, null, 2)
-      );
-
+      
       entry.detail.score_field_value = scoreResult.score_field_value;
-      entry.detail.score_field_actual_value = scoreResult.score_field_actual_value;
-      entry.detail.score_field_calculated_value = scoreResult.score_field_calculated_value;
+      entry.detail.score_field_actual_value =
+        scoreResult.score_field_actual_value;
+      entry.detail.score_field_calculated_value =
+        scoreResult.score_field_calculated_value;
 
       if (entry.detail.action_type === 'C') {
         newDetails.push(entry.detail);
@@ -970,26 +950,7 @@ export class Step4Component implements OnInit {
       });
     });
 
-    console.log(
-      JSON.stringify(
-        {
-          event: 'saveToDatabase_prepared_data',
-          newDetails,
-          existingDetails,
-          newParameters,
-          existingParameters,
-          formDataEntries: Array.from(formData.entries()).map(
-            ([key, value]) => ({
-              key,
-              value: value instanceof File ? value.name : value,
-            })
-          ),
-        },
-        null,
-        2
-      )
-    );
-
+    
     if (newDetails.length > 0) {
       this.saveNewRecords(registrationNo, formData, newDetails, newParameters);
     }
@@ -1004,14 +965,10 @@ export class Step4Component implements OnInit {
     }
 
     if (newDetails.length === 0 && existingDetails.length === 0) {
-      console.log(
-        JSON.stringify(
-          { event: 'saveToDatabase_no_data', message: 'No data to save' },
-          null,
-          2
-        )
+            this.alertService.alert(
+        true,
+        'No data to save. Please add at least one record.'
       );
-      alert('No data to save. Please add at least one record.');
     }
   }
 
@@ -1033,39 +990,14 @@ export class Step4Component implements OnInit {
       }
     });
 
-    console.log(
-      JSON.stringify(
-        {
-          event: 'saveNewRecords',
-          registrationNo,
-          details,
-          parameters,
-          saveFormDataEntries: Array.from(saveFormData.entries()).map(
-            ([key, value]) => ({
-              key,
-              value: value instanceof File ? value.name : value,
-            })
-          ),
-        },
-        null,
-        2
-      )
-    );
-
+    
     this.HTTP.postForm(
       '/candidate/postFile/saveCandidateScoreCard',
       saveFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        console.log(
-          JSON.stringify(
-            { event: 'saveNewRecords_success', response: res.body?.data },
-            null,
-            2
-          )
-        );
-
+        
         if (res.body?.data) {
           details.forEach((detail, index) => {
             if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
@@ -1092,14 +1024,10 @@ export class Step4Component implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        console.log(
-          JSON.stringify(
-            { event: 'saveNewRecords_error', error: err.message },
-            null,
-            2
-          )
+                this.alertService.alert(
+          true,
+          'Error saving new records: ' + err.message
         );
-        alert('Error saving new records: ' + err.message);
       },
     });
   }
@@ -1125,53 +1053,18 @@ export class Step4Component implements OnInit {
       }
     });
 
-    console.log(
-      JSON.stringify(
-        {
-          event: 'updateExistingRecords',
-          registrationNo,
-          details,
-          parameters,
-          updateFormDataEntries: Array.from(updateFormData.entries()).map(
-            ([key, value]) => ({
-              key,
-              value: value instanceof File ? value.name : value,
-            })
-          ),
-        },
-        null,
-        2
-      )
-    );
-
+    
     this.HTTP.postForm(
       '/candidate/postFile/updateCandidateScoreCard',
       updateFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        console.log(
-          JSON.stringify(
-            {
-              event: 'updateExistingRecords_success',
-              response: res.body?.data,
-            },
-            null,
-            2
-          )
-        );
-        alert('Data saved successfully!');
+                this.alertService.alert(false, 'Data saved successfully!');
         this.cdr.markForCheck();
       },
       error: (err) => {
-        console.log(
-          JSON.stringify(
-            { event: 'updateExistingRecords_error', error: err.message },
-            null,
-            2
-          )
-        );
-        alert('Error updating records: ' + err.message);
+                this.alertService.alert(true, 'Error updating records: ' + err.message);
         this.cdr.markForCheck();
       },
     });

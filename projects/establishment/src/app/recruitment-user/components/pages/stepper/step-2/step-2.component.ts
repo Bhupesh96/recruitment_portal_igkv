@@ -20,6 +20,7 @@ import { switchMap, tap, catchError } from 'rxjs/operators';
 import { HttpService, SharedModule } from 'shared';
 import { Output, EventEmitter } from '@angular/core';
 import { UtilsService } from '../../utils.service';
+import { AlertService } from 'shared';
 
 interface Heading {
   a_rec_adv_main_id: number;
@@ -51,11 +52,12 @@ interface Subheading {
   score_field_display_no: number;
   score_field_field_marks: number;
   score_field_field_weightage: number;
+  score_field_is_mandatory: string;
 }
 
 interface Parameter {
   m_rec_score_field_id: number;
-  m_rec_score_field_parameter_id: number;
+  m_rec_score_field_parameter_new_id: number;
   a_rec_adv_post_detail_id: number;
   score_field_parameter_name: string;
   score_field_control_type:
@@ -70,6 +72,8 @@ interface Parameter {
     | 'DP';
   parameter_display_order: number;
   is_mandatory?: string;
+  isDatatype: string;
+  isCalculationColumn: string;
 }
 
 interface Note {
@@ -109,7 +113,8 @@ export class Step2Component implements OnInit {
     private cdr: ChangeDetectorRef,
     private HTTP: HttpService,
     private sanitizer: DomSanitizer,
-    private utils: UtilsService
+    private utils: UtilsService,
+    private alertService: AlertService
   ) {
     this.form = this.fb.group({});
   }
@@ -120,8 +125,8 @@ export class Step2Component implements OnInit {
         this.getParameterValuesAndPatch();
       },
       error: (err) => {
-        console.error('Initial data loading failed', err);
         this.errorMessage = 'Failed to load form data: ' + err.message;
+        this.alertService.alert(true, this.errorMessage, 3000);
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -180,17 +185,34 @@ export class Step2Component implements OnInit {
         (p) => p.score_field_parameter_name === fieldName
       );
       if (param) {
-        const fileKey = `${key}_${param.m_rec_score_field_parameter_id}_${index}`;
+        const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${index}`;
         this.filePaths.delete(fileKey);
       }
       this.cdr.markForCheck();
     }
   }
 
+  // common function to check if subheading and parameter is mandatory or not
+  private checkMandatorySubheadingsAndParameters(): void {
+    const mandatorySelected = this.subheadings.some(
+      (sub, index) =>
+        sub.score_field_is_mandatory === '1' &&
+        this.form.get(`is${this.getUniqueKey(sub, index)}Selected`)?.value
+    );
+    this.form
+      .get('mandatorySubheadingsSelected')
+      ?.setValue(mandatorySelected, { emitEvent: false });
+  }
+
   private buildFormControls(): void {
     this.form.addControl(
       'heading',
       this.fb.control(this.heading?.score_field_title_name || '')
+    );
+
+    this.form.addControl(
+      'mandatorySubheadingsSelected',
+      this.fb.control(false, Validators.requiredTrue)
     );
 
     this.subheadings.forEach((subheading, index) => {
@@ -214,9 +236,12 @@ export class Step2Component implements OnInit {
         .get(`is${key}Selected`)
         ?.valueChanges.subscribe((isSelected) => {
           this.toggleValidators(`qualifications${key}`, subheading, isSelected);
+          this.checkMandatorySubheadingsAndParameters();
           this.cdr.markForCheck();
         });
     });
+
+    this.checkMandatorySubheadingsAndParameters();
   }
 
   private createQualificationGroup(
@@ -233,7 +258,7 @@ export class Step2Component implements OnInit {
       const validators: ValidatorFn[] =
         isSelected && param.is_mandatory === 'Y' ? [Validators.required] : [];
 
-      if (param.score_field_parameter_name === 'Percentage Obtained') {
+      if (param.isCalculationColumn === 'Y') {
         validators.push(
           Validators.min(0),
           Validators.max(100),
@@ -246,7 +271,7 @@ export class Step2Component implements OnInit {
         this.fb.control('', validators)
       );
       group.addControl(
-        `param_${param.m_rec_score_field_parameter_id}_id`,
+        `param_${param.m_rec_score_field_parameter_new_id}_id`,
         this.fb.control('')
       );
     });
@@ -276,7 +301,7 @@ export class Step2Component implements OnInit {
             isSelected && param.is_mandatory === 'Y'
               ? [Validators.required]
               : [];
-          if (controlName === 'Percentage Obtained') {
+          if (param.isCalculationColumn === 'Y') {
             validators.push(
               Validators.min(0),
               Validators.max(100),
@@ -291,7 +316,7 @@ export class Step2Component implements OnInit {
   }
 
   private loadFormData(): Observable<void> {
-    const a_rec_adv_main_id = 95;
+    const a_rec_adv_main_id = 96;
     const m_rec_score_field_id = 1;
 
     const headingRequest = this.HTTP.getParam(
@@ -306,7 +331,6 @@ export class Step2Component implements OnInit {
         if (!headingList.length) throw new Error('No heading data found');
 
         this.heading = headingList[0];
-        console.log('🔍 Heading:', this.heading);
 
         return this.HTTP.getParam(
           '/master/get/getSubHeadingByParentScoreField',
@@ -319,7 +343,6 @@ export class Step2Component implements OnInit {
         ).pipe(
           switchMap((subheadingResponse) => {
             this.subheadings = subheadingResponse.body?.data || [];
-            console.log('🔍 Filtered Subheadings:', this.subheadings);
 
             const parameterRequests = this.subheadings.map((sub) =>
               this.HTTP.getParam(
@@ -327,7 +350,9 @@ export class Step2Component implements OnInit {
                 {
                   a_rec_adv_main_id,
                   m_rec_score_field_id: sub.m_rec_score_field_id,
-                  a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+                  score_field_parent_code: sub.score_field_parent_code,
+                  m_rec_score_field_parameter_new: 'N',
+                  m_parameter_master: 'Y',
                 },
                 'recruitement'
               )
@@ -338,7 +363,7 @@ export class Step2Component implements OnInit {
             this.parameters = parameterResponses.flatMap(
               (p) => p.body?.data || []
             );
-            console.log('🔍 Parameters:', this.parameters);
+
             this.buildFormControls();
             this.loading = false;
             this.cdr.markForCheck();
@@ -350,6 +375,7 @@ export class Step2Component implements OnInit {
       }),
       catchError((error) => {
         this.errorMessage = 'Error loading form: ' + error.message;
+        this.alertService.alert(true, this.errorMessage, 3000);
         this.loading = false;
         this.cdr.markForCheck();
         throw error;
@@ -358,21 +384,16 @@ export class Step2Component implements OnInit {
   }
 
   private getParameterValuesAndPatch(): void {
-    console.log('🔍 Complete Heading Data:', this.heading);
     this.HTTP.getParam(
       '/candidate/get/getParameterValues',
       {
         registration_no: 24000001,
-        a_rec_app_main_id: 95,
+        a_rec_app_main_id: 96,
         score_field_parent_id: this.heading?.m_rec_score_field_id,
       },
       'recruitement'
     ).subscribe({
       next: (res: HttpResponse<any>) => {
-        console.log(
-          'Parameter Values for step-2',
-          JSON.stringify(res.body?.data, null, 2)
-        );
         const saved = res.body?.data || [];
 
         this.filePaths.clear();
@@ -430,7 +451,7 @@ export class Step2Component implements OnInit {
 
             const fieldName = this.parameters.find(
               (p) =>
-                p.m_rec_score_field_parameter_id ===
+                p.m_rec_score_field_parameter_new_id ===
                 item.m_rec_score_field_parameter_id
             )?.score_field_parameter_name;
 
@@ -448,11 +469,12 @@ export class Step2Component implements OnInit {
             }
           }
         });
+        this.checkMandatorySubheadingsAndParameters();
         this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Prefill failed', err);
         this.errorMessage = 'Failed to load saved data: ' + err.message;
+        this.alertService.alert(true, this.errorMessage, 3000);
         this.cdr.markForCheck();
       },
     });
@@ -474,8 +496,18 @@ export class Step2Component implements OnInit {
   }
 
   submitForm(): void {
+    if (this.form.invalid) {
+      this.alertService.alert(
+        true,
+        'Please fill all mandatory fields and ensure at least one mandatory qualification is selected.',
+        3000
+      );
+      this.emitFormData();
+      return;
+    }
+
     const registrationNo = 24000001;
-    const a_rec_adv_main_id = 95;
+    const a_rec_adv_main_id = 96;
     const formData = new FormData();
     const newDetails: any[] = [];
     const existingDetails: any[] = [];
@@ -550,8 +582,8 @@ export class Step2Component implements OnInit {
           const paramValue = formValues[paramName];
           const isFile = paramValue instanceof File;
           const paramId =
-            formValues[`param_${param.m_rec_score_field_parameter_id}_id`];
-          const fileKey = `${key}_${param.m_rec_score_field_parameter_id}_${rowIndex}`;
+            formValues[`param_${param.m_rec_score_field_parameter_new_id}_id`];
+          const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
           const existingFilePath = this.filePaths.get(fileKey);
 
           const parameter = {
@@ -562,13 +594,13 @@ export class Step2Component implements OnInit {
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
             m_rec_score_field_parameter_id:
-              param.m_rec_score_field_parameter_id,
+              param.m_rec_score_field_parameter_new_id,
             parameter_value: isFile
               ? this.generateFilePath(
                   registrationNo,
                   paramValue,
                   sub.m_rec_score_field_id,
-                  param.m_rec_score_field_parameter_id,
+                  param.m_rec_score_field_parameter_new_id,
                   param.parameter_display_order,
                   rowIndex
                 )
@@ -592,10 +624,10 @@ export class Step2Component implements OnInit {
           (paramId ? existingParameters : newParameters).push(parameter);
 
           if (isFile) {
-            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.parameter_display_order}_${rowIndex}`;
+            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order}_${rowIndex}`;
             formData.append(fileControlName, paramValue, paramValue.name);
           } else if (existingFilePath && !paramValue) {
-            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.parameter_display_order}_${rowIndex}`;
+            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order}_${rowIndex}`;
             formData.append(fileControlName, existingFilePath);
           }
         });
@@ -605,7 +637,7 @@ export class Step2Component implements OnInit {
     const parentRecord = {
       registration_no: registrationNo,
       a_rec_app_main_id: a_rec_adv_main_id,
-      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 244,
+      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 246,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading?.m_rec_score_field_id,
       m_rec_score_field_method_id: 1,
@@ -627,25 +659,6 @@ export class Step2Component implements OnInit {
     };
     formData.append('parentScore', JSON.stringify(parentRecord));
 
-    console.log(
-      JSON.stringify(
-        {
-          event: 'submitForm_prepared_data',
-          newDetails,
-          existingDetails,
-          newParameters,
-          existingParameters,
-          parentRecord,
-          formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
-            key,
-            value: value instanceof File ? value.name : value,
-          })),
-        },
-        null,
-        2
-      )
-    );
-
     if (newDetails.length > 0 || newParameters.length > 0) {
       this.saveRecords(
         registrationNo,
@@ -666,7 +679,12 @@ export class Step2Component implements OnInit {
     }
 
     if (newDetails.length === 0 && existingDetails.length === 0) {
-      alert('No data to save. Please select at least one qualification.');
+      this.alertService.alert(
+        true,
+        'No data to save. Please select at least one qualification.',
+        3000
+      );
+      this.emitFormData();
       return;
     }
 
@@ -698,14 +716,6 @@ export class Step2Component implements OnInit {
       'recruitement'
     ).subscribe({
       next: (res) => {
-        console.log(
-          JSON.stringify(
-            { event: `${endpoint}_success`, response: res.body?.data },
-            null,
-            2
-          )
-        );
-
         if (res.body?.data) {
           details.forEach((detail, index) => {
             if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
@@ -729,7 +739,11 @@ export class Step2Component implements OnInit {
           });
         }
 
-        alert('Data saved successfully!');
+        this.alertService.alertStatus(
+          res.status,
+          'Data saved successfully!',
+          3000
+        );
         this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
       },
@@ -741,7 +755,11 @@ export class Step2Component implements OnInit {
             2
           )
         );
-        alert(`Error saving data: ${err.message}`);
+        this.alertService.alertStatus(
+          err.status || 500,
+          `Error saving data: ${err.message}`,
+          3000
+        );
         this.cdr.markForCheck();
       },
     });
@@ -768,7 +786,10 @@ export class Step2Component implements OnInit {
         {}
       ),
     };
-
+    console.log(
+      '📤 Step2 form emitting data:',
+      JSON.stringify(emitData, null, 2)
+    );
     this.formData.emit(emitData);
   }
 }

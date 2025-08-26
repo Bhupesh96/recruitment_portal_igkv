@@ -46,12 +46,8 @@
             formControlName="declaration"
             [ngClass]="{ 'checkbox-disabled': isSubmitted }"
           />
-          <label class="text-sm text-gray-700">
-            I declare that the entries made in this application form are true
-            and correct to the best of my knowledge and belief. I agree to
-            accept the entire process of recruitment and conditions laid down in
-            the general terms and conditions mentioned in the advertisement.
-          </label>
+          <label class="text-sm text-gray-700" [innerHTML]="declarationText">
+            </label>
         </div>
       </div>
 

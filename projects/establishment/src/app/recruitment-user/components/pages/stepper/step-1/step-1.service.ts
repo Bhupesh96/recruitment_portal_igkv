@@ -49,13 +49,13 @@ export class Step1Service {
   getStates() {
     return this.HTTP.getParam('/master/get/getStateList', {}, 'recruitement');
   }
-  getAdvertisement() {
-    return this.HTTP.getParam(
-      '/master/get/getAdvertismentDetails',
-      {},
-      'recruitement'
-    );
-  }
+  // getAdvertisement() {
+  //   return this.HTTP.getParam(
+  //     '/master/get/getAdvertismentDetails',
+  //     {},
+  //     'recruitement'
+  //   );
+  // }
   getPostByAdvertisement(
     advertisementId: number
   ): Observable<{ a_rec_adv_main_id: number; advertisment_name: string }[]> {
