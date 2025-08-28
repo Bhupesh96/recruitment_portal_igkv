@@ -35,8 +35,8 @@ import { AlertService } from 'shared';
     Step6Component,
     Step7Component,
     Step8Component,
-    Step9Component
-],
+    Step9Component,
+  ],
   templateUrl: './stepper.component.html',
   styleUrls: ['./stepper.component.scss'],
   animations: [
@@ -87,7 +87,7 @@ export class StepperComponent {
     private alertService: AlertService
   ) {}
 
-async nextStep() {
+  async nextStep() {
     if (this.currentStep === 1) {
       if (this.step1Component) {
         this.step1Component.submitForm();
@@ -95,7 +95,7 @@ async nextStep() {
       }
     } else if (this.currentStep === 2) {
       if (this.step2Component) {
-        this.step2Component.submitForm();
+         this.step2Component.submitForm();
       } else {
       }
     } else if (this.currentStep === 3) {
@@ -124,13 +124,17 @@ async nextStep() {
       } else {
       }
     } else if (this.currentStep === 9) {
-    if (this.step9Component) {
-      this.step9Component.submit();
-    } else {
-      // Handle case where component is not available
+      if (this.step9Component) {
+        this.step9Component.submit();
+      } else {
+        // Handle case where component is not available
+      }
     }
-  }
-
+    // Log current formData state for debugging
+    console.log(
+      `Step ${this.currentStep} formData:`,
+      JSON.stringify(this.formData[this.currentStep], null, 2)
+    );
     if (this.isFormValid()) {
       if (this.currentStep < this.steps.length) {
         this.currentStep++;
@@ -164,7 +168,7 @@ async nextStep() {
   }
 
   // First, modify the finish method to be an async function.
- async finish() {
+  async finish() {
     // Use a confirmation dialog before proceeding.
     const confirmationResult = await this.alertService.confirmAlert(
       'Confirm Submission',
@@ -175,8 +179,11 @@ async nextStep() {
     // Check if the user confirmed (clicked "Yes").
     if (confirmationResult.isConfirmed) {
       // If confirmed, show success message and stay on the preview step
-      this.alertService.alert(true, 'Your application has been submitted successfully!');
-      
+      this.alertService.alert(
+        true,
+        'Your application has been submitted successfully!'
+      );
+
       // You could also reset the form here if needed
       // this.resetForm();
     } else {

@@ -28,12 +28,18 @@
           </ul>
         </div>
 
-        <!-- Mandatory Subheading Validation Error -->
+        <!-- Mandatory Subheading or Parameter Validation Error -->
         <div
-          *ngIf="form.get('mandatorySubheadingsSelected')?.invalid && form.get('mandatorySubheadingsSelected')?.touched"
-          class="text-red-600 text-xs mt-1"
+          *ngIf="
+            form.get('mandatorySubheadingsSelected')?.invalid &&
+            form.get('mandatorySubheadingsSelected')?.touched
+          "
+          class="text-red-600 text-xs mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
         >
-          At least one mandatory qualification must be selected.
+          <div *ngIf="form.get('firstMissedMandatory')?.value">
+            <strong>Mandatory Field Required:</strong>
+            {{ form.get("firstMissedMandatory")?.value }} must be provided.
+          </div>
         </div>
 
         <!-- Heading -->
@@ -98,7 +104,8 @@
               <span
                 *ngIf="subheading.score_field_is_mandatory === '1'"
                 class="text-red-600"
-              >*</span>
+                >*</span
+              >
             </h6>
           </div>
 
@@ -144,7 +151,9 @@
                   <input
                     type="hidden"
                     [formControlName]="
-                      'param_' + param.m_rec_score_field_parameter_new_id + '_id'
+                      'param_' +
+                      param.m_rec_score_field_parameter_new_id +
+                      '_id'
                     "
                   />
 
@@ -157,10 +166,16 @@
                         )?.value && param.is_mandatory === 'Y'
                       "
                       class="text-red-600"
-                    >*</span>
+                      >*</span
+                    >
                   </label>
 
-                  <ng-container *ngIf="param.isDatatype === 'attachment'; else controlTypeSwitch">
+                  <ng-container
+                    *ngIf="
+                      param.isDatatype === 'attachment';
+                      else controlTypeSwitch
+                    "
+                  >
                     <!-- File Upload for isDatatype 'attachment' -->
                     <input
                       type="file"
@@ -212,9 +227,7 @@
 
                     <!-- Show newly selected file -->
                     <div
-                      *ngIf="
-                        group.get(param.score_field_parameter_name)?.value
-                      "
+                      *ngIf="group.get(param.score_field_parameter_name)?.value"
                       class="mt-2 text-xs text-blue-600 flex items-center"
                     >
                       <svg
@@ -231,18 +244,19 @@
                         />
                       </svg>
                       {{
-                        group.get(param.score_field_parameter_name)?.value
-                          .name
+                        group.get(param.score_field_parameter_name)?.value.name
                       }}
                     </div>
                   </ng-container>
 
                   <ng-template #controlTypeSwitch>
-                    <ng-container [ngSwitch]="param.score_field_control_type">
+                    <ng-container [ngSwitch]="param.control_type">
                       <!-- Text/Number Input -->
                       <input
                         *ngSwitchCase="'T'"
-                        [type]="param.isDatatype === 'number' ? 'number' : 'text'"
+                        [type]="
+                          param.isDatatype === 'number' ? 'number' : 'text'
+                        "
                         [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
@@ -293,7 +307,8 @@
                         <!-- Show existing file -->
                         <ng-container
                           *ngIf="
-                            !group.get(param.score_field_parameter_name)?.value &&
+                            !group.get(param.score_field_parameter_name)
+                              ?.value &&
                             getFilePath(
                               getUniqueKey(subheading, i),
                               param.m_rec_score_field_parameter_new_id,
@@ -354,7 +369,9 @@
                       <!-- Default Input -->
                       <input
                         *ngSwitchDefault
-                        [type]="param.isDatatype === 'number' ? 'number' : 'text'"
+                        [type]="
+                          param.isDatatype === 'number' ? 'number' : 'text'
+                        "
                         [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
@@ -380,16 +397,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="mt-8">
-          <button
-            type="submit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-          >
-            Submit
-          </button>
         </div>
       </div>
     </form>

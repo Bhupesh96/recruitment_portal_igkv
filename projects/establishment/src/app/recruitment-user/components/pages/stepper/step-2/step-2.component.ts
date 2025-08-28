@@ -60,16 +60,7 @@ interface Parameter {
   m_rec_score_field_parameter_new_id: number;
   a_rec_adv_post_detail_id: number;
   score_field_parameter_name: string;
-  score_field_control_type:
-    | 'T'
-    | 'D'
-    | 'DY'
-    | 'A'
-    | 'DV'
-    | 'TV'
-    | 'TM'
-    | 'TO'
-    | 'DP';
+  control_type: 'T' | 'D' | 'DY' | 'A' | 'DV' | 'TV' | 'TM' | 'TO' | 'DP';
   parameter_display_order: number;
   is_mandatory?: string;
   isDatatype: string;
@@ -102,7 +93,7 @@ export class Step2Component implements OnInit {
   notes: Note[] = [];
   loading = true;
   errorMessage: string | null = null;
-  years: number[] = Array.from({ length: 2025 - 1900 + 1 }, (_, i) => 2025 - i);
+  years: number[] = [];
   filePaths: Map<string, string> = new Map();
   existingDetailIds: Map<string, number> = new Map();
   existingParameterIds: Map<string, number> = new Map();
@@ -120,6 +111,11 @@ export class Step2Component implements OnInit {
   }
 
   ngOnInit(): void {
+    const currentYear = new Date().getFullYear();
+    this.years = Array.from(
+      { length: currentYear - 1970 + 1 },
+      (_, i) => currentYear - i
+    );
     this.loadFormData().subscribe({
       next: () => {
         this.getParameterValuesAndPatch();
@@ -188,20 +184,90 @@ export class Step2Component implements OnInit {
         const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${index}`;
         this.filePaths.delete(fileKey);
       }
+      this.checkMandatorySubheadingsAndParameters();
       this.cdr.markForCheck();
     }
   }
 
-  // common function to check if subheading and parameter is mandatory or not
   private checkMandatorySubheadingsAndParameters(): void {
-    const mandatorySelected = this.subheadings.some(
+    let firstMissedMandatory: string = '';
+    let firstMissedParameter: string = '';
+    let firstMissedSubheading: string = '';
+
+    // Check for mandatory subheadings
+    const missedMandatorySubheading = this.subheadings.find(
       (sub, index) =>
         sub.score_field_is_mandatory === '1' &&
-        this.form.get(`is${this.getUniqueKey(sub, index)}Selected`)?.value
+        !this.form.get(`is${this.getUniqueKey(sub, index)}Selected`)?.value
     );
+
+    if (missedMandatorySubheading) {
+      firstMissedMandatory = missedMandatorySubheading.score_field_title_name;
+    } else {
+      // Check for mandatory parameters in selected subheadings
+      for (
+        let i = 0;
+        i < this.subheadings.length && !firstMissedParameter;
+        i++
+      ) {
+        const sub = this.subheadings[i];
+        const key = this.getUniqueKey(sub, i);
+        const isSelected = this.form.get(`is${key}Selected`)?.value;
+
+        if (isSelected) {
+          const formArray = this.form.get(`qualifications${key}`) as FormArray;
+          const params = this.getParameters(
+            sub.m_rec_score_field_id,
+            sub.a_rec_adv_post_detail_id
+          );
+
+          for (const group of formArray.controls) {
+            for (const param of params) {
+              if (param.is_mandatory === 'Y') {
+                const control = (group as FormGroup).get(
+                  param.score_field_parameter_name
+                );
+                const isFile =
+                  param.isDatatype === 'attachment' ||
+                  param.control_type === 'A';
+                const filePath = this.getFilePath(
+                  key,
+                  param.m_rec_score_field_parameter_new_id,
+                  formArray.controls.indexOf(group)
+                );
+
+                if (
+                  !control?.value &&
+                  (!isFile || (isFile && !filePath)) // Check if value is missing or no file is uploaded
+                ) {
+                  firstMissedParameter = param.score_field_parameter_name;
+                  firstMissedSubheading = sub.score_field_title_name;
+                  break;
+                }
+              }
+            }
+            if (firstMissedParameter) break;
+          }
+        }
+      }
+    }
+
+    // Set validation state
+    const allMandatoryValid = !firstMissedMandatory && !firstMissedParameter;
     this.form
       .get('mandatorySubheadingsSelected')
-      ?.setValue(mandatorySelected, { emitEvent: false });
+      ?.setValue(allMandatoryValid, { emitEvent: false });
+
+    // Store the first missed mandatory item (subheading or parameter)
+    this.form
+      .get('firstMissedMandatory')
+      ?.setValue(
+        firstMissedMandatory ||
+          (firstMissedParameter
+            ? `${firstMissedParameter} under ${firstMissedSubheading} is missing`
+            : ''),
+        { emitEvent: false }
+      );
   }
 
   private buildFormControls(): void {
@@ -209,7 +275,7 @@ export class Step2Component implements OnInit {
       'heading',
       this.fb.control(this.heading?.score_field_title_name || '')
     );
-
+    this.form.addControl('firstMissedMandatory', this.fb.control(''));
     this.form.addControl(
       'mandatorySubheadingsSelected',
       this.fb.control(false, Validators.requiredTrue)
@@ -239,6 +305,19 @@ export class Step2Component implements OnInit {
           this.checkMandatorySubheadingsAndParameters();
           this.cdr.markForCheck();
         });
+
+      // Subscribe to value changes for each parameter control to trigger validation
+      const formArray = this.form.get(`qualifications${key}`) as FormArray;
+      formArray.controls.forEach((control) => {
+        const group = control as FormGroup;
+        params.forEach((param) => {
+          const controlName = param.score_field_parameter_name;
+          group.get(controlName)?.valueChanges.subscribe(() => {
+            this.checkMandatorySubheadingsAndParameters();
+            this.cdr.markForCheck();
+          });
+        });
+      });
     });
 
     this.checkMandatorySubheadingsAndParameters();
@@ -318,10 +397,12 @@ export class Step2Component implements OnInit {
   private loadFormData(): Observable<void> {
     const a_rec_adv_main_id = 96;
     const m_rec_score_field_id = 1;
+    const m_rec_score_field = 'N';
 
+    //Heading
     const headingRequest = this.HTTP.getParam(
-      '/master/get/getHeadingByScoreField',
-      { a_rec_adv_main_id, m_rec_score_field_id },
+      '/master/get/getSubHeadingParameterByParentScoreField',
+      { a_rec_adv_main_id, m_rec_score_field_id, m_rec_score_field },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
 
@@ -331,7 +412,7 @@ export class Step2Component implements OnInit {
         if (!headingList.length) throw new Error('No heading data found');
 
         this.heading = headingList[0];
-
+        //Sub-Heading
         return this.HTTP.getParam(
           '/master/get/getSubHeadingByParentScoreField',
           {
@@ -414,13 +495,13 @@ export class Step2Component implements OnInit {
             item.a_rec_app_score_field_detail_id
           );
           this.existingParameterIds.set(
-            `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}_0`,
+            `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_new_id}_0`,
             item.a_rec_app_score_field_parameter_detail_id
           );
 
           if (item.parameter_value?.includes('.pdf')) {
             this.filePaths.set(
-              `${key}_${item.m_rec_score_field_parameter_id}_0`,
+              `${key}_${item.m_rec_score_field_parameter_new_id}_0`,
               item.parameter_value
             );
           }
@@ -437,7 +518,7 @@ export class Step2Component implements OnInit {
                 });
             }
 
-            const paramIdControl = `param_${item.m_rec_score_field_parameter_id}_id`;
+            const paramIdControl = `param_${item.m_rec_score_field_parameter_new_id}_id`;
             if (
               item.a_rec_app_score_field_parameter_detail_id &&
               control.get(paramIdControl)
@@ -452,7 +533,7 @@ export class Step2Component implements OnInit {
             const fieldName = this.parameters.find(
               (p) =>
                 p.m_rec_score_field_parameter_new_id ===
-                item.m_rec_score_field_parameter_id
+                item.m_rec_score_field_parameter_new_id
             )?.score_field_parameter_name;
 
             if (fieldName && control.get(fieldName)) {
@@ -496,10 +577,24 @@ export class Step2Component implements OnInit {
   }
 
   submitForm(): void {
+    this.form.markAllAsTouched(); // Ensure all controls are marked as touched to trigger validation
+    this.checkMandatorySubheadingsAndParameters();
+
+    const firstMissed = this.form.get('firstMissedMandatory')?.value;
+
+    if (firstMissed) {
+      this.alertService.alert(
+        true,
+        `${firstMissed} is mandatory. Please provide the required information.`,
+        3000
+      );
+      this.emitFormData();
+      return;
+    }
     if (this.form.invalid) {
       this.alertService.alert(
         true,
-        'Please fill all mandatory fields and ensure at least one mandatory qualification is selected.',
+        'Please fill all mandatory fields and ensure all mandatory qualifications are selected.',
         3000
       );
       this.emitFormData();
@@ -593,7 +688,7 @@ export class Step2Component implements OnInit {
             registration_no: registrationNo,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
-            m_rec_score_field_parameter_id:
+            m_rec_score_field_parameter_new_id:
               param.m_rec_score_field_parameter_new_id,
             parameter_value: isFile
               ? this.generateFilePath(
@@ -716,6 +811,16 @@ export class Step2Component implements OnInit {
       'recruitement'
     ).subscribe({
       next: (res) => {
+        if (res.body?.error) {
+          this.alertService.alert(
+            true,
+            `Something went wrong: ${res.body.error.message}`,
+            3000
+          );
+          this.cdr.markForCheck();
+          return;
+        }
+
         if (res.body?.data) {
           details.forEach((detail, index) => {
             if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
@@ -730,7 +835,7 @@ export class Step2Component implements OnInit {
             if (
               res.body.data[index]?.a_rec_app_score_field_parameter_detail_id
             ) {
-              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.unique_parameter_display_no}`;
+              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.unique_parameter_display_no}`;
               this.existingParameterIds.set(
                 paramKey,
                 res.body.data[index].a_rec_app_score_field_parameter_detail_id
@@ -748,6 +853,9 @@ export class Step2Component implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
+        const errorMessage = err.body?.error?.message
+          ? `Something went wrong: ${err.body.error.message}`
+          : `Error saving data: ${err.message}`;
         console.error(
           JSON.stringify(
             { event: `${endpoint}_error`, error: err.message },
@@ -755,11 +863,7 @@ export class Step2Component implements OnInit {
             2
           )
         );
-        this.alertService.alertStatus(
-          err.status || 500,
-          `Error saving data: ${err.message}`,
-          3000
-        );
+        this.alertService.alertStatus(err.status || 500, errorMessage, 3000);
         this.cdr.markForCheck();
       },
     });
