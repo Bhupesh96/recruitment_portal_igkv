@@ -287,7 +287,7 @@ export class Step1Component implements OnChanges, OnInit {
     this.calculateExp();
     this.step1Service.getUserData().subscribe({
       next: (response: any) => {
-        console.log('User Data ', JSON.stringify(response.body, null, 2));
+       // console.log('User Data ', JSON.stringify(response.body, null, 2));
         if (response?.body?.error) {
           this.alert.alert(true, response.body.error, 5000);
           return;
@@ -1100,10 +1100,10 @@ export class Step1Component implements OnChanges, OnInit {
         this.filePaths.get('signature') || formValue.signature || null,
     };
 
-    console.log(
-      '📤 Step1 form emitting data:',
-      JSON.stringify(emitData, null, 2)
-    );
+    // console.log(
+    //   '📤 Step1 form emitting data:',
+    //   JSON.stringify(emitData, null, 2)
+    // );
 
     this.formData.emit(emitData);
   }

@@ -890,10 +890,10 @@ export class Step2Component implements OnInit {
         {}
       ),
     };
-    console.log(
-      '📤 Step2 form emitting data:',
-      JSON.stringify(emitData, null, 2)
-    );
+    // console.log(
+    //   '📤 Step2 form emitting data:',
+    //   JSON.stringify(emitData, null, 2)
+    // );
     this.formData.emit(emitData);
   }
 }

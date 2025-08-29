@@ -100,13 +100,12 @@ export class Step3Component implements OnInit {
     const key = subHeadingId.toString();
     const hasRows = !!this.subHeadingDetails[key]?.length;
     if (isDevMode()) {
-          }
+    }
     return hasRows;
   }
 
-  getCountOptions(maxRows: number | undefined): number[] {
-    const count = maxRows && maxRows > 0 ? maxRows : 10;
-    return Array.from({ length: count }, (_, i) => i + 1);
+  getCountOptions(): number[] {
+    return Array.from({ length: 10 }, (_, i) => i + 1);
   }
 
   getCheckboxName(detailForm: AbstractControl): string {
@@ -182,8 +181,7 @@ export class Step3Component implements OnInit {
         const savedData = responses.flatMap(
           (res) => res.body?.data || res.data || []
         );
-
-        
+        console.log('📌 Saved data for step-3 from:', JSON.stringify(savedData,null,2));
         this.subHeadings.forEach((subHeading) => {
           const groupName = subHeading.m_rec_score_field_id.toString();
           const subGroup = this.form.get(
@@ -206,13 +204,13 @@ export class Step3Component implements OnInit {
               item.a_rec_app_score_field_detail_id
             );
             this.existingParameterIds.set(
-              `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}`,
+              `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_new_id}`,
               item.a_rec_app_score_field_parameter_detail_id
             );
 
             if (item.parameter_value?.includes('.pdf')) {
               this.filePaths.set(
-                `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_id}`,
+                `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_new_id}`,
                 item.parameter_value
               );
             }
@@ -278,27 +276,32 @@ export class Step3Component implements OnInit {
     const a_rec_adv_main_id = 96;
     const m_rec_score_field_id = 8;
 
+    // 🔹 Heading API
     this.HTTP.getData(
-      `/master/get/getHeadingByScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
+      `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}&m_rec_score_field=N`,
       'recruitement'
     ).subscribe({
       next: (headingResponse: any) => {
-        const data = headingResponse.body?.data || headingResponse.data || [];
+        const data = headingResponse.body?.data || [];
+        console.log('📌 Heading API Response:', JSON.stringify(data, null, 2));
 
         this.heading = data[0];
-        this.score_field_title_name =
-          data[0]?.score_field_title_name || 'Academic Excellence';
-        if (!data[0]?.score_field_field_marks) {
-        }
-        const a_rec_adv_post_detail_id =
-          data[0]?.a_rec_adv_post_detail_id || 246;
+        this.score_field_title_name = data[0]?.score_field_title_name;
+        console.log('📌 Title name:', this.score_field_title_name);
+        const a_rec_adv_post_detail_id = data[0]?.a_rec_adv_post_detail_id;
 
+        // 🔹 SubHeading API
         this.HTTP.getData(
           `/master/get/getSubHeadingByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&score_field_parent_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
           'recruitement'
         ).subscribe({
           next: (subHeadingResponse: any) => {
             const subHeadingData = subHeadingResponse.body?.data || [];
+            console.log(
+              '📌 SubHeading API Response:',
+              JSON.stringify(subHeadingData, null, 2)
+            );
+
             this.subHeadings = subHeadingData.map((sub: any) => ({
               ...sub,
               items: [],
@@ -320,7 +323,7 @@ export class Step3Component implements OnInit {
 
             const paramRequests = this.subHeadings.map((sub) =>
               this.HTTP.getData(
-                `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${sub.m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
+                `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${sub.m_rec_score_field_id}&score_field_parent_code=${sub.score_field_parent_id}&m_rec_score_field_parameter_new=N&m_parameter_master=Y`,
                 'recruitement'
               )
             );
@@ -330,8 +333,15 @@ export class Step3Component implements OnInit {
               forkJoin(paramRequests),
             ]).subscribe({
               next: ([itemResponses, paramResponses]) => {
+                console.log('📌 forkJoin completed');
+
                 itemResponses.forEach((res, index) => {
                   const itemData = res.body?.data || [];
+                  console.log(
+                    `📌 Parameter API Response for subHeading[${index}]`,
+                    JSON.stringify(itemData, null, 2)
+                  );
+
                   this.subHeadings[index].items = itemData.map((item: any) => ({
                     ...item,
                     normalizedKey: this.normalizeControlName(
@@ -355,17 +365,22 @@ export class Step3Component implements OnInit {
                           (a.parameter_display_order || 0) -
                           (b.parameter_display_order || 0)
                       ) || [];
+
+                  console.log(
+                    `📌 Parameter API Response for subHeading[${index}]`,
+                    JSON.stringify(paramData, null, 2)
+                  );
+
                   const subHeadingId =
                     this.subHeadings[index].m_rec_score_field_id.toString();
                   this.subHeadingParameters[subHeadingId] = paramData;
-                  if (isDevMode()) {
-                                      }
                 });
 
                 this.getParameterValuesAndPatch();
                 this.cdr.detectChanges();
               },
-              error: () => {
+              error: (err) => {
+                console.error('❌ Error in forkJoin:', err);
                 this.parameters = [];
                 this.subHeadingDetails = {};
                 this.generateDetailsTable();
@@ -374,7 +389,8 @@ export class Step3Component implements OnInit {
               },
             });
           },
-          error: () => {
+          error: (err) => {
+            console.error('❌ Error in SubHeading API:', err);
             this.subHeadings = [];
             this.subHeadingDetails = {};
             this.generateDetailsTable();
@@ -383,8 +399,9 @@ export class Step3Component implements OnInit {
           },
         });
       },
-      error: () => {
-        this.score_field_title_name = 'Academic Excellence';
+      error: (err) => {
+        console.error('❌ Error in Heading API:', err);
+        this.score_field_title_name;
         this.subHeadingDetails = {};
         this.generateDetailsTable();
         this.getParameterValuesAndPatch();
@@ -442,7 +459,6 @@ export class Step3Component implements OnInit {
   }
 
   generateDetailsTable(savedData: any[] = []) {
-    
     if (this.isGeneratingTable) {
       return;
     }
@@ -469,7 +485,7 @@ export class Step3Component implements OnInit {
             const controlName = param.normalizedKey;
             if (rowData[controlName] instanceof File) {
               existingFiles[
-                `${typeValue}_${param.m_rec_score_field_parameter_id}_${index}`
+                `${typeValue}_${param.m_rec_score_field_parameter_new_id}_${index}`
               ] = rowData[controlName];
             }
           });
@@ -496,7 +512,7 @@ export class Step3Component implements OnInit {
 
         if (!subGroup || parametersForSubHeading.length === 0) {
           if (isDevMode()) {
-                      }
+          }
           return;
         }
 
@@ -509,7 +525,7 @@ export class Step3Component implements OnInit {
 
           if (isNaN(count) || count <= 0) {
             if (isDevMode()) {
-                          }
+            }
             return;
           }
 
@@ -530,7 +546,7 @@ export class Step3Component implements OnInit {
           }
 
           if (isDevMode()) {
-                      }
+          }
 
           for (let i = 0; i < count; i++) {
             const detailGroup: DetailFormGroup = {
@@ -557,16 +573,16 @@ export class Step3Component implements OnInit {
 
             const savedRowGroup = logicalRows[i];
             if (savedRowGroup) {
-                            savedRowGroup.forEach((savedRow) => {
+              savedRowGroup.forEach((savedRow) => {
                 parametersForSubHeading.forEach((param: any) => {
                   if (
-                    savedRow.m_rec_score_field_parameter_id ===
-                    param.m_rec_score_field_parameter_id
+                    savedRow.m_rec_score_field_parameter_new_id ===
+                    param.m_rec_score_field_parameter_new_id
                   ) {
                     const paramValue = savedRow.parameter_value;
                     const controlName = param.normalizedKey;
-                    const key = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
-                    
+                    const key = `${typeValue}_${param.m_rec_score_field_parameter_new_id}_${i}`;
+
                     if (paramValue?.includes('.pdf')) {
                       this.filePaths.set(key, paramValue);
                       newGroup
@@ -594,7 +610,7 @@ export class Step3Component implements OnInit {
               });
 
               parametersForSubHeading.forEach((param: any) => {
-                const fileKey = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
+                const fileKey = `${typeValue}_${param.m_rec_score_field_parameter_new_id}_${i}`;
                 if (existingFiles[fileKey]) {
                   newGroup
                     .get(param.normalizedKey)
@@ -627,7 +643,7 @@ export class Step3Component implements OnInit {
         const param = parameters.find((p) => p.normalizedKey === controlName);
         if (param) {
           const scoreFieldId = detailType;
-          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}_${index}`;
+          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${index}`;
           if (this.filePaths.has(paramKey)) {
             this.filePaths.delete(paramKey);
           }
@@ -683,7 +699,10 @@ export class Step3Component implements OnInit {
       },
       subheadings: subheadingsData,
     };
-    console.log('📤 Step3 form emitting data:', JSON.stringify(emitData, null, 2));
+    console.log(
+      '📤 Step3 form emitting data:',
+      JSON.stringify(emitData, null, 2)
+    );
     this.formData.emit(emitData);
 
     if (isDev || anySelected) {
@@ -738,6 +757,7 @@ export class Step3Component implements OnInit {
     let parentRecord: any = {};
     if (this.heading) {
       const headingId = this.heading.m_rec_score_field_id;
+      console.log('Heading Id for parent record: ', headingId);
       const isParentAndChildSame = this.subHeadings.some(
         (sub) => sub.m_rec_score_field_id === headingId
       );
@@ -771,6 +791,11 @@ export class Step3Component implements OnInit {
           action_ip_address: '127.0.0.1',
           delete_flag: 'N',
         };
+        console.log(
+          '📌 parentRecord values:',
+          JSON.stringify(parentRecord, null, 2)
+        );
+
         formData.append('parentScore', JSON.stringify(parentRecord));
       }
     }
@@ -862,7 +887,6 @@ export class Step3Component implements OnInit {
         item?.score_field_field_marks || 0
       );
 
-      
       entry.detail.score_field_value = scoreResult.score_field_value;
       entry.detail.score_field_actual_value =
         scoreResult.score_field_actual_value;
@@ -885,15 +909,15 @@ export class Step3Component implements OnInit {
         const processedParams = new Set<number>();
 
         subHeadingParameters.forEach((param: any) => {
-          if (processedParams.has(param.m_rec_score_field_parameter_id)) {
+          if (processedParams.has(param.m_rec_score_field_parameter_new_id)) {
             return;
           }
-          processedParams.add(param.m_rec_score_field_parameter_id);
+          processedParams.add(param.m_rec_score_field_parameter_new_id);
 
           const paramValue = rowControl.getRawValue()[param.normalizedKey];
           const isFile = paramValue instanceof File;
           const displayOrder = param.parameter_display_order || 0;
-          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_id}_${rowIndex}`;
+          const paramKey = `${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
           const existingParamId = this.existingParameterIds.get(paramKey);
           const existingFilePath = this.filePaths.get(paramKey);
 
@@ -904,14 +928,14 @@ export class Step3Component implements OnInit {
             registration_no: registrationNo,
             score_field_parent_id: entry.detail.score_field_parent_id,
             m_rec_score_field_id: entry.detail.m_rec_score_field_id,
-            m_rec_score_field_parameter_id:
-              param.m_rec_score_field_parameter_id,
+            m_rec_score_field_parameter_new_id:
+              param.m_rec_score_field_parameter_new_id,
             parameter_value: isFile
               ? this.generateFilePath(
                   registrationNo,
                   paramValue,
                   entry.detail.m_rec_score_field_id,
-                  param.m_rec_score_field_parameter_id,
+                  param.m_rec_score_field_parameter_new_id,
                   displayOrder,
                   rowIndex
                 )
@@ -940,17 +964,16 @@ export class Step3Component implements OnInit {
           }
 
           if (isFile) {
-            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${displayOrder}_${rowIndex}`;
+            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${displayOrder}_${rowIndex}`;
             formData.append(fileControlName, paramValue, paramValue.name);
           } else if (existingFilePath && !paramValue) {
-            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${displayOrder}_${rowIndex}`;
+            const fileControlName = `file_${entry.detail.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${displayOrder}_${rowIndex}`;
             formData.append(fileControlName, existingFilePath);
           }
         });
       });
     });
 
-    
     if (newDetails.length > 0) {
       this.saveNewRecords(registrationNo, formData, newDetails, newParameters);
     }
@@ -965,7 +988,7 @@ export class Step3Component implements OnInit {
     }
 
     if (newDetails.length === 0 && existingDetails.length === 0) {
-            this.alertService.alert(
+      this.alertService.alert(
         true,
         'No data to save. Please add at least one record.'
       );
@@ -990,14 +1013,12 @@ export class Step3Component implements OnInit {
       }
     });
 
-    
     this.HTTP.postForm(
       '/candidate/postFile/saveCandidateScoreCard',
       saveFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        
         if (res.body?.data) {
           details.forEach((detail, index) => {
             if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
@@ -1012,7 +1033,7 @@ export class Step3Component implements OnInit {
             if (
               res.body.data[index]?.a_rec_app_score_field_parameter_detail_id
             ) {
-              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_id}_${param.unique_parameter_display_no}`;
+              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.unique_parameter_display_no}`;
               this.existingParameterIds.set(
                 paramKey,
                 res.body.data[index].a_rec_app_score_field_parameter_detail_id
@@ -1024,7 +1045,7 @@ export class Step3Component implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-                this.alertService.alert(
+        this.alertService.alert(
           true,
           'Error saving new records: ' + err.message
         );
@@ -1053,18 +1074,17 @@ export class Step3Component implements OnInit {
       }
     });
 
-    
     this.HTTP.postForm(
       '/candidate/postFile/updateCandidateScoreCard',
       updateFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-                this.alertService.alert(false, 'Data saved successfully!');
+        this.alertService.alert(false, 'Data saved successfully!');
         this.cdr.markForCheck();
       },
       error: (err) => {
-                this.alertService.alert(true, 'Error updating records: ' + err.message);
+        this.alertService.alert(true, 'Error updating records: ' + err.message);
         this.cdr.markForCheck();
       },
     });

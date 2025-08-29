@@ -131,10 +131,10 @@ export class StepperComponent {
       }
     }
     // Log current formData state for debugging
-    console.log(
-      `Step ${this.currentStep} formData:`,
-      JSON.stringify(this.formData[this.currentStep], null, 2)
-    );
+    // console.log(
+    //   `Step ${this.currentStep} formData:`,
+    //   JSON.stringify(this.formData[this.currentStep], null, 2)
+    // );
     if (this.isFormValid()) {
       if (this.currentStep < this.steps.length) {
         this.currentStep++;
