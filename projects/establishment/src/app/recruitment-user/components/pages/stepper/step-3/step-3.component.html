@@ -241,6 +241,10 @@
                             [attr.data-file-input]="
                               param.normalizedKey + '-' + i
                             "
+                            [disabled]="
+                              detailForm.get(param.normalizedKey)?.value ===
+                                'FILE_UPLOADED' && !isEditing
+                            "
                           />
                           <ng-container
                             *ngIf="
