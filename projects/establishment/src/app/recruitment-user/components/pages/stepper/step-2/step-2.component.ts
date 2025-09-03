@@ -192,9 +192,8 @@ export class Step2Component implements OnInit {
   private checkMandatorySubheadingsAndParameters(): void {
     let firstMissedMandatory: string = '';
     let firstMissedParameter: string = '';
-    let firstMissedSubheading: string = '';
+    let firstMissedSubheading: string = ''; // Check for mandatory subheadings
 
-    // Check for mandatory subheadings
     const missedMandatorySubheading = this.subheadings.find(
       (sub, index) =>
         sub.score_field_is_mandatory === '1' &&
@@ -236,10 +235,8 @@ export class Step2Component implements OnInit {
                   formArray.controls.indexOf(group)
                 );
 
-                if (
-                  !control?.value &&
-                  (!isFile || (isFile && !filePath)) // Check if value is missing or no file is uploaded
-                ) {
+                if (!control?.value && (!isFile || (isFile && !filePath))) {
+                  // Check if value is missing or no file is uploaded
                   firstMissedParameter = param.score_field_parameter_name;
                   firstMissedSubheading = sub.score_field_title_name;
                   break;
@@ -250,15 +247,13 @@ export class Step2Component implements OnInit {
           }
         }
       }
-    }
+    } // Set validation state
 
-    // Set validation state
     const allMandatoryValid = !firstMissedMandatory && !firstMissedParameter;
     this.form
       .get('mandatorySubheadingsSelected')
-      ?.setValue(allMandatoryValid, { emitEvent: false });
+      ?.setValue(allMandatoryValid, { emitEvent: false }); // Store the first missed mandatory item (subheading or parameter)
 
-    // Store the first missed mandatory item (subheading or parameter)
     this.form
       .get('firstMissedMandatory')
       ?.setValue(
@@ -304,9 +299,8 @@ export class Step2Component implements OnInit {
           this.toggleValidators(`qualifications${key}`, subheading, isSelected);
           this.checkMandatorySubheadingsAndParameters();
           this.cdr.markForCheck();
-        });
+        }); // Subscribe to value changes for each parameter control to trigger validation
 
-      // Subscribe to value changes for each parameter control to trigger validation
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
       formArray.controls.forEach((control) => {
         const group = control as FormGroup;
@@ -397,9 +391,8 @@ export class Step2Component implements OnInit {
   private loadFormData(): Observable<void> {
     const a_rec_adv_main_id = 96;
     const m_rec_score_field_id = 1;
-    const m_rec_score_field = 'N';
+    const m_rec_score_field = 'N'; //Heading
 
-    //Heading
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
       { a_rec_adv_main_id, m_rec_score_field_id, m_rec_score_field },
@@ -411,8 +404,7 @@ export class Step2Component implements OnInit {
         const headingList = headingRes.body?.data || [];
         if (!headingList.length) throw new Error('No heading data found');
 
-        this.heading = headingList[0];
-        //Sub-Heading
+        this.heading = headingList[0]; //Sub-Heading
         return this.HTTP.getParam(
           '/master/get/getSubHeadingByParentScoreField',
           {
@@ -476,7 +468,6 @@ export class Step2Component implements OnInit {
     ).subscribe({
       next: (res: HttpResponse<any>) => {
         const saved = res.body?.data || [];
-
         this.filePaths.clear();
         this.existingDetailIds.clear();
         this.existingParameterIds.clear();
@@ -489,6 +480,9 @@ export class Step2Component implements OnInit {
               s.m_rec_score_field_id === item.m_rec_score_field_id &&
               s.a_rec_adv_post_detail_id === item.a_rec_adv_post_detail_id
           )}`;
+          const rowIndex = item.parameter_row_index
+            ? item.parameter_row_index - 1
+            : 0;
 
           this.existingDetailIds.set(
             `${item.m_rec_score_field_id}_${item.a_rec_adv_post_detail_id}`,
@@ -501,7 +495,7 @@ export class Step2Component implements OnInit {
 
           if (item.parameter_value?.includes('.pdf')) {
             this.filePaths.set(
-              `${key}_${item.m_rec_score_field_parameter_new_id}_0`,
+              `${key}_${item.m_rec_score_field_parameter_new_id}_${rowIndex}`, // <-- Use dynamic row index
               item.parameter_value
             );
           }
@@ -564,24 +558,31 @@ export class Step2Component implements OnInit {
   private generateFilePath(
     registrationNo: number,
     file: File,
-    scoreFieldId: number,
-    parameterId: number,
-    displayOrder: number,
-    rowIndex: number
+    subHeadingId: number, // Corresponds to score_field_parent_id
+    scoreFieldId: number, // Corresponds to m_rec_score_field_id
+    parameterId: number, // Corresponds to m_rec_score_field_parameter_new_id
+    rowIndex: number // The unique row index for the parameter
   ): string {
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const baseName = file.name.split('.').slice(0, -1).join('.');
-    const fileName = `${timestamp}_scorecard_${scoreFieldId}_${parameterId}_${displayOrder}_${rowIndex}.${fileExtension}`;
+    // Sanitize the original filename to make it URL-safe
+    const sanitizedName = file.name
+      .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace invalid chars with underscore
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^_+|_+$/g, ''); // Trim underscores from start/end // Construct the new filename based on the backend's required format
+
+    const fileName = `${registrationNo}_${subHeadingId}_${scoreFieldId}_${parameterId}_${rowIndex}_${sanitizedName}`;
+
     return `recruitment/${registrationNo}/${fileName}`;
   }
 
+  /**
+   * ✅ UPDATED METHOD
+   * This method now uses the `generateFilePath` function to create the file path and name.
+   */
   submitForm(): void {
-    this.form.markAllAsTouched(); // Ensure all controls are marked as touched to trigger validation
+    this.form.markAllAsTouched();
     this.checkMandatorySubheadingsAndParameters();
 
     const firstMissed = this.form.get('firstMissedMandatory')?.value;
-
     if (firstMissed) {
       this.alertService.alert(
         true,
@@ -591,33 +592,35 @@ export class Step2Component implements OnInit {
       this.emitFormData();
       return;
     }
+
     if (this.form.invalid) {
-      this.alertService.alert(
-        true,
-        'Please fill all mandatory fields and ensure all mandatory qualifications are selected.',
-        3000
-      );
+      this.alertService.alert(true, 'Please fill all mandatory fields.', 3000);
       this.emitFormData();
       return;
-    }
+    } // --- Configuration ---
 
     const registrationNo = 24000001;
     const a_rec_adv_main_id = 96;
-    const formData = new FormData();
-    const newDetails: any[] = [];
-    const existingDetails: any[] = [];
-    const newParameters: any[] = [];
-    const existingParameters: any[] = [];
+    const formData = new FormData(); // --- Payload Preparation ---
+
+    const allDetails: any[] = [];
+    const allParameters: any[] = [];
     let parentCalculatedValue = 0;
+    const rowIndexCounter = new Map<string, number>(); // STEP 1: Loop through all subheadings to gather data
 
     this.subheadings.forEach((sub, index) => {
       const key = this.getUniqueKey(sub, index);
       if (!this.form.get(`is${key}Selected`)?.value) return;
 
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
-      formArray.controls.forEach((control, rowIndex) => {
+
+      formArray.controls.forEach((control, controlIndex) => {
+        const currentRowIndex = (rowIndexCounter.get(key) || 0) + 1;
+        rowIndexCounter.set(key, currentRowIndex);
+
         const group = control as FormGroup;
-        const percentage = +group.get('Percentage Obtained')?.value || 0;
+        const formValues = group.getRawValue();
+        const percentage = +group.get('Percentage Obtained')?.value || 0; // Calculate score for the child record
 
         const scoreResult = this.utils.calculateScore(
           1,
@@ -633,13 +636,10 @@ export class Step2Component implements OnInit {
           },
           this.heading?.score_field_field_marks || 60
         );
+        parentCalculatedValue += scoreResult.score_field_calculated_value; // Create the unified Detail record
 
-        parentCalculatedValue += scoreResult.score_field_calculated_value;
-
-        const formValues = group.getRawValue();
         const detailKey = `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}`;
         const existingDetailId = this.existingDetailIds.get(detailKey);
-
         const detail = {
           ...(existingDetailId && {
             a_rec_app_score_field_detail_id: existingDetailId,
@@ -660,14 +660,11 @@ export class Step2Component implements OnInit {
           action_type: existingDetailId ? 'U' : 'C',
           action_date: new Date().toISOString(),
           action_ip_address: '127.0.0.1',
-          action_remark: existingDetailId
-            ? 'data updated from recruitment form'
-            : 'data inserted from recruitment form',
+          action_remark: existingDetailId ? 'data updated' : 'data inserted',
           action_by: 1,
           delete_flag: 'N',
         };
-
-        (existingDetailId ? existingDetails : newDetails).push(detail);
+        allDetails.push(detail); // Create unified Parameter records for this detail
 
         this.getParameters(
           sub.m_rec_score_field_id,
@@ -676,58 +673,71 @@ export class Step2Component implements OnInit {
           const paramName = param.score_field_parameter_name;
           const paramValue = formValues[paramName];
           const isFile = paramValue instanceof File;
+          const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${controlIndex}`;
+          const existingFilePath = this.filePaths.get(fileKey);
           const paramId =
             formValues[`param_${param.m_rec_score_field_parameter_new_id}_id`];
-          const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
-          const existingFilePath = this.filePaths.get(fileKey);
 
-          const parameter = {
-            ...(paramId && {
-              a_rec_app_score_field_parameter_detail_id: paramId,
-            }),
-            registration_no: registrationNo,
-            score_field_parent_id: sub.score_field_parent_id,
-            m_rec_score_field_id: sub.m_rec_score_field_id,
-            m_rec_score_field_parameter_new_id:
-              param.m_rec_score_field_parameter_new_id,
-            parameter_value: isFile
-              ? this.generateFilePath(
-                  registrationNo,
-                  paramValue,
-                  sub.m_rec_score_field_id,
-                  param.m_rec_score_field_parameter_new_id,
-                  param.parameter_display_order,
-                  rowIndex
-                )
-              : existingFilePath && !paramValue
-              ? existingFilePath
-              : String(paramValue ?? 'Not Provided'),
-            parameter_display_no: param.parameter_display_order,
-            unique_parameter_display_no: String(param.parameter_display_order),
-            verify_remark: 'Not Verified',
-            active_status: 'Y',
-            action_type: paramId ? 'U' : 'C',
-            action_date: new Date().toISOString(),
-            action_ip_address: '127.0.0.1',
-            action_remark: paramId
-              ? 'parameter updated from recruitment form'
-              : 'parameter inserted from recruitment form',
-            action_by: 1,
-            delete_flag: 'N',
-          };
+          if (paramValue || existingFilePath) {
+            let finalParameterValue = '';
+            if (isFile) {
+              // Generate the file path for the database record
+              finalParameterValue = this.generateFilePath(
+                registrationNo,
+                paramValue,
+                sub.score_field_parent_id,
+                sub.m_rec_score_field_id,
+                param.m_rec_score_field_parameter_new_id,
+                currentRowIndex
+              );
 
-          (paramId ? existingParameters : newParameters).push(parameter);
+              // ✅ FIX: Create a structured key for FormData that the backend can parse.
+              // This key includes the row index in the correct position (the 6th element).
+              const fileControlName = `file_${sub.score_field_parent_id}_${
+                sub.m_rec_score_field_id
+              }_${param.m_rec_score_field_parameter_new_id}_${
+                param.parameter_display_order || 0
+              }_${currentRowIndex}`;
 
-          if (isFile) {
-            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order}_${rowIndex}`;
-            formData.append(fileControlName, paramValue, paramValue.name);
-          } else if (existingFilePath && !paramValue) {
-            const fileControlName = `file_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order}_${rowIndex}`;
-            formData.append(fileControlName, existingFilePath);
+              // Append the file to FormData using the new structured key
+              formData.append(fileControlName, paramValue, paramValue.name);
+            } else {
+              finalParameterValue = existingFilePath
+                ? existingFilePath
+                : String(paramValue ?? '');
+            }
+
+            const parameter = {
+              ...(paramId && {
+                a_rec_app_score_field_parameter_detail_id: paramId,
+              }),
+              registration_no: registrationNo,
+              score_field_parent_id: sub.score_field_parent_id,
+              m_rec_score_field_id: sub.m_rec_score_field_id,
+              m_rec_score_field_parameter_new_id:
+                param.m_rec_score_field_parameter_new_id,
+              parameter_value: finalParameterValue,
+              parameter_row_index: currentRowIndex,
+              parameter_display_no: param.parameter_display_order,
+              unique_parameter_display_no: String(
+                param.parameter_display_order
+              ),
+              verify_remark: 'Not Verified',
+              active_status: 'Y',
+              action_type: paramId ? 'U' : 'C',
+              action_date: new Date().toISOString(),
+              action_ip_address: '127.0.0.1',
+              action_remark: paramId
+                ? 'parameter updated'
+                : 'parameter inserted',
+              action_by: 1,
+              delete_flag: 'N',
+            };
+            allParameters.push(parameter);
           }
         });
       });
-    });
+    }); // STEP 2: Create Parent Record
 
     const parentRecord = {
       registration_no: registrationNo,
@@ -748,40 +758,38 @@ export class Step2Component implements OnInit {
       action_type: 'U',
       action_date: new Date().toISOString(),
       action_ip_address: '127.0.0.1',
-      action_remark: 'parent data updated from recruitment form',
+      action_remark: 'parent data updated',
       action_by: 1,
       delete_flag: 'N',
-    };
+    }; // STEP 3: Append all data to FormData
+
     formData.append('parentScore', JSON.stringify(parentRecord));
+    formData.append('registration_no', registrationNo.toString());
+    formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
+    formData.append('scoreFieldParameterList', JSON.stringify(allParameters)); // STEP 4: Make the SINGLE API call
 
-    if (newDetails.length > 0 || newParameters.length > 0) {
-      this.saveRecords(
-        registrationNo,
-        formData,
-        newDetails,
-        newParameters,
-        'saveCandidateScoreCard'
-      );
-    }
-    if (existingDetails.length > 0 || existingParameters.length > 0) {
-      this.saveRecords(
-        registrationNo,
-        formData,
-        existingDetails,
-        existingParameters,
-        'updateCandidateScoreCard'
-      );
-    }
-
-    if (newDetails.length === 0 && existingDetails.length === 0) {
-      this.alertService.alert(
-        true,
-        'No data to save. Please select at least one qualification.',
-        3000
-      );
-      this.emitFormData();
-      return;
-    }
+    this.HTTP.postForm(
+      '/candidate/postFile/saveOrUpdateCandidateScoreCard',
+      formData,
+      'recruitement'
+    ).subscribe({
+      next: (res) => {
+        this.alertService.alertStatus(
+          res.status,
+          'Data saved successfully!',
+          3000
+        );
+        this.getParameterValuesAndPatch(); // Refresh component state
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        const errorMessage = err.body?.error?.message
+          ? `Something went wrong: ${err.body.error.message}`
+          : `Error saving data: ${err.message}`;
+        this.alertService.alertStatus(err.status || 500, errorMessage, 3000);
+        this.cdr.markForCheck();
+      },
+    });
 
     this.emitFormData();
   }
@@ -889,11 +897,7 @@ export class Step2Component implements OnInit {
         (obj, [key, value]) => ({ ...obj, [key]: value }),
         {}
       ),
-    };
-    // console.log(
-    //   '📤 Step2 form emitting data:',
-    //   JSON.stringify(emitData, null, 2)
-    // );
+    }; // console.log( //   '📤 Step2 form emitting data:', //   JSON.stringify(emitData, null, 2) // );
     this.formData.emit(emitData);
   }
 }
