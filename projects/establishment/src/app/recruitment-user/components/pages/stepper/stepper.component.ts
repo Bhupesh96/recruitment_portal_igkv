@@ -95,7 +95,7 @@ export class StepperComponent {
       }
     } else if (this.currentStep === 2) {
       if (this.step2Component) {
-         this.step2Component.submitForm();
+        this.step2Component.submitForm();
       } else {
       }
     } else if (this.currentStep === 3) {

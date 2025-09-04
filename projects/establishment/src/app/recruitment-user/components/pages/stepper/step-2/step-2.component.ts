@@ -554,7 +554,14 @@ export class Step2Component implements OnInit {
       },
     });
   }
-
+  // getYearDropDown(): void {
+  //   this.HTTP.getParam(
+  //     '/candidate/get/getYearDropdown/',
+  //     'recruitement'
+  //   ).subscribe((response: any): void => {
+  //     this.years = response?.body?.data;
+  //   });
+  // } 
   private generateFilePath(
     registrationNo: number,
     file: File,
@@ -597,148 +604,123 @@ export class Step2Component implements OnInit {
       this.alertService.alert(true, 'Please fill all mandatory fields.', 3000);
       this.emitFormData();
       return;
-    } // --- Configuration ---
+    }
 
+    // --- Configuration ---
     const registrationNo = 24000001;
     const a_rec_adv_main_id = 96;
-    const formData = new FormData(); // --- Payload Preparation ---
+    const formData = new FormData();
 
+    // --- Payload Preparation ---
     const allDetails: any[] = [];
     const allParameters: any[] = [];
     let parentCalculatedValue = 0;
-    const rowIndexCounter = new Map<string, number>(); // STEP 1: Loop through all subheadings to gather data
 
+    // STEP 1: Loop through all subheadings to gather data
     this.subheadings.forEach((sub, index) => {
       const key = this.getUniqueKey(sub, index);
       if (!this.form.get(`is${key}Selected`)?.value) return;
 
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
 
-      formArray.controls.forEach((control, controlIndex) => {
-        const currentRowIndex = (rowIndexCounter.get(key) || 0) + 1;
-        rowIndexCounter.set(key, currentRowIndex);
+      // Assuming one record per subheading for this component
+      const group = formArray.at(0) as FormGroup;
+      if (!group) return;
 
-        const group = control as FormGroup;
-        const formValues = group.getRawValue();
-        const percentage = +group.get('Percentage Obtained')?.value || 0; // Calculate score for the child record
+      const formValues = group.getRawValue();
+      const percentage = +group.get('Percentage Obtained')?.value || 0;
 
-        const scoreResult = this.utils.calculateScore(
-          1,
-          {
-            educations: [
-              {
-                scoreFieldId: sub.m_rec_score_field_id,
-                weight: sub.score_field_field_weightage,
-                inputValue: percentage,
-                maxValue: sub.score_field_field_marks,
-              },
-            ],
-          },
-          this.heading?.score_field_field_marks || 60
-        );
-        parentCalculatedValue += scoreResult.score_field_calculated_value; // Create the unified Detail record
+      const scoreResult = this.utils.calculateScore(
+        1,
+        {
+          educations: [
+            {
+              scoreFieldId: sub.m_rec_score_field_id,
+              weight: sub.score_field_field_weightage,
+              inputValue: percentage,
+              maxValue: sub.score_field_field_marks,
+            },
+          ],
+        },
+        this.heading?.score_field_field_marks || 60
+      );
+      parentCalculatedValue += scoreResult.score_field_calculated_value;
 
-        const detailKey = `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}`;
-        const existingDetailId = this.existingDetailIds.get(detailKey);
-        const detail = {
-          ...(existingDetailId && {
-            a_rec_app_score_field_detail_id: existingDetailId,
-          }),
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_adv_main_id,
-          a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-          score_field_parent_id: sub.score_field_parent_id,
-          m_rec_score_field_id: sub.m_rec_score_field_id,
-          m_rec_score_field_method_id: 1,
-          score_field_value: percentage,
-          score_field_actual_value: scoreResult.score_field_actual_value,
-          score_field_calculated_value:
-            scoreResult.score_field_calculated_value,
-          field_marks: sub.score_field_field_marks || 0,
-          field_weightage: sub.score_field_field_weightage || 0,
-          verify_remark: 'Not Verified',
-          action_type: existingDetailId ? 'U' : 'C',
-          action_date: new Date().toISOString(),
-          action_ip_address: '127.0.0.1',
-          action_remark: existingDetailId ? 'data updated' : 'data inserted',
-          action_by: 1,
-          delete_flag: 'N',
-        };
-        allDetails.push(detail); // Create unified Parameter records for this detail
+      const detail = {
+        registration_no: registrationNo,
+        a_rec_app_main_id: a_rec_adv_main_id,
+        a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+        score_field_parent_id: sub.score_field_parent_id,
+        m_rec_score_field_id: sub.m_rec_score_field_id,
+        m_rec_score_field_method_id: 1,
+        score_field_value: percentage,
+        score_field_actual_value: scoreResult.score_field_actual_value,
+        score_field_calculated_value: scoreResult.score_field_calculated_value,
+        field_marks: sub.score_field_field_marks || 0,
+        field_weightage: sub.score_field_field_weightage || 0,
+        verify_remark: 'Not Verified',
+        action_type: 'C',
+        action_date: new Date().toISOString(),
+        action_ip_address: '127.0.0.1',
+        action_remark: 'data inserted',
+        action_by: 1,
+        delete_flag: 'N',
+      };
+      allDetails.push(detail);
 
-        this.getParameters(
-          sub.m_rec_score_field_id,
-          sub.a_rec_adv_post_detail_id
-        ).forEach((param) => {
-          const paramName = param.score_field_parameter_name;
-          const paramValue = formValues[paramName];
-          const isFile = paramValue instanceof File;
-          const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${controlIndex}`;
-          const existingFilePath = this.filePaths.get(fileKey);
-          const paramId =
-            formValues[`param_${param.m_rec_score_field_parameter_new_id}_id`];
+      this.getParameters(
+        sub.m_rec_score_field_id,
+        sub.a_rec_adv_post_detail_id
+      ).forEach((param) => {
+        const paramName = param.score_field_parameter_name;
+        const paramValue = formValues[paramName];
+        const isFile = paramValue instanceof File;
 
-          if (paramValue || existingFilePath) {
-            let finalParameterValue = '';
-            if (isFile) {
-              // Generate the file path for the database record
-              finalParameterValue = this.generateFilePath(
-                registrationNo,
-                paramValue,
-                sub.score_field_parent_id,
-                sub.m_rec_score_field_id,
-                param.m_rec_score_field_parameter_new_id,
-                currentRowIndex
-              );
-
-              // ✅ FIX: Create a structured key for FormData that the backend can parse.
-              // This key includes the row index in the correct position (the 6th element).
-              const fileControlName = `file_${sub.score_field_parent_id}_${
-                sub.m_rec_score_field_id
-              }_${param.m_rec_score_field_parameter_new_id}_${
-                param.parameter_display_order || 0
-              }_${currentRowIndex}`;
-
-              // Append the file to FormData using the new structured key
-              formData.append(fileControlName, paramValue, paramValue.name);
-            } else {
-              finalParameterValue = existingFilePath
-                ? existingFilePath
-                : String(paramValue ?? '');
-            }
-
-            const parameter = {
-              ...(paramId && {
-                a_rec_app_score_field_parameter_detail_id: paramId,
-              }),
-              registration_no: registrationNo,
-              score_field_parent_id: sub.score_field_parent_id,
-              m_rec_score_field_id: sub.m_rec_score_field_id,
-              m_rec_score_field_parameter_new_id:
-                param.m_rec_score_field_parameter_new_id,
-              parameter_value: finalParameterValue,
-              parameter_row_index: currentRowIndex,
-              parameter_display_no: param.parameter_display_order,
-              unique_parameter_display_no: String(
-                param.parameter_display_order
-              ),
-              verify_remark: 'Not Verified',
-              active_status: 'Y',
-              action_type: paramId ? 'U' : 'C',
-              action_date: new Date().toISOString(),
-              action_ip_address: '127.0.0.1',
-              action_remark: paramId
-                ? 'parameter updated'
-                : 'parameter inserted',
-              action_by: 1,
-              delete_flag: 'N',
-            };
-            allParameters.push(parameter);
+        if (paramValue) {
+          let finalParameterValue = '';
+          if (isFile) {
+            finalParameterValue = this.generateFilePath(
+              registrationNo,
+              paramValue,
+              sub.score_field_parent_id,
+              sub.m_rec_score_field_id,
+              param.m_rec_score_field_parameter_new_id,
+              1 // Row index is always 1
+            );
+            const fileControlName = `file_${sub.score_field_parent_id}_${
+              sub.m_rec_score_field_id
+            }_${param.m_rec_score_field_parameter_new_id}_${
+              param.parameter_display_order || 0
+            }_1`;
+            formData.append(fileControlName, paramValue, paramValue.name);
+          } else {
+            finalParameterValue = String(paramValue ?? '');
           }
-        });
-      });
-    }); // STEP 2: Create Parent Record
 
+          const parameter = {
+            registration_no: registrationNo,
+            score_field_parent_id: sub.score_field_parent_id,
+            m_rec_score_field_id: sub.m_rec_score_field_id,
+            m_rec_score_field_parameter_new_id:
+              param.m_rec_score_field_parameter_new_id,
+            parameter_value: finalParameterValue,
+            parameter_row_index: 1, // Always 1 for this component
+            parameter_display_no: param.parameter_display_order,
+            verify_remark: 'Not Verified',
+            active_status: 'Y',
+            action_type: 'C',
+            action_date: new Date().toISOString(),
+            action_ip_address: '127.0.0.1',
+            action_remark: 'parameter inserted',
+            action_by: 1,
+            delete_flag: 'N',
+          };
+          allParameters.push(parameter);
+        }
+      });
+    });
+
+    // STEP 2: Create Parent Record
     const parentRecord = {
       registration_no: registrationNo,
       a_rec_app_main_id: a_rec_adv_main_id,
@@ -757,36 +739,34 @@ export class Step2Component implements OnInit {
       verify_remark: 'Not Verified',
       action_type: 'U',
       action_date: new Date().toISOString(),
-      action_ip_address: '127.0.0.1',
-      action_remark: 'parent data updated',
+      action_remark: 'parent data updated from recruitment form',
       action_by: 1,
       delete_flag: 'N',
-    }; // STEP 3: Append all data to FormData
+    };
 
+    // STEP 3: Append all data to FormData
     formData.append('parentScore', JSON.stringify(parentRecord));
     formData.append('registration_no', registrationNo.toString());
     formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
-    formData.append('scoreFieldParameterList', JSON.stringify(allParameters)); // STEP 4: Make the SINGLE API call
+    formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
 
+    // STEP 4: Make the SINGLE API call
     this.HTTP.postForm(
       '/candidate/postFile/saveOrUpdateCandidateScoreCard',
       formData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        this.alertService.alertStatus(
-          res.status,
-          'Data saved successfully!',
-          3000
-        );
-        this.getParameterValuesAndPatch(); // Refresh component state
+        this.alertService.alert(false, 'Data saved successfully!', 3000);
+        this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
       },
       error: (err) => {
-        const errorMessage = err.body?.error?.message
-          ? `Something went wrong: ${err.body.error.message}`
-          : `Error saving data: ${err.message}`;
-        this.alertService.alertStatus(err.status || 500, errorMessage, 3000);
+        this.alertService.alert(
+          true,
+          `Error saving data: ${err.message}`,
+          3000
+        );
         this.cdr.markForCheck();
       },
     });
