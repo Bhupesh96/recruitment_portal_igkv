@@ -94,6 +94,7 @@ export class Step3Component implements OnInit {
   subHeadingParameters: { [key: string]: any[] } = {};
   subHeadingDetails: { [key: string]: FormGroup<DetailFormGroup>[] } = {};
   heading: any;
+  existingParentDetailId: number | null = null;
   private originalRowCounts: Map<string, number> = new Map();
   private previousCounts: Map<string, number> = new Map();
 
@@ -129,7 +130,7 @@ export class Step3Component implements OnInit {
       this.cdr.detectChanges();
     });
   }
-private checkMandatorySubheadingsAndParameters(): void {
+  private checkMandatorySubheadingsAndParameters(): void {
     let firstMissedMandatory: string = '';
     let firstMissedParameter: string = '';
     let firstMissedSubheading: string = '';
@@ -348,53 +349,84 @@ private checkMandatorySubheadingsAndParameters(): void {
     const key = `${indexInfo.subHeadingId}_${scoreFieldId}_${paramId}_${indexInfo.scopedIndex}`;
     return this.filePaths.get(key) || null;
   }
-sanitizeFileUrl(filePath: string): SafeUrl {
-  // filePath from the DB is already in the format "recruitment/24000001/filename.pdf"
-  // We can use it directly to build the URL.
-  const url = `http://192.168.1.57:3500/${filePath}`;
-  return this.sanitizer.bypassSecurityTrustUrl(url);
-}
+  sanitizeFileUrl(filePath: string): SafeUrl {
+    // filePath from the DB is already in the format "recruitment/24000001/filename.pdf"
+    // We can use it directly to build the URL.
+    const url = `http://192.168.1.57:3500/${filePath}`;
+    return this.sanitizer.bypassSecurityTrustUrl(url);
+  }
 
   getFileName(filePath: string): string {
     return filePath.split('\\').pop() || 'Unknown File';
   }
 
+  // In step-3.component.ts
+
   private getParameterValuesAndPatch(): void {
     const registrationNo = 24000001;
     const a_rec_adv_main_id = 96;
-    const parentIds = this.subHeadings.map((s) => s.m_rec_score_field_id);
 
-    if (parentIds.length === 0) {
+    if (!this.heading) {
+      console.warn('Heading not loaded, cannot patch values.');
       return;
     }
 
-    const requests = parentIds.map((id) =>
+    // 1. Create a specific request for the parent record (where parent_id is 0)
+    const parentRequest = this.HTTP.getData(
+      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}`,
+      'recruitement'
+    );
+
+    // 2. Create requests for all the children records (whose parent_id is a subheading_id)
+    const childParentIds = this.subHeadings.map((s) => s.m_rec_score_field_id);
+    const childrenRequests = childParentIds.map((id) =>
       this.HTTP.getData(
         `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${id}`,
         'recruitement'
       )
     );
 
-    forkJoin(requests).subscribe({
-      next: (responses: any[]) => {
-        const savedData = responses.flatMap((res) => res.body?.data || []);
+    // 3. Use forkJoin to run all requests in parallel
+    forkJoin({
+      parent: parentRequest,
+      children: forkJoin(childrenRequests), // Nest forkJoin for all children
+    }).subscribe({
+      next: ({ parent, children }) => {
+        // 4. Process the PARENT response first to get the existing ID
+        const savedParentData = parent.body?.data || [];
+        if (savedParentData.length > 0) {
+          this.existingParentDetailId =
+            savedParentData[0].a_rec_app_score_field_detail_id;
+          console.log(
+            `📌 Found existing parent detail ID: ${this.existingParentDetailId}`
+          );
+        } else {
+          console.log(`📌 No existing parent record found.`);
+          this.existingParentDetailId = null;
+        }
+
+        // 5. Process the CHILDREN responses
+        const savedChildrenData = children.flatMap(
+          (res: any) => res.body?.data || []
+        );
         console.log(
-          '📌 Saved data for step-3:',
-          JSON.stringify(savedData, null, 2)
+          '📌 Saved data for step-3 (Children & Grandchildren):',
+          JSON.stringify(savedChildrenData, null, 2)
         );
 
-        // 1. Clear all previous state
+        // --- Start of your original patching logic (now using savedChildrenData) ---
+
         this.detailsArray.clear();
         this.subHeadingDetails = {};
         this.filePaths.clear();
         this.existingDetailIds.clear();
         this.existingParameterIds.clear();
-this.subHeadings.forEach(sub => {
-        this.subHeadingDetails[sub.m_rec_score_field_id.toString()] = [];
-      });
-        // 2. Group all fetched records by their parent subheading ID
+        this.subHeadings.forEach((sub) => {
+          this.subHeadingDetails[sub.m_rec_score_field_id.toString()] = [];
+        });
+
         const dataBySubheading = new Map<number, any[]>();
-        savedData.forEach((item) => {
+        savedChildrenData.forEach((item) => {
           const subHeadingId = item.score_field_parent_id;
           if (!dataBySubheading.has(subHeadingId)) {
             dataBySubheading.set(subHeadingId, []);
@@ -402,9 +434,7 @@ this.subHeadings.forEach(sub => {
           dataBySubheading.get(subHeadingId)!.push(item);
         });
 
-        // 3. Process each subheading's data block
         dataBySubheading.forEach((records, subHeadingId) => {
-          // A map to hold the data for each distinct row, keyed by its index
           const rowsByRowIndex = new Map<number, any[]>();
           records.forEach((record) => {
             const rowIndex = record.parameter_row_index;
@@ -412,36 +442,29 @@ this.subHeadings.forEach(sub => {
               rowsByRowIndex.set(rowIndex, []);
             }
             rowsByRowIndex.get(rowIndex)!.push(record);
+
+            const detailKey = `${record.score_field_parent_id}_${record.m_rec_score_field_id}`;
+            this.existingDetailIds.set(
+              detailKey,
+              record.a_rec_app_score_field_detail_id
+            );
           });
 
-          // 4. Sort the rows by their index to ensure correct order
           const sortedRows = Array.from(rowsByRowIndex.entries()).sort(
             ([a], [b]) => a - b
           );
-
           const itemCounts = new Map<number, number>();
 
-          // 5. Build the form groups in the correct, sorted order
           sortedRows.forEach(([rowIndex, rowData]) => {
             if (rowData.length === 0) return;
 
             const firstRecord = rowData[0];
-            const scoreFieldId = firstRecord.m_rec_score_field_id; // This is the item type (e.g., Gold Medal ID)
-
-            // Keep track of how many of each item type we have
+            const scoreFieldId = firstRecord.m_rec_score_field_id;
             itemCounts.set(
               scoreFieldId,
               (itemCounts.get(scoreFieldId) || 0) + 1
             );
 
-            // Store existing IDs for updates
-            const detailKey = `${subHeadingId}_${rowIndex}`;
-            this.existingDetailIds.set(
-              detailKey,
-              firstRecord.a_rec_app_score_field_detail_id
-            );
-
-            // Create a new form group for this specific row
             const newGroup = this.fb.group({
               type: this.fb.control(
                 { value: scoreFieldId.toString(), disabled: true },
@@ -461,12 +484,12 @@ this.subHeadings.forEach(sub => {
                 )
               );
 
-              // Find the specific parameter value for this row and patch it
               const paramData = rowData.find(
                 (p) =>
                   p.m_rec_score_field_parameter_new_id ===
                   param.m_rec_score_field_parameter_new_id
               );
+
               if (paramData) {
                 const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
                 this.existingParameterIds.set(
@@ -490,7 +513,6 @@ this.subHeadings.forEach(sub => {
               }
             });
 
-            // 6. Add the fully patched group to the main FormArray
             this.detailsArray.push(newGroup);
             const subHeadingIdStr = subHeadingId.toString();
             if (!this.subHeadingDetails[subHeadingIdStr]) {
@@ -499,7 +521,6 @@ this.subHeadings.forEach(sub => {
             this.subHeadingDetails[subHeadingIdStr].push(newGroup);
           });
 
-          // 7. Finally, update the count controls at the top of the form
           const subHeadingMeta = this.subHeadings.find(
             (s) => s.m_rec_score_field_id === subHeadingId
           );
@@ -520,12 +541,17 @@ this.subHeadings.forEach(sub => {
 
         this.checkMandatorySubheadingsAndParameters();
         this.cdr.markForCheck();
+
+        // --- End of your original patching logic ---
       },
       error: (err) => {
         console.error('❌ Error fetching parameter values:', err);
+        this.alertService.alert(true, 'Failed to load existing data.');
+        this.cdr.markForCheck();
       },
     });
   }
+
   private initializeFormWithDefaults(): void {
     this.subHeadings.forEach((subHeading) => {
       const groupName = subHeading.m_rec_score_field_id.toString();
@@ -773,97 +799,110 @@ this.subHeadings.forEach(sub => {
 
     return countsChanged;
   }
-private createDetailGroup(typeValue: string, subHeadingId: number): FormGroup {
-  const parametersForSubHeading = this.getParametersForSubHeading(subHeadingId);
-  const detailGroupData: DetailFormGroup = {
-    type: new FormControl({ value: typeValue, disabled: true }, [
-      Validators.required,
-    ]),
-  };
-  parametersForSubHeading.forEach((param: any) => {
-    detailGroupData[param.normalizedKey] = new FormControl(
-      param.control_type === 'A' ? null : '',
-      param.is_mandatory === 'Y' ? [Validators.required] : []
-    );
-  });
-  return this.fb.group(detailGroupData);
-}
+  private createDetailGroup(
+    typeValue: string,
+    subHeadingId: number
+  ): FormGroup {
+    const parametersForSubHeading =
+      this.getParametersForSubHeading(subHeadingId);
+    const detailGroupData: DetailFormGroup = {
+      type: new FormControl({ value: typeValue, disabled: true }, [
+        Validators.required,
+      ]),
+    };
+    parametersForSubHeading.forEach((param: any) => {
+      detailGroupData[param.normalizedKey] = new FormControl(
+        param.control_type === 'A' ? null : '',
+        param.is_mandatory === 'Y' ? [Validators.required] : []
+      );
+    });
+    return this.fb.group(detailGroupData);
+  }
 
-generateDetailsTable() {
-  if (this.isGeneratingTable) return;
-  this.isGeneratingTable = true;
+  generateDetailsTable() {
+    if (this.isGeneratingTable) return;
+    this.isGeneratingTable = true;
 
-  try {
-    const allGeneratedRows = new Set<AbstractControl>();
+    try {
+      const allGeneratedRows = new Set<AbstractControl>();
 
-    this.subHeadings.forEach((subHeading) => {
-      const groupName = subHeading.m_rec_score_field_id.toString();
-      const subGroup = this.form.get(['subHeadings', groupName]) as FormGroup;
-      if (!subGroup) return;
-      
-      if (!this.subHeadingDetails[groupName]) {
-        this.subHeadingDetails[groupName] = [];
-      }
+      this.subHeadings.forEach((subHeading) => {
+        const groupName = subHeading.m_rec_score_field_id.toString();
+        const subGroup = this.form.get(['subHeadings', groupName]) as FormGroup;
+        if (!subGroup) return;
 
-      const subGroupRaw = subGroup.getRawValue();
-
-      subHeading.items.forEach((item: any) => {
-        const typeValue = item.m_rec_score_field_id.toString();
-        const newCount = parseInt(subGroupRaw[item.normalizedKey]?.count, 10) || 0;
-        
-        let existingRowsOfType = this.detailsArray.controls.filter(
-          (c) => c.get('type')?.value === typeValue
-        );
-        let oldCount = existingRowsOfType.length;
-
-        // Add new rows if needed
-        if (newCount > oldCount) {
-          for (let i = 0; i < newCount - oldCount; i++) {
-            const newGroup = this.createDetailGroup(
-              typeValue,
-              subHeading.m_rec_score_field_id
-            );
-            this.detailsArray.push(newGroup);
-          }
+        if (!this.subHeadingDetails[groupName]) {
+          this.subHeadingDetails[groupName] = [];
         }
-        // Remove rows if needed
-        else if (newCount < oldCount) {
-          const toRemoveCount = oldCount - newCount;
-          const rowsToRemove = existingRowsOfType.slice(-toRemoveCount);
-          rowsToRemove.forEach(rowToRemove => {
-            const index = this.detailsArray.controls.indexOf(rowToRemove);
-            if (index > -1) {
-              this.detailsArray.removeAt(index);
+
+        const subGroupRaw = subGroup.getRawValue();
+
+        subHeading.items.forEach((item: any) => {
+          const typeValue = item.m_rec_score_field_id.toString();
+          const newCount =
+            parseInt(subGroupRaw[item.normalizedKey]?.count, 10) || 0;
+
+          let existingRowsOfType = this.detailsArray.controls.filter(
+            (c) => c.get('type')?.value === typeValue
+          );
+          let oldCount = existingRowsOfType.length;
+
+          // Add new rows if needed
+          if (newCount > oldCount) {
+            for (let i = 0; i < newCount - oldCount; i++) {
+              const newGroup = this.createDetailGroup(
+                typeValue,
+                subHeading.m_rec_score_field_id
+              );
+              this.detailsArray.push(newGroup);
             }
-          });
+          }
+          // Remove rows if needed
+          else if (newCount < oldCount) {
+            const toRemoveCount = oldCount - newCount;
+            const rowsToRemove = existingRowsOfType.slice(-toRemoveCount);
+            rowsToRemove.forEach((rowToRemove) => {
+              const index = this.detailsArray.controls.indexOf(rowToRemove);
+              if (index > -1) {
+                this.detailsArray.removeAt(index);
+              }
+            });
+          }
+        });
+      });
+
+      // Final Sync Step: Rebuild subHeadingDetails from the single source of truth (detailsArray)
+      Object.keys(this.subHeadingDetails).forEach(
+        (key) => (this.subHeadingDetails[key] = [])
+      );
+
+      this.detailsArray.controls.forEach((control) => {
+        const typeValue = control.get('type')?.value;
+        if (typeValue) {
+          const subHeading = this.subHeadings.find((sh) =>
+            sh.items.some(
+              (item: any) => item.m_rec_score_field_id.toString() === typeValue
+            )
+          );
+          if (subHeading) {
+            const groupName = subHeading.m_rec_score_field_id.toString();
+            if (this.subHeadingDetails[groupName]) {
+              this.subHeadingDetails[groupName].push(
+                control as FormGroup<DetailFormGroup>
+              );
+            }
+          }
         }
       });
-    });
 
-    // Final Sync Step: Rebuild subHeadingDetails from the single source of truth (detailsArray)
-    Object.keys(this.subHeadingDetails).forEach(key => this.subHeadingDetails[key] = []);
-    
-    this.detailsArray.controls.forEach(control => {
-      const typeValue = control.get('type')?.value;
-      if (typeValue) {
-        const subHeading = this.subHeadings.find(sh => sh.items.some((item: any) => item.m_rec_score_field_id.toString() === typeValue));
-        if (subHeading) {
-          const groupName = subHeading.m_rec_score_field_id.toString();
-          if (this.subHeadingDetails[groupName]) {
-            this.subHeadingDetails[groupName].push(control as FormGroup<DetailFormGroup>);
-          }
-        }
-      }
-    });
-
-    this.debugFormState();
-    this.cdr.detectChanges();
-  } catch (error) {
-    console.error('❌ Error in generateDetailsTable:', error);
-  } finally {
-    this.isGeneratingTable = false;
+      this.debugFormState();
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('❌ Error in generateDetailsTable:', error);
+    } finally {
+      this.isGeneratingTable = false;
+    }
   }
-}
 
   //remove this after the completion
   private debugFormState() {
@@ -978,33 +1017,33 @@ generateDetailsTable() {
     }
   }
 
- private generateFilePath(
-  registrationNo: number,
-  file: File,
-  scoreFieldId: number,
-  parameterId: number,
-  rowIndex: number,
-  subHeadingId: number
-): string {
-  const originalName = file.name;
-  // Use path.parse to correctly separate the name and extension
-  const parsedFile = {
-    name: originalName.substring(0, originalName.lastIndexOf('.')),
-    ext: originalName.substring(originalName.lastIndexOf('.')),
-  };
+  private generateFilePath(
+    registrationNo: number,
+    file: File,
+    scoreFieldId: number,
+    parameterId: number,
+    rowIndex: number,
+    subHeadingId: number
+  ): string {
+    const originalName = file.name;
+    // Use path.parse to correctly separate the name and extension
+    const parsedFile = {
+      name: originalName.substring(0, originalName.lastIndexOf('.')),
+      ext: originalName.substring(originalName.lastIndexOf('.')),
+    };
 
-  const sanitizedName = parsedFile.name
-    .replace(/[^a-zA-Z0-9._-]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    const sanitizedName = parsedFile.name
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
 
-  // Append the original extension at the end
-  const fileName = `${registrationNo}_${subHeadingId}_${scoreFieldId}_${parameterId}_${
-    rowIndex + 1
-  }_${sanitizedName}${parsedFile.ext}`;
+    // Append the original extension at the end
+    const fileName = `${registrationNo}_${subHeadingId}_${scoreFieldId}_${parameterId}_${
+      rowIndex + 1
+    }_${sanitizedName}${parsedFile.ext}`;
 
-  return `recruitment/${registrationNo}/${fileName}`;
-}
+    return `recruitment/${registrationNo}/${fileName}`;
+  }
 
   // submit method with corrected emit calls
   submit(): void {
@@ -1104,127 +1143,166 @@ generateDetailsTable() {
     console.log('💾 Starting unified save/update process...');
     this.logExistingIds();
 
-    // --- Configuration ---
     const registrationNo = 24000001;
     const a_rec_adv_main_id = 96;
     const formData = new FormData();
-
     const finalDetailList: any[] = [];
     const finalParameterList: any[] = [];
-    const subHeadingRowCounters: { [key: number]: number } = {};
 
-    // STEP 1: Iterate through each form row individually
-    this.detailsArray.controls.forEach((rowControl, formArrayIndex) => {
-      const typeValue = rowControl.get('type')?.value;
-      if (!typeValue) return;
+    // ✅ STEP 1: Create Summary Detail Records (One per item type like Gold, Silver, etc.)
+    // First, group all UI rows by their type to get the counts.
+    const rowsGroupedByType = new Map<string, any[]>();
+    this.detailsArray.controls.forEach((control) => {
+      const typeValue = control.get('type')?.value;
+      if (typeValue) {
+        if (!rowsGroupedByType.has(typeValue)) {
+          rowsGroupedByType.set(typeValue, []);
+        }
+        rowsGroupedByType.get(typeValue)!.push(control);
+      }
+    });
 
+    // Now, create a single summary record for each type that has entries.
+    rowsGroupedByType.forEach((rowControls, typeValue) => {
       const scoreFieldId = Number(typeValue);
+      const totalCount = rowControls.length;
 
-      // Find the parent subheading metadata for this row
       const subHeading = this.subHeadings.find((sub) =>
         sub.items.some(
           (item: any) => item.m_rec_score_field_id === scoreFieldId
         )
       );
-      if (!subHeading) {
-        console.warn(
-          `Could not find subHeading metadata for scoreFieldId: ${scoreFieldId}`
-        );
-        return;
-      }
+      if (!subHeading) return;
+
       const subHeadingId = subHeading.m_rec_score_field_id;
       const item = subHeading.items.find(
         (i: any) => i.m_rec_score_field_id === scoreFieldId
       )!;
 
-      // Correctly calculate the row's index within its group
-      subHeadingRowCounters[subHeadingId] =
-        (subHeadingRowCounters[subHeadingId] || 0) + 1;
-      const currentRowIndexInSubHeading = subHeadingRowCounters[subHeadingId];
-
-      // Check if this specific row already exists in the database
-      const detailKey = `${subHeadingId}_${currentRowIndexInSubHeading}`;
+      const detailKey = `${subHeadingId}_${scoreFieldId}`;
       const existingDetailId = this.existingDetailIds.get(detailKey);
 
-      // Create a unique detail record for THIS ROW
+      const scoreResult = this.utils.calculateScore(
+        3,
+        {
+          quantityInputs: [
+            {
+              scoreFieldId: item.m_rec_score_field_id,
+              quantity: totalCount,
+              weightage: item.score_field_field_weightage || 0,
+              scoreFieldMarks: item.score_field_field_marks || 0,
+            },
+          ],
+        },
+        item.score_field_field_marks || 0
+      );
+
       const detailRecord = {
         ...(existingDetailId && {
           a_rec_app_score_field_detail_id: existingDetailId,
         }),
         registration_no: registrationNo,
         a_rec_app_main_id: a_rec_adv_main_id,
-        a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id || 246,
+        a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
         score_field_parent_id: subHeadingId,
         m_rec_score_field_id: scoreFieldId,
         m_rec_score_field_method_id: 3,
-        // The score for a single row is based on a quantity of 1
-        score_field_value: 1,
-        score_field_actual_value: item.score_field_field_weightage || 0,
-        score_field_calculated_value: item.score_field_field_weightage || 0,
+        score_field_value: totalCount,
+        score_field_actual_value: scoreResult.score_field_actual_value,
+        score_field_calculated_value: scoreResult.score_field_calculated_value,
         field_marks: item.score_field_field_marks || 0,
         field_weightage: item.score_field_field_weightage || 0,
         verify_remark: 'Not Verified',
         active_status: 'Y',
         delete_flag: 'N',
+        action_type: existingDetailId ? 'U' : 'C',
+        action_date: new Date().toISOString(),
+        action_remark: existingDetailId ? 'data updated' : 'data inserted',
         action_ip_address: '127.0.0.1',
         action_by: 1,
       };
       finalDetailList.push(detailRecord);
+    });
 
-      // Process all parameters for this specific row
+    // ✅ STEP 2: Create Parameter Records using the original, reliable counter logic
+    // This counter ensures the parameter_row_index is sequential (1, 2, 3...) within each subheading group.
+    const subHeadingRowCounters: { [key: number]: number } = {};
+    this.detailsArray.controls.forEach((rowControl) => {
+      const typeValue = rowControl.get('type')?.value;
+      if (!typeValue) return;
+
+      const scoreFieldId = Number(typeValue);
+      const subHeading = this.subHeadings.find((sub) =>
+        sub.items.some(
+          (item: any) => item.m_rec_score_field_id === scoreFieldId
+        )
+      );
+      if (!subHeading) return;
+
+      const subHeadingId = subHeading.m_rec_score_field_id;
+
+      // Increment the counter for this row's subheading group
+      subHeadingRowCounters[subHeadingId] =
+        (subHeadingRowCounters[subHeadingId] || 0) + 1;
+      const rowIndex = subHeadingRowCounters[subHeadingId];
+
       const subHeadingParameters =
         this.subHeadingParameters[subHeadingId.toString()] || [];
       subHeadingParameters.forEach((param: any) => {
         const paramValue = rowControl.getRawValue()[param.normalizedKey];
         const isFile = paramValue instanceof File;
-
-        const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${currentRowIndexInSubHeading}`;
+        const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
         const existingParamId = this.existingParameterIds.get(paramKey);
         const existingFilePath = this.filePaths.get(paramKey);
 
-        const parameter = {
-          ...(existingParamId && {
-            a_rec_app_score_field_parameter_detail_id: existingParamId,
-          }),
-          registration_no: registrationNo,
-          score_field_parent_id: subHeadingId,
-          m_rec_score_field_id: scoreFieldId,
-          m_rec_score_field_parameter_new_id:
-            param.m_rec_score_field_parameter_new_id,
-          parameter_value: isFile
-            ? this.generateFilePath(
-                registrationNo,
-                paramValue,
-                scoreFieldId,
-                param.m_rec_score_field_parameter_new_id,
-                currentRowIndexInSubHeading - 1,
-                subHeadingId
-              )
-            : paramValue === 'FILE_UPLOADED' && existingFilePath
-            ? existingFilePath
-            : String(paramValue ?? ''),
-          parameter_row_index: currentRowIndexInSubHeading,
-          parameter_display_order: param.parameter_display_order || 0,
-          verify_remark: 'Not Verified',
-          active_status: 'Y',
-          delete_flag: 'N',
-          action_ip_address: '127.0.0.1',
-          action_by: 1,
-        };
-        finalParameterList.push(parameter);
+        if (paramValue || existingParamId) {
+          const parameter = {
+            ...(existingParamId && {
+              a_rec_app_score_field_parameter_detail_id: existingParamId,
+            }),
+            registration_no: registrationNo,
+            score_field_parent_id: subHeadingId,
+            m_rec_score_field_id: scoreFieldId,
+            m_rec_score_field_parameter_new_id:
+              param.m_rec_score_field_parameter_new_id,
+            parameter_value: isFile
+              ? this.generateFilePath(
+                  registrationNo,
+                  paramValue,
+                  scoreFieldId,
+                  param.m_rec_score_field_parameter_new_id,
+                  rowIndex - 1,
+                  subHeadingId
+                )
+              : paramValue === 'FILE_UPLOADED' && existingFilePath
+              ? existingFilePath
+              : String(paramValue ?? ''),
+            parameter_row_index: rowIndex, // Use the counter's value
+            parameter_display_order: param.parameter_display_order || 0,
+            verify_remark: 'Not Verified',
+            active_status: 'Y',
+            delete_flag: 'N',
+            action_type: existingParamId ? 'U' : 'C',
+            action_date: new Date().toISOString(),
+            action_remark: existingParamId
+              ? 'parameter updated'
+              : 'parameter inserted',
+            action_ip_address: '127.0.0.1',
+            action_by: 1,
+          };
+          finalParameterList.push(parameter);
 
-        if (isFile) {
-          const fileControlName = `file_${subHeadingId}_${scoreFieldId}_${
-            param.m_rec_score_field_parameter_new_id
-          }_${
-            param.parameter_display_order || 0
-          }_${currentRowIndexInSubHeading}`;
-          formData.append(fileControlName, paramValue, paramValue.name);
+          if (isFile) {
+            const fileControlName = `file_${subHeadingId}_${scoreFieldId}_${
+              param.m_rec_score_field_parameter_new_id
+            }_${param.parameter_display_order || 0}_${rowIndex}`;
+            formData.append(fileControlName, paramValue, paramValue.name);
+          }
         }
       });
     });
 
-    // STEP 2: Create the Parent Record (This logic remains correct)
+    // STEP 3: Create the Parent Record for the entire section
     const parentRecord = this.createParentRecord(
       registrationNo,
       a_rec_adv_main_id
@@ -1238,7 +1316,7 @@ generateDetailsTable() {
       return;
     }
 
-    // STEP 3: Append final lists and make the API call
+    // STEP 4: Append final lists and make the API call
     formData.append('registration_no', registrationNo.toString());
     formData.append('scoreFieldDetailList', JSON.stringify(finalDetailList));
     formData.append(
@@ -1256,7 +1334,7 @@ generateDetailsTable() {
       next: (res) => {
         console.log('✅ UNIFIED SAVE/UPDATE RESPONSE:', res);
         this.alertService.alert(false, 'Data saved successfully!');
-        this.getParameterValuesAndPatch(); // Refresh data from DB
+        this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -1269,6 +1347,7 @@ generateDetailsTable() {
       },
     });
   }
+
   // You might need a helper function for the parent record to avoid duplicating code
   private createParentRecord(
     registrationNo: number,
@@ -1308,6 +1387,9 @@ generateDetailsTable() {
     );
 
     return {
+      ...(this.existingParentDetailId && {
+        a_rec_app_score_field_detail_id: this.existingParentDetailId,
+      }),
       registration_no: registrationNo,
       a_rec_app_main_id: a_rec_adv_main_id,
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id || 246,
@@ -1323,6 +1405,8 @@ generateDetailsTable() {
       action_type: 'U',
       action_date: new Date().toISOString(),
       action_ip_address: '127.0.0.1',
+      action_remark: 'parent data updated from recruitment form',
+      action_by: 1,
       delete_flag: 'N',
     };
   }

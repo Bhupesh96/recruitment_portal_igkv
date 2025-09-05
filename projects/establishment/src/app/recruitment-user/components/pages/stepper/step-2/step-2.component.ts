@@ -97,7 +97,7 @@ export class Step2Component implements OnInit {
   filePaths: Map<string, string> = new Map();
   existingDetailIds: Map<string, number> = new Map();
   existingParameterIds: Map<string, number> = new Map();
-
+  existingParentDetailId: number | null = null;
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
@@ -457,22 +457,63 @@ export class Step2Component implements OnInit {
   }
 
   private getParameterValuesAndPatch(): void {
-    this.HTTP.getParam(
+    if (!this.heading) {
+      return;
+    }
+
+    const registration_no = 24000001;
+    const a_rec_app_main_id = 96;
+
+    // Request to get the child records (10th, 12th, etc.)
+    const childrenRequest = this.HTTP.getParam(
       '/candidate/get/getParameterValues',
       {
-        registration_no: 24000001,
-        a_rec_app_main_id: 96,
-        score_field_parent_id: this.heading?.m_rec_score_field_id,
+        registration_no,
+        a_rec_app_main_id,
+        score_field_parent_id: this.heading.m_rec_score_field_id,
       },
       'recruitement'
-    ).subscribe({
-      next: (res: HttpResponse<any>) => {
-        const saved = res.body?.data || [];
+    );
+
+    // Request to get the parent record itself (Educational Qualification)
+    const parentRequest = this.HTTP.getParam(
+      '/candidate/get/getParameterValues',
+      {
+        registration_no,
+        a_rec_app_main_id,
+        m_rec_score_field_id: this.heading.m_rec_score_field_id,
+        score_field_parent_id: 0, // Parent records have a parent_id of 0
+      },
+      'recruitement'
+    );
+
+    forkJoin({ children: childrenRequest, parent: parentRequest }).subscribe({
+      next: ({ children, parent }) => {
+        const savedChildren = children.body?.data || [];
+        const savedParent = parent.body?.data || [];
+ console.log(
+          'Saved data from step-2 (Parent): ',
+          JSON.stringify(savedParent, null, 2)
+        );
+        console.log(
+          'Saved data from step-2 (Children): ',
+          JSON.stringify(savedChildren, null, 2)
+        );
+
+        // ✅ STORE THE PARENT ID
+        if (savedParent.length > 0) {
+          this.existingParentDetailId =
+            savedParent[0].a_rec_app_score_field_detail_id;
+          console.log(
+            `📌 Found existing parent detail ID for Step 2: ${this.existingParentDetailId}`
+          );
+        }
+
         this.filePaths.clear();
         this.existingDetailIds.clear();
         this.existingParameterIds.clear();
 
-        saved.forEach((item: any) => {
+        savedChildren.forEach((item: any) => {
           const key = `${item.m_rec_score_field_id}_${
             item.a_rec_adv_post_detail_id
           }_${this.subheadings.findIndex(
@@ -495,7 +536,7 @@ export class Step2Component implements OnInit {
 
           if (item.parameter_value?.includes('.pdf')) {
             this.filePaths.set(
-              `${key}_${item.m_rec_score_field_parameter_new_id}_${rowIndex}`, // <-- Use dynamic row index
+              `${key}_${item.m_rec_score_field_parameter_new_id}_${rowIndex}`,
               item.parameter_value
             );
           }
@@ -503,7 +544,6 @@ export class Step2Component implements OnInit {
           const formArray = this.form.get(`qualifications${key}`) as FormArray;
           if (formArray?.at(0)) {
             const control = formArray.at(0) as FormGroup;
-
             if (item.a_rec_app_score_field_detail_id) {
               control
                 .get('a_rec_app_score_field_detail_id')
@@ -511,7 +551,6 @@ export class Step2Component implements OnInit {
                   emitEvent: false,
                 });
             }
-
             const paramIdControl = `param_${item.m_rec_score_field_parameter_new_id}_id`;
             if (
               item.a_rec_app_score_field_parameter_detail_id &&
@@ -523,13 +562,11 @@ export class Step2Component implements OnInit {
                   emitEvent: false,
                 });
             }
-
             const fieldName = this.parameters.find(
               (p) =>
                 p.m_rec_score_field_parameter_new_id ===
                 item.m_rec_score_field_parameter_new_id
             )?.score_field_parameter_name;
-
             if (fieldName && control.get(fieldName)) {
               if (item.parameter_value.includes('.pdf')) {
                 control.get(fieldName)?.setValue(null, { emitEvent: false });
@@ -544,6 +581,7 @@ export class Step2Component implements OnInit {
             }
           }
         });
+
         this.checkMandatorySubheadingsAndParameters();
         this.cdr.markForCheck();
       },
@@ -561,7 +599,7 @@ export class Step2Component implements OnInit {
   //   ).subscribe((response: any): void => {
   //     this.years = response?.body?.data;
   //   });
-  // } 
+  // }
   private generateFilePath(
     registrationNo: number,
     file: File,
@@ -622,13 +660,16 @@ export class Step2Component implements OnInit {
       if (!this.form.get(`is${key}Selected`)?.value) return;
 
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
-
-      // Assuming one record per subheading for this component
       const group = formArray.at(0) as FormGroup;
       if (!group) return;
 
       const formValues = group.getRawValue();
       const percentage = +group.get('Percentage Obtained')?.value || 0;
+
+      // ✅ ADDED: Get the existing detail ID from the form group
+      const existingDetailId = group.get(
+        'a_rec_app_score_field_detail_id'
+      )?.value;
 
       const scoreResult = this.utils.calculateScore(
         1,
@@ -647,6 +688,8 @@ export class Step2Component implements OnInit {
       parentCalculatedValue += scoreResult.score_field_calculated_value;
 
       const detail = {
+        // ✅ ADDED: Include the existing ID if it exists
+        a_rec_app_score_field_detail_id: existingDetailId || undefined,
         registration_no: registrationNo,
         a_rec_app_main_id: a_rec_adv_main_id,
         a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
@@ -659,10 +702,11 @@ export class Step2Component implements OnInit {
         field_marks: sub.score_field_field_marks || 0,
         field_weightage: sub.score_field_field_weightage || 0,
         verify_remark: 'Not Verified',
-        action_type: 'C',
+        // ✅ CHANGED: Set action_type dynamically based on ID existence
+        action_type: existingDetailId ? 'U' : 'C',
         action_date: new Date().toISOString(),
         action_ip_address: '127.0.0.1',
-        action_remark: 'data inserted',
+        action_remark: 'data inserted/updated',
         action_by: 1,
         delete_flag: 'N',
       };
@@ -675,6 +719,11 @@ export class Step2Component implements OnInit {
         const paramName = param.score_field_parameter_name;
         const paramValue = formValues[paramName];
         const isFile = paramValue instanceof File;
+
+        // ✅ ADDED: Get the existing parameter ID from the form group
+        const existingParamId = group.get(
+          `param_${param.m_rec_score_field_parameter_new_id}_id`
+        )?.value;
 
         if (paramValue) {
           let finalParameterValue = '';
@@ -698,20 +747,23 @@ export class Step2Component implements OnInit {
           }
 
           const parameter = {
+            // ✅ ADDED: Include the existing ID if it exists
+            a_rec_app_score_field_parameter_detail_id:
+              existingParamId || undefined,
             registration_no: registrationNo,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
             m_rec_score_field_parameter_new_id:
               param.m_rec_score_field_parameter_new_id,
             parameter_value: finalParameterValue,
-            parameter_row_index: 1, // Always 1 for this component
+            parameter_row_index: 1,
             parameter_display_no: param.parameter_display_order,
             verify_remark: 'Not Verified',
             active_status: 'Y',
-            action_type: 'C',
+            // ✅ CHANGED: Set action_type dynamically based on ID existence
+            action_type: existingParamId ? 'U' : 'C',
             action_date: new Date().toISOString(),
-            action_ip_address: '127.0.0.1',
-            action_remark: 'parameter inserted',
+            action_remark: 'parameter inserted/updated',
             action_by: 1,
             delete_flag: 'N',
           };
@@ -720,8 +772,11 @@ export class Step2Component implements OnInit {
       });
     });
 
-    // STEP 2: Create Parent Record
+    // STEP 2: Create Parent Record (No changes needed here)
     const parentRecord = {
+      ...(this.existingParentDetailId && {
+        a_rec_app_score_field_detail_id: this.existingParentDetailId,
+      }),
       registration_no: registrationNo,
       a_rec_app_main_id: a_rec_adv_main_id,
       a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 246,
@@ -737,7 +792,7 @@ export class Step2Component implements OnInit {
       field_marks: this.heading?.score_field_field_marks || 60,
       field_weightage: this.heading?.score_field_field_weightage || 0,
       verify_remark: 'Not Verified',
-      action_type: 'U',
+      action_type: 'U', // Parent is always an update in this logic
       action_date: new Date().toISOString(),
       action_remark: 'parent data updated from recruitment form',
       action_by: 1,
