@@ -97,7 +97,13 @@ export class Step1Service {
       'recruitement'
     );
   }
-
+  getAdditionalInfoQuestions(): Observable<any> {
+    return this.HTTP.getParam(
+      '/candidate/get/getAddtionalInforList',
+      {},
+      'recruitement'
+    );
+  }
   // 🔹 Save language details array
   // saveLanguages(languageDetails: any[]): Observable<any> {
   //   return this.http.post(

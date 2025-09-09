@@ -10,7 +10,7 @@ import { Step3Component } from './step-3/step-3.component';
 import { Step4Component } from './step-4/step-4.component';
 import { Step5Component } from './step-5/step-5.component';
 import { Step6Component } from './step-6/step-6.component';
-import { Step7Component } from './step-7/step-7.component';
+
 import { Step8Component } from './step-8/step-8.component';
 import { Step9Component } from './step-9/step-9.component';
 import { HeaderComponent } from '../../header/header.component';
@@ -33,7 +33,6 @@ import { AlertService } from 'shared';
     Step4Component,
     Step5Component,
     Step6Component,
-    Step7Component,
     Step8Component,
     Step9Component,
   ],
@@ -64,7 +63,7 @@ export class StepperComponent {
   @ViewChild(Step4Component, { static: false }) step4Component?: Step4Component;
   @ViewChild(Step5Component, { static: false }) step5Component?: Step5Component;
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
-  @ViewChild(Step7Component, { static: false }) step7Component?: Step7Component;
+ 
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
   steps = [
     'Personal Info',
@@ -73,7 +72,7 @@ export class StepperComponent {
     'Publications',
     'Experience',
     'Performance',
-    'Documents',
+   
     'Submission',
     'Preview',
   ];
@@ -118,12 +117,7 @@ export class StepperComponent {
         this.step6Component.submit();
       } else {
       }
-    } else if (this.currentStep === 7) {
-      if (this.step7Component) {
-        this.step7Component.submit();
-      } else {
-      }
-    } else if (this.currentStep === 9) {
+    }  else if (this.currentStep === 9) {
       if (this.step9Component) {
         this.step9Component.submit();
       } else {

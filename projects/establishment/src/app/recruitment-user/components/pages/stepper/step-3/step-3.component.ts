@@ -97,7 +97,8 @@ export class Step3Component implements OnInit {
   existingParentDetailId: number | null = null;
   private originalRowCounts: Map<string, number> = new Map();
   private previousCounts: Map<string, number> = new Map();
-
+  years: number[] = [];
+  private parameterIdsToDelete: number[] = [];
   constructor(
     private fb: FormBuilder,
     private HTTP: HttpService,
@@ -119,6 +120,7 @@ export class Step3Component implements OnInit {
   }
 
   ngOnInit(): void {
+    this.getYearDropDown();
     this.loadFormStructure();
     this.form.get('subHeadings')?.valueChanges.subscribe(() => {
       this.generateDetailsTable();
@@ -130,12 +132,74 @@ export class Step3Component implements OnInit {
       this.cdr.detectChanges();
     });
   }
+  getYearDropDown(): void {
+    this.HTTP.getParam(
+      '/candidate/get/getYearDropdown/',
+      {},
+      'recruitement'
+    ).subscribe((response: any): void => {
+      this.years =
+        response?.body?.data.map((item: any) => item.m_year_name) || [];
+      this.years.sort((a, b) => b - a); // Sort descending
+      this.cdr.markForCheck();
+    });
+  }
+
+  // ✅ NEW: Logic to handle row deletion
+  removeRow(detailForm: AbstractControl): void {
+    const typeValue = detailForm.get('type')?.value;
+    const globalIndex = this.detailsArray.controls.indexOf(detailForm as any);
+    if (!typeValue || globalIndex < 0) return;
+
+    // --- Start: Logic to capture IDs before deleting ---
+    const subHeading = this.subHeadings.find((sub) =>
+      sub.items.some(
+        (item: any) => item.m_rec_score_field_id.toString() === typeValue
+      )
+    );
+    if (subHeading) {
+      const subHeadingId = subHeading.m_rec_score_field_id;
+      const indexInfo = this.getSubheadingScopedIndex(globalIndex);
+      const paramsForSubheading = this.getParametersForSubHeading(subHeadingId);
+
+      if (indexInfo) {
+        paramsForSubheading.forEach((param) => {
+          const paramKey = `${indexInfo.subHeadingId}_${typeValue}_${param.m_rec_score_field_parameter_new_id}_${indexInfo.scopedIndex}`;
+          if (this.existingParameterIds.has(paramKey)) {
+            const idToDelete = this.existingParameterIds.get(paramKey)!;
+            this.parameterIdsToDelete.push(idToDelete);
+            console.log(`Marked parameter ID ${idToDelete} for deletion.`);
+          }
+        });
+      }
+    }
+    // --- End: Logic to capture IDs ---
+
+    // Now, proceed with the original logic to update the UI
+    const item = subHeading?.items.find(
+      (i: any) => i.m_rec_score_field_id.toString() === typeValue
+    );
+    if (!item) return;
+
+    const countControl = this.form.get(
+      `subHeadings.${subHeading.m_rec_score_field_id}.${item.normalizedKey}.count`
+    );
+    if (countControl) {
+      const currentCount = parseInt(countControl.value, 10) || 0;
+      if (currentCount > 0) {
+        const newCount = currentCount - 1;
+        countControl.setValue(newCount > 0 ? newCount.toString() : null, {
+          emitEvent: true,
+        });
+      }
+    }
+  }
+
   private checkMandatorySubheadingsAndParameters(): void {
     let firstMissedMandatory: string = '';
     let firstMissedParameter: string = '';
-    let firstMissedSubheading: string = '';
+    let firstMissedSubheading: string = ''; // Check for mandatory subheadings and their mandatory items
 
-    // Check for mandatory subheadings and their mandatory items
     const missedMandatoryItem = this.subHeadings.find((sub: SubHeading) => {
       if (sub.score_field_is_mandatory !== '1') return false;
 
@@ -144,8 +208,7 @@ export class Step3Component implements OnInit {
       ) as FormGroup;
       if (!subGroup) return true; // Subgroup not found, consider it missing
 
-      const subGroupValues = subGroup.getRawValue();
-      // Check if any mandatory item is missing a count
+      const subGroupValues = subGroup.getRawValue(); // Check if any mandatory item is missing a count
       return sub.items.some(
         (item: {
           m_rec_score_field_id: number;
@@ -243,6 +306,7 @@ export class Step3Component implements OnInit {
         { emitEvent: false }
       );
   }
+
   normalizeControlName(name: any): string {
     return typeof name === 'string'
       ? name.toLowerCase().replace(/[^a-z0-9_]/gi, '_')
@@ -397,21 +461,13 @@ export class Step3Component implements OnInit {
         if (savedParentData.length > 0) {
           this.existingParentDetailId =
             savedParentData[0].a_rec_app_score_field_detail_id;
-          console.log(
-            `📌 Found existing parent detail ID: ${this.existingParentDetailId}`
-          );
         } else {
-          console.log(`📌 No existing parent record found.`);
           this.existingParentDetailId = null;
         }
 
         // 5. Process the CHILDREN responses
         const savedChildrenData = children.flatMap(
           (res: any) => res.body?.data || []
-        );
-        console.log(
-          '📌 Saved data for step-3 (Children & Grandchildren):',
-          JSON.stringify(savedChildrenData, null, 2)
         );
 
         // --- Start of your original patching logic (now using savedChildrenData) ---
@@ -578,11 +634,10 @@ export class Step3Component implements OnInit {
     ).subscribe({
       next: (headingResponse: any) => {
         const data = headingResponse.body?.data || [];
-        console.log('📌 Heading API Response:', JSON.stringify(data, null, 2));
 
         this.heading = data[0];
         this.score_field_title_name = data[0]?.score_field_title_name;
-        console.log('📌 Title name:', this.score_field_title_name);
+
         const a_rec_adv_post_detail_id = data[0]?.a_rec_adv_post_detail_id;
 
         this.HTTP.getData(
@@ -591,10 +646,6 @@ export class Step3Component implements OnInit {
         ).subscribe({
           next: (subHeadingResponse: any) => {
             const subHeadingData = subHeadingResponse.body?.data || [];
-            console.log(
-              '📌 SubHeading API Response:',
-              JSON.stringify(subHeadingData, null, 2)
-            );
 
             this.subHeadings = subHeadingData.map((sub: any) => ({
               m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -642,14 +693,8 @@ export class Step3Component implements OnInit {
               forkJoin(paramRequests),
             ]).subscribe({
               next: ([itemResponses, paramResponses]) => {
-                console.log('📌 forkJoin completed');
-
                 itemResponses.forEach((res, index) => {
                   const itemData = res.body?.data || [];
-                  console.log(
-                    `📌 Item API Response for subHeading[${index}]`,
-                    JSON.stringify(itemData, null, 2)
-                  );
 
                   // Map items using API-provided score_field_is_mandatory
                   this.subHeadings[index].items = itemData.map((item: any) => ({
@@ -692,11 +737,6 @@ export class Step3Component implements OnInit {
                           (a.parameter_display_order || 0) -
                           (b.parameter_display_order || 0)
                       ) || [];
-
-                  console.log(
-                    `📌 Parameter API Response for subHeading[${index}]`,
-                    JSON.stringify(paramData, null, 2)
-                  );
 
                   const subHeadingId =
                     this.subHeadings[index].m_rec_score_field_id.toString();
@@ -906,20 +946,10 @@ export class Step3Component implements OnInit {
 
   //remove this after the completion
   private debugFormState() {
-    console.log('🔍 Current form state:');
     this.detailsArray.controls.forEach((control, index) => {
       const typeValue = control.get('type')?.value;
       const rawValue = control.getRawValue();
-      console.log(
-        `   Row ${index + 1} (Type: ${typeValue}):`,
-        JSON.stringify(rawValue, null, 2)
-      );
     });
-
-    console.log(
-      '🔍 File paths:',
-      JSON.stringify(Array.from(this.filePaths.entries()))
-    );
   }
   onFileChange(event: Event, index: number, controlName: string) {
     const input = event.target as HTMLInputElement;
@@ -960,8 +990,6 @@ export class Step3Component implements OnInit {
   }
 
   private logFormData(title: string, formData: FormData) {
-    console.log(`📤 ${title} - FormData contents:`);
-
     for (const [key, value] of formData.entries()) {
       if (
         key === 'scoreFieldDetailList' ||
@@ -970,52 +998,14 @@ export class Step3Component implements OnInit {
       ) {
         try {
           const parsedValue = JSON.parse(value as string);
-          console.log(`   ${key}:`, JSON.stringify(parsedValue, null, 2));
-        } catch (e) {
-          console.log(`   ${key}:`, value);
-        }
+        } catch (e) {}
       } else if (key.startsWith('file_')) {
-        console.log(
-          `   ${key}:`,
-          value instanceof File ? `File: ${value.name}` : value
-        );
       } else {
-        console.log(`   ${key}:`, value);
       }
     }
   }
 
-  private logSaveData(details: any[], parameters: any[], parentRecord: any) {
-    console.log('💾 SAVE OPERATION - Data being sent:');
-    console.log('📋 Details:', JSON.stringify(details, null, 2));
-    console.log('📋 Parameters:', JSON.stringify(parameters, null, 2));
-    console.log('📋 Parent Record:', JSON.stringify(parentRecord, null, 2));
-  }
-
-  private logUpdateData(details: any[], parameters: any[], parentRecord: any) {
-    console.log('🔄 UPDATE OPERATION - Data being sent:');
-    console.log('📋 Details:', JSON.stringify(details, null, 2));
-    console.log('📋 Parameters:', JSON.stringify(parameters, null, 2));
-    console.log('📋 Parent Record:', JSON.stringify(parentRecord, null, 2));
-  }
-
-  private logExistingIds() {
-    console.log(
-      '🔍 Existing Detail IDs:',
-      Array.from(this.existingDetailIds.entries())
-    );
-    console.log(
-      '🔍 Existing Parameter IDs:',
-      Array.from(this.existingParameterIds.entries())
-    );
-  }
-
-  private logExistingParameterKeys() {
-    console.log('🔑 Existing Parameter Keys:');
-    for (const [key, value] of this.existingParameterIds.entries()) {
-      console.log(`   ${key} -> ${value}`);
-    }
-  }
+  private logExistingIds() {}
 
   private generateFilePath(
     registrationNo: number,
@@ -1094,10 +1084,7 @@ export class Step3Component implements OnInit {
       },
       subheadings: subheadingsData,
     };
-    console.log(
-      '📤 Step3 form emitting data:',
-      JSON.stringify(emitData, null, 2)
-    );
+
     this.formData.emit(emitData);
 
     if (anySelected) {
@@ -1140,7 +1127,6 @@ export class Step3Component implements OnInit {
   }
 
   saveToDatabase() {
-    console.log('💾 Starting unified save/update process...');
     this.logExistingIds();
 
     const registrationNo = 24000001;
@@ -1323,7 +1309,12 @@ export class Step3Component implements OnInit {
       'scoreFieldParameterList',
       JSON.stringify(finalParameterList)
     );
-
+    if (this.parameterIdsToDelete.length > 0) {
+      formData.append(
+        'parameterIdsToDelete',
+        JSON.stringify(this.parameterIdsToDelete)
+      );
+    }
     this.logFormData('SAVE OR UPDATE PAYLOAD', formData);
 
     this.HTTP.postForm(
@@ -1332,7 +1323,6 @@ export class Step3Component implements OnInit {
       'recruitement'
     ).subscribe({
       next: (res) => {
-        console.log('✅ UNIFIED SAVE/UPDATE RESPONSE:', res);
         this.alertService.alert(false, 'Data saved successfully!');
         this.getParameterValuesAndPatch();
         this.cdr.markForCheck();

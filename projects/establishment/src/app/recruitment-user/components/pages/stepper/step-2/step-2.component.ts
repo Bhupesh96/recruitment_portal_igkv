@@ -111,11 +111,7 @@ export class Step2Component implements OnInit {
   }
 
   ngOnInit(): void {
-    const currentYear = new Date().getFullYear();
-    this.years = Array.from(
-      { length: currentYear - 1970 + 1 },
-      (_, i) => currentYear - i
-    );
+    this.getYearDropDown();
     this.loadFormData().subscribe({
       next: () => {
         this.getParameterValuesAndPatch();
@@ -491,22 +487,13 @@ export class Step2Component implements OnInit {
       next: ({ children, parent }) => {
         const savedChildren = children.body?.data || [];
         const savedParent = parent.body?.data || [];
- console.log(
-          'Saved data from step-2 (Parent): ',
-          JSON.stringify(savedParent, null, 2)
-        );
-        console.log(
-          'Saved data from step-2 (Children): ',
-          JSON.stringify(savedChildren, null, 2)
-        );
+       
 
         // ✅ STORE THE PARENT ID
         if (savedParent.length > 0) {
           this.existingParentDetailId =
             savedParent[0].a_rec_app_score_field_detail_id;
-          console.log(
-            `📌 Found existing parent detail ID for Step 2: ${this.existingParentDetailId}`
-          );
+        
         }
 
         this.filePaths.clear();
@@ -592,14 +579,21 @@ export class Step2Component implements OnInit {
       },
     });
   }
-  // getYearDropDown(): void {
-  //   this.HTTP.getParam(
-  //     '/candidate/get/getYearDropdown/',
-  //     'recruitement'
-  //   ).subscribe((response: any): void => {
-  //     this.years = response?.body?.data;
-  //   });
-  // }
+  getYearDropDown(): void {
+    this.HTTP.getParam(
+      '/candidate/get/getYearDropdown/',
+      {}, // Pass empty object if no params
+      'recruitement'
+    ).subscribe((response: any): void => {
+      // The API returns an array of objects like { "m_year_name": 2024 }
+      // We need to extract the number from each object.
+      this.years =
+        response?.body?.data.map((item: any) => item.m_year_name) || [];
+      // Sort in descending order to show recent years first
+      this.years.sort((a, b) => b - a);
+      this.cdr.markForCheck();
+    });
+  }
   private generateFilePath(
     registrationNo: number,
     file: File,

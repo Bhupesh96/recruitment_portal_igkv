@@ -135,18 +135,15 @@
             (formData)="updateFormData(6, $event)"
           ></app-step-6>
           
-          <app-step-7
-            [hidden]="currentStep !== 7"
-            (formData)="updateFormData(7, $event)"
-          ></app-step-7>
+         
           
           <app-step-8
-            [hidden]="currentStep !== 8"
-            (formData)="updateFormData(8, $event)"
+            [hidden]="currentStep !== 7"
+            (formData)="updateFormData(7, $event)"
           ></app-step-8>
            <app-step-9
-            [hidden]="currentStep !== 9"
-            (formData)="updateFormData(9, $event)"
+            [hidden]="currentStep !== 8"
+            (formData)="updateFormData(8, $event)"
           ></app-step-9>
           <!-- Navigation -->
           <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200">

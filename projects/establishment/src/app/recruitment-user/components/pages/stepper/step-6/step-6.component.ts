@@ -100,7 +100,7 @@ export class Step6Component implements OnInit {
     const key = subHeadingId.toString();
     const hasRows = !!this.subHeadingDetails[key]?.length;
     if (isDevMode()) {
-          }
+    }
     return hasRows;
   }
 
@@ -183,7 +183,6 @@ export class Step6Component implements OnInit {
           (res) => res.body?.data || res.data || []
         );
 
-        
         this.subHeadings.forEach((subHeading) => {
           const groupName = subHeading.m_rec_score_field_id.toString();
           const subGroup = this.form.get(
@@ -286,8 +285,7 @@ export class Step6Component implements OnInit {
         const data = headingResponse.body?.data || headingResponse.data || [];
 
         this.heading = data[0];
-        this.score_field_title_name =
-          data[0]?.score_field_title_name || 'Academic Excellence';
+        this.score_field_title_name = data[0]?.score_field_title_name;
         if (!data[0]?.score_field_field_marks) {
         }
         const a_rec_adv_post_detail_id =
@@ -359,7 +357,7 @@ export class Step6Component implements OnInit {
                     this.subHeadings[index].m_rec_score_field_id.toString();
                   this.subHeadingParameters[subHeadingId] = paramData;
                   if (isDevMode()) {
-                                      }
+                  }
                 });
 
                 this.getParameterValuesAndPatch();
@@ -442,7 +440,6 @@ export class Step6Component implements OnInit {
   }
 
   generateDetailsTable(savedData: any[] = []) {
-    
     if (this.isGeneratingTable) {
       return;
     }
@@ -496,7 +493,7 @@ export class Step6Component implements OnInit {
 
         if (!subGroup || parametersForSubHeading.length === 0) {
           if (isDevMode()) {
-                      }
+          }
           return;
         }
 
@@ -509,7 +506,7 @@ export class Step6Component implements OnInit {
 
           if (isNaN(count) || count <= 0) {
             if (isDevMode()) {
-                          }
+            }
             return;
           }
 
@@ -530,7 +527,7 @@ export class Step6Component implements OnInit {
           }
 
           if (isDevMode()) {
-                      }
+          }
 
           for (let i = 0; i < count; i++) {
             const detailGroup: DetailFormGroup = {
@@ -557,7 +554,7 @@ export class Step6Component implements OnInit {
 
             const savedRowGroup = logicalRows[i];
             if (savedRowGroup) {
-                            savedRowGroup.forEach((savedRow) => {
+              savedRowGroup.forEach((savedRow) => {
                 parametersForSubHeading.forEach((param: any) => {
                   if (
                     savedRow.m_rec_score_field_parameter_id ===
@@ -566,7 +563,7 @@ export class Step6Component implements OnInit {
                     const paramValue = savedRow.parameter_value;
                     const controlName = param.normalizedKey;
                     const key = `${typeValue}_${param.m_rec_score_field_parameter_id}_${i}`;
-                    
+
                     if (paramValue?.includes('.pdf')) {
                       this.filePaths.set(key, paramValue);
                       newGroup
@@ -683,7 +680,10 @@ export class Step6Component implements OnInit {
       },
       subheadings: subheadingsData,
     };
- console.log('📤 Step6 form emitting data:', JSON.stringify(emitData, null, 2));
+    console.log(
+      '📤 Step6 form emitting data:',
+      JSON.stringify(emitData, null, 2)
+    );
     this.formData.emit(emitData);
 
     if (isDev || anySelected) {
@@ -862,7 +862,6 @@ export class Step6Component implements OnInit {
         item?.score_field_field_marks || 0
       );
 
-      
       entry.detail.score_field_value = scoreResult.score_field_value;
       entry.detail.score_field_actual_value =
         scoreResult.score_field_actual_value;
@@ -950,7 +949,6 @@ export class Step6Component implements OnInit {
       });
     });
 
-    
     if (newDetails.length > 0) {
       this.saveNewRecords(registrationNo, formData, newDetails, newParameters);
     }
@@ -965,7 +963,7 @@ export class Step6Component implements OnInit {
     }
 
     if (newDetails.length === 0 && existingDetails.length === 0) {
-            this.alertService.alert(
+      this.alertService.alert(
         true,
         'No data to save. Please add at least one record.'
       );
@@ -990,14 +988,12 @@ export class Step6Component implements OnInit {
       }
     });
 
-    
     this.HTTP.postForm(
       '/candidate/postFile/saveCandidateScoreCard',
       saveFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-        
         if (res.body?.data) {
           details.forEach((detail, index) => {
             if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
@@ -1024,7 +1020,7 @@ export class Step6Component implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-                this.alertService.alert(
+        this.alertService.alert(
           true,
           'Error saving new records: ' + err.message
         );
@@ -1053,18 +1049,17 @@ export class Step6Component implements OnInit {
       }
     });
 
-    
     this.HTTP.postForm(
       '/candidate/postFile/updateCandidateScoreCard',
       updateFormData,
       'recruitement'
     ).subscribe({
       next: (res) => {
-                this.alertService.alert(false, 'Data saved successfully!');
+        this.alertService.alert(false, 'Data saved successfully!');
         this.cdr.markForCheck();
       },
       error: (err) => {
-                this.alertService.alert(true, 'Error updating records: ' + err.message);
+        this.alertService.alert(true, 'Error updating records: ' + err.message);
         this.cdr.markForCheck();
       },
     });
