@@ -163,7 +163,28 @@ export class Step1Service {
       'recruitement'
     );
   }
-
+  getSavedAdditionalInfo(registrationNo: number): Observable<any> {
+    return this.HTTP.getParam(
+      '/candidate/get/getAddtionInfoDetails',
+      { question_label: registrationNo },
+      'recruitement'
+    );
+  }
+  getAdvertisementDetails(adv_main_id: number): Observable<any> {
+    return this.HTTP.getParam(
+      '/master/get/getLatestAdvertisement',
+      { adv_main_id },
+      'recruitement'
+    );
+  }
+  saveAdditionalInfo(formData: FormData): Observable<any> {
+    // Use the postForm method from your existing HttpService
+    return this.HTTP.postForm(
+      '/candidate/postFile/saveOrUpdateAdditionalInformation', // Your new endpoint
+      formData,
+      'recruitement'
+    );
+  }
   //  this.HTTP.postData('/scorecardentry/post/saveAdvertisementDetail', formData, 'recruitement').subscribe(res => {
   //     if (!res.body.error) {
   //       this.alert.alertMessage("Record Inserted...!", "", "success");

@@ -48,7 +48,7 @@ export class Step7Component implements OnInit {
   attachmentMeta: AttachmentMeta[] = [];
   filePaths: Map<string, string> = new Map();
   registrationNo = 24000001;
-  a_rec_adv_main_id = 96;
+  a_rec_adv_main_id = 115;
   score_field_parent_id = 3147;
   a_rec_adv_post_detail_id = 72;
   m_rec_score_field_method_id = 1;

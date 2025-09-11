@@ -147,10 +147,10 @@ export class HomeComponent implements OnInit {
       'recruitement'
     ).subscribe((result: any): void => {
       this.ads = result.body.data;
-      // console.log(
-      //   '🟢 JSON Advertisement List:',
-      //   JSON.stringify(this.ads, null, 2)
-      // );
+      console.log(
+        '🟢 JSON Advertisement List:',
+        JSON.stringify(this.ads, null, 2)
+      );
     });
   }
 
@@ -194,26 +194,44 @@ export class HomeComponent implements OnInit {
   }
 
   fetchPostsByAdvertisement(adId: string) {
-    const params = new HttpParams().set('mapScoreId', adId);
-    this.http
-      .get<{ Response: { List: { post_code: number; post_name: string }[] } }>(
-        `${this.apiBaseUrl}/getPostsByAdvertisement`,
-        { params }
-      )
-      .subscribe({
-        next: (response) => {
-          this.allPosts = response.Response.List.map((post) => ({
-            post_code: post.post_code,
-            post_name: post.post_name,
-            activeTab: 'login' as 'login' | 'signup' | 'news' | 'complaint',
-            expanded: false,
-          }));
-        },
-        error: (error) => {
-          console.error('Error fetching posts:', error);
-        },
-      });
-  }
+  // Parameters are now a plain object, which is cleaner.
+  // NOTE: I've assumed the parameter key is 'a_rec_adv_main_id'. 
+  // Please verify this with your backend API. It was 'mapScoreId' in the old code.
+  const params = {
+    a_rec_adv_main_id: adId, 
+  };
+
+  // Changed to use the custom HTTP service for consistency.
+  // The endpoint is assumed to follow the same '/master/get/...' pattern.
+  this.HTTP.getParam(
+    '/master/get/getPostByAdvertiment/', 
+    params,
+    'recruitement'
+  ).subscribe({
+    next: (result: any) => {
+      // Access the data from result.body.data, matching the service's response structure.
+      const postsList = result.body.data || []; // Default to empty array if data is null
+
+      // The original mapping logic to add UI-specific properties is preserved.
+      this.allPosts = postsList.map((post: any) => ({
+        post_code: post.post_code,
+        post_name: post.post_name,
+        activeTab: 'signup' as 'login' | 'signup' | 'news' | 'complaint', // Default to signup
+        expanded: false,
+      }));
+
+      // Added for easier debugging, similar to your other methods.
+      console.log(
+        '🟢 JSON Posts List:',
+        JSON.stringify(this.allPosts, null, 2)
+      );
+    },
+    error: (error) => {
+      console.error('Error fetching posts:', error);
+      this.allPosts = []; // Clear posts on error
+    },
+  });
+}
 
   get filteredAds(): Advertisement[] {
     return this.ads;
@@ -230,23 +248,24 @@ export class HomeComponent implements OnInit {
   togglePost(post: Post) {
     post.expanded = !post.expanded;
   }
-  onSessionChange() {
-    this.selectedAd = '';
-    this.allPosts = [];
-    this.ads = [];
+ onSessionChange() {
+  this.selectedAd = '';
+  this.allPosts = [];
+  this.ads = [];
 
-    const selectedSessionId = +this.selectedSession; // convert string to number
+  const selectedSessionId = +this.selectedSession;
 
-    const selectedSession = this.sessions.find(
-      (s) => s.Academic_Session_Id === selectedSessionId
-    );
+  // Correct the property name from .Academic_Session_Id to .academic_session_id
+  const selectedSession = this.sessions.find(
+    (s) => s.academic_session_id === selectedSessionId // <-- FIX
+  );
 
-    console.log('Session ', selectedSessionId);
+  console.log('Session ', selectedSessionId);
 
-    if (selectedSession) {
-      this.getAdvertisement(selectedSessionId);
-    }
+  if (selectedSession) {
+    this.getAdvertisement(selectedSessionId);
   }
+}
 
   onAdChange() {
     if (this.selectedAd) {

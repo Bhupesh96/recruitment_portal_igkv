@@ -176,7 +176,7 @@ export class Step5Component implements OnInit {
     if (!this.heading) return;
 
     const registration_no = 24000001;
-    const a_rec_app_main_id = 96;
+    const a_rec_app_main_id = 115;
 
     const childrenRequest = this.HTTP.getParam(
       '/candidate/get/getParameterValues',
@@ -524,7 +524,7 @@ export class Step5Component implements OnInit {
 
   private loadFormData(): Observable<void> {
     // ... (This method remains unchanged)
-    const a_rec_adv_main_id = 96;
+    const a_rec_adv_main_id = 115;
     const m_rec_score_field_id = 32;
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
@@ -754,7 +754,7 @@ export class Step5Component implements OnInit {
 
     // --- Configuration ---
     const registrationNo = 24000001;
-    const a_rec_app_main_id = 96;
+    const a_rec_app_main_id = 115;
     const formData = new FormData();
 
     // --- Payload Preparation ---

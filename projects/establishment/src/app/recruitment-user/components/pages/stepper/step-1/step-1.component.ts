@@ -14,6 +14,9 @@ import {
   FormArray,
   Validators,
   ReactiveFormsModule,
+  AbstractControl,
+  ValidationErrors,
+  ValidatorFn,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -32,6 +35,7 @@ import { HttpService, SharedModule } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { UtilsService } from './utils.service';
 import { AlertService } from 'shared';
+import { consumerPollProducersForChange } from '@angular/core/primitives/signals';
 
 @Component({
   selector: 'app-step-1',
@@ -66,7 +70,10 @@ export class Step1Component implements OnChanges, OnInit {
   photoPreview: string | null = null;
   signaturePreview: string | null = null;
   filePaths: Map<string, string> = new Map();
-
+  additionalQuestions: any[] = [];
+  additionalFilePaths: Map<string, string> = new Map();
+  advertisementDetails: any = null;
+  private savedAdditionalInfo: any[] = [];
   // Mapping of form control names to user-friendly display names
   private fieldNameMap: { [key: string]: string } = {
     registration_no: 'Registration Number',
@@ -81,7 +88,6 @@ export class Step1Component implements OnChanges, OnInit {
     Applicant_Last_Name_H: 'Last Name (Hindi)',
     Applicant_Father_Name_E: "Father's Name",
     Applicant_Mother_Name_E: "Mother's Name",
-    candidate_category_id: 'Category',
     Gender_Id: 'Gender',
     DOB: 'Date of Birth',
     Mobile_No: 'Mobile Number',
@@ -93,9 +99,6 @@ export class Step1Component implements OnChanges, OnInit {
     Identification_Mark1: 'Identification Mark 1',
     Identification_Mark2: 'Identification Mark 2',
     religion_code: 'Religion',
-    Is_Married_YN: 'Marital Status',
-    Marriage_Date: 'Marriage Date',
-    In_Service_YN: 'In-Service Status',
     Permanent_Address1: 'Permanent Address',
     Permanent_City: 'Permanent City',
     Permanent_District_Id: 'Permanent District',
@@ -124,7 +127,7 @@ export class Step1Component implements OnChanges, OnInit {
   ) {
     this.form = this.fb.group({
       registration_no: ['24000001', Validators.required],
-      a_rec_adv_main_id: ['96', Validators.required],
+      a_rec_adv_main_id: ['115', Validators.required],
       post_name: [''],
       post_code: ['', Validators.required],
       session_id: ['2', Validators.required],
@@ -139,7 +142,7 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Last_Name_H: ['', Validators.required],
       Applicant_Father_Name_E: ['', Validators.required],
       Applicant_Mother_Name_E: ['', Validators.required],
-      candidate_category_id: ['', Validators.required],
+
       Gender_Id: ['', Validators.required],
       DOB: ['', Validators.required],
       age: [{ value: '', disabled: true }],
@@ -152,12 +155,7 @@ export class Step1Component implements OnChanges, OnInit {
       Identification_Mark1: ['', Validators.required],
       Identification_Mark2: ['', Validators.required],
       religion_code: ['', Validators.required],
-      Is_CG_Domocile: ['Y'],
-      Is_Local_Lang_Knowledge: ['Y'],
-      Is_Disability: ['N'],
-      Is_Married_YN: ['N', Validators.required],
-      Marriage_Date: [''],
-      In_Service_YN: ['N', Validators.required],
+
       Permanent_Address1: ['', Validators.required],
       Permanent_City: ['', Validators.required],
       Permanent_District_Id: ['', Validators.required],
@@ -175,7 +173,7 @@ export class Step1Component implements OnChanges, OnInit {
       photo: [null],
       signature: [null],
     });
-    this.setupMaritalStatusValidation();
+
     this.setupLiveHindiTranslation();
     this.emitFormData();
   }
@@ -190,7 +188,43 @@ export class Step1Component implements OnChanges, OnInit {
   get maxMarriageDate(): string {
     return new Date().toISOString().split('T')[0];
   }
+  onConditionalFileSelected(
+    event: Event,
+    controlName: string,
+    maxSizeKB: number | null
+  ): void {
+    const input = event.target as HTMLInputElement;
+    const control = this.form.get(controlName);
 
+    if (input.files?.length && control) {
+      const file = input.files[0];
+
+      // Validate file size if a max size is specified in the API response
+      if (maxSizeKB) {
+        const maxSizeInBytes = maxSizeKB * 1024;
+        if (file.size > maxSizeInBytes) {
+          this.alert.alert(
+            true,
+            `File size cannot exceed ${maxSizeKB}KB. Your file is ~${Math.round(
+              file.size / 1024
+            )}KB.`,
+            5000
+          );
+          // Clear the invalid file from the input and form control
+          input.value = '';
+          control.setValue(null);
+          control.markAsTouched();
+          return;
+        }
+      }
+
+      // If validation passes, update the form control with the file object
+      control.setValue(file);
+    } else if (control) {
+      // If no file is selected, clear the control
+      control.setValue(null);
+    }
+  }
   calculateExp() {
     const experiences = [
       {
@@ -284,10 +318,12 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   ngOnInit(): void {
+    this.loadAdvertisementDetails();
+    this.loadAdditionalInfo();
     this.calculateExp();
     this.step1Service.getUserData().subscribe({
       next: (response: any) => {
-       // console.log('User Data ', JSON.stringify(response.body, null, 2));
+        // console.log('User Data ', JSON.stringify(response.body, null, 2));
         if (response?.body?.error) {
           this.alert.alert(true, response.body.error, 5000);
           return;
@@ -331,7 +367,7 @@ export class Step1Component implements OnChanges, OnInit {
           Applicant_Last_Name_H: data.Applicant_Last_Name_H,
           Applicant_Father_Name_E: data.Applicant_Father_Name_E,
           Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
-          candidate_category_id: data.candidate_category_id,
+
           Gender_Id: data.Gender_Id,
           DOB: this.formatDateToYYYYMMDD(data.DOB),
           Mobile_No: data.app_mobile_no,
@@ -343,12 +379,7 @@ export class Step1Component implements OnChanges, OnInit {
           Identification_Mark1: data.Identification_Mark1,
           Identification_Mark2: data.Identification_Mark2,
           religion_code: data.religion_code,
-          Is_CG_Domocile: data.Is_CG_Domocile,
-          Is_Local_Lang_Knowledge: data.Is_Local_Lang_Knowledge,
-          Is_Disability: data.Is_Disability,
-          Is_Married_YN: data.Is_Married_YN,
-          Marriage_Date: this.formatDateToYYYYMMDD(data.Marriage_Date),
-          In_Service_YN: data.In_Service_YN,
+
           Permanent_Address1: data.Permanent_Address1,
           Permanent_City: data.Permanent_City,
           Permanent_District_Id: data.Permanent_District_Id,
@@ -411,6 +442,7 @@ export class Step1Component implements OnChanges, OnInit {
                 })
               );
             });
+            this.loadAndPatchAdditionalInfo(data.registration_no);
           },
           error: (err) =>
             this.alert.alert(
@@ -638,13 +670,302 @@ export class Step1Component implements OnChanges, OnInit {
       }
     });
   }
+  private maxMarriageDateValidator(maxDateStr: string): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      // Don't validate if there's no input or no max date from the API
+      if (!control.value || !maxDateStr) {
+        return null;
+      }
 
+      const selectedDate = new Date(control.value);
+      const maxDate = new Date(maxDateStr);
+
+      // To compare dates accurately, ignore the time part
+      selectedDate.setHours(0, 0, 0, 0);
+      maxDate.setHours(0, 0, 0, 0);
+
+      // 🔄 THE CORE LOGIC IS FLIPPED HERE
+      if (selectedDate > maxDate) {
+        // Return an error object if the selected date is AFTER the maximum allowed date
+        return {
+          invalidMarriageDateMax: {
+            max: this.formatDateToYYYYMMDD(maxDate),
+            actual: this.formatDateToYYYYMMDD(selectedDate),
+          },
+        };
+      }
+
+      // Return null if validation passes
+      return null;
+    };
+  }
+  private dobValidator(maxDateStr: string): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value || !maxDateStr) {
+        return null;
+      }
+
+      const selectedDate = new Date(control.value);
+      const maxDate = new Date(maxDateStr);
+      selectedDate.setHours(0, 0, 0, 0);
+      maxDate.setHours(0, 0, 0, 0);
+
+      if (selectedDate > maxDate) {
+        // Use a unique error key 'invalidDobMax'
+        return {
+          invalidDobMax: {
+            max: this.formatDateToYYYYMMDD(maxDate),
+            actual: this.formatDateToYYYYMMDD(selectedDate),
+          },
+        };
+      }
+      return null;
+    };
+  }
+
+  // ... inside Step1Component class
+
+  private loadAdvertisementDetails(): void {
+    const advId = this.form.get('a_rec_adv_main_id')?.value;
+    if (!advId) return;
+
+    this.step1Service.getAdvertisementDetails(advId).subscribe({
+      next: (res) => {
+        if (res?.body?.data?.length > 0) {
+          this.advertisementDetails = res.body.data[0];
+          console.log(
+            '✅ Advertisement Details Loaded:',
+            this.advertisementDetails
+          );
+
+          // ✅ 2. APPLY VALIDATOR TO THE DOB CONTROL
+          const dobControl = this.form.get('DOB');
+          if (dobControl && this.advertisementDetails.age_calculation_date) {
+            dobControl.setValidators([
+              Validators.required,
+              this.dobValidator(this.advertisementDetails.age_calculation_date),
+            ]);
+            // Re-check the control's validity immediately
+            dobControl.updateValueAndValidity();
+          }
+
+          // This line is for the marriage date, it should remain
+          this.form.get('condition_1')?.updateValueAndValidity();
+        }
+      },
+      error: (err) => {
+        this.alert.alert(true, 'Failed to load advertisement config.', 5000);
+      },
+    });
+  }
+
+  // ... rest of the component
+  private loadAndPatchAdditionalInfo(registrationNo: number): void {
+    this.step1Service.getSavedAdditionalInfo(registrationNo).subscribe({
+      next: (res) => {
+        const savedInfo = res?.body?.data;
+        console.log(
+          'Saved additional information: ',
+          JSON.stringify(savedInfo,null,2)
+        );
+        if (!savedInfo || !Array.isArray(savedInfo)) return;
+
+        // Store the complete data, including IDs, for later use during submission.
+        this.savedAdditionalInfo = savedInfo;
+
+        savedInfo.forEach((item: any) => {
+          if (item.condition_id === null) {
+            const controlName = `question_${item.question_id}`;
+            const control = this.form.get(controlName);
+            // Patch value and trigger change detection for conditional logic
+            if (control) {
+              control.setValue(item.input_field);
+            }
+          } else {
+            const controlName = `condition_${item.condition_id}`;
+            const control = this.form.get(controlName);
+            if (control) {
+              if (
+                item.input_field &&
+                typeof item.input_field === 'string' &&
+                item.input_field.startsWith('recruitment/')
+              ) {
+                this.additionalFilePaths.set(controlName, item.input_field);
+              } else {
+                control.setValue(item.input_field);
+              }
+            }
+          }
+        });
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.alert.alert(true, 'Failed to load saved additional info.', 3000);
+      },
+    });
+  }
+
+  private conditionalFileValidator(controlName: string): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const hasNewFile = control.value instanceof File;
+      const hasExistingFile = this.additionalFilePaths.has(controlName);
+
+      const isValid = hasNewFile || hasExistingFile;
+      return isValid ? null : { required: true };
+    };
+  }
+  // ✅ ADD THESE HELPER METHODS FOR THE TEMPLATE
+  getAdditionalFilePath(controlName: string): string | null {
+    return this.additionalFilePaths.get(controlName) || null;
+  }
+
+  private loadAdditionalInfo(): void {
+    this.step1Service.getAdditionalInfoQuestions().subscribe({
+      next: (res) => {
+        if (res?.body?.data?.questions) {
+          this.additionalQuestions = res.body.data.questions;
+          this.buildAdditionalInfoFormControls(this.additionalQuestions);
+          this.setupConditionalValidators(this.additionalQuestions);
+        }
+      },
+      error: (err) => {
+        this.alert.alert(true, 'Failed to load additional questions.', 5000);
+      },
+    });
+  }
+  private buildAdditionalInfoFormControls(questions: any[]): void {
+    questions.forEach((question) => {
+      // Add control for the main question
+      this.form.addControl(
+        `question_${question.question_id}`,
+        this.fb.control('', [Validators.required])
+      );
+
+      // Add controls for any potential conditional/dependent fields
+      question.options.forEach((option: any) => {
+        if (option.has_condition === 'Y') {
+          option.conditions.forEach((condition: any) => {
+            // Add control for the dependent field, initially without validators
+            this.form.addControl(
+              `condition_${condition.condition_id}`,
+              this.fb.control('')
+            );
+          });
+        }
+      });
+    });
+  }
+  onDobChange(event: Event): void {
+    const control = this.form.get('DOB');
+    if (control?.hasError('invalidDobMax')) {
+      const error = control.errors?.['invalidDobMax'];
+      this.alert.alertMessage(
+        'Invalid Date of Birth',
+        `The Date of Birth cannot be after <b>${error.max}</b>.<br>Please select a valid date.`,
+        'error'
+      );
+    }
+  }
+  onMarriageDateChange(event: Event): void {
+    const control = this.form.get('condition_1'); // Control for Marriage Date
+    if (control?.hasError('invalidMarriageDateMax')) {
+      const error = control.errors?.['invalidMarriageDateMax'];
+      const maxDate = error.max;
+
+      // ✅ USE this.alert.alertMessage to show an alert with an "OK" button
+      this.alert.alertMessage(
+        'Invalid Date Selected', // This is the title of the alert
+        `The marriage date cannot be after <b>${maxDate}</b>.<br>Please choose a valid date.`, // This is the HTML message
+        'error' // This sets the icon to an error symbol
+      );
+    }
+  }
+  // 👇 ADD THIS NEW METHOD TO HANDLE DYNAMIC VALIDATORS
+  private setupConditionalValidators(questions: any[]): void {
+    questions.forEach((question) => {
+      const questionControl = this.form.get(`question_${question.question_id}`);
+      if (!questionControl) return;
+
+      questionControl.valueChanges.subscribe((selectedValue) => {
+        question.options.forEach((option: any) => {
+          const isSelected = option.option_value === selectedValue;
+          if (option.has_condition === 'Y') {
+            option.conditions.forEach((condition: any) => {
+              const controlName = `condition_${condition.condition_id}`;
+              const conditionControl = this.form.get(controlName);
+
+              if (conditionControl) {
+                if (isSelected && condition.condition_required === 'Y') {
+                  // ✅ 5. MODIFICATION STARTS HERE
+                  const validators: ValidatorFn[] = [];
+
+                  if (condition.condition_data_type === 'file') {
+                    validators.push(this.conditionalFileValidator(controlName));
+                  } else {
+                    validators.push(Validators.required);
+                  }
+
+                  // Specifically for the Marriage Date (condition_id: 1)
+                  if (
+                    condition.condition_id === 1 &&
+                    this.advertisementDetails?.marriage_calculation_date
+                  ) {
+                    validators.push(
+                      this.maxMarriageDateValidator(
+                        this.advertisementDetails.marriage_calculation_date
+                      )
+                    );
+                  }
+
+                  conditionControl.setValidators(validators);
+                  // ✅ MODIFICATION ENDS HERE
+                } else {
+                  conditionControl.clearValidators();
+                  conditionControl.reset('', { emitEvent: false });
+                }
+                conditionControl.updateValueAndValidity({ emitEvent: false });
+              }
+            });
+          }
+        });
+        this.cdr.markForCheck();
+      });
+    });
+  }
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['triggerValidation'] && this.triggerValidation) {
       this.markFormGroupTouched(this.form);
     }
   }
+  public handleRadioChange(controlName: string, value: any): void {
+    // Get the specific form control
+    const control = this.form.get(controlName);
 
+    if (control) {
+      // Manually set the value for the control
+      control.setValue(value);
+
+      // Mark the control as 'touched' for correct validation behavior
+      control.markAsTouched();
+
+      // Force Angular to immediately update the view to reflect the changes
+      this.cdr.detectChanges();
+    }
+  }
+  public getSelectedOption(question: any): any | null {
+    // Find the form control associated with the question
+    const control = this.form.get(`question_${question.question_id}`);
+
+    // If the control or its value doesn't exist, return null
+    if (!control || !control.value) {
+      return null;
+    }
+
+    // Find and return the specific option that matches the control's current value
+    return question.options.find(
+      (opt: any) => opt.option_value === control.value
+    );
+  }
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
@@ -677,28 +998,6 @@ export class Step1Component implements OnChanges, OnInit {
       };
       reader.readAsDataURL(file);
     }
-  }
-
-  private setupMaritalStatusValidation(): void {
-    const marriageDateControl = this.form.get('Marriage_Date');
-
-    this.updateMarriageDateValidation();
-
-    this.form.get('Is_Married_YN')?.valueChanges.subscribe(() => {
-      this.updateMarriageDateValidation();
-    });
-  }
-
-  private updateMarriageDateValidation(): void {
-    const marriageDateControl = this.form.get('Marriage_Date');
-    const isMarried = this.form.get('Is_Married_YN')?.value === 'Y';
-
-    if (isMarried) {
-      marriageDateControl?.setValidators([Validators.required]);
-    } else {
-      marriageDateControl?.clearValidators();
-    }
-    marriageDateControl?.updateValueAndValidity();
   }
 
   getFilePath(key: string): string | null {
@@ -750,193 +1049,329 @@ export class Step1Component implements OnChanges, OnInit {
     const errors: string[] = [];
     Object.keys(group.controls).forEach((key: string) => {
       const control = group.get(key);
-      const displayName = this.fieldNameMap[key] || key;
-
       if (control instanceof FormGroup || control instanceof FormArray) {
         errors.push(...this.logValidationErrors(control));
-      } else {
-        if (control?.invalid && control?.touched) {
-          if (control.errors?.['required']) {
-            errors.push(`${displayName} is required.`);
-          } else if (control.errors?.['email']) {
-            errors.push(`${displayName} must be a valid email address.`);
-          } else if (control.errors?.['underage']) {
-            errors.push(
-              `You must be at least 18 years old for ${displayName}.`
-            );
+      } else if (control?.invalid && control?.touched) {
+        // ✅ IMPROVED LOGIC STARTS HERE
+        let displayName = this.fieldNameMap[key] || key;
+
+        // Find user-friendly names for additional questions
+        if (key.startsWith('question_')) {
+          const questionId = Number(key.split('_')[1]);
+          const question = this.additionalQuestions.find(
+            (q) => q.question_id === questionId
+          );
+          if (question) displayName = question.question_label;
+        } else if (key.startsWith('condition_')) {
+          const conditionId = Number(key.split('_')[1]);
+          for (const q of this.additionalQuestions) {
+            for (const o of q.options) {
+              const condition = o.conditions?.find(
+                (c: any) => c.condition_id === conditionId
+              );
+              if (condition) {
+                displayName = `${condition.dependent_field_label} (for ${q.question_label})`;
+                break;
+              }
+            }
+            if (displayName !== key) break;
           }
+        }
+
+        if (control.errors?.['required']) {
+          errors.push(`${displayName} is required.`);
+        } else if (control.errors?.['email']) {
+          errors.push(`${displayName} must be a valid email address.`);
+        } else if (control.errors?.['underage']) {
+          errors.push(`You must be at least 18 years old for ${displayName}.`);
         }
       }
     });
     return errors;
   }
+  // Add this new method inside your Step1Component class
+  async saveAdditionalInformation(): Promise<void> {
+    const formData = new FormData();
+    const registrationNo = this.form.get('registration_no')?.value;
+    formData.append('registration_no', registrationNo);
 
-  async submitForm(): Promise<void> {
+    const additionalInfoPayload: any[] = [];
+
+    // STEP 1: Loop through questions and build the payload array
+    for (const question of this.additionalQuestions) {
+      const questionControlName = `question_${question.question_id}`;
+      const selectedOptionValue = this.form.get(questionControlName)?.value;
+
+      if (selectedOptionValue) {
+        const selectedOption = question.options.find(
+          (opt: any) => opt.option_value === selectedOptionValue
+        );
+
+        if (selectedOption) {
+          // Add the main answer (the radio button selection itself)
+          additionalInfoPayload.push({
+            question_id: question.question_id,
+            option_id: selectedOption.option_id,
+            condition_id: null,
+            input_field: null,
+          });
+
+          // If the selected option has a condition, add its answer
+          if (selectedOption.has_condition === 'Y') {
+            for (const condition of selectedOption.conditions) {
+              const conditionControlName = `condition_${condition.condition_id}`;
+              const conditionControl = this.form.get(conditionControlName);
+              const conditionValue = conditionControl?.value;
+
+              let inputFieldValue = null;
+
+              if (conditionValue instanceof File) {
+                // If it's a file, append it to FormData for upload
+                const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
+                formData.append(
+                  fileControlName,
+                  conditionValue,
+                  conditionValue.name
+                );
+              } else {
+                // If it's a regular value (date, text), assign it
+                inputFieldValue = conditionValue;
+              }
+
+              additionalInfoPayload.push({
+                question_id: question.question_id,
+                option_id: selectedOption.option_id,
+                condition_id: condition.condition_id,
+                input_field: inputFieldValue,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // STEP 2: Log the payload and check if it's empty *after* the loop
+    console.log(
+      '🔼 Frontend payload being sent:',
+      JSON.stringify(additionalInfoPayload, null, 2)
+    );
+
+    // If there's nothing to save, we can just resolve successfully.
+    if (additionalInfoPayload.length === 0) {
+      console.warn('No additional info data to save.');
+      return Promise.resolve();
+    }
+
+    // STEP 3: Append the final JSON string and make the API call
+    formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
+
     return new Promise((resolve, reject) => {
-      console.log('Starting submitForm()');
-      this.emitFormData();
-      if (this.form.invalid) {
-        console.warn('Form is invalid:', this.form.errors);
-        this.markFormGroupTouched(this.form);
-        const validationErrors = this.logValidationErrors(this.form);
-
-        if (validationErrors.length > 0) {
-          // Show only the first error instead of all errors
-          const firstErrorMessage = validationErrors[0];
-          this.alert.alert(true, firstErrorMessage, 5000);
-          reject(new Error('Form is invalid'));
-          return;
-        }
-      }
-
-      const mainPayload = this.form.getRawValue();
-      mainPayload.registration_no = '24000001';
-
-      const numericFields = [
-        'subject_id',
-        'post_code',
-        'session_id',
-        'a_rec_adv_main_id',
-        'Salutation_E',
-        'Salutation_H',
-        'Birth_District_Id',
-        'Birth_State_Id',
-        'Birth_Country_Id',
-        'Permanent_District_Id',
-        'Permanent_State_Id',
-        'Permanent_Country_Id',
-        'Current_District_Id',
-        'Current_State_Id',
-        'Current_Country_Id',
-        'candidate_category_id',
-      ];
-
-      numericFields.forEach((field) => {
-        if (mainPayload[field] === '') {
-          delete mainPayload[field];
-        } else {
-          mainPayload[field] = Number(mainPayload[field]);
-        }
-      });
-
-      const languagePayload = this.languagesArray.controls.map((ctrl) => ({
-        a_rec_app_language_detail_id:
-          ctrl.get('a_rec_app_language_detail_id')?.value || null,
-        registration_no: mainPayload.registration_no,
-        a_rec_adv_main_id: mainPayload.a_rec_adv_main_id,
-        m_rec_language_type_id: Number(
-          ctrl.get('m_rec_language_type_id')!.value
-        ),
-        m_rec_language_id: Number(ctrl.get('m_rec_language_id')!.value),
-        m_rec_language_skill_id: Number(
-          ctrl.get('m_rec_language_skill_id')!.value
-        ),
-      }));
-
-      const formData = new FormData();
-      formData.append('registration_no', mainPayload.registration_no);
-      formData.append('table_name', 'a_rec_app_main');
-      formData.append('database_name', 'igkv_Recruitment');
-      formData.append('mainPayload', JSON.stringify(mainPayload));
-      formData.append('languages', JSON.stringify(languagePayload));
-
-      const photoFile = this.form.get('photo')?.value;
-      const signatureFile = this.form.get('signature')?.value;
-
-      const allowedImageTypes = ['image/jpeg', 'image/png'];
-      if (
-        photoFile instanceof File &&
-        !allowedImageTypes.includes(photoFile.type)
-      ) {
-        console.warn('Invalid photo file type:', photoFile.type);
-        this.alert.alert(true, 'Photo must be a JPEG or PNG file.', 5000);
-        reject(new Error('Invalid photo file type'));
-        return;
-      }
-      if (
-        signatureFile instanceof File &&
-        !allowedImageTypes.includes(signatureFile.type)
-      ) {
-        console.warn('Invalid signature file type:', signatureFile.type);
-        this.alert.alert(true, 'Signature must be a JPEG or PNG file.', 5000);
-        reject(new Error('Invalid signature file type'));
-        return;
-      }
-
-      if (photoFile instanceof File) {
-        const photoFileName = `photo_${
-          mainPayload.registration_no
-        }_${Date.now()}${photoFile.name.endsWith('.png') ? '.png' : '.jpg'}`;
-        formData.append('photo', photoFile, photoFileName);
-        mainPayload.candidate_photo = `recruitment/${mainPayload.registration_no}/${photoFileName}`;
-      } else if (this.filePaths.get('photo')) {
-        mainPayload.candidate_photo = this.filePaths.get('photo');
-      }
-
-      if (signatureFile instanceof File) {
-        const signatureFileName = `signature_${
-          mainPayload.registration_no
-        }_${Date.now()}${
-          signatureFile.name.endsWith('.png') ? '.png' : '.jpg'
-        }`;
-        formData.append('signature', signatureFile, signatureFileName);
-        mainPayload.candidate_signature = `recruitment/${mainPayload.registration_no}/${signatureFileName}`;
-      } else if (this.filePaths.get('signature')) {
-        mainPayload.candidate_signature = this.filePaths.get('signature');
-      }
-
-      console.log('Sending HTTP request with formData:', formData);
-      this.HTTP.postForm(
-        '/candidate/postFile/updateCandidateDetail',
-        formData,
-        'recruitement'
-      ).subscribe({
+      this.step1Service.saveAdditionalInfo(formData).subscribe({
         next: (res) => {
-          console.log('HTTP response:', res);
           if (res?.body?.error) {
-            console.warn('Server returned error:', res.body.error);
             this.alert.alert(true, res.body.error, 5000);
-            this.emitFormData();
             reject(new Error(res.body.error));
-            return;
+          } else {
+            console.log('✅ Additional info saved successfully.');
+            resolve();
           }
-          if (res.body?.data?.photo_path) {
-            this.filePaths.set('photo', res.body.data.photo_path);
-            this.form.get('photo')?.setValue(res.body.data.photo_path);
-            this.form.get('photo')?.clearValidators();
-            this.form.get('photo')?.updateValueAndValidity();
-          }
-          if (res.body?.data?.signature_path) {
-            this.filePaths.set('signature', res.body.data.signature_path);
-            this.form.get('signature')?.setValue(res.body.data.signature_path);
-            this.form.get('signature')?.clearValidators();
-            this.form.get('signature')?.updateValueAndValidity();
-          }
-          console.log('Form submission successful, emitting formData');
-          this.alert.alert(
-            false,
-            'Form submitted and saved successfully.',
-            5000
-          );
-          this.emitFormData();
-          this.cdr.markForCheck();
-          resolve();
         },
         error: (err) => {
-          console.error('HTTP error:', err);
-          this.alert.alert(
-            true,
-            'Failed to save form. Please try again.',
-            5000
-          );
-          this.emitFormData();
-          this.cdr.markForCheck();
+          this.alert.alert(true, 'Failed to save additional info.', 5000);
           reject(err);
         },
       });
     });
   }
 
+  async submitForm(): Promise<void> {
+    this.emitFormData();
+    this.markFormGroupTouched(this.form);
+
+    if (this.form.invalid) {
+      const validationErrors = this.logValidationErrors(this.form);
+      const firstErrorMessage =
+        validationErrors[0] || 'Please fill all mandatory fields.';
+      this.alert.alert(true, firstErrorMessage, 5000);
+      return Promise.reject(new Error('Form is invalid'));
+    }
+
+    const formData = new FormData();
+    const formValue = this.form.getRawValue();
+
+    const mainPayloadForJson = { ...formValue };
+    delete mainPayloadForJson.photo;
+    delete mainPayloadForJson.signature;
+
+    // --- 1. Handle Photo and Signature ---
+    const photoControlValue = formValue.photo;
+    const signatureControlValue = formValue.signature;
+
+    if (photoControlValue instanceof File) {
+      formData.append('photo', photoControlValue, photoControlValue.name);
+    } else {
+      mainPayloadForJson.candidate_photo = photoControlValue;
+    }
+
+    if (signatureControlValue instanceof File) {
+      formData.append(
+        'signature',
+        signatureControlValue,
+        signatureControlValue.name
+      );
+    } else {
+      mainPayloadForJson.candidate_signature = signatureControlValue;
+    }
+
+    // --- 2. Append Main Payload and Languages ---
+    const languagePayload = this.languagesArray.controls.map((ctrl) => ({
+      ...ctrl.value,
+      registration_no: mainPayloadForJson.registration_no,
+      a_rec_adv_main_id: mainPayloadForJson.a_rec_adv_main_id,
+    }));
+
+    formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
+    formData.append('languages', JSON.stringify(languagePayload));
+
+    // --- 3. Prepare and Append Additional Information ---
+    const additionalInfoPayload: any[] = [];
+    for (const question of this.additionalQuestions) {
+      const questionControlName = `question_${question.question_id}`;
+      const selectedOptionValue = this.form.get(questionControlName)?.value;
+
+      if (selectedOptionValue) {
+        const selectedOption = question.options.find(
+          (opt: any) => opt.option_value === selectedOptionValue
+        );
+        if (selectedOption) {
+          // Find the original saved record for the main question's answer
+          const existingMainRecord = this.savedAdditionalInfo.find(
+            (info) =>
+              info.question_id === question.question_id &&
+              info.option_id === selectedOption.option_id &&
+              info.condition_id === null
+          );
+
+          additionalInfoPayload.push({
+            // ✅ FIX: Add the ID if it exists, otherwise send null
+            a_rec_app_main_addtional_info_id:
+              existingMainRecord?.a_rec_app_main_addtional_info_id || null,
+            question_id: question.question_id,
+            option_id: selectedOption.option_id,
+            condition_id: null,
+            input_field: null, // Backend will populate this
+          });
+
+          if (selectedOption.has_condition === 'Y') {
+            for (const condition of selectedOption.conditions) {
+              const conditionControlName = `condition_${condition.condition_id}`;
+              const conditionValue = this.form.get(conditionControlName)?.value;
+              let inputFieldValue = null;
+
+              // Find the original saved record for the condition's answer
+              const existingConditionRecord = this.savedAdditionalInfo.find(
+                (info) =>
+                  info.question_id === question.question_id &&
+                  info.option_id === selectedOption.option_id &&
+                  info.condition_id === condition.condition_id
+              );
+
+              // Handle file vs. regular input values
+              if (condition.condition_data_type === 'file') {
+                if (conditionValue instanceof File) {
+                  const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
+                  formData.append(
+                    fileControlName,
+                    conditionValue,
+                    conditionValue.name
+                  );
+                } else {
+                  inputFieldValue =
+                    this.additionalFilePaths.get(conditionControlName) || null;
+                }
+              } else {
+                inputFieldValue = conditionValue;
+              }
+
+              additionalInfoPayload.push({
+                // ✅ FIX: Add the ID here as well
+                a_rec_app_main_addtional_info_id:
+                  existingConditionRecord?.a_rec_app_main_addtional_info_id ||
+                  null,
+                question_id: question.question_id,
+                option_id: selectedOption.option_id,
+                condition_id: condition.condition_id,
+                input_field: inputFieldValue,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (additionalInfoPayload.length > 0) {
+      formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
+      formData.append(
+        'additionalInfoQuestions',
+        JSON.stringify(this.additionalQuestions)
+      );
+    }
+
+    // --- 4. Make the SINGLE API call ---
+    return new Promise((resolve, reject) => {
+      this.HTTP.postForm(
+        '/candidate/postFile/saveOrUpdateFullCandidateProfile',
+        formData,
+        'recruitement'
+      ).subscribe({
+        next: (res) => {
+          if (res?.body?.error) {
+            this.alert.alert(
+              true,
+              res.body.error.message || 'An error occurred.',
+              5000
+            );
+            reject(new Error(res.body.error.message));
+            return;
+          }
+
+          this.alert.alert(
+            false,
+            'All candidate details saved successfully!',
+            5000
+          );
+
+          if (res.body?.data?.photo_path) {
+            this.photoPreview = this.getFileUrl(res.body.data.photo_path);
+            this.form
+              .get('photo')
+              ?.setValue(res.body.data.photo_path, { emitEvent: false });
+          }
+          if (res.body?.data?.signature_path) {
+            this.signaturePreview = this.getFileUrl(
+              res.body.data.signature_path
+            );
+            this.form
+              .get('signature')
+              ?.setValue(res.body.data.signature_path, { emitEvent: false });
+          }
+
+          this.emitFormData();
+          this.cdr.markForCheck();
+          resolve();
+        },
+        error: (err) => {
+          const errorDetails = err.error?.details;
+          const errorMessage =
+            errorDetails?.message ||
+            err.error?.message ||
+            'Failed to save details. Please try again.';
+          this.alert.alert(true, errorMessage, 5000);
+          reject(err);
+        },
+      });
+    });
+  }
   formatDateToYYYYMMDD(dateInput: string | Date): string {
     const date = new Date(dateInput);
     const year = date.getFullYear();
@@ -1014,99 +1449,86 @@ export class Step1Component implements OnChanges, OnInit {
     });
   }
 
-  emitFormData(): void {
-    const formValue = this.form.getRawValue();
+emitFormData(): void {
+  const formValue = this.form.getRawValue();
 
-    const emitData = {
-      ...formValue,
-      _isValid: this.form.valid,
-      Salutation_E_Name:
-        this.salutations.find(
-          (s) => s.salutation_id === Number(formValue.Salutation_E)
-        )?.salutation_name_e || '',
-      Salutation_H_Name:
-        this.salutations.find(
-          (s) => s.salutation_id === Number(formValue.Salutation_H)
-        )?.salutation_name_h || '',
-      post_name:
-        this.postList.find((p) => p.post_code === Number(formValue.post_code))
-          ?.post_name || '',
-      advertisment_name:
-        this.advertisementList.find(
-          (a) => a.a_rec_adv_main_id === Number(formValue.a_rec_adv_main_id)
-        )?.advertisment_name || '',
-      Subject_Name_E:
-        this.subjectList.find(
-          (s) => s.subject_id === Number(formValue.subject_id)
-        )?.Subject_Name_E || '',
-      religion_name:
-        this.religionList.find(
-          (r) => r.religion_code === formValue.religion_code
-        )?.religion_name || '',
-      Permanent_Country_Name:
-        this.countryList.find(
-          (c) => c.country_id === Number(formValue.Permanent_Country_Id)
-        )?.country_name || '',
-      Permanent_State_Name:
-        this.stateList.find(
-          (s) => s.state_id === Number(formValue.Permanent_State_Id)
-        )?.name || '',
-      Permanent_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Permanent_District_Id)
-        )?.district_name || '',
-      Current_Country_Name:
-        this.countryList.find(
-          (c) => c.country_id === Number(formValue.Current_Country_Id)
-        )?.country_name || '',
-      Current_State_Name:
-        this.stateList.find(
-          (s) => s.state_id === Number(formValue.Current_State_Id)
-        )?.name || '',
-      Current_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Current_District_Id)
-        )?.district_name || '',
-      Birth_Country_Name:
-        this.countryList.find(
-          (c) => c.country_id === Number(formValue.Birth_Country_Id)
-        )?.country_name || '',
-      Birth_State_Name:
-        this.stateList.find(
-          (s) => s.state_id === Number(formValue.Birth_State_Id)
-        )?.name || '',
-      Birth_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Birth_District_Id)
-        )?.district_name || '',
-      languages: formValue.languages.map((lang: any) => ({
-        ...lang,
-        language_name:
-          this.languages.find((l) => l.id === Number(lang.m_rec_language_id))
-            ?.language_name || '',
-        language_type:
-          this.languageTypes.find(
-            (t) =>
-              t.m_rec_language_type_id === Number(lang.m_rec_language_type_id)
-          )?.language_type || '',
-        language_skill:
-          this.languageSkills.find(
-            (s) =>
-              s.m_rec_language_skill_id === Number(lang.m_rec_language_skill_id)
-          )?.language_skill || '',
-      })),
-      candidate_photo: this.filePaths.get('photo') || formValue.photo || null,
-      candidate_signature:
-        this.filePaths.get('signature') || formValue.signature || null,
-    };
+  const emitData: { [key: string]: any } = {
+    ...formValue,
+    _isValid: this.form.valid,
+    Salutation_E_Name: this.salutations.find(s => s.salutation_id === Number(formValue.Salutation_E))?.salutation_name_e || '',
+    Salutation_H_Name: this.salutations.find(s => s.salutation_id === Number(formValue.Salutation_H))?.salutation_name_h || '',
+    post_name: this.postList.find(p => p.post_code === Number(formValue.post_code))?.post_name || '',
+    advertisment_name: this.advertisementList.find(a => a.a_rec_adv_main_id === Number(formValue.a_rec_adv_main_id))?.advertisment_name || '',
+    Subject_Name_E: this.subjectList.find(s => s.subject_id === Number(formValue.subject_id))?.Subject_Name_E || '',
+    religion_name: this.religionList.find(r => r.religion_code === formValue.religion_code)?.religion_name || '',
+    Permanent_Country_Name: this.countryList.find(c => c.country_id === Number(formValue.Permanent_Country_Id))?.country_name || '',
+    Permanent_State_Name: this.stateList.find(s => s.state_id === Number(formValue.Permanent_State_Id))?.name || '',
+    Permanent_District_Name: this.districtList.find(d => d.district_id === Number(formValue.Permanent_District_Id))?.district_name || '',
+    Current_Country_Name: this.countryList.find(c => c.country_id === Number(formValue.Current_Country_Id))?.country_name || '',
+    Current_State_Name: this.stateList.find(s => s.state_id === Number(formValue.Current_State_Id))?.name || '',
+    Current_District_Name: this.districtList.find(d => d.district_id === Number(formValue.Current_District_Id))?.district_name || '',
+    Birth_Country_Name: this.countryList.find(c => c.country_id === Number(formValue.Birth_Country_Id))?.country_name || '',
+    Birth_State_Name: this.stateList.find(s => s.state_id === Number(formValue.Birth_State_Id))?.name || '',
+    Birth_District_Name: this.districtList.find(d => d.district_id === Number(formValue.Birth_District_Id))?.district_name || '',
+    languages: formValue.languages.map((lang: any) => ({
+      ...lang,
+      language_name: this.languages.find(l => l.id === Number(lang.m_rec_language_id))?.language_name || '',
+      language_type: this.languageTypes.find(t => t.m_rec_language_type_id === Number(lang.m_rec_language_type_id))?.language_type || '',
+      language_skill: this.languageSkills.find(s => s.m_rec_language_skill_id === Number(lang.m_rec_language_skill_id))?.language_skill || '',
+    })),
+    candidate_photo: this.filePaths.get('photo') || formValue.photo || null,
+    candidate_signature: this.filePaths.get('signature') || formValue.signature || null,
+  };
 
-    // console.log(
-    //   '📤 Step1 form emitting data:',
-    //   JSON.stringify(emitData, null, 2)
-    // );
+  const additionalInfoDetails: { question: string; answer: any }[] = [];
+  if (this.additionalQuestions && this.additionalQuestions.length > 0) {
+    
+    this.additionalQuestions.forEach(question => {
+      const questionControlName = `question_${question.question_id}`;
+      const selectedOptionValue = formValue[questionControlName];
 
-    this.formData.emit(emitData);
+      if (selectedOptionValue) {
+        const selectedOption = question.options.find(
+          (opt: any) => opt.option_value === selectedOptionValue
+        );
+
+        if (selectedOption) {
+          additionalInfoDetails.push({
+            question: question.question_label,
+            answer: selectedOption.option_label,
+          });
+
+          if (selectedOption.has_condition === 'Y') {
+            selectedOption.conditions.forEach((condition: any) => {
+              const conditionControlName = `condition_${condition.condition_id}`;
+              const conditionValue = formValue[conditionControlName];
+              const existingFilePath = this.additionalFilePaths.get(conditionControlName);
+
+              // ✅ FIX 1: Check for an existing file path in addition to a new file value.
+              if (conditionValue || existingFilePath) {
+                let answerValue = conditionValue; 
+                
+                // ✅ FIX 2: If the condition is a file, set the answer text to "File Uploaded".
+                if (condition.condition_data_type === 'file') {
+                   answerValue = 'File Uploaded';
+                }
+                
+                additionalInfoDetails.push({
+                  question: condition.dependent_field_label,
+                  answer: answerValue,
+                });
+              }
+            });
+          }
+        }
+      }
+    });
   }
+  
+  emitData['additionalInfoDetails'] = additionalInfoDetails;
+
+  this.formData.emit(emitData);
+}
 
   createLanguageGroup(): FormGroup {
     return this.fb.group({

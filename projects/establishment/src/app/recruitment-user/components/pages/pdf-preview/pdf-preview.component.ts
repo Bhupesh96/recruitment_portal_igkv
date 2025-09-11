@@ -22,7 +22,7 @@ export class PdfPreviewComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.formData = this.sharedDataService.getFormData();
+    // this.formData = this.sharedDataService.getFormData();
 
     if (Object.keys(this.formData).length > 0) {
     } else {

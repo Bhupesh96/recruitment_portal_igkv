@@ -385,7 +385,7 @@ export class Step2Component implements OnInit {
   }
 
   private loadFormData(): Observable<void> {
-    const a_rec_adv_main_id = 96;
+    const a_rec_adv_main_id = 115;
     const m_rec_score_field_id = 1;
     const m_rec_score_field = 'N'; //Heading
 
@@ -458,7 +458,7 @@ export class Step2Component implements OnInit {
     }
 
     const registration_no = 24000001;
-    const a_rec_app_main_id = 96;
+    const a_rec_app_main_id = 115;
 
     // Request to get the child records (10th, 12th, etc.)
     const childrenRequest = this.HTTP.getParam(
@@ -487,13 +487,11 @@ export class Step2Component implements OnInit {
       next: ({ children, parent }) => {
         const savedChildren = children.body?.data || [];
         const savedParent = parent.body?.data || [];
-       
 
         // ✅ STORE THE PARENT ID
         if (savedParent.length > 0) {
           this.existingParentDetailId =
             savedParent[0].a_rec_app_score_field_detail_id;
-        
         }
 
         this.filePaths.clear();
@@ -640,7 +638,7 @@ export class Step2Component implements OnInit {
 
     // --- Configuration ---
     const registrationNo = 24000001;
-    const a_rec_adv_main_id = 96;
+    const a_rec_adv_main_id = 115;
     const formData = new FormData();
 
     // --- Payload Preparation ---
@@ -702,6 +700,7 @@ export class Step2Component implements OnInit {
         action_ip_address: '127.0.0.1',
         action_remark: 'data inserted/updated',
         action_by: 1,
+        score_field_row_index: 1, 
         delete_flag: 'N',
       };
       allDetails.push(detail);
@@ -745,6 +744,7 @@ export class Step2Component implements OnInit {
             a_rec_app_score_field_parameter_detail_id:
               existingParamId || undefined,
             registration_no: registrationNo,
+            a_rec_app_score_field_detail_id: existingDetailId || undefined,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
             m_rec_score_field_parameter_new_id:
@@ -773,7 +773,7 @@ export class Step2Component implements OnInit {
       }),
       registration_no: registrationNo,
       a_rec_app_main_id: a_rec_adv_main_id,
-      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 246,
+      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading?.m_rec_score_field_id,
       m_rec_score_field_method_id: 1,
