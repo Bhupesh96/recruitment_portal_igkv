@@ -1,1 +1,295 @@
-<p>pdf-download works!</p>
+<div
+  class="a4-container"
+  *ngIf="formData && getFormDataKeys(formData).length > 0"
+>
+  <div class="section"></div>
+
+  <div class="section">
+    <div style="border-top: 2px solid black; margin: 8px 0"></div>
+    <div
+      style="
+        text-align: center;
+        font-size: 10pt;
+        font-weight: 900;
+        text-transform: uppercase;
+      "
+    >
+      APPLICATION FORM FOR {{ formData[1]?.advertisment_name || "—" }}
+    </div>
+  </div>
+
+  <div class="section" *ngIf="formData[1]">
+    <div
+      style="
+        border: 1px solid black;
+        padding: 8px;
+        margin: 8px 0;
+        display: flex;
+      "
+    >
+      <div style="flex: 1">
+        <div class="grid-2-col">
+          <div>
+            <strong>Registration No.:</strong>
+            {{ formData[1].registration_no || "—" }}
+          </div>
+          <div>
+            <strong>Registration Date:</strong>
+            {{ formData[1].registration_date || "—" }}
+          </div>
+          <div>
+            <strong>Applied Post:</strong> {{ formData[1].post_name || "—" }}
+          </div>
+          <div>
+            <strong>Applied Subject:</strong>
+            {{ formData[1].Subject_Name_E || "—" }}
+          </div>
+          <div>
+            <strong>Payment Ref No.:</strong>
+            {{ formData[1].payment_ref || "—" }}
+          </div>
+          <div>
+            <strong>Payment Date:</strong> {{ formData[1].payment_date || "—" }}
+          </div>
+          <div>
+            <strong>Amount:</strong> {{ formData[1].payment_amount || "—" }}
+          </div>
+          <div>
+            <strong>Bank Ref No.:</strong> {{ formData[1].bank_ref || "—" }}
+          </div>
+        </div>
+      </div>
+      <div style="margin-left: 8px">
+        <div style="border: 1px solid black; width: 100px; height: 100px">
+          <img
+            [src]="getFileUrl(formData[1].candidate_photo)"
+            alt="Photo"
+            class="image-fit"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="formData[1]">
+    <div class="section-header">Applicant Basic Detail</div>
+    <div class="grid-2-col section-content">
+      <div>
+        <strong>Full Name (Eng):</strong> {{ formData[1].Salutation_E_Name }}
+        {{ formData[1].Applicant_First_Name_E }}
+        {{ formData[1].Applicant_Middle_Name_E }}
+        {{ formData[1].Applicant_Last_Name_E }}
+      </div>
+      <div>
+        <strong>Full Name (Hin):</strong> {{ formData[1].Salutation_H_Name }}
+        {{ formData[1].Applicant_First_Name_H }}
+        {{ formData[1].Applicant_Middle_Name_H }}
+        {{ formData[1].Applicant_Last_Name_H }}
+      </div>
+
+      <ng-container *ngFor="let key of getFormDataKeys(formData[1])">
+        <div *ngIf="!personalInfoExcludeKeys.has(key) && formData[1][key]">
+          <strong>{{ formatKey(key) }}:</strong>
+          {{ formatValue(formData[1][key]) }}
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="formData[1]">
+    <div class="section-header">Permanent Address</div>
+    <div class="grid-2-col section-content">
+      <div>
+        <strong>Address:</strong> {{ formData[1].Permanent_Address1 || "—" }}
+      </div>
+      <div><strong>City:</strong> {{ formData[1].Permanent_City || "—" }}</div>
+      <div>
+        <strong>District:</strong>
+        {{ formData[1].Permanent_District_Name || "—" }}
+      </div>
+      <div>
+        <strong>State:</strong> {{ formData[1].Permanent_State_Name || "—" }}
+      </div>
+      <div>
+        <strong>Country:</strong>
+        {{ formData[1].Permanent_Country_Name || "—" }}
+      </div>
+      <div>
+        <strong>Pincode:</strong> {{ formData[1].Permanent_Pin_Code || "—" }}
+      </div>
+    </div>
+  </div>
+  <div class="section" *ngIf="formData[1]">
+    <div class="section-header">Present Address</div>
+    <div class="grid-2-col section-content">
+      <div>
+        <strong>Address:</strong> {{ formData[1].Current_Address1 || "—" }}
+      </div>
+      <div><strong>City:</strong> {{ formData[1].Current_City || "—" }}</div>
+      <div>
+        <strong>District:</strong>
+        {{ formData[1].Current_District_Name || "—" }}
+      </div>
+      <div>
+        <strong>State:</strong> {{ formData[1].Current_State_Name || "—" }}
+      </div>
+      <div>
+        <strong>Country:</strong> {{ formData[1].Current_Country_Name || "—" }}
+      </div>
+      <div>
+        <strong>Pincode:</strong> {{ formData[1].Current_Pin_Code || "—" }}
+      </div>
+    </div>
+  </div>
+  <div class="section" *ngIf="formData[1]">
+    <div class="section-header">Birth Place</div>
+    <div class="grid-2-col section-content">
+      <div><strong>Place:</strong> {{ formData[1].Birth_Place || "—" }}</div>
+      <div>
+        <strong>District:</strong> {{ formData[1].Birth_District_Name || "—" }}
+      </div>
+      <div>
+        <strong>State:</strong> {{ formData[1].Birth_State_Name || "—" }}
+      </div>
+      <div>
+        <strong>Country:</strong> {{ formData[1].Birth_Country_Name || "—" }}
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="formData[1]?.languages?.length > 0">
+    <div class="table-container">
+      <div class="section-header">Language Detail</div>
+      <div class="table-header" style="grid-template-columns: 1fr 2fr 2fr 3fr">
+        <div>S.No.</div>
+        <div>Language Type</div>
+        <div>Language</div>
+        <div>Language Skill</div>
+      </div>
+      <div
+        *ngFor="let lang of formData[1].languages; let i = index"
+        class="table-row"
+        style="grid-template-columns: 1fr 2fr 2fr 3fr"
+      >
+        <div>{{ i + 1 }}</div>
+        <div>{{ lang.language_type || "—" }}</div>
+        <div>{{ lang.language_name || "—" }}</div>
+        <div>{{ lang.language_skill || "—" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngFor="let i of [2, 5]">
+    <div class="section" *ngIf="formData[i]">
+      <div class="table-container">
+        <div class="section-header">
+          {{ formData[i].heading?.score_field_title_name || "Details" }}
+        </div>
+
+        <ng-container *ngFor="let key of getFormDataKeys(formData[i])">
+          <div
+            *ngIf="
+              (key.startsWith('qualifications') || isExperienceKey(key)) &&
+              formData[i][key]?.length > 0
+            "
+          >
+            <div class="sub-header">
+              {{ (formData[i].subheadings?.[key.replace('qualifications', '')] || formData[i].subheadings?.[key])?.score_field_title_name || 'Details' }}
+            </div>
+
+            <ng-container *ngIf="formData[i][key][0] as firstItem">
+              <div
+                class="table-header"
+                [style.grid-template-columns]="
+                  'repeat(' + getDisplayableKeys(firstItem).length + ', 1fr)'
+                "
+              >
+                <div *ngFor="let headerKey of getDisplayableKeys(firstItem)">
+                  {{ formatKey(headerKey) }}
+                </div>
+              </div>
+              <div
+                *ngFor="let item of formData[i][key]"
+                class="table-row"
+                [style.grid-template-columns]="
+                  'repeat(' + getDisplayableKeys(item).length + ', 1fr)'
+                "
+              >
+                <div *ngFor="let dataKey of getDisplayableKeys(item)">
+                  {{ formatValue(item[dataKey]) }}
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngFor="let i of [3, 4, 6]">
+    <div
+      class="section"
+      *ngIf="formData[i] && formData[i]['details']?.length > 0"
+    >
+      <div class="table-container">
+        <div class="section-header">
+          {{ formData[i].heading?.score_field_title_name || "Details" }}
+        </div>
+
+        <div
+          *ngFor="let subheadKey of getFormDataKeys(formData[i]['subheadings'])"
+        >
+          <ng-container
+            *ngIf="formData[i]['details'].some(d => detailBelongsToSubheading(d, formData[i]['subheadings'][subheadKey]['items']))"
+          >
+            <div class="sub-header">
+              {{
+                formData[i]["subheadings"][subheadKey]["score_field_name_e"] ||
+                  "Sub-Section"
+              }}
+            </div>
+
+            <ng-container *ngIf="formData[i]['details'][0] as firstItem">
+              <div
+                class="table-header"
+                [style.grid-template-columns]="
+                  'repeat(' + getDisplayableKeys(firstItem).length + ', 1fr)'
+                "
+              >
+                <div *ngFor="let headerKey of getDisplayableKeys(firstItem)">
+                  {{ formatKey(headerKey) }}
+                </div>
+              </div>
+
+              <ng-container *ngFor="let detail of formData[i]['details']">
+                <tr
+                  *ngIf="
+                    detailBelongsToSubheading(
+                      detail,
+                      formData[i]['subheadings'][subheadKey]['items']
+                    )
+                  "
+                  class="table-row"
+                  [style.grid-template-columns]="
+                    'repeat(' + getDisplayableKeys(detail).length + ', 1fr)'
+                  "
+                >
+                  <td *ngFor="let dataKey of getDisplayableKeys(detail)">
+                    <ng-container *ngIf="dataKey === 'type'; else standardCell">
+                      {{ getDetailItemName(i, detail[dataKey]) }}
+                    </ng-container>
+                    <ng-template #standardCell>
+                      {{ formatValue(detail[dataKey]) }}
+                    </ng-template>
+                  </td>
+                </tr>
+              </ng-container>
+            </ng-container>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="section"></div>
+</div>

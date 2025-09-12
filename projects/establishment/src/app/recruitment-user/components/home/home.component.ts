@@ -176,22 +176,22 @@ export class HomeComponent implements OnInit {
     this.isMobileView = window.innerWidth < 1024; // lg breakpoint
   }
 
-  fetchAdvertisements(sessionId: number) {
-    const params = new HttpParams().set('sessionId', sessionId.toString());
-    this.http
-      .get<{ Response: { List: Advertisement[] } }>(
-        `${this.apiBaseUrl}/getLatestAdvertisement`,
-        { params }
-      )
-      .subscribe({
-        next: (response) => {
-          this.ads = response.Response.List;
-        },
-        error: (error) => {
-          console.error('Error fetching advertisements:', error);
-        },
-      });
-  }
+  // fetchAdvertisements(sessionId: number) {
+  //   const params = new HttpParams().set('sessionId', sessionId.toString());
+  //   this.http
+  //     .get<{ Response: { List: Advertisement[] } }>(
+  //       `${this.apiBaseUrl}/getLatestAdvertisement`,
+  //       { params }
+  //     )
+  //     .subscribe({
+  //       next: (response) => {
+  //         this.ads = response.Response.List;
+  //       },
+  //       error: (error) => {
+  //         console.error('Error fetching advertisements:', error);
+  //       },
+  //     });
+  // }
 
   fetchPostsByAdvertisement(adId: string) {
   // Parameters are now a plain object, which is cleaner.
