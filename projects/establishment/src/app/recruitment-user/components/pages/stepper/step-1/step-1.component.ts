@@ -61,7 +61,11 @@ export class Step1Component implements OnChanges, OnInit {
   languageTypes: any[] = [];
   languages: any[] = [];
   languageSkills: any[] = [];
-  postList: { post_code: number; post_name: string }[] = [];
+  postList: {
+    post_code: number;
+    post_name: string;
+    post_status_name: string;
+  }[] = [];
   advertisementList: {
     a_rec_adv_main_id: number;
     advertisment_name: string;
@@ -73,7 +77,8 @@ export class Step1Component implements OnChanges, OnInit {
   additionalFilePaths: Map<string, string> = new Map();
   advertisementDetails: any = null;
   private savedAdditionalInfo: any[] = [];
-
+  categoryQuestion: any = null; // To hold the 'Applied Category' question object
+  filteredCategoryOptions: any[] = []; // To hold the dynamically filtered options
   private fieldNameMap: { [key: string]: string } = {
     registration_no: 'Registration Number',
     a_rec_adv_main_id: 'Advertisement',
@@ -136,13 +141,16 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Last_Name_E: ['', Validators.required],
       Applicant_First_Name_H: ['', Validators.required],
       Applicant_Middle_Name_H: [''],
-      Applicant_Last_Name_H: ['', Validators.required],
+      Applicant_Last_Name_H: [''],
       Applicant_Father_Name_E: ['', Validators.required],
       Applicant_Mother_Name_E: ['', Validators.required],
       Gender_Id: ['', Validators.required],
       DOB: ['', Validators.required],
       age: [{ value: '', disabled: true }],
-      Mobile_No: ['', Validators.required],
+      Mobile_No: [
+        '',
+        [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)],
+      ],
       Email_Id: ['', [Validators.required, Validators.email]],
       Birth_Place: ['', Validators.required],
       Birth_District_Id: ['', Validators.required],
@@ -156,13 +164,19 @@ export class Step1Component implements OnChanges, OnInit {
       Permanent_District_Id: ['', Validators.required],
       Permanent_State_Id: ['', Validators.required],
       Permanent_Country_Id: ['', Validators.required],
-      Permanent_Pin_Code: ['', Validators.required],
+      Permanent_Pin_Code: [
+        '',
+        [Validators.required, Validators.pattern(/^\d{6}$/)],
+      ],
       Current_Address1: ['', Validators.required],
       Current_City: ['', Validators.required],
       Current_District_Id: ['', Validators.required],
       Current_State_Id: ['', Validators.required],
       Current_Country_Id: ['', Validators.required],
-      Current_Pin_Code: ['', Validators.required],
+      Current_Pin_Code: [
+        '',
+        [Validators.required, Validators.pattern(/^\d{6}$/)],
+      ],
       presentSame: [false],
       languages: this.fb.array([this.createLanguageGroup()]),
       photo: [null],
@@ -175,12 +189,11 @@ export class Step1Component implements OnChanges, OnInit {
     this.initializeFormListeners();
     this.initializeFormWithData();
   }
+
   private initializeFormWithData(): void {
-    this.loader.show(); // ⬅️ Show loader at the beginning
+    this.loader.show();
 
-    const registrationNo = 24000001; // Hardcoded registration number
-
-    // Create an array of all observables we need to complete
+    // 1. Define all API calls to be run in parallel
     const dataSources$ = [
       this.HTTP.getParam('/master/get/getSalutation/', {}, 'recruitement'),
       this.getReligions(),
@@ -190,10 +203,11 @@ export class Step1Component implements OnChanges, OnInit {
       this.getLanguages(),
       this.getLanguageSkills(),
       this.getAdditionalInfoQuestions(),
-      this.getUserData(), // Main user data
-      this.getSavedLanguages(), // Saved user languages
+      this.getUserData(),
+      this.getSavedLanguages(),
     ];
 
+    // 2. Execute all API calls
     forkJoin(dataSources$).subscribe({
       next: ([
         salutationsRes,
@@ -207,7 +221,7 @@ export class Step1Component implements OnChanges, OnInit {
         userDataRes,
         savedLanguagesRes,
       ]) => {
-        // --- 1. Populate Master Data Lists ---
+        // 3. Assign all master data lists from the API responses
         this.salutations = salutationsRes?.body?.data || [];
         this.religionList = religionsRes?.body?.data || [];
         this.countryList = countriesRes?.body?.data || [];
@@ -215,21 +229,40 @@ export class Step1Component implements OnChanges, OnInit {
         this.languageTypes = langTypesRes?.body?.data || [];
         this.languages = languagesRes?.body?.data || [];
         this.languageSkills = langSkillsRes?.body?.data || [];
-        this.additionalQuestions =
-          additionalQuestionsRes?.body?.data?.questions || [];
 
-        // Build additional form controls now that we have the questions
+        // 4. Clean the flawed JSON from the 'additionalQuestions' response
+        let questions = additionalQuestionsRes?.body?.data?.questions || [];
+        questions.forEach((question: any) => {
+          question.options.forEach((option: any) => {
+            if (option.conditions && option.conditions.length > 0) {
+              // Filter conditions to only include those that match the parent option
+              option.conditions = option.conditions.filter(
+                (condition: any) => condition.option_id === option.option_id
+              );
+            }
+          });
+        });
+        this.additionalQuestions = questions;
+        this.categoryQuestion = this.additionalQuestions.find(
+          (q) => q.question_id === 2
+        );
+
+        // 5. Build the dynamic form controls based on the cleaned questions
         if (this.additionalQuestions.length > 0) {
           this.buildAdditionalInfoFormControls(this.additionalQuestions);
           this.setupConditionalValidators(this.additionalQuestions);
         }
 
-        // --- 2. Process and Patch User Data ---
+        // 6. Process the main user data
         const userData = userDataRes?.body?.data?.[0];
         if (userData) {
-          // Set dropdowns that depend on the user's initial data
+          // Populate lists that depend on user data
           this.postList = [
-            { post_code: userData.post_code, post_name: userData.post_name },
+            {
+              post_code: userData.post_code,
+              post_name: userData.post_name,
+              post_status_name: userData.post_status_name,
+            },
           ];
           this.advertisementList = [
             {
@@ -238,31 +271,34 @@ export class Step1Component implements OnChanges, OnInit {
             },
           ];
 
-          // Now it's safe to patch the main form
+          // Patch the main form and languages array
           this.patchUserData(userData);
+          const savedLanguages = savedLanguagesRes?.body?.data || [];
+          if (savedLanguages.length > 0) {
+            this.patchUserLanguages(savedLanguages);
+          }
 
-          // Load advertisement details and saved additional info
-          this.loadAdvertisementDetails();
-          this.loadAndPatchAdditionalInfo(userData.registration_no);
+          // 7. CRITICAL STEP: Chain the final setup steps
+          // This ensures saved values are loaded BEFORE the custom listeners are attached.
+          this.loadAndPatchAdditionalInfo(userData.registration_no).subscribe(
+            () => {
+              this.setupCustomLogicListeners(); // Now set up the Bonafide -> Category logic
+              this.loadAdvertisementDetails();
+              this.loader.hide(); // Hide loader only after everything is complete
+            }
+          );
+        } else {
+          // If there's no user data, we can hide the loader now
+          this.loader.hide();
         }
-
-        // --- 3. Patch User-Specific Array Data (Languages) ---
-        const savedLanguages = savedLanguagesRes?.body?.data || [];
-        if (savedLanguages.length > 0) {
-          this.patchUserLanguages(savedLanguages); // Pass data directly
-        }
-
-        this.cdr.markForCheck(); // Notify Angular to check the view
-        this.loader.hide(); // ⬅️ Hide loader on success
       },
       error: (err: any) => {
         console.error('Error during initial data load:', err);
         this.alert.alert(
           true,
-          'Failed to load essential application data. Please refresh the page.',
-          5000
+          'Failed to load essential application data. Please refresh the page.'
         );
-        this.loader.hide(); // ⬅️ ALWAYS hide loader on error
+        this.loader.hide(); // ALWAYS hide loader on error
       },
     });
   }
@@ -270,8 +306,46 @@ export class Step1Component implements OnChanges, OnInit {
   /**
    * Sets up all reactive form `valueChanges` subscriptions to handle dynamic UI and data fetching.
    */
+  private setupCustomLogicListeners(): void {
+    const residentControl = this.form.get('question_3');
+    const categoryControl = this.form.get('question_2');
+
+    // Exit if controls aren't available (defensive check)
+    if (!residentControl || !categoryControl || !this.categoryQuestion) {
+      console.error('Required controls for custom logic were not found.');
+      return;
+    }
+
+    // This is the core logic that filters the options
+    const updateCategoryOptions = (isResident: string | null) => {
+      console.log(`Resident status changed to: ${isResident}`); // For debugging
+
+      if (isResident === 'N') {
+        // NOT a resident
+        this.filteredCategoryOptions = this.categoryQuestion.options.filter(
+          (opt: any) => opt.option_value === 'UR'
+        );
+        // If the current selection is not 'UR', change it to 'UR'
+        if (categoryControl.value !== 'UR') {
+          categoryControl.setValue('UR');
+        }
+      } else {
+        // IS a resident (or value is null/undefined initially)
+        // Show all available options
+        this.filteredCategoryOptions = this.categoryQuestion.options;
+      }
+      // Tell Angular to update the view
+      this.cdr.markForCheck();
+    };
+
+    // 1. Subscribe to any future changes the user makes
+    residentControl.valueChanges.subscribe(updateCategoryOptions);
+
+    // 2. Call the logic immediately to set the correct initial state
+    updateCategoryOptions(residentControl.value);
+  }
   private initializeFormListeners(): void {
-    // this.setupLiveHindiTranslation();
+    this.setupLiveHindiTranslation();
 
     this.form.get('DOB')?.valueChanges.subscribe((dobValue) => {
       if (dobValue) this.calculateAge(dobValue);
@@ -529,13 +603,13 @@ export class Step1Component implements OnChanges, OnInit {
     this.getPostByAdvertisement(advertisementId).subscribe({
       next: (response: any) => {
         if (response?.body?.error) {
-          this.alert.alert(true, response.body.error, 5000);
+          this.alert.alert(true, response.body.error);
           return;
         }
         this.postList = response?.body?.data;
       },
       error: (err) => {
-        this.alert.alert(true, 'Failed to load posts. Please try again.', 5000);
+        this.alert.alert(true, 'Failed to load posts. Please try again.');
       },
     });
   }
@@ -544,7 +618,7 @@ export class Step1Component implements OnChanges, OnInit {
     this.getSubjectsByPostCode(postCode).subscribe({
       next: (response: any) => {
         if (response?.body?.error) {
-          this.alert.alert(true, response.body.error, 5000);
+          this.alert.alert(true, response.body.error);
           return;
         }
         this.subjectList = response?.body?.data;
@@ -552,8 +626,7 @@ export class Step1Component implements OnChanges, OnInit {
       error: (err) => {
         this.alert.alert(
           true,
-          'Failed to load subjects for this post. Please try again.',
-          5000
+          'Failed to load subjects for this post. Please try again.'
         );
         this.subjectList = [];
         this.form.get('subject_id')?.setValue('');
@@ -577,11 +650,7 @@ export class Step1Component implements OnChanges, OnInit {
           }
         },
         error: (err) => {
-          this.alert.alert(
-            true,
-            'Error loading districts. Please try again.',
-            5000
-          );
+          this.alert.alert(true, 'Error loading districts. Please try again.');
           this.districtList = [];
           this.form.get('Permanent_District_Id')?.setValue('');
         },
@@ -634,7 +703,6 @@ export class Step1Component implements OnChanges, OnInit {
   get maxMarriageDate(): string {
     return new Date().toISOString().split('T')[0];
   }
-
   onConditionalFileSelected(
     event: Event,
     controlName: string,
@@ -642,8 +710,11 @@ export class Step1Component implements OnChanges, OnInit {
   ): void {
     const input = event.target as HTMLInputElement;
     const control = this.form.get(controlName);
+
     if (input.files?.length && control) {
       const file = input.files[0];
+
+      // Validate file size if a max size is specified in the API response
       if (maxSizeKB) {
         const maxSizeInBytes = maxSizeKB * 1024;
         if (file.size > maxSizeInBytes) {
@@ -654,14 +725,18 @@ export class Step1Component implements OnChanges, OnInit {
             )}KB.`,
             5000
           );
+          // Clear the invalid file from the input and form control
           input.value = '';
           control.setValue(null);
           control.markAsTouched();
           return;
         }
       }
+
+      // If validation passes, update the form control with the file object
       control.setValue(file);
     } else if (control) {
+      // If no file is selected, clear the control
       control.setValue(null);
     }
   }
@@ -745,14 +820,16 @@ export class Step1Component implements OnChanges, OnInit {
         }
       },
       error: (err) => {
-        this.alert.alert(true, 'Failed to load advertisement config.', 5000);
+        this.alert.alert(true, 'Failed to load advertisement config.');
       },
     });
   }
 
-  private loadAndPatchAdditionalInfo(registrationNo: number): void {
-    this.getSavedAdditionalInfo(registrationNo).subscribe({
-      next: (res) => {
+  private loadAndPatchAdditionalInfo(registrationNo: number): Observable<void> {
+    // Return the Observable stream instead of subscribing inside the function
+    return this.getSavedAdditionalInfo(registrationNo).pipe(
+      // Use the 'map' operator to handle the successful response
+      map((res) => {
         const savedInfo: any[] = res?.body?.data || [];
         this.savedAdditionalInfo = savedInfo;
 
@@ -765,14 +842,13 @@ export class Step1Component implements OnChanges, OnInit {
           }
         });
 
-        // ✅ FIX 2: Loop through ALL questions from the master list
+        // Loop through ALL questions from the master list
         this.additionalQuestions.forEach((question) => {
           const controlName = `question_${question.question_id}`;
           const control = this.form.get(controlName);
           if (control) {
             const savedAnswer = savedAnswersMap.get(question.question_id);
             // Set the value if found, otherwise set it to null.
-            // This ensures the control is touched and properly validated.
             control.setValue(savedAnswer ? savedAnswer.input_field : null);
           }
         });
@@ -797,11 +873,14 @@ export class Step1Component implements OnChanges, OnInit {
         });
 
         this.cdr.markForCheck();
-      },
-      error: (err: any) => {
-        this.alert.alert(true, 'Failed to load saved additional info.', 3000);
-      },
-    });
+      }),
+      // Use 'catchError' to handle any failures in the stream
+      catchError((err) => {
+        this.alert.alert(true, 'Failed to load saved additional info.');
+        // Return an empty observable to allow the chain to complete gracefully
+        return of(undefined);
+      })
+    );
   }
   private conditionalFileValidator(controlName: string): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -826,7 +905,7 @@ export class Step1Component implements OnChanges, OnInit {
         }
       },
       error: (err) => {
-        this.alert.alert(true, 'Failed to load additional questions.', 5000);
+        this.alert.alert(true, 'Failed to load additional questions.');
       },
     });
   }
@@ -879,43 +958,50 @@ export class Step1Component implements OnChanges, OnInit {
     questions.forEach((question) => {
       const questionControl = this.form.get(`question_${question.question_id}`);
       if (!questionControl) return;
-      questionControl.valueChanges.subscribe((selectedValue) => {
-        question.options.forEach((option: any) => {
-          const isSelected = option.option_value === selectedValue;
-          if (option.has_condition === 'Y') {
-            option.conditions.forEach((condition: any) => {
-              const controlName = `condition_${condition.condition_id}`;
-              const conditionControl = this.form.get(controlName);
-              if (conditionControl) {
-                if (isSelected && condition.condition_required === 'Y') {
-                  const validators: ValidatorFn[] = [];
-                  if (condition.condition_data_type === 'file') {
-                    validators.push(this.conditionalFileValidator(controlName));
+
+      // ✅ FIX: Add .pipe(distinctUntilChanged()) to prevent unnecessary resets
+      questionControl.valueChanges
+        .pipe(distinctUntilChanged())
+        .subscribe((selectedValue) => {
+          question.options.forEach((option: any) => {
+            const isSelected = option.option_value === selectedValue;
+            if (option.has_condition === 'Y') {
+              option.conditions.forEach((condition: any) => {
+                const controlName = `condition_${condition.condition_id}`;
+                const conditionControl = this.form.get(controlName);
+                if (conditionControl) {
+                  if (isSelected && condition.condition_required === 'Y') {
+                    const validators: ValidatorFn[] = [];
+                    if (condition.condition_data_type === 'file') {
+                      validators.push(
+                        this.conditionalFileValidator(controlName)
+                      );
+                    } else {
+                      validators.push(Validators.required);
+                    }
+                    if (
+                      condition.condition_id === 1 &&
+                      this.advertisementDetails?.marriage_calculation_date
+                    ) {
+                      validators.push(
+                        this.maxMarriageDateValidator(
+                          this.advertisementDetails.marriage_calculation_date
+                        )
+                      );
+                    }
+                    conditionControl.setValidators(validators);
                   } else {
-                    validators.push(Validators.required);
+                    // This logic is correct, but will now run less often
+                    conditionControl.clearValidators();
+                    conditionControl.reset('', { emitEvent: false });
                   }
-                  if (
-                    condition.condition_id === 1 &&
-                    this.advertisementDetails?.marriage_calculation_date
-                  ) {
-                    validators.push(
-                      this.maxMarriageDateValidator(
-                        this.advertisementDetails.marriage_calculation_date
-                      )
-                    );
-                  }
-                  conditionControl.setValidators(validators);
-                } else {
-                  conditionControl.clearValidators();
-                  conditionControl.reset('', { emitEvent: false });
+                  conditionControl.updateValueAndValidity({ emitEvent: false });
                 }
-                conditionControl.updateValueAndValidity({ emitEvent: false });
-              }
-            });
-          }
+              });
+            }
+          });
+          this.cdr.markForCheck();
         });
-        this.cdr.markForCheck();
-      });
     });
   }
 
@@ -937,7 +1023,26 @@ export class Step1Component implements OnChanges, OnInit {
       (opt: any) => opt.option_value === control.value
     );
   }
+  private validateFile(
+    file: File,
+    allowedTypes: string[],
+    errorMessage: string
+  ): boolean {
+    const isAllowed = allowedTypes.some((type) => {
+      // Handle wildcards like 'image/*'
+      if (type.endsWith('/*')) {
+        return file.type.startsWith(type.slice(0, -1));
+      }
+      // Handle specific types like 'application/pdf'
+      return file.type === type;
+    });
 
+    if (!isAllowed) {
+      this.alert.alert(true, errorMessage);
+      return false;
+    }
+    return true;
+  }
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
@@ -1041,6 +1146,8 @@ export class Step1Component implements OnChanges, OnInit {
           errors.push(`${displayName} is required.`);
         } else if (control.errors?.['email']) {
           errors.push(`${displayName} must be a valid email address.`);
+        } else if (control.errors?.['pattern'] && key === 'Mobile_No') {
+          errors.push(`${displayName} must be a valid 10-digit Indian number.`);
         } else if (control.errors?.['underage']) {
           errors.push(`You must be at least 18 years old for ${displayName}.`);
         }
@@ -1108,7 +1215,7 @@ export class Step1Component implements OnChanges, OnInit {
       this.saveAdditionalInfo(formData).subscribe({
         next: (res) => {
           if (res?.body?.error) {
-            this.alert.alert(true, res.body.error, 5000);
+            this.alert.alert(true, res.body.error);
             reject(new Error(res.body.error));
           } else {
             console.log('✅ Additional info saved successfully.');
@@ -1116,7 +1223,7 @@ export class Step1Component implements OnChanges, OnInit {
           }
         },
         error: (err) => {
-          this.alert.alert(true, 'Failed to save additional info.', 5000);
+          this.alert.alert(true, 'Failed to save additional info.');
           reject(err);
         },
       });
@@ -1124,7 +1231,36 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   // --- Utility & Helper Methods ---
+  onCharacterInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const initialValue = input.value;
 
+    // This regex removes anything that is NOT a letter or a space
+    const sanitizedValue = initialValue.replace(/[^a-zA-Z\s]/g, '');
+
+    if (initialValue !== sanitizedValue) {
+      // Get the form control name from the input element's id or name attribute
+      const formControlName = input.getAttribute('formControlName');
+      if (formControlName) {
+        this.form
+          .get(formControlName)
+          ?.setValue(sanitizedValue, { emitEvent: false });
+      }
+    }
+  }
+  onNumericInput(event: Event, controlName: string): void {
+    const input = event.target as HTMLInputElement;
+    const initialValue = input.value;
+
+    // Remove any non-digit characters
+    const sanitizedValue = initialValue.replace(/[^0-9]/g, '');
+
+    if (initialValue !== sanitizedValue) {
+      this.form
+        .get(controlName)
+        ?.setValue(sanitizedValue, { emitEvent: false });
+    }
+  }
   formatDateToYYYYMMDD(dateInput: string | Date): string {
     const date = new Date(dateInput);
     const year = date.getFullYear();
@@ -1360,67 +1496,67 @@ export class Step1Component implements OnChanges, OnInit {
     }
   }
 
-setupLiveHindiTranslation(): void {
-  const mapping = [
-    { eng: 'Applicant_First_Name_E', hin: 'Applicant_First_Name_H' },
-    { eng: 'Applicant_Middle_Name_E', hin: 'Applicant_Middle_Name_H' },
-    { eng: 'Applicant_Last_Name_E', hin: 'Applicant_Last_Name_H' },
-  ];
+  setupLiveHindiTranslation(): void {
+    const mapping = [
+      { eng: 'Applicant_First_Name_E', hin: 'Applicant_First_Name_H' },
+      { eng: 'Applicant_Middle_Name_E', hin: 'Applicant_Middle_Name_H' },
+      { eng: 'Applicant_Last_Name_E', hin: 'Applicant_Last_Name_H' },
+    ];
 
-  mapping.forEach(({ eng, hin }) => {
-    const engControl = this.form.get(eng);
-    const hinControl = this.form.get(hin);
+    mapping.forEach(({ eng, hin }) => {
+      const engControl = this.form.get(eng);
+      const hinControl = this.form.get(hin);
 
-    if (engControl && hinControl) {
-      engControl.valueChanges
-        .pipe(
-          debounceTime(300), // Slightly increased debounce time
-          distinctUntilChanged(),
-          switchMap((value) => {
-            const trimmed = (value || '').trim();
-            if (trimmed === '') {
-              hinControl.setValue('');
-              return of(null); // Return observable that does nothing
-            }
-            // Let translateToHindi handle success/failure
-            return this.translateToHindi(trimmed);
-          })
-        )
-        // ✅ Use the object syntax for subscribe to handle errors
-        .subscribe({
-          next: (result) => {
-            // This block only runs on a SUCCESSFUL translation
-            if (result !== null) {
-              hinControl.setValue(result);
-            }
-          },
-          error: (err) => {
-            // On API error, DO NOTHING. The existing Hindi value is preserved.
-            console.error('Transliteration failed:', err);
-          }
-        });
-    }
-  });
-}
+      if (engControl && hinControl) {
+        engControl.valueChanges
+          .pipe(
+            debounceTime(300), // Slightly increased debounce time
+            distinctUntilChanged(),
+            switchMap((value) => {
+              const trimmed = (value || '').trim();
+              if (trimmed === '') {
+                hinControl.setValue('');
+                return of(null); // Return observable that does nothing
+              }
+              // Let translateToHindi handle success/failure
+              return this.translateToHindi(trimmed);
+            })
+          )
+          // ✅ Use the object syntax for subscribe to handle errors
+          .subscribe({
+            next: (result) => {
+              // This block only runs on a SUCCESSFUL translation
+              if (result !== null) {
+                hinControl.setValue(result);
+              }
+            },
+            error: (err) => {
+              // On API error, DO NOTHING. The existing Hindi value is preserved.
+              console.error('Transliteration failed:', err);
+            },
+          });
+      }
+    });
+  }
 
-translateToHindi(text: string): Observable<string | null> {
-  return this.HTTP.getParam(
-    '/master/get/getTransliterationHindi',
-    { text },
-    'recruitement'
-  ).pipe(
-    map((response: any) => {
-      const transliteration = response?.body?.data?.transliteration;
-      // ✅ Return the value on success, or null if not found
-      return transliteration || null;
-    }),
-    catchError((err) => {
-      // ✅ On network error, re-throw the error to be caught by the subscribe block
-      console.error('Transliteration API error:', err);
-      throw err; 
-    })
-  );
-}
+  translateToHindi(text: string): Observable<string | null> {
+    return this.HTTP.getParam(
+      '/master/get/getTransliterationHindi',
+      { text },
+      'recruitement'
+    ).pipe(
+      map((response: any) => {
+        const transliteration = response?.body?.data?.transliteration;
+        // ✅ Return the value on success, or null if not found
+        return transliteration || null;
+      }),
+      catchError((err) => {
+        // ✅ On network error, re-throw the error to be caught by the subscribe block
+        console.error('Transliteration API error:', err);
+        throw err;
+      })
+    );
+  }
 
   async submitForm(): Promise<void> {
     this.emitFormData();
@@ -1430,7 +1566,7 @@ translateToHindi(text: string): Observable<string | null> {
       const validationErrors = this.logValidationErrors(this.form);
       const firstErrorMessage =
         validationErrors[0] || 'Please fill all mandatory fields.';
-      this.alert.alert(true, firstErrorMessage, 5000);
+      this.alert.alert(true, firstErrorMessage);
       return Promise.reject(new Error('Form is invalid'));
     }
 
@@ -1565,18 +1701,13 @@ translateToHindi(text: string): Observable<string | null> {
           if (res?.body?.error) {
             this.alert.alert(
               true,
-              res.body.error.message || 'An error occurred.',
-              5000
+              res.body.error.message || 'An error occurred.'
             );
             reject(new Error(res.body.error.message));
             return;
           }
 
-          this.alert.alert(
-            false,
-            'All candidate details saved successfully!',
-            5000
-          );
+          this.alert.alert(false, 'All candidate details saved successfully!');
 
           if (res.body?.data?.photo_path) {
             this.photoPreview = this.getFileUrl(res.body.data.photo_path);
@@ -1603,7 +1734,7 @@ translateToHindi(text: string): Observable<string | null> {
             errorDetails?.message ||
             err.error?.message ||
             'Failed to save details. Please try again.';
-          this.alert.alert(true, errorMessage, 5000);
+          this.alert.alert(true, errorMessage);
           reject(err);
         },
       });

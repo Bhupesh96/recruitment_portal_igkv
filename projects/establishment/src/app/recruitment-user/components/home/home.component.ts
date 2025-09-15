@@ -23,6 +23,7 @@ interface Advertisement {
 interface Post {
   post_code: number;
   post_name: string;
+  post_status_name:string;
   activeTab: 'login' | 'signup' | 'news' | 'complaint';
   expanded: boolean;
 }
@@ -216,6 +217,7 @@ export class HomeComponent implements OnInit {
       this.allPosts = postsList.map((post: any) => ({
         post_code: post.post_code,
         post_name: post.post_name,
+        post_status_name:post.post_status_name,
         activeTab: 'signup' as 'login' | 'signup' | 'news' | 'complaint', // Default to signup
         expanded: false,
       }));

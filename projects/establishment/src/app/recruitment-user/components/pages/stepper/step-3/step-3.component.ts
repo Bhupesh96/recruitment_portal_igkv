@@ -1057,15 +1057,14 @@ removeRow(detailForm: AbstractControl): void {
     if (firstMissed) {
       this.alertService.alert(
         true,
-        `${firstMissed} is mandatory. Please provide the required information.`,
-        3000
+        `${firstMissed} is mandatory. Please provide the required information.`
       );
       this.formData.emit(this.getFormData()); // Corrected from emitFormData()
       return;
     }
 
     if (this.form.invalid) {
-      this.alertService.alert(true, 'Please fill all mandatory fields.', 3000);
+      this.alertService.alert(true, 'Please fill all mandatory fields.');
       this.formData.emit(this.getFormData()); // Corrected from emitFormData()
       return;
     }

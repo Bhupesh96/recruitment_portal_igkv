@@ -498,11 +498,11 @@
             (click)="togglePost(post)"
             class="w-full flex justify-between items-center px-3 py-2 sm:px-4 sm:py-3 md:px-5 md:py-3 hover:bg-gray-50 transition"
           >
-            <h3
+            <h4
               class="text-sm sm:text-base md:text-lg font-semibold text-blue-800"
             >
-              {{ post.post_name }}
-            </h3>
+               {{ post.post_name }} - ({{post.post_status_name}})
+            </h4>
             <svg
               class="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 transform transition-transform duration-200"
               [ngClass]="{ 'rotate-180': post.expanded }"

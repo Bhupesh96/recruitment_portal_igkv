@@ -206,7 +206,7 @@
                         [href]="sanitizeFileUrl(filePath)"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="mt-2 text-xs text-blue-600 hover:underline flex items-center"
+                        class="text-xs !text-green-600 hover:underline flex items-center"
                       >
                         <svg
                           class="h-4 w-4 mr-1"
@@ -320,7 +320,7 @@
                             [href]="sanitizeFileUrl(filePath)"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="mt-2 text-xs text-blue-600 hover:underline flex items-center"
+                            class="text-xs !text-green-600 hover:underline flex items-center"
                           >
                             <svg
                               class="h-4 w-4 mr-1"
@@ -372,6 +372,8 @@
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "
+                        [min]="param.isDatatype === 'number' ? 0 : null"
+                        [formControlName]="param.score_field_parameter_name"
                         [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name

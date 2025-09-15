@@ -118,7 +118,7 @@ export class Step2Component implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Failed to load form data: ' + err.message;
-        this.alertService.alert(true, this.errorMessage, 3000);
+        this.alertService.alert(true, this.errorMessage);
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -444,7 +444,7 @@ export class Step2Component implements OnInit {
       }),
       catchError((error) => {
         this.errorMessage = 'Error loading form: ' + error.message;
-        this.alertService.alert(true, this.errorMessage, 3000);
+        this.alertService.alert(true, this.errorMessage);
         this.loading = false;
         this.cdr.markForCheck();
         throw error;
@@ -572,7 +572,7 @@ export class Step2Component implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Failed to load saved data: ' + err.message;
-        this.alertService.alert(true, this.errorMessage, 3000);
+        this.alertService.alert(true, this.errorMessage);
         this.cdr.markForCheck();
       },
     });
@@ -623,15 +623,14 @@ export class Step2Component implements OnInit {
     if (firstMissed) {
       this.alertService.alert(
         true,
-        `${firstMissed} is mandatory. Please provide the required information.`,
-        3000
+        `${firstMissed} is mandatory. Please provide the required information.`
       );
       this.emitFormData();
       return;
     }
 
     if (this.form.invalid) {
-      this.alertService.alert(true, 'Please fill all mandatory fields.', 3000);
+      this.alertService.alert(true, 'Please fill all mandatory fields.');
       this.emitFormData();
       return;
     }
@@ -806,15 +805,14 @@ export class Step2Component implements OnInit {
       'recruitement'
     ).subscribe({
       next: (res) => {
-        this.alertService.alert(false, 'Data saved successfully!', 3000);
+        this.alertService.alert(false, 'Data saved successfully!');
         this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.alertService.alert(
           true,
-          `Error saving data: ${err.message}`,
-          3000
+          `Error saving data: ${err.message}`
         );
         this.cdr.markForCheck();
       },
@@ -851,8 +849,7 @@ export class Step2Component implements OnInit {
         if (res.body?.error) {
           this.alertService.alert(
             true,
-            `Something went wrong: ${res.body.error.message}`,
-            3000
+            `Something went wrong: ${res.body.error.message}`
           );
           this.cdr.markForCheck();
           return;
@@ -883,8 +880,7 @@ export class Step2Component implements OnInit {
 
         this.alertService.alertStatus(
           res.status,
-          'Data saved successfully!',
-          3000
+          'Data saved successfully!'
         );
         this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
@@ -900,7 +896,7 @@ export class Step2Component implements OnInit {
             2
           )
         );
-        this.alertService.alertStatus(err.status || 500, errorMessage, 3000);
+        this.alertService.alertStatus(err.status || 500, errorMessage);
         this.cdr.markForCheck();
       },
     });

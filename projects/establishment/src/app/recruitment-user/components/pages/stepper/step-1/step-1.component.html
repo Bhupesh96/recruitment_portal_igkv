@@ -52,6 +52,7 @@
           >
           <input
             formControlName="Applicant_First_Name_E"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Applicant_First_Name_E')?.invalid &&
               form.get('Applicant_First_Name_E')?.touched
@@ -75,32 +76,21 @@
           >
           <input
             formControlName="Applicant_Middle_Name_E"
+            (input)="onCharacterInput($event)"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Middle name"
           />
         </div>
         <div>
           <label class="block mb-1 text-gray-600 text-sm font-medium"
-            >Last Name<span class="text-red-500">*</span></label
+            >Last Name</label
           >
           <input
             formControlName="Applicant_Last_Name_E"
-            [class.border-red-500]="
-              form.get('Applicant_Last_Name_E')?.invalid &&
-              form.get('Applicant_Last_Name_E')?.touched
-            "
+            (input)="onCharacterInput($event)"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Last name"
           />
-          <div
-            *ngIf="
-              form.get('Applicant_Last_Name_E')?.invalid &&
-              form.get('Applicant_Last_Name_E')?.touched
-            "
-            class="text-red-500 text-xs mt-1"
-          >
-            Last name is required
-          </div>
         </div>
       </div>
 
@@ -167,26 +157,13 @@
         </div>
         <div>
           <label class="block mb-1 text-gray-600 text-sm font-medium"
-            >Last Name (Hindi)<span class="text-red-500">*</span></label
+            >Last Name (Hindi)</label
           >
           <input
             formControlName="Applicant_Last_Name_H"
-            [class.border-red-500]="
-              form.get('Applicant_Last_Name_H')?.invalid &&
-              form.get('Applicant_Last_Name_H')?.touched
-            "
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Last name (Hindi)"
           />
-          <div
-            *ngIf="
-              form.get('Applicant_Last_Name_H')?.invalid &&
-              form.get('Applicant_Last_Name_H')?.touched
-            "
-            class="text-red-500 text-xs mt-1"
-          >
-            Last name is required
-          </div>
         </div>
       </div>
     </div>
@@ -251,7 +228,7 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
             <option *ngFor="let post of postList" [value]="post.post_code">
-              {{ post.post_name }}
+              {{ post.post_name }} - ({{ post.post_status_name }})
             </option>
           </select>
           <div
@@ -365,6 +342,7 @@
           >
           <input
             formControlName="Applicant_Father_Name_E"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Applicant_Father_Name_E')?.invalid &&
               form.get('Applicant_Father_Name_E')?.touched
@@ -388,6 +366,7 @@
           >
           <input
             formControlName="Applicant_Mother_Name_E"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Applicant_Mother_Name_E')?.invalid &&
               form.get('Applicant_Mother_Name_E')?.touched
@@ -441,6 +420,7 @@
           >
           <input
             formControlName="Identification_Mark1"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Identification_Mark1')?.invalid &&
               form.get('Identification_Mark1')?.touched
@@ -464,6 +444,7 @@
           >
           <input
             formControlName="Identification_Mark2"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Identification_Mark2')?.invalid &&
               form.get('Identification_Mark2')?.touched
@@ -485,192 +466,133 @@
     </div>
 
     <!-- Additional Information Section -->
-    <div class="space-y-4">
-      <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
-        <svg
-          class="h-5 w-5 text-blue-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        Additional Information
-      </h6>
+<div class="space-y-4">
+  <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
+    <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    Additional Information
+  </h6>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 text-sm">
-        <ng-container *ngFor="let question of additionalQuestions">
-          <div class="flex flex-col space-y-1">
-            <div>
-              <label class="block text-gray-600 text-sm font-medium">
-                {{ question.question_label }}<span class="text-red-500">*</span>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 text-sm">
+    <ng-container *ngFor="let question of additionalQuestions">
+
+      <ng-container *ngIf="question.question_id === 2">
+        <div *ngIf="form.get('question_3')?.value" class="flex flex-col space-y-1">
+          <div>
+            <label class="block text-gray-600 text-sm font-medium">
+              {{ question.question_label }}<span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-4 flex-wrap pt-1">
+              <label *ngFor="let option of filteredCategoryOptions" class="flex items-center">
+                <input
+                  type="radio"
+                  [name]="'question_' + question.question_id"
+                  [value]="option.option_value"
+                  [checked]="form.get('question_' + question.question_id)?.value === option.option_value"
+                  (change)="handleRadioChange('question_' + question.question_id, option.option_value)"
+                  class="mr-1 text-blue-600 focus:ring-blue-600"
+                />
+                {{ option.option_label }}
               </label>
-              <div class="flex items-center gap-4 flex-wrap pt-1">
-                <label
-                  *ngFor="let option of question.options"
-                  class="flex items-center"
-                >
-                  <input
-                    type="radio"
-                    [name]="'question_' + question.question_id"
-                    [value]="option.option_value"
-                    [checked]="
-                      form.get('question_' + question.question_id)?.value ===
-                      option.option_value
-                    "
-                    (change)="
-                      handleRadioChange(
-                        'question_' + question.question_id,
-                        option.option_value
-                      )
-                    "
-                    class="mr-1 text-blue-600 focus:ring-blue-600"
-                  />
-                  {{ option.option_label }}
-                </label>
-              </div>
-              <div
-                *ngIf="
-                  form.get('question_' + question.question_id)?.invalid &&
-                  form.get('question_' + question.question_id)?.touched
-                "
-                class="text-red-500 text-xs mt-1"
-              >
-                This field is required
+            </div>
+            <div *ngIf="form.get('question_' + question.question_id)?.invalid && form.get('question_' + question.question_id)?.touched" class="text-red-500 text-xs mt-1">
+              This field is required
+            </div>
+          </div>
+
+          <ng-container *ngIf="getSelectedOption(question)?.has_condition === 'Y'">
+            <div *ngFor="let condition of getSelectedOption(question)?.conditions" class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200">
+              <label class="block text-gray-500 text-sm font-semibold">
+                {{ condition.dependent_field_label }}
+                <span *ngIf="condition.condition_required === 'Y'" class="text-red-500">*</span>
+              </label>
+              <ng-container [ngSwitch]="condition.condition_data_type">
+                <input *ngSwitchCase="'date'" type="date" [formControlName]="'condition_' + condition.condition_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                <ng-container *ngSwitchCase="'file'">
+                  <input type="file" accept="application/pdf" (change)="onConditionalFileSelected($event, 'condition_' + condition.condition_id, condition.data_type_size)" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                  <div *ngIf="getAdditionalFilePath('condition_' + condition.condition_id) as filePath" class="mt-2 flex items-center gap-4">
+                    <a [href]="getFileUrl(filePath)" target="_blank" class="text-xs !text-green-600 hover:underline flex items-center">
+                      <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      View Uploaded File
+                    </a>
+                  </div>
+                </ng-container>
+                <input *ngSwitchDefault [type]="condition.condition_data_type" [formControlName]="'condition_' + condition.condition_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </ng-container>
+              <div *ngIf="form.get('condition_' + condition.condition_id)?.invalid && form.get('condition_' + condition.condition_id)?.touched" class="text-red-500 text-xs mt-1">
+                <ng-container *ngIf="form.get('condition_' + condition.condition_id)?.hasError('required')">
+                  {{ condition.dependent_field_label }} is required
+                </ng-container>
               </div>
             </div>
+          </ng-container>
+        </div>
+      </ng-container>
 
-            <ng-container
-              *ngIf="getSelectedOption(question)?.has_condition === 'Y'"
-            >
-              <div
-                *ngFor="
-                  let condition of getSelectedOption(question)?.conditions
-                "
-                class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
-              >
-                <label class="block text-gray-500 text-sm font-semibold">
-                  {{ condition.dependent_field_label }}
-                  <span
-                    *ngIf="condition.condition_required === 'Y'"
-                    class="text-red-500"
-                    >*</span
-                  >
-                </label>
-
-                <ng-container [ngSwitch]="condition.condition_data_type">
-                  <!-- DATE INPUT: Includes change event for marriage date validation -->
-                  <input
-                    *ngSwitchCase="'date'"
-                    type="date"
-                    [formControlName]="'condition_' + condition.condition_id"
-                    (change)="
-                      condition.condition_id === 1 &&
-                        onMarriageDateChange($event)
-                    "
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-
-                  <!-- FILE INPUT: No changes here -->
-                  <ng-container *ngSwitchCase="'file'">
-                    <input
-                      type="file"
-                      (change)="
-                        onConditionalFileSelected(
-                          $event,
-                          'condition_' + condition.condition_id,
-                          condition.data_type_size
-                        )
-                      "
-                      class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                    <div
-                      *ngIf="
-                        getAdditionalFilePath(
-                          'condition_' + condition.condition_id
-                        ) as filePath
-                      "
-                      class="mt-2 flex items-center gap-4"
-                    >
-                      <a
-                        [href]="getFileUrl(filePath)"
-                        target="_blank"
-                        class="text-xs text-blue-600 hover:underline flex items-center"
-                      >
-                        <svg
-                          class="h-4 w-4 mr-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        View Uploaded File
-                      </a>
-                    </div>
-                  </ng-container>
-
-                  <!-- DEFAULT (TEXT) INPUT: No changes here -->
-                  <input
-                    *ngSwitchDefault
-                    type="text"
-                    [formControlName]="'condition_' + condition.condition_id"
-                    class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </ng-container>
-
-                <!-- VALIDATION MESSAGES: Updated to handle multiple error types -->
-                <div
-                  *ngIf="
-                    form.get('condition_' + condition.condition_id)?.invalid &&
-                    form.get('condition_' + condition.condition_id)?.touched
-                  "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  <!-- Message for when the field is empty -->
-                  <ng-container
-                    *ngIf="
-                      form
-                        .get('condition_' + condition.condition_id)
-                        ?.hasError('required')
-                    "
-                  >
-                    {{ condition.dependent_field_label }} is required
-                  </ng-container>
-
-                  <!-- Message for when the marriage date is after the allowed maximum -->
-                  <ng-container
-                    *ngIf="
-                      form
-                        .get('condition_' + condition.condition_id)
-                        ?.hasError('invalidMarriageDateMax')
-                    "
-                  >
-                    Date cannot be after
-                    {{
-          form.get('condition_' + condition.condition_id)?.errors?.[
-            'invalidMarriageDateMax'
-          ].max
-
-                    }}.
-                  </ng-container>
-                </div>
-              </div>
-            </ng-container>
+      <ng-container *ngIf="question.question_id !== 2">
+        <div class="flex flex-col space-y-1">
+          <div>
+            <label class="block text-gray-600 text-sm font-medium">
+              {{ question.question_label }}<span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-4 flex-wrap pt-1">
+              <label *ngFor="let option of question.options" class="flex items-center">
+                <input
+                  type="radio"
+                  [name]="'question_' + question.question_id"
+                  [value]="option.option_value"
+                  [checked]="form.get('question_' + question.question_id)?.value === option.option_value"
+                  (change)="handleRadioChange('question_' + question.question_id, option.option_value)"
+                  class="mr-1 text-blue-600 focus:ring-blue-600"
+                />
+                {{ option.option_label }}
+              </label>
+            </div>
+            <div *ngIf="form.get('question_' + question.question_id)?.invalid && form.get('question_' + question.question_id)?.touched" class="text-red-500 text-xs mt-1">
+              This field is required
+            </div>
           </div>
-        </ng-container>
-      </div>
-    </div>
+
+          <ng-container *ngIf="getSelectedOption(question)?.has_condition === 'Y'">
+            <div *ngFor="let condition of getSelectedOption(question)?.conditions" class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200">
+              <label class="block text-gray-500 text-sm font-semibold">
+                {{ condition.dependent_field_label }}
+                <span *ngIf="condition.condition_required === 'Y'" class="text-red-500">*</span>
+              </label>
+              <ng-container [ngSwitch]="condition.condition_data_type">
+                <input *ngSwitchCase="'date'" type="date" [formControlName]="'condition_' + condition.condition_id" (change)="condition.condition_id === 1 && onMarriageDateChange($event)" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+                <ng-container *ngSwitchCase="'file'">
+                   <input type="file" accept="application/pdf" (change)="onConditionalFileSelected($event, 'condition_' + condition.condition_id, condition.data_type_size)" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                   <div *ngIf="getAdditionalFilePath('condition_' + condition.condition_id) as filePath" class="mt-2 flex items-center gap-4">
+                     <a [href]="getFileUrl(filePath)" target="_blank" class="text-xs !text-green-600 hover:underline flex items-center">
+                       <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                       </svg>
+                       View Uploaded File
+                     </a>
+                   </div>
+                </ng-container>
+                <input *ngSwitchDefault [type]="condition.condition_data_type" [formControlName]="'condition_' + condition.condition_id" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </ng-container>
+              <div *ngIf="form.get('condition_' + condition.condition_id)?.invalid && form.get('condition_' + condition.condition_id)?.touched" class="text-red-500 text-xs mt-1">
+                <ng-container *ngIf="form.get('condition_' + condition.condition_id)?.hasError('required')">
+                  {{ condition.dependent_field_label }} is required
+                </ng-container>
+                <ng-container *ngIf="form.get('condition_' + condition.condition_id)?.hasError('invalidMarriageDateMax')">
+                  Date cannot be after {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max }}.
+                </ng-container>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+
+    </ng-container>
+  </div>
+</div>
     <!-- Permanent Address Section -->
     <div class="space-y-4">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
@@ -702,6 +624,7 @@
           >
           <input
             formControlName="Permanent_Address1"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
@@ -725,6 +648,7 @@
           >
           <input
             formControlName="Permanent_City"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Permanent_City')?.invalid &&
               form.get('Permanent_City')?.touched
@@ -834,7 +758,11 @@
             >Pincode<span class="text-red-500">*</span></label
           >
           <input
+            type="text"
+            maxlength="6"
+            inputmode="numeric"
             formControlName="Permanent_Pin_Code"
+            (input)="onNumericInput($event, 'Permanent_Pin_Code')"
             [class.border-red-500]="
               form.get('Permanent_Pin_Code')?.invalid &&
               form.get('Permanent_Pin_Code')?.touched
@@ -850,6 +778,12 @@
             class="text-red-500 text-xs mt-1"
           >
             Pincode is required
+          </div>
+          <div
+            *ngIf="form.get('Permanent_Pin_Code')?.hasError('pattern')"
+            class="text-red-500 text-xs mt-1"
+          >
+            Pincode must be exactly 6 digits.
           </div>
         </div>
       </div>
@@ -896,6 +830,7 @@
           >
           <input
             formControlName="Current_Address1"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
@@ -919,6 +854,7 @@
           >
           <input
             formControlName="Current_City"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Current_City')?.invalid &&
               form.get('Current_City')?.touched
@@ -1028,7 +964,11 @@
             >Pincode<span class="text-red-500">*</span></label
           >
           <input
+            type="text"
+            maxlength="6"
+            inputmode="numeric"
             formControlName="Current_Pin_Code"
+            (input)="onNumericInput($event, 'Current_Pin_Code')"
             [class.border-red-500]="
               form.get('Current_Pin_Code')?.invalid &&
               form.get('Current_Pin_Code')?.touched
@@ -1044,6 +984,12 @@
             class="text-red-500 text-xs mt-1"
           >
             Pincode is required
+          </div>
+          <div
+            *ngIf="form.get('Permanent_Pin_Code')?.hasError('pattern')"
+            class="text-red-500 text-xs mt-1"
+          >
+            Pincode must be exactly 6 digits.
           </div>
         </div>
       </div>
@@ -1100,8 +1046,11 @@
             >Mobile Number<span class="text-red-500">*</span></label
           >
           <input
-            type="tel"
+            type="text"
+            maxlength="10"
+            inputmode="tel"
             formControlName="Mobile_No"
+            (input)="onNumericInput($event, 'Mobile_No')"
             [class.border-red-500]="
               form.get('Mobile_No')?.invalid && form.get('Mobile_No')?.touched
             "
@@ -1114,7 +1063,12 @@
             "
             class="text-red-500 text-xs mt-1"
           >
-            Mobile number is required
+            <div *ngIf="form.get('Mobile_No')?.hasError('required')">
+              Mobile number is required.
+            </div>
+            <div *ngIf="form.get('Mobile_No')?.hasError('pattern')">
+              Please enter a valid 10-digit Indian mobile number.
+            </div>
           </div>
         </div>
       </div>
@@ -1151,6 +1105,7 @@
           >
           <input
             formControlName="Birth_Place"
+            (input)="onCharacterInput($event)"
             [class.border-red-500]="
               form.get('Birth_Place')?.invalid &&
               form.get('Birth_Place')?.touched

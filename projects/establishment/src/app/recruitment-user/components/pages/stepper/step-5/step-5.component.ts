@@ -312,7 +312,7 @@ export class Step5Component implements OnInit {
       },
       error: (err) => {
         this.errorMessage = 'Failed to load saved data: ' + err.message;
-        this.alertService.alert(true, this.errorMessage, 3000);
+        this.alertService.alert(true, this.errorMessage);
         this.cdr.markForCheck();
       },
     });
@@ -450,8 +450,7 @@ export class Step5Component implements OnInit {
       if (toDateName && group.get(toDateName)?.touched) {
         this.alertService.alert(
           true,
-          "'Period To' date cannot be earlier than the 'Period From' date.",
-          3000
+          "'Period To' date cannot be earlier than the 'Period From' date."
         );
       }
 
@@ -738,16 +737,14 @@ export class Step5Component implements OnInit {
       const firstMissed = this.form.get('firstMissedMandatory')?.value;
       this.alertService.alert(
         true,
-        `${firstMissed}. Please provide the required information.`,
-        3000
+        `${firstMissed}. Please provide the required information.`
       );
       return;
     }
     if (this.form.invalid) {
       this.alertService.alert(
         true,
-        'Please fill all required fields correctly.',
-        3000
+        'Please fill all required fields correctly.'
       );
       return;
     }
@@ -942,15 +939,14 @@ export class Step5Component implements OnInit {
       'recruitement'
     ).subscribe({
       next: (res) => {
-        this.alertService.alert(false, 'Data saved successfully!', 3000);
+        this.alertService.alert(false, 'Data saved successfully!');
         this.getParameterValuesAndPatch();
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.alertService.alert(
           true,
-          `Error saving data: ${err.message}`,
-          3000
+          `Error saving data: ${err.message}`
         );
         this.cdr.markForCheck();
       },
