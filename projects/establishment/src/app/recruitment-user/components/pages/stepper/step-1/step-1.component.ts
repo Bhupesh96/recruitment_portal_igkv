@@ -79,6 +79,10 @@ export class Step1Component implements OnChanges, OnInit {
   private savedAdditionalInfo: any[] = [];
   categoryQuestion: any = null; // To hold the 'Applied Category' question object
   filteredCategoryOptions: any[] = []; // To hold the dynamically filtered options
+  disabilityTypes: {
+    Recruitment_Disability_Type_Id: number;
+    Disability_Type: string;
+  }[] = []; // <-- ADD THIS LINE
   private fieldNameMap: { [key: string]: string } = {
     registration_no: 'Registration Number',
     a_rec_adv_main_id: 'Advertisement',
@@ -138,7 +142,7 @@ export class Step1Component implements OnChanges, OnInit {
       Salutation_H: ['', Validators.required],
       Applicant_First_Name_E: ['', Validators.required],
       Applicant_Middle_Name_E: [''],
-      Applicant_Last_Name_E: ['', Validators.required],
+      Applicant_Last_Name_E: [''],
       Applicant_First_Name_H: ['', Validators.required],
       Applicant_Middle_Name_H: [''],
       Applicant_Last_Name_H: [''],
@@ -306,6 +310,13 @@ export class Step1Component implements OnChanges, OnInit {
   /**
    * Sets up all reactive form `valueChanges` subscriptions to handle dynamic UI and data fetching.
    */
+  private getDropdownDataByQuery(queryId: number): Observable<any> {
+    return this.HTTP.getParam(
+      '/master/get/getDataByQueryId',
+      { query_id: queryId },
+      'recruitement'
+    );
+  }
   private setupCustomLogicListeners(): void {
     const residentControl = this.form.get('question_3');
     const categoryControl = this.form.get('question_2');
@@ -722,8 +733,7 @@ export class Step1Component implements OnChanges, OnInit {
             true,
             `File size cannot exceed ${maxSizeKB}KB. Your file is ~${Math.round(
               file.size / 1024
-            )}KB.`,
-            5000
+            )}KB.`
           );
           // Clear the invalid file from the input and form control
           input.value = '';
@@ -895,40 +905,31 @@ export class Step1Component implements OnChanges, OnInit {
     return this.additionalFilePaths.get(controlName) || null;
   }
 
-  private loadAdditionalInfo(): void {
-    this.getAdditionalInfoQuestions().subscribe({
-      next: (res) => {
-        if (res?.body?.data?.questions) {
-          this.additionalQuestions = res.body.data.questions;
-          this.buildAdditionalInfoFormControls(this.additionalQuestions);
-          this.setupConditionalValidators(this.additionalQuestions);
-        }
-      },
-      error: (err) => {
-        this.alert.alert(true, 'Failed to load additional questions.');
-      },
-    });
-  }
+private buildAdditionalInfoFormControls(questions: any[]): void {
+  questions.forEach((question) => {
+    const validators = [];
+    if (question.is_required === 'Y') {
+      validators.push(Validators.required);
+    }
 
-  private buildAdditionalInfoFormControls(questions: any[]): void {
-    questions.forEach((question) => {
-      this.form.addControl(
-        `question_${question.question_id}`,
-        this.fb.control('', [Validators.required])
-      );
-      question.options.forEach((option: any) => {
-        if (option.has_condition === 'Y') {
-          option.conditions.forEach((condition: any) => {
-            this.form.addControl(
-              `condition_${condition.condition_id}`,
-              this.fb.control('')
-            );
-          });
-        }
-      });
-    });
-  }
+    this.form.addControl(
+      `question_${question.question_id}`,
+      this.fb.control(null, validators) // Initialize main questions with null
+    );
 
+    question.options.forEach((option: any) => {
+      if (option.has_condition === 'Y') {
+        option.conditions.forEach((condition: any) => {
+          this.form.addControl(
+            `condition_${condition.condition_id}`,
+            // ✅ THE FIX: Initialize conditional controls with null instead of ''
+            this.fb.control(null) 
+          );
+        });
+      }
+    });
+  });
+}
   onDobChange(event: Event): void {
     const control = this.form.get('DOB');
     if (control?.hasError('invalidDobMax')) {
@@ -954,57 +955,69 @@ export class Step1Component implements OnChanges, OnInit {
     }
   }
 
-  private setupConditionalValidators(questions: any[]): void {
-    questions.forEach((question) => {
-      const questionControl = this.form.get(`question_${question.question_id}`);
-      if (!questionControl) return;
+private setupConditionalValidators(questions: any[]): void {
+  questions.forEach((question) => {
+    const questionControl = this.form.get(`question_${question.question_id}`);
+    if (!questionControl) return;
 
-      // ✅ FIX: Add .pipe(distinctUntilChanged()) to prevent unnecessary resets
-      questionControl.valueChanges
-        .pipe(distinctUntilChanged())
-        .subscribe((selectedValue) => {
-          question.options.forEach((option: any) => {
-            const isSelected = option.option_value === selectedValue;
-            if (option.has_condition === 'Y') {
-              option.conditions.forEach((condition: any) => {
-                const controlName = `condition_${condition.condition_id}`;
-                const conditionControl = this.form.get(controlName);
-                if (conditionControl) {
-                  if (isSelected && condition.condition_required === 'Y') {
-                    const validators: ValidatorFn[] = [];
-                    if (condition.condition_data_type === 'file') {
-                      validators.push(
-                        this.conditionalFileValidator(controlName)
-                      );
-                    } else {
-                      validators.push(Validators.required);
-                    }
-                    if (
-                      condition.condition_id === 1 &&
-                      this.advertisementDetails?.marriage_calculation_date
-                    ) {
-                      validators.push(
-                        this.maxMarriageDateValidator(
-                          this.advertisementDetails.marriage_calculation_date
-                        )
-                      );
-                    }
-                    conditionControl.setValidators(validators);
+    questionControl.valueChanges
+      .pipe(distinctUntilChanged())
+      .subscribe((selectedValue) => {
+        // --- Logic to fetch dynamic dropdown data on demand ---
+        if (question.question_id === 5 && selectedValue === 'Y') {
+          const disabilityCondition = question.options
+            .find((opt: any) => opt.option_value === 'Y')
+            ?.conditions?.find((c: any) => c.condition_data_type === 'select');
+
+          if (disabilityCondition && this.disabilityTypes.length === 0) {
+            this.getDropdownDataByQuery(disabilityCondition.query_id).subscribe(
+              (res) => {
+                this.disabilityTypes = res?.body?.data?.data || [];
+                this.cdr.markForCheck();
+              }
+            );
+          }
+        }
+        
+        question.options.forEach((option: any) => {
+          const isSelected = option.option_value === selectedValue;
+          if (option.has_condition === 'Y') {
+            option.conditions.forEach((condition: any) => {
+              const controlName = `condition_${condition.condition_id}`;
+              const conditionControl = this.form.get(controlName);
+              if (conditionControl) {
+                if (isSelected && condition.condition_required === 'Y') {
+                  const validators: ValidatorFn[] = [];
+                  if (condition.condition_data_type === 'file') {
+                    validators.push(this.conditionalFileValidator(controlName));
                   } else {
-                    // This logic is correct, but will now run less often
-                    conditionControl.clearValidators();
-                    conditionControl.reset('', { emitEvent: false });
+                    validators.push(Validators.required);
                   }
-                  conditionControl.updateValueAndValidity({ emitEvent: false });
+                  if (
+                    condition.condition_id === 1 &&
+                    this.advertisementDetails?.marriage_calculation_date
+                  ) {
+                    validators.push(
+                      this.maxMarriageDateValidator(
+                        this.advertisementDetails.marriage_calculation_date
+                      )
+                    );
+                  }
+                  conditionControl.setValidators(validators);
+                } else {
+                  conditionControl.clearValidators();
+                  // ✅ THE FIX: Reset the control's value to null, not an empty string.
+                  conditionControl.reset(null, { emitEvent: false }); 
                 }
-              });
-            }
-          });
-          this.cdr.markForCheck();
+                conditionControl.updateValueAndValidity({ emitEvent: false });
+              }
+            });
+          }
         });
-    });
-  }
-
+        this.cdr.markForCheck();
+      });
+  });
+}
   public handleRadioChange(controlName: string, value: any): void {
     const control = this.form.get(controlName);
     if (control) {
@@ -1607,7 +1620,7 @@ export class Step1Component implements OnChanges, OnInit {
     formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
     formData.append('languages', JSON.stringify(languagePayload));
 
-    // --- 3. Prepare and Append Additional Information ---
+    // --- 3. Prepare Additional Information Payload (based on current form state) ---
     const additionalInfoPayload: any[] = [];
     for (const question of this.additionalQuestions) {
       const questionControlName = `question_${question.question_id}`;
@@ -1618,7 +1631,6 @@ export class Step1Component implements OnChanges, OnInit {
           (opt: any) => opt.option_value === selectedOptionValue
         );
         if (selectedOption) {
-          // Find the original saved record for the main question's answer
           const existingMainRecord = this.savedAdditionalInfo.find(
             (info) =>
               info.question_id === question.question_id &&
@@ -1626,13 +1638,12 @@ export class Step1Component implements OnChanges, OnInit {
           );
 
           additionalInfoPayload.push({
-            // ✅ FIX: Add the ID if it exists, otherwise send null
             a_rec_app_main_addtional_info_id:
               existingMainRecord?.a_rec_app_main_addtional_info_id || null,
             question_id: question.question_id,
             option_id: selectedOption.option_id,
             condition_id: null,
-            input_field: null, // Backend will populate this
+            input_field: null,
           });
 
           if (selectedOption.has_condition === 'Y') {
@@ -1641,7 +1652,6 @@ export class Step1Component implements OnChanges, OnInit {
               const conditionValue = this.form.get(conditionControlName)?.value;
               let inputFieldValue = null;
 
-              // Find the original saved record for the condition's answer
               const existingConditionRecord = this.savedAdditionalInfo.find(
                 (info) =>
                   info.question_id === question.question_id &&
@@ -1649,7 +1659,6 @@ export class Step1Component implements OnChanges, OnInit {
                   info.condition_id === condition.condition_id
               );
 
-              // Handle file vs. regular input values
               if (condition.condition_data_type === 'file') {
                 if (conditionValue instanceof File) {
                   const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
@@ -1667,7 +1676,6 @@ export class Step1Component implements OnChanges, OnInit {
               }
 
               additionalInfoPayload.push({
-                // ✅ FIX: Add the ID here as well
                 a_rec_app_main_addtional_info_id:
                   existingConditionRecord?.a_rec_app_main_addtional_info_id ||
                   null,
@@ -1682,6 +1690,25 @@ export class Step1Component implements OnChanges, OnInit {
       }
     }
 
+    // --- 4. ⭐ NEW LOGIC: Determine which records to delete ---
+    // Create a Set of primary keys from the new payload that should exist in the DB.
+    const newRecordIds = new Set(
+      additionalInfoPayload
+        .map((p) => p.a_rec_app_main_addtional_info_id)
+        .filter((id) => id != null) // Only consider existing records with an ID
+    );
+
+    // Compare the original saved records with the new set. Any missing ID is marked for deletion.
+    const additionalInfoIdsToDelete: number[] = [];
+    this.savedAdditionalInfo.forEach((savedRecord) => {
+      if (!newRecordIds.has(savedRecord.a_rec_app_main_addtional_info_id)) {
+        additionalInfoIdsToDelete.push(
+          savedRecord.a_rec_app_main_addtional_info_id
+        );
+      }
+    });
+
+    // --- 5. Append all data to FormData ---
     if (additionalInfoPayload.length > 0) {
       formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
       formData.append(
@@ -1690,7 +1717,15 @@ export class Step1Component implements OnChanges, OnInit {
       );
     }
 
-    // --- 4. Make the SINGLE API call ---
+    // ⭐ NEW: Append the array of IDs to delete. The backend will handle them.
+    if (additionalInfoIdsToDelete.length > 0) {
+      formData.append(
+        'additionalInfoIdsToDelete',
+        JSON.stringify(additionalInfoIdsToDelete)
+      );
+    }
+
+    // --- 6. Make the SINGLE API call ---
     return new Promise((resolve, reject) => {
       this.HTTP.postForm(
         '/candidate/postFile/saveOrUpdateFullCandidateProfile',
@@ -1709,13 +1744,27 @@ export class Step1Component implements OnChanges, OnInit {
 
           this.alert.alert(false, 'All candidate details saved successfully!');
 
+          // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
+          // additional info to update our local state (`savedAdditionalInfo`).
+          // This ensures the next save operation works correctly.
+          const registrationNo = this.form.get('registration_no')?.value;
+          if (registrationNo) {
+            this.getSavedAdditionalInfo(registrationNo).subscribe(
+              (response) => {
+                this.savedAdditionalInfo = response?.body?.data || [];
+              }
+            );
+          }
+
           if (res.body?.data?.photo_path) {
+            this.filePaths.set('photo', res.body.data.photo_path);
             this.photoPreview = this.getFileUrl(res.body.data.photo_path);
             this.form
               .get('photo')
               ?.setValue(res.body.data.photo_path, { emitEvent: false });
           }
           if (res.body?.data?.signature_path) {
+            this.filePaths.set('signature', res.body.data.signature_path);
             this.signaturePreview = this.getFileUrl(
               res.body.data.signature_path
             );

@@ -331,18 +331,34 @@
                         class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                         [formControlName]="param.normalizedKey"
                         [placeholder]="param.score_field_parameter_name"
+                        [attr.min]="param.isDatatype === 'number' ? 0 : null"
                       />
                     </ng-container>
 
                     <div
                       *ngIf="
                         detailForm.get(param.normalizedKey)?.touched &&
-                        detailForm.get(param.normalizedKey)?.invalid &&
-                        param.is_mandatory === 'Y'
+                        detailForm.get(param.normalizedKey)?.invalid
                       "
                       class="text-red-600 text-xs mt-1"
                     >
-                      {{ param.score_field_parameter_name }} is required
+                      <div
+                        *ngIf="
+                          detailForm
+                            .get(param.normalizedKey)
+                            ?.hasError('required')
+                        "
+                      >
+                        {{ param.score_field_parameter_name }} is required
+                      </div>
+
+                      <div
+                        *ngIf="
+                          detailForm.get(param.normalizedKey)?.hasError('min')
+                        "
+                      >
+                        Value cannot be negative.
+                      </div>
                     </div>
                   </td>
 
