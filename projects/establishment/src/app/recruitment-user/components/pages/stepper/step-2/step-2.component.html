@@ -271,10 +271,18 @@
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
-                        <option value="">Select</option>
-                        <option value="First">First</option>
-                        <option value="Second">Second</option>
-                        <option value="Third">Third</option>
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
                       </select>
 
                       <!-- Year Dropdown -->
@@ -284,8 +292,14 @@
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
                         <option value="">Select Year</option>
-                        <option *ngFor="let year of years" [value]="year">
-                          {{ year }}
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
                         </option>
                       </select>
 

@@ -146,27 +146,20 @@
                       />
 
                       <select
-                        *ngSwitchCase="'DE'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                      >
-                        <option [ngValue]="null">Select Type</option>
-                        <option *ngFor="let type of employment" [value]="type">
-                          {{ type }}
-                        </option>
-                      </select>
-
-                      <select
                         *ngSwitchCase="'DP'"
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
-                        <option [ngValue]="null">Select Pay Scale</option>
+                        <option [ngValue]="null">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
                         <option
-                          *ngFor="let scale of payScales"
-                          [value]="scale.band_pay_no"
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
                         >
-                          {{ scale.Band_Pay_Scale }}
+                          {{ option.data_name }}
                         </option>
                       </select>
 
@@ -175,9 +168,52 @@
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
-                        <option [ngValue]="null">Select Year</option>
-                        <option *ngFor="let year of years" [value]="year">
-                          {{ year }}
+                        <option [ngValue]="null">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+
+                      <select
+                        *ngSwitchCase="'DE'"
+                        [formControlName]="param.score_field_parameter_name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option [ngValue]="null">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'D'"
+                        [formControlName]="param.score_field_parameter_name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
                         </option>
                       </select>
 

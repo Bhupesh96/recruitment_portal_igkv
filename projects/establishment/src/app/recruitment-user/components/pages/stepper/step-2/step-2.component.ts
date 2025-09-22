@@ -15,8 +15,8 @@ import {
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, forkJoin } from 'rxjs';
-import { switchMap, tap, catchError } from 'rxjs/operators';
+import { Observable, forkJoin, of } from 'rxjs';
+import { switchMap, tap, catchError, map } from 'rxjs/operators';
 import { HttpService, SharedModule } from 'shared';
 import { Output, EventEmitter } from '@angular/core';
 import { UtilsService } from '../../utils.service';
@@ -65,6 +65,7 @@ interface Parameter {
   is_mandatory?: string;
   isDatatype: string;
   isCalculationColumn: string;
+  isQuery_id:number
 }
 
 interface Note {
@@ -93,8 +94,9 @@ export class Step2Component implements OnInit {
   notes: Note[] = [];
   loading = true;
   errorMessage: string | null = null;
-  years: number[] = [];
+  
   filePaths: Map<string, string> = new Map();
+  dropdownData: Map<number, any[]> = new Map<number, any[]>();
   existingDetailIds: Map<string, number> = new Map();
   existingParameterIds: Map<string, number> = new Map();
   existingParentDetailId: number | null = null;
@@ -111,7 +113,7 @@ export class Step2Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.getYearDropDown();
+   
     this.loadFormData().subscribe({
       next: () => {
         this.getParameterValuesAndPatch();
@@ -124,7 +126,19 @@ export class Step2Component implements OnInit {
       },
     });
   }
-
+ private getDropdownData(queryId: number): Observable<any[]> {
+    if (!queryId || queryId === 0) {
+      return of([]); // Return empty if no valid query ID
+    }
+    return this.HTTP.getParam(
+      '/master/get/getDataByQueryId',
+      { query_id: queryId },
+      'recruitement'
+    ).pipe(
+      map((res: any) => res?.body?.data || []),
+      catchError(() => of([])) // On error, return an empty array
+    );
+  }
   getUniqueKey(sub: Subheading, index: number): string {
     return `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${index}`;
   }
@@ -455,20 +469,47 @@ export class Step2Component implements OnInit {
             );
             return forkJoin(parameterRequests);
           }),
-          tap((parameterResponses) => {
-            this.parameters = parameterResponses.flatMap(
-              (p) => p.body?.data || []
-            );
+           switchMap((parameterResponses) => {
+          this.parameters = parameterResponses.flatMap(
+            (p) => p.body?.data || []
+          );
 
-            this.buildFormControls();
-            this.loading = false;
-            this.cdr.markForCheck();
-          }),
-          switchMap(() => {
-            return new Observable<void>((observer) => observer.next());
-          })
-        );
-      }),
+          // Find all unique query_ids that need to be fetched
+          const dropdownRequests = this.parameters
+            .filter(p => p.isQuery_id && p.isQuery_id > 0)
+            .map(p => 
+              this.getDropdownData(p.isQuery_id).pipe(
+                // We map the result to an object containing the id and the data
+                map(data => ({ queryId: p.isQuery_id, data }))
+              )
+            );
+          
+          if (dropdownRequests.length === 0) {
+            return of(null); // No dropdowns to fetch
+          }
+
+          return forkJoin(dropdownRequests); // Fetch all dropdown data
+        }),
+        tap((dropdownResults) => {
+          if (dropdownResults) {
+            // Populate our dropdownData Map
+            dropdownResults.forEach(result => {
+              this.dropdownData.set(result.queryId, result.data);
+            });
+          }
+
+          // This part is now in the final tap
+          this.buildFormControls();
+          this.loading = false;
+          this.cdr.markForCheck();
+        }),
+        // ✅ END MODIFICATION HERE
+
+        switchMap(() => {
+          return new Observable<void>((observer) => observer.next());
+        })
+      );
+    }),
       catchError((error) => {
         this.errorMessage = 'Error loading form: ' + error.message;
         this.alertService.alert(true, this.errorMessage);
@@ -602,21 +643,6 @@ export class Step2Component implements OnInit {
         this.alertService.alert(true, this.errorMessage);
         this.cdr.markForCheck();
       },
-    });
-  }
-  getYearDropDown(): void {
-    this.HTTP.getParam(
-      '/candidate/get/getYearDropdown/',
-      {}, // Pass empty object if no params
-      'recruitement'
-    ).subscribe((response: any): void => {
-      // The API returns an array of objects like { "m_year_name": 2024 }
-      // We need to extract the number from each object.
-      this.years =
-        response?.body?.data.map((item: any) => item.m_year_name) || [];
-      // Sort in descending order to show recent years first
-      this.years.sort((a, b) => b - a);
-      this.cdr.markForCheck();
     });
   }
   private generateFilePath(
@@ -845,86 +871,7 @@ export class Step2Component implements OnInit {
 
   this.emitFormData();
 }
-  private saveRecords(
-    registrationNo: number,
-    formData: FormData,
-    details: any[],
-    parameters: any[],
-    endpoint: string
-  ): void {
-    const payload = new FormData();
-    payload.append('registration_no', registrationNo.toString());
-    payload.append('scoreFieldDetailList', JSON.stringify(details));
-    payload.append('scoreFieldParameterList', JSON.stringify(parameters));
-    payload.append('parentScore', formData.get('parentScore') as string);
 
-    Array.from(formData.entries()).forEach(([key, value]) => {
-      if (key.startsWith('file_')) {
-        payload.append(key, value);
-      }
-    });
-
-    this.HTTP.postForm(
-      `/candidate/postFile/${endpoint}`,
-      payload,
-      'recruitement'
-    ).subscribe({
-      next: (res) => {
-        if (res.body?.error) {
-          this.alertService.alert(
-            true,
-            `Something went wrong: ${res.body.error.message}`
-          );
-          this.cdr.markForCheck();
-          return;
-        }
-
-        if (res.body?.data) {
-          details.forEach((detail, index) => {
-            if (res.body.data[index]?.a_rec_app_score_field_detail_id) {
-              this.existingDetailIds.set(
-                `${detail.m_rec_score_field_id}_${detail.a_rec_adv_post_detail_id}`,
-                res.body.data[index].a_rec_app_score_field_detail_id
-              );
-            }
-          });
-
-          parameters.forEach((param, index) => {
-            if (
-              res.body.data[index]?.a_rec_app_score_field_parameter_detail_id
-            ) {
-              const paramKey = `${param.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.unique_parameter_display_no}`;
-              this.existingParameterIds.set(
-                paramKey,
-                res.body.data[index].a_rec_app_score_field_parameter_detail_id
-              );
-            }
-          });
-        }
-
-        this.alertService.alertStatus(
-          res.status,
-          'Data saved successfully!'
-        );
-        this.getParameterValuesAndPatch();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        const errorMessage = err.body?.error?.message
-          ? `Something went wrong: ${err.body.error.message}`
-          : `Error saving data: ${err.message}`;
-        console.error(
-          JSON.stringify(
-            { event: `${endpoint}_error`, error: err.message },
-            null,
-            2
-          )
-        );
-        this.alertService.alertStatus(err.status || 500, errorMessage);
-        this.cdr.markForCheck();
-      },
-    });
-  }
 
   private emitFormData(): void {
     const subheadingsData = this.subheadings.reduce((acc, sub, index) => {

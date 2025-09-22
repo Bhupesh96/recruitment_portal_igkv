@@ -65,6 +65,7 @@ interface Parameter {
   is_mandatory: 'Y' | 'N';
   isDatatype: string;
   isCalculationColumn: 'Y' | 'N';
+  isQuery_id: number;
 }
 interface Note {
   message: string;
@@ -97,6 +98,7 @@ export class Step5Component implements OnInit {
   existingParentDetailId: number | null = null;
   payScales: { band_pay_no: number; Band_Pay_Scale: string }[] = [];
   totalExperience: number = 0;
+  dropdownData: Map<number, any[]> = new Map<number, any[]>();
   constructor(
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
@@ -109,14 +111,23 @@ export class Step5Component implements OnInit {
   }
 
   ngOnInit(): void {
-    this.getYearDropDown();
-    this.getEmploymentType();
-    this.getPayScales();
     this.loadFormData().subscribe(() => {
       this.getParameterValuesAndPatch();
     });
   } // No changes to buildFormControls, getKeyForSaved, getUniqueKey
-
+  private getDropdownData(queryId: number): Observable<any[]> {
+    if (!queryId || queryId === 0) {
+      return of([]); // Return an empty observable if no valid query ID
+    }
+    return this.HTTP.getParam(
+      '/master/get/getDataByQueryId',
+      { query_id: queryId },
+      'recruitement'
+    ).pipe(
+      map((res: any) => res?.body?.data || []),
+      catchError(() => of([])) // On error, return an empty array to prevent breaking the chain
+    );
+  }
   private buildFormControls(): void {
     this.form.addControl(
       'heading',
@@ -136,41 +147,12 @@ export class Step5Component implements OnInit {
       this.form.addControl(key, formArray);
     });
   }
-  getPayScales(): void {
-    this.HTTP.getParam(
-      '/candidate/get/getPayScaleForApplicationForm',
-      {},
-      'recruitement'
-    ).subscribe((response: any) => {
-      const rawData = response?.body?.data || [];
-      // De-duplicate the data from the API to ensure each option is unique
-      const uniquePayScales = Array.from(
-        new Map(rawData.map((item: any) => [item.band_pay_no, item])).values()
-      );
-      this.payScales = uniquePayScales as {
-        band_pay_no: number;
-        Band_Pay_Scale: string;
-      }[];
-      this.cdr.markForCheck();
-    });
-  }
 
-  private getKeyForSaved(item: any): string {
-    const index = this.subheadings.findIndex(
-      (s) =>
-        s.m_rec_score_field_id === item.m_rec_score_field_id &&
-        s.a_rec_adv_post_detail_id === item.a_rec_adv_post_detail_id
-    );
-    return `${item.m_rec_score_field_id}_${item.a_rec_adv_post_detail_id}_${index}`;
-  }
 
   getUniqueKey(sub: Subheading, index: number): string {
     return `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${index}`;
   }
-  /**
-   * ✅ UPDATED
-   * Now fetches both parent and child records to get existing IDs for updates.
-   */
+
 
   private getParameterValuesAndPatch(): void {
     if (!this.heading) return;
@@ -345,57 +327,18 @@ export class Step5Component implements OnInit {
     this.updateTotalExperience();
     this.cdr.markForCheck();
   }
-  private createDateRangeValidator(params: Parameter[]): ValidatorFn {
-    // ... (logic to find fromDateName and toDateName remains the same)
-    const calcParams = params
-      .filter((p) => p.isCalculationColumn === 'Y')
-      .sort((a, b) => a.parameter_display_order - b.parameter_display_order);
 
-    if (calcParams.length < 2) {
-      return () => null;
+  removeQualification(group: AbstractControl): void {
+    // We can cast to FormGroup if needed, but get() is on AbstractControl
+    if (group) {
+      // Set the flag on the specific group that was passed in
+      group.get('is_deleted')?.setValue(true);
     }
 
-    const fromDateName = calcParams[0].score_field_parameter_name;
-    const toDateName = calcParams[1].score_field_parameter_name;
-
-    // ✅ FIX: Change the parameter from '(group: FormGroup)' to '(control: AbstractControl)'
-    return (control: AbstractControl): { [key: string]: any } | null => {
-      // ✅ FIX: Cast the AbstractControl to a FormGroup to access its controls
-      const group = control as FormGroup;
-
-      const fromDateControl = group.get(fromDateName);
-      const toDateControl = group.get(toDateName);
-
-      if (
-        !fromDateControl ||
-        !toDateControl ||
-        !fromDateControl.value ||
-        !toDateControl.value
-      ) {
-        return null;
-      }
-
-      const fromDate = new Date(fromDateControl.value);
-      const toDate = new Date(toDateControl.value);
-
-      if (toDate < fromDate) {
-        return { dateRangeInvalid: true };
-      }
-
-      return null;
-    };
+    this.checkMandatorySubheadingsAndParameters();
+    this.updateTotalExperience(); // Recalculate total after "deletion"
+    this.cdr.markForCheck();
   }
-  removeQualification(group: AbstractControl): void {
-  // We can cast to FormGroup if needed, but get() is on AbstractControl
-  if (group) {
-    // Set the flag on the specific group that was passed in
-    group.get('is_deleted')?.setValue(true);
-  }
-
-  this.checkMandatorySubheadingsAndParameters();
-  this.updateTotalExperience(); // Recalculate total after "deletion"
-  this.cdr.markForCheck();
-}
 
   private createQualificationGroup(sub: Subheading): FormGroup {
     const group = this.fb.group({});
@@ -499,37 +442,18 @@ export class Step5Component implements OnInit {
       this.updateTotalExperience();
     }
   }
-  private getParamValidators(param: Parameter): ValidatorFn[] {
-    const validators: ValidatorFn[] = [Validators.required];
-    if (
-      param.score_field_parameter_name === 'Period From' ||
-      param.score_field_parameter_name === 'Period To'
-    ) {
-      validators.push(this.dateValidator());
-    }
-    return validators;
-  }
 
-  private dateValidator(): ValidatorFn {
-    return (control) => {
-      if (!control.value) return null;
-      const date = new Date(control.value);
-      if (isNaN(date.getTime())) {
-        return { invalidDate: true };
-      }
-      return null;
-    };
-  }
 
   private loadFormData(): Observable<void> {
-    // ... (This method remains unchanged)
     const a_rec_adv_main_id = 115;
     const m_rec_score_field_id = 32;
+
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
       { a_rec_adv_main_id, m_rec_score_field_id, m_rec_score_field: 'N' },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
+
     return headingRequest.pipe(
       switchMap((headingRes: HttpResponse<ApiResponse<Heading>>) => {
         const headingList = headingRes.body?.data || [];
@@ -559,8 +483,35 @@ export class Step5Component implements OnInit {
           'recruitement'
         ) as Observable<HttpResponse<ApiResponse<Parameter>>>;
       }),
-      tap((parameterRes: HttpResponse<ApiResponse<Parameter>>) => {
+      switchMap((parameterRes: HttpResponse<ApiResponse<Parameter>>) => {
         this.parameters = parameterRes.body?.data || [];
+
+        const uniqueQueryIds = [
+          ...new Set(
+            this.parameters
+              .map((p) => p.isQuery_id)
+              // ✅ FIX: Ensure the predicate always returns a strict boolean
+              .filter((id): id is number => !!(id && id > 0))
+          ),
+        ];
+
+        if (uniqueQueryIds.length === 0) {
+          return of([] as { queryId: number; data: any[] }[]);
+        }
+
+        const dropdownRequests = uniqueQueryIds.map((queryId) =>
+          this.getDropdownData(queryId).pipe(map((data) => ({ queryId, data })))
+        );
+
+        return forkJoin(dropdownRequests);
+      }),
+      tap((dropdownResults: { queryId: number; data: any[] }[]) => {
+        if (dropdownResults && dropdownResults.length > 0) {
+          dropdownResults.forEach((result) => {
+            this.dropdownData.set(result.queryId, result.data);
+          });
+        }
+
         this.buildFormControls();
         this.loading = false;
         this.cdr.markForCheck();
@@ -575,31 +526,6 @@ export class Step5Component implements OnInit {
     );
   }
 
-  getYearDropDown(): void {
-    this.HTTP.getParam(
-      '/candidate/get/getYearDropdown/',
-      {},
-      'recruitement'
-    ).subscribe((response: any): void => {
-      this.years =
-        response?.body?.data.map((item: any) => item.m_year_name) || [];
-      this.years.sort((a, b) => b - a);
-      this.cdr.markForCheck();
-    });
-  }
-
-  getEmploymentType(): void {
-    this.HTTP.getParam(
-      '/candidate/get/getEmploymentType/',
-      {},
-      'recruitement'
-    ).subscribe((response: any): void => {
-      this.employment =
-        response?.body?.data.map((item: any) => item.Employment_Type_Name) ||
-        [];
-      this.cdr.markForCheck();
-    });
-  }
   getParameters(subheading_id: number, post_detail_id: number): Parameter[] {
     return this.parameters.sort(
       (a, b) => a.parameter_display_order - b.parameter_display_order
@@ -944,10 +870,7 @@ export class Step5Component implements OnInit {
         this.cdr.markForCheck();
       },
       error: (err) => {
-        this.alertService.alert(
-          true,
-          `Error saving data: ${err.message}`
-        );
+        this.alertService.alert(true, `Error saving data: ${err.message}`);
         this.cdr.markForCheck();
       },
     });

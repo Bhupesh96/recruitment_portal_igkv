@@ -32,8 +32,8 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="" disabled selected>Select Salutation</option>
-            <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
-              {{ sal.salutation_name_e }}
+            <option *ngFor="let sal of salutations" [value]="sal.data_id">
+              {{ sal.data_name }}
             </option>
           </select>
           <div
@@ -108,7 +108,7 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="" disabled selected>Salutation</option>
-            <option *ngFor="let sal of salutations" [value]="sal.salutation_id">
+            <option *ngFor="let sal of salutations" [value]="sal.data_id">
               {{ sal.salutation_name_h }}
             </option>
           </select>
@@ -265,8 +265,8 @@
             <label class="flex items-center">
               <input
                 type="radio"
-                value="Male"
-                formControlName="Gender_Id"
+                value="M"
+                formControlName="gender_id"
                 class="mr-1 text-blue-600 focus:ring-blue-600"
               />
               Male
@@ -274,8 +274,8 @@
             <label class="flex items-center">
               <input
                 type="radio"
-                value="Female"
-                formControlName="Gender_Id"
+                value="F"
+                formControlName="gender_id"
                 class="mr-1 text-blue-600 focus:ring-blue-600"
               />
               Female
@@ -283,8 +283,8 @@
             <label class="flex items-center">
               <input
                 type="radio"
-                value="Third Gender"
-                formControlName="Gender_Id"
+                value="T"
+                formControlName="gender_id"
                 class="mr-1 text-blue-600 focus:ring-blue-600"
               />
               Third Gender
@@ -292,7 +292,7 @@
           </div>
           <div
             *ngIf="
-              form.get('Gender_Id')?.invalid && form.get('Gender_Id')?.touched
+              form.get('gender_id')?.invalid && form.get('gender_id')?.touched
             "
             class="text-red-500 text-xs mt-1"
           >
@@ -385,23 +385,21 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
-            >Religion<span class="text-red-500">*</span></label
-          >
+          <label class="block mb-1 text-gray-600 text-sm font-medium">
+            Religion<span class="text-red-500">*</span>
+          </label>
           <select
             formControlName="religion_code"
-            [class.border-red-500]="
-              form.get('religion_code')?.invalid &&
-              form.get('religion_code')?.touched
-            "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
             <option value="" disabled selected>Select Religion</option>
+
             <option
               *ngFor="let religion of religionList"
-              [value]="religion.religion_code"
+              [value]="religion.data_id"
+              [disabled]="religion.disabled"
             >
-              {{ religion.religion_name }}
+              {{ religion.data_name }}
             </option>
           </select>
           <div
@@ -700,9 +698,9 @@
                         <option [ngValue]="null">Select Disability Type</option>
                         <option
                           *ngFor="let type of disabilityTypes"
-                          [ngValue]="type.Recruitment_Disability_Type_Id"
+                          [value]="type.data_id"
                         >
-                          {{ type.Disability_Type }}
+                          {{ type.data_name }}
                         </option>
                       </select>
                     </ng-container>
@@ -741,6 +739,7 @@
                     >
                       Date cannot be after
                       {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
+
                       }}.
                     </ng-container>
                   </div>
@@ -839,9 +838,9 @@
             <option value="" disabled>Select Country</option>
             <option
               *ngFor="let country of countryList"
-              [value]="country.country_id"
+              [value]="country.data_id"
             >
-              {{ country.country_name }}
+              {{ country.data_name }}
             </option>
           </select>
           <div
@@ -867,8 +866,8 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
             <option value="" disabled selected>Select State</option>
-            <option *ngFor="let state of stateList" [value]="state.state_id">
-              {{ state.name }}
+            <option *ngFor="let state of stateList" [value]="state.data_id">
+              {{ state.data_name }}
             </option>
           </select>
           <div
@@ -1073,8 +1072,8 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
             <option value="" disabled selected>Select State</option>
-            <option *ngFor="let state of stateList" [value]="state.state_id">
-              {{ state.name }}
+            <option *ngFor="let state of stateList" [value]="state.data_id">
+              {{ state.data_name }}
             </option>
           </select>
           <div
@@ -1324,8 +1323,8 @@
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
             <option value="" disabled selected>Select State</option>
-            <option *ngFor="let state of stateList" [value]="state.state_id">
-              {{ state.name }}
+            <option *ngFor="let state of stateList" [value]="state.data_id">
+              {{ state.data_name }}
             </option>
           </select>
           <div
@@ -1525,9 +1524,9 @@
                   <option value="">Select Type</option>
                   <option
                     *ngFor="let type of languageTypes"
-                    [ngValue]="type.m_rec_language_type_id"
+                    [ngValue]="type.data_id"
                   >
-                    {{ type.language_type }}
+                    {{ type.data_name }}
                   </option>
                 </select>
                 <div
@@ -1550,8 +1549,11 @@
                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 >
                   <option value="">Select Language</option>
-                  <option *ngFor="let lang of languages" [ngValue]="lang.id">
-                    {{ lang.language_name }}
+                  <option
+                    *ngFor="let lang of languages"
+                    [ngValue]="lang.data_id"
+                  >
+                    {{ lang.data_name }}
                   </option>
                 </select>
                 <div
@@ -1576,9 +1578,9 @@
                   <option value="">Select Skill</option>
                   <option
                     *ngFor="let skill of languageSkills"
-                    [ngValue]="skill.m_rec_language_skill_id"
+                    [ngValue]="skill.data_id"
                   >
-                    {{ skill.language_skill }}
+                    {{ skill.data_name }}
                   </option>
                 </select>
                 <div

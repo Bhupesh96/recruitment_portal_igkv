@@ -108,51 +108,6 @@
         </div>
       </div>
 
-      <div class="text-center mt-5">
-        <button
-          type="button"
-          class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white !rounded-full text-sm font-medium flex items-center justify-center gap-2 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-150 w-30 mx-auto"
-          (click)="toggleEdit()"
-        >
-          <svg
-            *ngIf="isEditing"
-            class="w-4 h-4 inline-block"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <svg
-            *ngIf="!isEditing"
-            class="w-4 h-4 inline-block"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-            />
-          </svg>
-          <span>{{ isEditing ? "Add" : "Edit" }}</span>
-        </button>
-        <p
-          class="text-sm text-red-600 mt-1.5 font-medium italic tracking-tight"
-        >
-          Click Edit to modify counts or Add to enter details.
-        </p>
-      </div>
-
       <ng-container *ngFor="let subHeading of subHeadings">
         <div
           class="mt-8"
@@ -298,28 +253,41 @@
                           </ng-container>
                         </div>
                       </ng-container>
-
+                      <!-- Dropdown -->
                       <select
                         *ngSwitchCase="'D'"
+                        [formControlName]="param.normalizedKey"
+                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'DY'"
                         class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white"
                         [formControlName]="param.normalizedKey"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
                         </option>
-                        <option value="UG">UG</option>
-                        <option value="PG">PG</option>
-                        <option value="Ph.D">Ph.D</option>
-                      </select>
 
-                      <select
-                        *ngSwitchCase="'DY'"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white"
-                        [formControlName]="param.normalizedKey"
-                      >
-                        <option value="">Select Year</option>
-                        <option *ngFor="let year of years" [value]="year">
-                          {{ year }}
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
                         </option>
                       </select>
 

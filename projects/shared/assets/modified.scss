@@ -120,8 +120,8 @@ mat-form-field {
 
 
 table > thead:not(.mat-calendar-table-header) > tr > th {
-  background-color: $primary_background;
-  color: #fff !important;
+  // background-color: $primary_background;
+  // color: #fff !important;
   font-weight: 500 !important;
   vertical-align: middle;
 }
@@ -155,8 +155,8 @@ table .table-row {
 
 .table > thead > tr > td, .table > thead > tr > th, th.mat-header-cell {
   text-align: center !important;
-  background-color: $primary_background;
-  color: #fff;
+  // background-color: $primary_background;
+  // color: #fff;
   border: 1px solid $footer_background;
   font-size: 14px;
   letter-spacing: .5px

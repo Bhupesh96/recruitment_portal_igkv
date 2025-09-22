@@ -46,18 +46,23 @@ import { LoaderService } from 'shared';
 export class Step1Component implements OnChanges, OnInit {
   @Output() formData = new EventEmitter<{ [key: string]: any }>();
   @Input() triggerValidation = false;
-
+  private dropdownConfig = [
+    { propertyName: 'salutations', queryId: 111 },
+    { propertyName: 'religionList', queryId: 112 },
+    { propertyName: 'countryList', queryId: 113 },
+    { propertyName: 'stateList', queryId: 114 }, // You can also put numbers directly
+    { propertyName: 'languageTypes', queryId: 116 },
+    { propertyName: 'languages', queryId: 117 },
+    { propertyName: 'languageSkills', queryId: 118 },
+    { propertyName: 'advertisementList', queryId: 108 },
+  ];
   form: FormGroup;
-  salutations: {
-    salutation_id: number;
-    salutation_name_e: string;
-    salutation_name_h: string;
-  }[] = [];
-  subjectList: { subject_id: number; Subject_Name_E: string }[] = [];
-  religionList: { religion_code: string; religion_name: string }[] = [];
-  countryList: { country_id: number; country_name: string }[] = [];
-  stateList: { state_id: number; name: string }[] = [];
-  districtList: { district_id: number; district_name: string }[] = [];
+  salutations: any[] = [];
+  subjectList: any[] = [];
+  religionList: any[] = [];
+  countryList: any[] = [];
+  stateList: any[] = [];
+  districtList: any[] = [];
   languageTypes: any[] = [];
   languages: any[] = [];
   languageSkills: any[] = [];
@@ -79,10 +84,8 @@ export class Step1Component implements OnChanges, OnInit {
   private savedAdditionalInfo: any[] = [];
   categoryQuestion: any = null; // To hold the 'Applied Category' question object
   filteredCategoryOptions: any[] = []; // To hold the dynamically filtered options
-  disabilityTypes: {
-    Recruitment_Disability_Type_Id: number;
-    Disability_Type: string;
-  }[] = []; // <-- ADD THIS LINE
+
+  disabilityTypes: any[] = []; // <-- ADD THIS LINE
   private fieldNameMap: { [key: string]: string } = {
     registration_no: 'Registration Number',
     a_rec_adv_main_id: 'Advertisement',
@@ -96,7 +99,7 @@ export class Step1Component implements OnChanges, OnInit {
     Applicant_Last_Name_H: 'Last Name (Hindi)',
     Applicant_Father_Name_E: "Father's Name",
     Applicant_Mother_Name_E: "Mother's Name",
-    Gender_Id: 'Gender',
+    gender_id: 'Gender',
     DOB: 'Date of Birth',
     Mobile_No: 'Mobile Number',
     Email_Id: 'Email Address',
@@ -148,7 +151,7 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Last_Name_H: [''],
       Applicant_Father_Name_E: ['', Validators.required],
       Applicant_Mother_Name_E: ['', Validators.required],
-      Gender_Id: ['', Validators.required],
+      gender_id: ['', Validators.required],
       DOB: ['', Validators.required],
       age: [{ value: '', disabled: true }],
       Mobile_No: [
@@ -158,7 +161,7 @@ export class Step1Component implements OnChanges, OnInit {
       Email_Id: ['', [Validators.required, Validators.email]],
       Birth_Place: ['', Validators.required],
       Birth_District_Id: ['', Validators.required],
-      Birth_State_Id: ['', Validators.required],
+      Birth_State_Id: [null, Validators.required],
       Birth_Country_Id: ['', Validators.required],
       Identification_Mark1: ['', Validators.required],
       Identification_Mark2: ['', Validators.required],
@@ -197,49 +200,38 @@ export class Step1Component implements OnChanges, OnInit {
   private initializeFormWithData(): void {
     this.loader.show();
 
-    // 1. Define all API calls to be run in parallel
-    const dataSources$ = [
-      this.HTTP.getParam('/master/get/getSalutation/', {}, 'recruitement'),
-      this.getReligions(),
-      this.getCountries(),
-      this.getStates(),
-      this.getLanguageTypes(),
-      this.getLanguages(),
-      this.getLanguageSkills(),
+    // 1. Automatically create API calls for all dropdowns from the configuration array
+    const dropdownRequests = this.dropdownConfig.map((config) =>
+      this.getDropdownData(config.queryId)
+    );
+
+    // 2. Define the remaining, non-dropdown API calls
+    const otherRequests = [
       this.getAdditionalInfoQuestions(),
       this.getUserData(),
       this.getSavedLanguages(),
     ];
 
-    // 2. Execute all API calls
-    forkJoin(dataSources$).subscribe({
-      next: ([
-        salutationsRes,
-        religionsRes,
-        countriesRes,
-        statesRes,
-        langTypesRes,
-        languagesRes,
-        langSkillsRes,
-        additionalQuestionsRes,
-        userDataRes,
-        savedLanguagesRes,
-      ]) => {
-        // 3. Assign all master data lists from the API responses
-        this.salutations = salutationsRes?.body?.data || [];
-        this.religionList = religionsRes?.body?.data || [];
-        this.countryList = countriesRes?.body?.data || [];
-        this.stateList = statesRes?.body?.data || [];
-        this.languageTypes = langTypesRes?.body?.data || [];
-        this.languages = languagesRes?.body?.data || [];
-        this.languageSkills = langSkillsRes?.body?.data || [];
+    // 3. Combine all requests into a single array for forkJoin
+    const allDataSources$ = [...dropdownRequests, ...otherRequests];
 
-        // 4. Clean the flawed JSON from the 'additionalQuestions' response
+    forkJoin(allDataSources$).subscribe({
+      next: (responses) => {
+        // 4. Automatically assign dropdown data to component properties using the configuration
+        this.dropdownConfig.forEach((config, index) => {
+          (this as any)[config.propertyName] = responses[index];
+        });
+
+        // 5. Manually get the results of the non-dropdown calls from the end of the response array
+        const additionalQuestionsRes = responses[this.dropdownConfig.length];
+        const userDataRes = responses[this.dropdownConfig.length + 1];
+        const savedLanguagesRes = responses[this.dropdownConfig.length + 2];
+
+        // 6. Process the remaining data as before
         let questions = additionalQuestionsRes?.body?.data?.questions || [];
         questions.forEach((question: any) => {
           question.options.forEach((option: any) => {
             if (option.conditions && option.conditions.length > 0) {
-              // Filter conditions to only include those that match the parent option
               option.conditions = option.conditions.filter(
                 (condition: any) => condition.option_id === option.option_id
               );
@@ -251,48 +243,26 @@ export class Step1Component implements OnChanges, OnInit {
           (q) => q.question_id === 2
         );
 
-        // 5. Build the dynamic form controls based on the cleaned questions
         if (this.additionalQuestions.length > 0) {
           this.buildAdditionalInfoFormControls(this.additionalQuestions);
           this.setupConditionalValidators(this.additionalQuestions);
         }
 
-        // 6. Process the main user data
         const userData = userDataRes?.body?.data?.[0];
         if (userData) {
-          // Populate lists that depend on user data
-          this.postList = [
-            {
-              post_code: userData.post_code,
-              post_name: userData.post_name,
-              post_status_name: userData.post_status_name,
-            },
-          ];
-          this.advertisementList = [
-            {
-              a_rec_adv_main_id: userData.a_rec_adv_main_id,
-              advertisment_name: userData.advertisment_name,
-            },
-          ];
-
-          // Patch the main form and languages array
           this.patchUserData(userData);
           const savedLanguages = savedLanguagesRes?.body?.data || [];
           if (savedLanguages.length > 0) {
             this.patchUserLanguages(savedLanguages);
           }
-
-          // 7. CRITICAL STEP: Chain the final setup steps
-          // This ensures saved values are loaded BEFORE the custom listeners are attached.
           this.loadAndPatchAdditionalInfo(userData.registration_no).subscribe(
             () => {
-              this.setupCustomLogicListeners(); // Now set up the Bonafide -> Category logic
+              this.setupCustomLogicListeners();
               this.loadAdvertisementDetails();
-              this.loader.hide(); // Hide loader only after everything is complete
+              this.loader.hide();
             }
           );
         } else {
-          // If there's no user data, we can hide the loader now
           this.loader.hide();
         }
       },
@@ -302,7 +272,7 @@ export class Step1Component implements OnChanges, OnInit {
           true,
           'Failed to load essential application data. Please refresh the page.'
         );
-        this.loader.hide(); // ALWAYS hide loader on error
+        this.loader.hide();
       },
     });
   }
@@ -310,11 +280,32 @@ export class Step1Component implements OnChanges, OnInit {
   /**
    * Sets up all reactive form `valueChanges` subscriptions to handle dynamic UI and data fetching.
    */
-  private getDropdownDataByQuery(queryId: number): Observable<any> {
+  private getDropdownData(
+    queryId: number,
+    params: { [key: string]: any } = {}
+  ): Observable<any[]> {
     return this.HTTP.getParam(
       '/master/get/getDataByQueryId',
-      { query_id: queryId },
+      { query_id: queryId, ...params },
       'recruitement'
+    ).pipe(
+      map((res: any) => {
+        const data = res?.body?.data || [];
+        if (data.length === 0) {
+          return [{ id: '', name: 'No Data Available', disabled: true }];
+        }
+
+        // ✅ IMPROVED MAPPING: Keeps original properties AND adds standard ones.
+        return data.map((item: any) => ({
+          ...item, // This keeps all original properties (like salutation_name_h)
+          id: item.data_id,
+          name: item.data_name,
+          disabled: false,
+        }));
+      }),
+      catchError(() => {
+        return of([{ id: '', name: 'Error loading data', disabled: true }]);
+      })
     );
   }
   private setupCustomLogicListeners(): void {
@@ -412,21 +403,6 @@ export class Step1Component implements OnChanges, OnInit {
     );
   }
 
-  private getReligions(): Observable<any> {
-    return this.HTTP.getParam(
-      '/master/get/getReligionCode',
-      {},
-      'recruitement'
-    );
-  }
-
-  private getCountries(): Observable<any> {
-    return this.HTTP.getParam('/master/get/getCountryList', {}, 'recruitement');
-  }
-
-  private getStates(): Observable<any> {
-    return this.HTTP.getParam('/master/get/getStateList', {}, 'recruitement');
-  }
 
   private getPostByAdvertisement(advertisementId: number): Observable<any> {
     return this.HTTP.getParam(
@@ -452,17 +428,6 @@ export class Step1Component implements OnChanges, OnInit {
     );
   }
 
-  private getLanguages(): Observable<any> {
-    return this.HTTP.getParam('/master/get/getLanguages', {}, 'recruitement');
-  }
-
-  private getLanguageSkills(): Observable<any> {
-    return this.HTTP.getParam(
-      '/master/get/getLanguagesSkill',
-      {},
-      'recruitement'
-    );
-  }
 
   private getAdditionalInfoQuestions(): Observable<any> {
     return this.HTTP.getParam(
@@ -508,6 +473,7 @@ export class Step1Component implements OnChanges, OnInit {
   // --- Form & UI Event Handlers ---
 
   private patchUserData(data: any): void {
+   
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
@@ -545,7 +511,7 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Last_Name_H: data.Applicant_Last_Name_H,
       Applicant_Father_Name_E: data.Applicant_Father_Name_E,
       Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
-      Gender_Id: data.Gender_Id,
+      gender_id: data.gender_id,
       DOB: this.formatDateToYYYYMMDD(data.DOB),
       Mobile_No: data.app_mobile_no,
       Email_Id: data.app_email_id,
@@ -569,6 +535,7 @@ export class Step1Component implements OnChanges, OnInit {
       Current_Country_Id: data.Current_Country_Id,
       Current_Pin_Code: data.Current_Pin_Code,
     });
+   
     const sameAddress =
       data.Permanent_Address1 === data.Current_Address1 &&
       data.Permanent_City === data.Current_City &&
@@ -905,31 +872,31 @@ export class Step1Component implements OnChanges, OnInit {
     return this.additionalFilePaths.get(controlName) || null;
   }
 
-private buildAdditionalInfoFormControls(questions: any[]): void {
-  questions.forEach((question) => {
-    const validators = [];
-    if (question.is_required === 'Y') {
-      validators.push(Validators.required);
-    }
-
-    this.form.addControl(
-      `question_${question.question_id}`,
-      this.fb.control(null, validators) // Initialize main questions with null
-    );
-
-    question.options.forEach((option: any) => {
-      if (option.has_condition === 'Y') {
-        option.conditions.forEach((condition: any) => {
-          this.form.addControl(
-            `condition_${condition.condition_id}`,
-            // ✅ THE FIX: Initialize conditional controls with null instead of ''
-            this.fb.control(null) 
-          );
-        });
+  private buildAdditionalInfoFormControls(questions: any[]): void {
+    questions.forEach((question) => {
+      const validators = [];
+      if (question.is_required === 'Y') {
+        validators.push(Validators.required);
       }
+
+      this.form.addControl(
+        `question_${question.question_id}`,
+        this.fb.control(null, validators) // Initialize main questions with null
+      );
+
+      question.options.forEach((option: any) => {
+        if (option.has_condition === 'Y') {
+          option.conditions.forEach((condition: any) => {
+            this.form.addControl(
+              `condition_${condition.condition_id}`,
+              // ✅ THE FIX: Initialize conditional controls with null instead of ''
+              this.fb.control(null)
+            );
+          });
+        }
+      });
     });
-  });
-}
+  }
   onDobChange(event: Event): void {
     const control = this.form.get('DOB');
     if (control?.hasError('invalidDobMax')) {
@@ -955,69 +922,87 @@ private buildAdditionalInfoFormControls(questions: any[]): void {
     }
   }
 
-private setupConditionalValidators(questions: any[]): void {
-  questions.forEach((question) => {
-    const questionControl = this.form.get(`question_${question.question_id}`);
-    if (!questionControl) return;
+  // in step-1.component.ts
 
-    questionControl.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe((selectedValue) => {
-        // --- Logic to fetch dynamic dropdown data on demand ---
-        if (question.question_id === 5 && selectedValue === 'Y') {
-          const disabilityCondition = question.options
-            .find((opt: any) => opt.option_value === 'Y')
-            ?.conditions?.find((c: any) => c.condition_data_type === 'select');
+  private setupConditionalValidators(questions: any[]): void {
+    questions.forEach((question) => {
+      const questionControl = this.form.get(`question_${question.question_id}`);
+      if (!questionControl) return;
 
-          if (disabilityCondition && this.disabilityTypes.length === 0) {
-            this.getDropdownDataByQuery(disabilityCondition.query_id).subscribe(
-              (res) => {
-                this.disabilityTypes = res?.body?.data?.data || [];
-                this.cdr.markForCheck();
-              }
-            );
-          }
-        }
-        
-        question.options.forEach((option: any) => {
-          const isSelected = option.option_value === selectedValue;
-          if (option.has_condition === 'Y') {
-            option.conditions.forEach((condition: any) => {
-              const controlName = `condition_${condition.condition_id}`;
-              const conditionControl = this.form.get(controlName);
-              if (conditionControl) {
-                if (isSelected && condition.condition_required === 'Y') {
-                  const validators: ValidatorFn[] = [];
-                  if (condition.condition_data_type === 'file') {
-                    validators.push(this.conditionalFileValidator(controlName));
-                  } else {
-                    validators.push(Validators.required);
-                  }
-                  if (
-                    condition.condition_id === 1 &&
-                    this.advertisementDetails?.marriage_calculation_date
-                  ) {
-                    validators.push(
-                      this.maxMarriageDateValidator(
-                        this.advertisementDetails.marriage_calculation_date
-                      )
-                    );
-                  }
-                  conditionControl.setValidators(validators);
-                } else {
-                  conditionControl.clearValidators();
-                  // ✅ THE FIX: Reset the control's value to null, not an empty string.
-                  conditionControl.reset(null, { emitEvent: false }); 
+      questionControl.valueChanges
+        .pipe(distinctUntilChanged())
+        .subscribe((selectedValue) => {
+          // --- Logic to fetch dynamic dropdown data on demand ---
+          if (question.question_id === 5 && selectedValue === 'Y') {
+            const disabilityCondition = question.options
+              .find((opt: any) => opt.option_value === 'Y')
+              ?.conditions?.find(
+                (c: any) => c.condition_data_type === 'select'
+              );
+
+            // ✅ START FIX
+            const advId = this.form.get('a_rec_adv_main_id')?.value;
+            const post_code = this.form.get('post_code')?.value;
+            if (
+              disabilityCondition &&
+              this.disabilityTypes.length === 0 &&
+              advId
+            ) {
+              // 1. Pass the advertisement ID as a parameter
+              this.getDropdownData(disabilityCondition.query_id, {
+                a_rec_adv_main_id: advId,
+                post_code: post_code,
+              }).subscribe(
+                // 2. Directly use the returned array
+                (data: any[]) => {
+                  this.disabilityTypes = data;
+                  this.cdr.markForCheck();
                 }
-                conditionControl.updateValueAndValidity({ emitEvent: false });
-              }
-            });
+              );
+            }
+            // ✅ END FIX
           }
+
+          question.options.forEach((option: any) => {
+            const isSelected = option.option_value === selectedValue;
+            if (option.has_condition === 'Y') {
+              option.conditions.forEach((condition: any) => {
+                const controlName = `condition_${condition.condition_id}`;
+                const conditionControl = this.form.get(controlName);
+                if (conditionControl) {
+                  if (isSelected && condition.condition_required === 'Y') {
+                    const validators: ValidatorFn[] = [];
+                    if (condition.condition_data_type === 'file') {
+                      validators.push(
+                        this.conditionalFileValidator(controlName)
+                      );
+                    } else {
+                      validators.push(Validators.required);
+                    }
+                    if (
+                      condition.condition_id === 1 &&
+                      this.advertisementDetails?.marriage_calculation_date
+                    ) {
+                      validators.push(
+                        this.maxMarriageDateValidator(
+                          this.advertisementDetails.marriage_calculation_date
+                        )
+                      );
+                    }
+                    conditionControl.setValidators(validators);
+                  } else {
+                    conditionControl.clearValidators();
+                    conditionControl.reset(null, { emitEvent: false });
+                  }
+                  conditionControl.updateValueAndValidity({ emitEvent: false });
+                }
+              });
+            }
+          });
+          this.cdr.markForCheck();
         });
-        this.cdr.markForCheck();
-      });
-  });
-}
+    });
+  }
   public handleRadioChange(controlName: string, value: any): void {
     const control = this.form.get(controlName);
     if (control) {
