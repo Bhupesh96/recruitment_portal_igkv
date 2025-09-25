@@ -8,10 +8,64 @@
   <header
     class="relative py-10 sm:py-12 flex flex-col items-center justify-center text-white bg-blue-900 overflow-hidden"
   >
-    <div
-      class="absolute inset-0 z-0 grid grid-cols-6 gap-8 opacity-10 text-white px-6 py-10 pointer-events-none"
+ <div
+      class="absolute inset-0 z-0 grid grid-cols-6 gap-8 sm:gap-10 lg:gap-12 opacity-10 text-white px-6 sm:px-8 py-10 sm:py-12 pointer-events-none"
     >
       <!-- Decorative SVGs -->
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z"
+        />
+      </svg>
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 13a4 4 0 118 0H4z" />
+      </svg>
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5 4a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm4 3a1 1 0 100 2h2a1 1 0 100-2H9z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          d="M6 2a2 2 0 00-2 2v3h12V4a2 2 0 00-2-2H6zM4 9v7a2 2 0 002 2h8a2 2 0 002-2V9H4z"
+        />
+      </svg>
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0zM4 13a4 4 0 118 0H4z" />
+      </svg>
+      <svg
+        class="w-8 h-8 sm:w-10 sm:h-10"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5 4a3 3 0 00-3 3v8a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm4 3a1 1 0 100 2h2a1 1 0 100-2H9z"
+          clip-rule="evenodd"
+        />
+      </svg>
     </div>
     <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8">
       <h1
@@ -51,7 +105,7 @@
                       [ngClass]="{
                         'bg-blue-500 text-white': currentStep === i + 1,
                         'bg-blue-700 text-white': currentStep > i + 1,
-                        'bg-blue-200 text-blue-700': currentStep < i + 1
+                        'bg-blue-200 text-gray-700': currentStep < i + 1
                       }"
                     >
                       {{ i + 1 }}
@@ -59,9 +113,9 @@
                     <div
                       class="text-sm font-medium whitespace-nowrap transition-all duration-300"
                       [ngClass]="{
-                        'text-blue-700': currentStep === i + 1,
-                        'text-blue-800': currentStep > i + 1,
-                        'text-blue-500': currentStep < i + 1
+                        'text-gray-700': currentStep === i + 1,
+                        'text-gray-800': currentStep > i + 1,
+                        'text-gray-500': currentStep < i + 1
                       }"
                     >
                       {{ step }}
@@ -121,7 +175,7 @@
             class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200"
           >
             <button
-              class="px-4 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+              class="px-4 py-1.5 bg-blue-100 hover:bg-blue-200 text-gray-700 text-sm font-medium rounded-md shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
               (click)="prevStep()"
               [disabled]="currentStep === 1"
             >
