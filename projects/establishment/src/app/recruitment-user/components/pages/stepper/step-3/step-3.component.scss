@@ -4,18 +4,20 @@ section {
 }
 
 /* Ensure select elements are styled consistently */
-select {
-  @apply focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none;
-}
-section {
-  background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='pattern' patternUnits='userSpaceOnUse' width='40' height='40' patternTransform='rotate(45)'%3E%3Crect x='0' y='0' width='20' height='20' fill='%23e0f2fe'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23pattern)'/%3E%3C/svg%3E");
-  background-size: cover;
-  background-position: center;
-  padding: 2rem;
-  border-radius: 1.5rem;
-  min-height: 200px;
-}
+
 .checkbox-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+select {
+  option.option-disabled {
+    // 1. Makes the text gray to look disabled
+    color: #9ca3af;
+
+    // 2. Changes the cursor to a block sign on hover
+    cursor: not-allowed;
+
+    // 3. (The magic part) Prevents the option from being clickable
+    pointer-events: none;
+  }
 }

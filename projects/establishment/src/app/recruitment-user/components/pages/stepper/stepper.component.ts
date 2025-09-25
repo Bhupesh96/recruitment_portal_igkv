@@ -9,7 +9,6 @@ import { Step3Component } from './step-3/step-3.component';
 import { Step4Component } from './step-4/step-4.component';
 import { Step5Component } from './step-5/step-5.component';
 import { Step6Component } from './step-6/step-6.component';
-import { Step8Component } from './step-8/step-8.component';
 import { Step9Component } from './step-9/step-9.component';
 import { HeaderComponent } from '../../header/header.component';
 import { FooterComponent } from '../../footer/footer.component';
@@ -30,11 +29,8 @@ import { AlertService } from 'shared';
     Step4Component,
     Step5Component,
     Step6Component,
-    Step8Component,
     Step9Component,
   ],
-  // This line is removed to ensure the root service instance is used.
-  // providers: [SharedDataService],
   templateUrl: './stepper.component.html',
   styleUrls: ['./stepper.component.scss'],
   animations: [
@@ -62,18 +58,16 @@ export class StepperComponent {
   @ViewChild(Step4Component, { static: false }) step4Component?: Step4Component;
   @ViewChild(Step5Component, { static: false }) step5Component?: Step5Component;
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
-  @ViewChild(Step8Component, { static: false }) step8Component?: Step8Component;
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
 
   steps = [
-    'Personal Info', // Step 1
-    'Education', // Step 2
-    'Academics', // Step 3
-    'Publications', // Step 4
-    'Experience', // Step 5
-    'Performance', // Step 6
-    'Preview', // Step 7
-    'Submission', // Step 8
+    'Personal Info',
+    'Education',
+    'Academics',
+    'Publications',
+    'Experience',
+    'Performance',
+    'Preview & Submit', // The final step
   ];
   currentStep = 1;
   formData: { [key: number]: { [key: string]: any } } = {};
@@ -85,8 +79,17 @@ export class StepperComponent {
 
   async nextStep() {
     try {
-      // Use a switch statement and 'await' to handle the async submit calls
-      // This ensures the stepper waits for the API call to finish
+      // The button on the final step triggers the submit inside Step9Component.
+      // This function only handles advancing through steps 1-6.
+      if (this.currentStep === this.steps.length) {
+        if (this.step9Component) {
+          await this.step9Component.submit();
+        }
+        return;
+      }
+
+      // Await the validation/save method of the current step component.
+      // It will throw an error if invalid, which is caught below.
       switch (this.currentStep) {
         case 1:
           if (this.step1Component) await this.step1Component.submitForm();
@@ -106,35 +109,23 @@ export class StepperComponent {
         case 6:
           if (this.step6Component) await this.step6Component.submit();
           break;
-        // Step 7 is 'Preview', which has no submit action.
-        case 8:
-          if (this.step8Component) await this.step8Component.submit();
-          break;
       }
 
-      // Allow advancing from the preview step without checking form validity
-      const canAdvance =
-        this.isFormValid() || this.steps[this.currentStep - 1] === 'Preview';
-
-      if (canAdvance) {
-        if (this.currentStep < this.steps.length) {
-          // If we are about to move TO the "Preview" step, save all data to the service.
-          if (this.steps[this.currentStep] === 'Preview') {
-            console.log('--- FINAL DATA SENT TO PREVIEW SERVICE ---');
-            console.log(JSON.stringify(this.formData, null, 2));
-            this.sharedDataService.setFormData(this.formData);
-          }
-          this.currentStep++;
-        } else {
-          await this.finish();
+      // If the promise resolved without error, we can advance.
+      if (this.currentStep < this.steps.length) {
+        // Just before moving to the final "Preview & Submit" step, set the data.
+        if (this.steps[this.currentStep] === 'Preview & Submit') {
+          console.log('--- FINAL DATA SENT TO PREVIEW SERVICE ---');
+          this.sharedDataService.setFormData(this.formData);
         }
-      } else {
-        console.warn(
-          `Step ${this.currentStep} form is invalid or data was not emitted.`
-        );
+        this.currentStep++;
       }
     } catch (error) {
-      console.error(`Submission failed for step ${this.currentStep}:`, error);
+      console.error(
+        `Validation or submission failed for step ${this.currentStep}:`,
+        error
+      );
+      // Alerts are handled within each child component's submit method.
     }
   }
 
@@ -145,7 +136,7 @@ export class StepperComponent {
   }
 
   goToStep(step: number) {
-    // Allow navigation to any previously completed step
+    // Allow navigation to any previously completed step or the current step.
     if (this.isStepCompleted(step - 1) || step < this.currentStep) {
       this.currentStep = step;
     }
@@ -153,15 +144,6 @@ export class StepperComponent {
 
   updateFormData(step: number, data: { [key: string]: any }) {
     this.formData[step] = { ...data };
-    console.log(
-      `Data received for Step ${step}:`,
-      JSON.stringify(this.formData[step],null,2)
-    );
-  }
-
-  isFormValid(): boolean {
-    const currentData = this.formData[this.currentStep];
-    return !!(currentData && currentData['_isValid']);
   }
 
   isStepCompleted(stepIndex: number): boolean {
@@ -169,19 +151,12 @@ export class StepperComponent {
     return !!(stepData && stepData['_isValid']);
   }
 
-  async finish() {
-    const confirmationResult = await this.alertService.confirmAlert(
-      'Confirm Submission',
-      'Are you sure you want to submit the form?',
-      'question'
+  onFinalSubmitSuccess() {
+    console.log(
+      'Application has been successfully submitted! Disabling navigation.'
     );
-    if (confirmationResult.isConfirmed) {
-      this.alertService.alert(
-        true,
-        'Your application has been submitted successfully!'
-      );
-    } else {
-      this.alertService.alert(false, 'Submission cancelled.');
-    }
+    this.alertService.alert(false, 'Redirecting to dashboard...', 3000);
+    // In a real application, you would navigate to a new page here.
+    // For example: this.router.navigate(['/application-success']);
   }
 }

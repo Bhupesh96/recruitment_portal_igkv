@@ -125,9 +125,9 @@ export class HomeComponent implements OnInit {
 
   getAcademicSession() {
     this.HTTP.getParam(
-      '/master/get/getAcademicSession1/',
+      '/publicapi/get/getAcademicSessionForLogin/',
       {},
-      'academic'
+      'recruitementApi'
     ).subscribe((result: any): void => {
       this.sessions = result.body.data;
       console.log(
@@ -143,7 +143,7 @@ export class HomeComponent implements OnInit {
     };
     console.log('Testing', academic_session_id);
     this.HTTP.getParam(
-      '/master/get/getLatestAdvertisement/',
+      '/publicapi/get/getLatestAdvertisementForLogin/',
       params,
       'recruitement'
     ).subscribe((result: any): void => {
@@ -160,17 +160,17 @@ export class HomeComponent implements OnInit {
       registration_no: 24000001,
     };
     console.log('API Call hua ');
-    this.HTTP.getParam(
-      '/master/get/getApplicant/',
-      params,
-      'recruitement'
-    ).subscribe((result: any): void => {
-      const applicantList = result.body.data;
-      console.log(
-        '🟢 JSON Applicant List:',
-        JSON.stringify(applicantList, null, 2)
-      );
-    });
+    // this.HTTP.getParam(
+    //   '/master/get/getApplicant/',
+    //   params,
+    //   'recruitement'
+    // ).subscribe((result: any): void => {
+    //   const applicantList = result.body.data;
+    //   console.log(
+    //     '🟢 JSON Applicant List:',
+    //     JSON.stringify(applicantList, null, 2)
+    //   );
+    // });
   }
 
   checkViewport() {
@@ -205,7 +205,7 @@ export class HomeComponent implements OnInit {
   // Changed to use the custom HTTP service for consistency.
   // The endpoint is assumed to follow the same '/master/get/...' pattern.
   this.HTTP.getParam(
-    '/master/get/getPostByAdvertiment/', 
+    '/publicapi/get/getPostByAdvertimentForLogin/', 
     params,
     'recruitement'
   ).subscribe({

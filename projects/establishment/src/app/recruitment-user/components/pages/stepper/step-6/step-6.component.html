@@ -1,7 +1,5 @@
 <section class="relative rounded-xl min-h-[200px]">
-  <div
-    class="relative bg-white/90 backdrop-blur-sm rounded-xl max-w-5xl mx-auto"
-  >
+  <div class="relative bg-white/90 backdrop-blur-sm rounded-xl">
     <form [formGroup]="form" (ngSubmit)="submit()">
       <!-- Mandatory Subheading or Parameter Validation Error -->
       <div
@@ -78,20 +76,18 @@
                 <div
                   *ngFor="let item of subHeading.items"
                   [formGroupName]="item.normalizedKey"
-                  class="bg-white border border-gray-100 rounded-md p-3 hover:bg-gray-50 transition"
+                  class="bg-white border border-gray-100 rounded-md p-3 hover:bg-blue-50 transition"
                 >
-                  <label class="mb-1.5 text-gray-700 text-sm font-medium">
+                  <label class="mb-1.5 text-blue-700 text-sm font-medium">
                     {{ item.score_field_name_e }}
-                    <span
-                      *ngIf="subHeading.score_field_is_mandatory === '1'"
-                      class="text-red-600"
+                    <span *ngIf="item.is_mandatory === '1'" class="text-red-600"
                       >*</span
                     >
                   </label>
                   <select
-                    class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                    class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                     [ngClass]="{
-                      'bg-gray-50 text-gray-400 cursor-not-allowed': !isEditing,
+                      'bg-blue-50 text-blue-400 cursor-not-allowed': !isEditing,
                       'bg-white': isEditing
                     }"
                     formControlName="count"
@@ -183,14 +179,14 @@
                   [formGroup]="detailForm"
                   class="hover:bg-blue-50/50 transition"
                 >
-                  <td class="px-4 py-2.5 text-sm font-medium text-gray-600">
+                  <td class="px-4 py-2.5 text-sm font-medium text-blue-600">
                     {{ i + 1 }}
                   </td>
 
                   <td class="px-4 py-2.5 text-sm">
                     <input
                       type="text"
-                      class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                      class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm bg-blue-50 text-blue-600 cursor-not-allowed"
                       [value]="getCheckboxName(detailForm)"
                       readonly
                     />
@@ -209,11 +205,11 @@
                         <div>
                           <input
                             type="file"
-                            class="w-full min-w-[150px] text-sm text-gray-600 file:bg-blue-600 file:text-white file:border-none file:px-3 file:py-1 file:rounded-md file:text-xs file:cursor-pointer hover:file:bg-blue-700"
+                            class="w-full text-sm text-blue-600 file:bg-blue-600 file:text-white file:border-none file:px-3 file:py-1 file:rounded-md file:text-xs file:cursor-pointer hover:file:bg-blue-700"
                             (change)="
                               onFileChange(
                                 $event,
-                                detailsArray.controls.indexOf(detailForm),
+                                detailForm,
                                 param.normalizedKey
                               )
                             "
@@ -222,9 +218,8 @@
                           <ng-container
                             *ngIf="
                               getFilePath(
-                                detailForm.get('type')?.value,
+                                detailForm,
                                 param.m_rec_score_field_parameter_new_id,
-                                detailsArray.controls.indexOf(detailForm),
                                 subHeading.m_rec_score_field_id
                               ) as filePath
                             "
@@ -253,11 +248,20 @@
                           </ng-container>
                         </div>
                       </ng-container>
+                      <textarea
+                        *ngSwitchCase="'TR'"
+                        [formControlName]="param.normalizedKey"
+                        [placeholder]="
+                          'Enter ' + param.score_field_parameter_name
+                        "
+                        rows="3"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
+                      ></textarea>
                       <!-- Dropdown -->
                       <select
-                        *ngSwitchCase="'D'"
+                        *ngSwitchCase="'DC'"
                         [formControlName]="param.normalizedKey"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -267,14 +271,32 @@
                           *ngFor="
                             let option of dropdownData.get(param.isQuery_id)
                           "
-                          [value]="option.data_id"
+                          [value]="option.data_name"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'D'"
+                        [formControlName]="param.normalizedKey"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_name"
                         >
                           {{ option.data_name }}
                         </option>
                       </select>
                       <select
                         *ngSwitchCase="'DY'"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 bg-white"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                         [formControlName]="param.normalizedKey"
                       >
                         <option value="">
@@ -285,7 +307,7 @@
                           *ngFor="
                             let option of dropdownData.get(param.isQuery_id)
                           "
-                          [value]="option.data_id"
+                          [value]="option.data_name"
                         >
                           {{ option.data_name }}
                         </option>
@@ -296,10 +318,17 @@
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
                         [formControlName]="param.normalizedKey"
                         [placeholder]="param.score_field_parameter_name"
                         [attr.min]="param.isDatatype === 'number' ? 0 : null"
+                        [attr.pattern]="
+                          param.control_type === 'T' &&
+                          param.isDatatype === 'text'
+                            ? '^[a-zA-Z ()]*$'
+                            : null
+                        "
+                        (keydown)="allowAlphabetsOnly($event, param)"
                       />
                     </ng-container>
 
@@ -317,7 +346,17 @@
                             ?.hasError('required')
                         "
                       >
-                        {{ param.score_field_parameter_name }} is required
+                        {{ param.score_field_parameter_name }} is required.
+                      </div>
+
+                      <div
+                        *ngIf="
+                          detailForm
+                            .get(param.normalizedKey)
+                            ?.hasError('pattern')
+                        "
+                      >
+                        Only letters and () are allowed.
                       </div>
 
                       <div

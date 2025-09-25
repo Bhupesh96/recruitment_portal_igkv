@@ -1,8 +1,8 @@
 @import "@ng-select/ng-select/themes/material.theme.css";
 $yellow: #ffc260;
-$blue: #536dfe;
-$light-blue: #798dfe;
-$white-blue: #b1bcff;
+$gray: #536dfe;
+$light-gray: #798dfe;
+$white-gray: #b1bcff;
 $pink: #ff4081;
 $dark-pink: #ff0f60;
 $green: #3cd4a0;
@@ -20,7 +20,7 @@ $gray-06: rgba(110, 110, 110, 0.6);
 $black-08: rgba(0, 0, 0, 0.08);
 
 $pink-15: rgba(255, 92, 147, 0.15);
-$blue-15: rgba(83, 109, 254, 0.15);
+$gray-15: rgba(83, 109, 254, 0.15);
 $green-15: rgba(60, 212, 160, 0.15);
 $yellow-15: rgba(255, 194, 96, 0.15);
 $violet-15: rgba(144, 19, 254, 0.15);
@@ -42,7 +42,7 @@ $small: 576px;
 $large: 992px;
 
 //== Footer
-$footer-link-color: $blue;
+$footer-link-color: $gray;
 $footer-icon-color: $gray-06;
 $footer-icon-background-color-hover: $black-08;
 

@@ -1,7 +1,7 @@
 <form [formGroup]="form" class="w-full font-['Source Sans Pro',sans-serif]">
-  <div class="space-y-8 text-sm text-gray-700">
+  <div class="space-y-8 text-sm text-blue-700">
     <!-- Applicant Name Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -20,7 +20,7 @@
       </h6>
       <div class="grid md:grid-cols-4 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Salutation (English)<span class="text-red-500">*</span></label
           >
           <select
@@ -29,7 +29,7 @@
               form.get('Salutation_E')?.invalid &&
               form.get('Salutation_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
             <option value="" disabled selected>Select Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
@@ -47,7 +47,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >First Name<span class="text-red-500">*</span></label
           >
           <input
@@ -57,7 +57,7 @@
               form.get('Applicant_First_Name_E')?.invalid &&
               form.get('Applicant_First_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="First name"
           />
           <div
@@ -71,24 +71,24 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Middle Name</label
           >
           <input
             formControlName="Applicant_Middle_Name_E"
             (input)="onCharacterInput($event)"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Middle name"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Last Name</label
           >
           <input
             formControlName="Applicant_Last_Name_E"
             (input)="onCharacterInput($event)"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Last name"
           />
         </div>
@@ -96,7 +96,7 @@
 
       <div class="grid md:grid-cols-4 gap-4 mt-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Salutation (Hindi)<span class="text-red-500">*</span></label
           >
           <select
@@ -105,7 +105,7 @@
               form.get('Salutation_H')?.invalid &&
               form.get('Salutation_H')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
             <option value="" disabled selected>Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
@@ -123,7 +123,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >First Name (Hindi)<span class="text-red-500">*</span></label
           >
           <input
@@ -132,7 +132,7 @@
               form.get('Applicant_First_Name_H')?.invalid &&
               form.get('Applicant_First_Name_H')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="First name (Hindi)"
           />
           <div
@@ -146,22 +146,22 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Middle Name (Hindi)</label
           >
           <input
             formControlName="Applicant_Middle_Name_H"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Middle name (Hindi)"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Last Name (Hindi)</label
           >
           <input
             formControlName="Applicant_Last_Name_H"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Last name (Hindi)"
           />
         </div>
@@ -169,7 +169,7 @@
     </div>
 
     <!-- Basic Details Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -188,7 +188,7 @@
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Advertisement<span class="text-red-500">*</span></label
           >
           <select
@@ -217,7 +217,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Post<span class="text-red-500">*</span></label
           >
           <select
@@ -241,7 +241,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Subject</label
           >
           <select
@@ -258,7 +258,7 @@
           </select>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Gender<span class="text-red-500">*</span></label
           >
           <div class="flex gap-4">
@@ -267,7 +267,7 @@
                 type="radio"
                 value="M"
                 formControlName="gender_id"
-                class="mr-1 text-blue-600 focus:ring-blue-600"
+                class="mr-1 text-blue-600 focus:ring-gray-600"
               />
               Male
             </label>
@@ -276,7 +276,7 @@
                 type="radio"
                 value="F"
                 formControlName="gender_id"
-                class="mr-1 text-blue-600 focus:ring-blue-600"
+                class="mr-1 text-blue-600 focus:ring-gray-600"
               />
               Female
             </label>
@@ -285,7 +285,7 @@
                 type="radio"
                 value="T"
                 formControlName="gender_id"
-                class="mr-1 text-blue-600 focus:ring-blue-600"
+                class="mr-1 text-blue-600 focus:ring-gray-600"
               />
               Third Gender
             </label>
@@ -300,7 +300,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Date of Birth<span class="text-red-500">*</span></label
           >
           <input
@@ -310,7 +310,7 @@
             [class.border-red-500]="
               form.get('DOB')?.invalid && form.get('DOB')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           />
           <div
             *ngIf="form.get('DOB')?.invalid && form.get('DOB')?.touched"
@@ -326,18 +326,18 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Age</label
           >
           <input
             type="text"
             formControlName="age"
             readonly
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none focus:ring-0"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-blue-100 text-blue-500 cursor-not-allowed focus:outline-none focus:ring-0"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Father's name<span class="text-red-500">*</span></label
           >
           <input
@@ -347,7 +347,7 @@
               form.get('Applicant_Father_Name_E')?.invalid &&
               form.get('Applicant_Father_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Father's name"
           />
           <div
@@ -361,7 +361,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Mother's name<span class="text-red-500">*</span></label
           >
           <input
@@ -371,7 +371,7 @@
               form.get('Applicant_Mother_Name_E')?.invalid &&
               form.get('Applicant_Mother_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Mother's name"
           />
           <div
@@ -385,7 +385,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium">
+          <label class="block mb-1 text-blue-600 text-sm font-medium">
             Religion<span class="text-red-500">*</span>
           </label>
           <select
@@ -413,7 +413,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Identification Mark 1<span class="text-red-500">*</span></label
           >
           <input
@@ -423,7 +423,7 @@
               form.get('Identification_Mark1')?.invalid &&
               form.get('Identification_Mark1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Identification Mark 1"
           />
           <div
@@ -437,7 +437,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Identification Mark 2<span class="text-red-500">*</span></label
           >
           <input
@@ -447,7 +447,7 @@
               form.get('Identification_Mark2')?.invalid &&
               form.get('Identification_Mark2')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Identification Mark 2"
           />
           <div
@@ -464,7 +464,7 @@
     </div>
 
     <!-- Additional Information Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -490,7 +490,7 @@
               class="flex flex-col space-y-1"
             >
               <div>
-                <label class="block text-gray-600 text-sm font-medium">
+                <label class="block text-blue-600 text-sm font-medium">
                   {{ question.question_label
                   }}<span class="text-red-500">*</span>
                 </label>
@@ -513,7 +513,7 @@
                           option.option_value
                         )
                       "
-                      class="mr-1 text-blue-600 focus:ring-blue-600"
+                      class="mr-1 text-blue-600 focus:ring-gray-600"
                     />
                     {{ option.option_label }}
                   </label>
@@ -544,7 +544,7 @@
           <ng-container *ngIf="question.question_id !== 2">
             <div class="flex flex-col space-y-1">
               <div>
-                <label class="block text-gray-600 text-sm font-medium">
+                <label class="block text-blue-600 text-sm font-medium">
                   {{ question.question_label
                   }}<span
                     *ngIf="question.is_required === 'Y'"
@@ -571,7 +571,7 @@
                           option.option_value
                         )
                       "
-                      class="mr-1 text-blue-600 focus:ring-blue-600"
+                      class="mr-1 text-blue-600 focus:ring-gray-600"
                     />
                     {{ option.option_label }}
                   </label>
@@ -596,7 +596,7 @@
                   "
                   class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
                 >
-                  <label class="block text-gray-500 text-sm font-semibold">
+                  <label class="block text-blue-500 text-sm font-semibold">
                     {{ condition.dependent_field_label }}
                     <span
                       *ngIf="condition.condition_required === 'Y'"
@@ -614,7 +614,7 @@
                         condition.condition_id === 1 &&
                           onMarriageDateChange($event)
                       "
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                     />
 
                     <ng-container *ngSwitchCase="'file'">
@@ -628,7 +628,7 @@
                             condition.data_type_size
                           )
                         "
-                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        class="mt-1 block w-full text-sm text-blue-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
                       <div
                         *ngIf="
@@ -670,7 +670,7 @@
                               'condition_' + condition.condition_id
                             "
                             value="Y"
-                            class="mr-1 text-blue-600 focus:ring-blue-600"
+                            class="mr-1 text-blue-600 focus:ring-gray-600"
                           />
                           Yes
                         </label>
@@ -681,7 +681,7 @@
                               'condition_' + condition.condition_id
                             "
                             value="N"
-                            class="mr-1 text-blue-600 focus:ring-blue-600"
+                            class="mr-1 text-blue-600 focus:ring-gray-600"
                           />
                           No
                         </label>
@@ -693,7 +693,7 @@
                         [formControlName]="
                           'condition_' + condition.condition_id
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
                         <option [ngValue]="null">Select Disability Type</option>
                         <option
@@ -709,7 +709,7 @@
                       *ngSwitchDefault
                       [type]="condition.condition_data_type"
                       [formControlName]="'condition_' + condition.condition_id"
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                     />
                   </ng-container>
 
@@ -740,6 +740,10 @@
                       Date cannot be after
                       {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
 
+
+
+
+
                       }}.
                     </ng-container>
                   </div>
@@ -751,7 +755,7 @@
       </div>
     </div>
     <!-- Permanent Address Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -776,7 +780,7 @@
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Address<span class="text-red-500">*</span></label
           >
           <input
@@ -786,7 +790,7 @@
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Address"
           />
           <div
@@ -800,7 +804,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >City<span class="text-red-500">*</span></label
           >
           <input
@@ -810,7 +814,7 @@
               form.get('Permanent_City')?.invalid &&
               form.get('Permanent_City')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="City"
           />
           <div
@@ -824,7 +828,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Country<span class="text-red-500">*</span></label
           >
           <select
@@ -854,7 +858,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >State<span class="text-red-500">*</span></label
           >
           <select
@@ -881,7 +885,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >District<span class="text-red-500">*</span></label
           >
           <select
@@ -911,7 +915,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Pincode<span class="text-red-500">*</span></label
           >
           <input
@@ -924,7 +928,7 @@
               form.get('Permanent_Pin_Code')?.invalid &&
               form.get('Permanent_Pin_Code')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Pincode"
           />
           <div
@@ -949,7 +953,7 @@
           <input
             type="checkbox"
             formControlName="presentSame"
-            class="mr-2 text-blue-600 focus:ring-blue-600"
+            class="mr-2 text-blue-600 focus:ring-gray-600"
           />
           Present address is same as permanent
         </label>
@@ -982,7 +986,7 @@
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Address<span class="text-red-500">*</span></label
           >
           <input
@@ -992,7 +996,7 @@
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Address"
           />
           <div
@@ -1006,7 +1010,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >City<span class="text-red-500">*</span></label
           >
           <input
@@ -1016,7 +1020,7 @@
               form.get('Current_City')?.invalid &&
               form.get('Current_City')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="City"
           />
           <div
@@ -1030,7 +1034,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Country<span class="text-red-500">*</span></label
           >
           <select
@@ -1060,7 +1064,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >State<span class="text-red-500">*</span></label
           >
           <select
@@ -1087,7 +1091,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >District<span class="text-red-500">*</span></label
           >
           <select
@@ -1117,7 +1121,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Pincode<span class="text-red-500">*</span></label
           >
           <input
@@ -1130,7 +1134,7 @@
               form.get('Current_Pin_Code')?.invalid &&
               form.get('Current_Pin_Code')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Pincode"
           />
           <div
@@ -1153,7 +1157,7 @@
     </div>
 
     <!-- Contact Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -1172,7 +1176,7 @@
       </h6>
       <div class="grid md:grid-cols-2 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Email Address<span class="text-red-500">*</span></label
           >
           <input
@@ -1181,7 +1185,7 @@
             [class.border-red-500]="
               form.get('Email_Id')?.invalid && form.get('Email_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Email Address"
           />
           <div
@@ -1199,7 +1203,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Mobile Number<span class="text-red-500">*</span></label
           >
           <input
@@ -1211,7 +1215,7 @@
             [class.border-red-500]="
               form.get('Mobile_No')?.invalid && form.get('Mobile_No')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Mobile Number"
           />
           <div
@@ -1232,7 +1236,7 @@
     </div>
 
     <!-- Place of Birth Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -1257,7 +1261,7 @@
       </h6>
       <div class="grid md:grid-cols-3 gap-4">
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Village / City / Block<span class="text-red-500">*</span></label
           >
           <input
@@ -1267,7 +1271,7 @@
               form.get('Birth_Place')?.invalid &&
               form.get('Birth_Place')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Village / City / Block"
           />
           <div
@@ -1281,7 +1285,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >Country<span class="text-red-500">*</span></label
           >
           <select
@@ -1311,7 +1315,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >State<span class="text-red-500">*</span></label
           >
           <select
@@ -1338,7 +1342,7 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-sm font-medium"
+          <label class="block mb-1 text-blue-600 text-sm font-medium"
             >District<span class="text-red-500">*</span></label
           >
           <select
@@ -1371,7 +1375,7 @@
     </div>
 
     <!-- Photo & Signature Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -1391,7 +1395,7 @@
 
       <div class="grid md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700"
+          <label class="block text-sm font-medium text-blue-700"
             >Upload Photo<span class="text-red-500">*</span></label
           >
           <input
@@ -1399,7 +1403,7 @@
             type="file"
             (change)="onPhotoSelected($event)"
             accept="image/*"
-            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            class="mt-1 block w-full text-sm text-blue-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
           <div
             *ngIf="form.get('photo')?.invalid && form.get('photo')?.touched"
@@ -1424,7 +1428,7 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700"
+          <label class="block text-sm font-medium text-blue-700"
             >Upload Signature<span class="text-red-500">*</span></label
           >
           <input
@@ -1432,7 +1436,7 @@
             type="file"
             (change)="onSignatureSelected($event)"
             accept="image/*"
-            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            class="mt-1 block w-full text-sm text-blue-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
           <div
             *ngIf="
@@ -1461,7 +1465,7 @@
     </div>
 
     <!-- Language Details Section -->
-    <div class="space-y-4">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
       <h6 class="text-sm font-medium text-blue-600 flex items-center gap-2">
         <svg
           class="h-5 w-5 text-blue-600"
@@ -1484,7 +1488,7 @@
         class="overflow-x-auto rounded-md ring-1 ring-gray-200"
       >
         <table class="min-w-full text-sm text-left">
-          <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
+          <thead class="bg-blue-100 text-blue-700 uppercase text-xs">
             <tr>
               <th class="px-4 py-2 border border-gray-300 text-center w-12">
                 S.No
@@ -1507,7 +1511,7 @@
             <tr
               *ngFor="let lang of languagesArray.controls; let i = index"
               [formGroupName]="i"
-              class="bg-white hover:bg-gray-50"
+              class="bg-white hover:bg-blue-50"
             >
               <td class="px-4 py-2 border border-gray-300 text-center">
                 {{ i + 1 }}
@@ -1519,7 +1523,7 @@
                     lang.get('m_rec_language_type_id')?.invalid &&
                     lang.get('m_rec_language_type_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 >
                   <option value="">Select Type</option>
                   <option
@@ -1546,7 +1550,7 @@
                     lang.get('m_rec_language_id')?.invalid &&
                     lang.get('m_rec_language_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 >
                   <option value="">Select Language</option>
                   <option
@@ -1573,7 +1577,7 @@
                     lang.get('m_rec_language_skill_id')?.invalid &&
                     lang.get('m_rec_language_skill_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 >
                   <option value="">Select Skill</option>
                   <option

@@ -18,7 +18,7 @@ import {
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
-import { Observable, forkJoin, of } from 'rxjs';
+import { Observable, forkJoin, lastValueFrom, of } from 'rxjs';
 import { switchMap, tap, catchError, map } from 'rxjs/operators';
 import { HttpService, SharedModule } from 'shared';
 import { UtilsService } from '../../utils.service';
@@ -66,6 +66,7 @@ interface Parameter {
   isDatatype: string;
   isCalculationColumn: 'Y' | 'N';
   isQuery_id: number;
+  data_type_size: number;
 }
 interface Note {
   message: string;
@@ -148,17 +149,15 @@ export class Step5Component implements OnInit {
     });
   }
 
-
   getUniqueKey(sub: Subheading, index: number): string {
     return `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${index}`;
   }
-
 
   private getParameterValuesAndPatch(): void {
     if (!this.heading) return;
 
     const registration_no = 24000001;
-    const a_rec_app_main_id = 115;
+    const a_rec_app_main_id = 120;
 
     const childrenRequest = this.HTTP.getParam(
       '/candidate/get/getParameterValues',
@@ -329,17 +328,55 @@ export class Step5Component implements OnInit {
   }
 
   removeQualification(group: AbstractControl): void {
-    // We can cast to FormGroup if needed, but get() is on AbstractControl
-    if (group) {
-      // Set the flag on the specific group that was passed in
-      group.get('is_deleted')?.setValue(true);
-    }
+    this.alertService
+      .confirmAlert(
+        'Confirm Deletion',
+        'Are you sure you want to remove this entry? This action will be saved when you submit the form.',
+        'warning'
+      )
+      .then((result: any) => {
+        // Only proceed if the user clicks "Yes"
+        if (result.isConfirmed) {
+          if (group) {
+            // This performs the "soft delete" by setting the flag
+            group.get('is_deleted')?.setValue(true);
+          }
 
-    this.checkMandatorySubheadingsAndParameters();
-    this.updateTotalExperience(); // Recalculate total after "deletion"
-    this.cdr.markForCheck();
+          // Recalculate form validity and totals
+          this.checkMandatorySubheadingsAndParameters();
+          this.updateTotalExperience();
+          this.cdr.markForCheck();
+        }
+        // If the user clicks "No" or cancels, do nothing.
+      });
   }
+  public allowAlphabetsOnly(event: KeyboardEvent, param: Parameter): void {
+    // Only apply this logic if the control is a text input and datatype is 'text'
+    if (param.control_type === 'T' && param.isDatatype === 'text') {
+      const allowedKeys = [
+        'Backspace',
+        'Delete',
+        'Tab',
+        'ArrowLeft',
+        'ArrowRight',
+        'Home',
+        'End',
+      ];
 
+      // Allow essential editing keys
+      if (allowedKeys.includes(event.key)) {
+        return;
+      }
+
+      // Use the stricter regex to test if the key is allowed (no periods)
+      const isAllowedChar = /^[a-zA-Z ()]*$/.test(event.key);
+
+      // If the key is not an allowed character, block the input
+      if (!isAllowedChar) {
+        event.preventDefault();
+      }
+    }
+  }
   private createQualificationGroup(sub: Subheading): FormGroup {
     const group = this.fb.group({});
     const params = this.getParameters(
@@ -349,15 +386,20 @@ export class Step5Component implements OnInit {
     group.addControl('a_rec_app_score_field_detail_id', this.fb.control(''));
     group.addControl('calculated_experience', this.fb.control(0));
     group.addControl('is_deleted', this.fb.control(false));
+
     params.forEach((param) => {
-      // ✅ FIX: Only apply Validators.required if the control is mandatory AND it is NOT a file upload.
-      // Your custom checkMandatory... function already handles the validation logic for files correctly.
-      const validators =
+      const validators: ValidatorFn[] =
         param.is_mandatory === 'Y' && param.control_type !== 'A'
           ? [Validators.required]
           : [];
 
-      const isDropdownOrFile = ['A', 'DE', 'DY', 'DP'].includes(
+      // ✅ ADD THIS CONDITION for text pattern validation
+      if (param.control_type === 'T' && param.isDatatype === 'text') {
+        validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+      }
+
+      const isDropdownOrFile = ['A', 'DE', 'DY', 'DP', 'DC'].includes(
+        // Added 'DC' for completeness
         param.control_type
       );
       group.addControl(
@@ -376,7 +418,6 @@ export class Step5Component implements OnInit {
     });
     return group;
   }
-
   private recalculateExperience(
     group: FormGroup,
     subheading: Subheading
@@ -443,9 +484,8 @@ export class Step5Component implements OnInit {
     }
   }
 
-
   private loadFormData(): Observable<void> {
-    const a_rec_adv_main_id = 115;
+    const a_rec_adv_main_id = 120;
     const m_rec_score_field_id = 32;
 
     const headingRequest = this.HTTP.getParam(
@@ -477,7 +517,6 @@ export class Step5Component implements OnInit {
             a_rec_adv_main_id,
             m_rec_score_field_id,
             score_field_parent_code: 0,
-            m_rec_score_field_parameter_new: 'N',
             m_parameter_master: 'Y',
           },
           'recruitement'
@@ -618,12 +657,39 @@ export class Step5Component implements OnInit {
   ): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
-      const file = input.files[0];
+      let file: File | null = input.files[0]; // Use 'let' to allow modification
       const formArray = this.form.get(arrayName) as FormArray;
-      formArray.at(index).get(fieldName)?.setValue(file, { emitEvent: false });
+      const control = formArray.at(index).get(fieldName);
+
+      // --- START: INSERTED VALIDATION LOGIC ---
+      // Find the parameter configuration to get the size limit
       const param = this.parameters.find(
         (p) => p.score_field_parameter_name === fieldName
       );
+
+      // Check file size if the parameter and file exist
+      if (param && param.data_type_size && file) {
+        const maxSizeKB = param.data_type_size;
+        const maxSizeInBytes = maxSizeKB * 1024;
+
+        if (file.size > maxSizeInBytes) {
+          this.alertService.alert(
+            true,
+            `File size for "${fieldName}" cannot exceed ${maxSizeKB}KB. Your file is ~${Math.round(
+              file.size / 1024
+            )}KB.`
+          );
+          // If invalid, clear the input and nullify the file variable
+          input.value = '';
+          file = null;
+        }
+      }
+      // --- END: INSERTED VALIDATION LOGIC ---
+
+      // --- YOUR ORIGINAL LOGIC (UNCHANGED) ---
+      // This now sets either the valid file or null to the form control
+      control?.setValue(file, { emitEvent: false });
+
       if (param) {
         const fileKey = `${arrayName}_${param.m_rec_score_field_parameter_new_id}_${index}`;
         this.filePaths.delete(fileKey);
@@ -655,7 +721,7 @@ export class Step5Component implements OnInit {
    * Implements the full save/update logic.
    */
 
-  submitForm(): void {
+  async submitForm(): Promise<void> {
     this.form.markAllAsTouched();
     this.checkMandatorySubheadingsAndParameters();
 
@@ -677,7 +743,7 @@ export class Step5Component implements OnInit {
 
     // --- Configuration ---
     const registrationNo = 24000001;
-    const a_rec_app_main_id = 115;
+    const a_rec_app_main_id = 120;
     const formData = new FormData();
 
     // --- Payload Preparation ---
@@ -859,21 +925,44 @@ export class Step5Component implements OnInit {
     formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
 
     // STEP 4: Make the SINGLE API call
-    this.HTTP.postForm(
-      '/candidate/postFile/saveOrUpdateCandidateScoreCard',
-      formData,
-      'recruitement'
-    ).subscribe({
-      next: (res) => {
-        this.alertService.alert(false, 'Data saved successfully!');
-        this.getParameterValuesAndPatch();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.alertService.alert(true, `Error saving data: ${err.message}`);
-        this.cdr.markForCheck();
-      },
-    });
+    try {
+      // Convert the Observable to a Promise to use await
+      const res: HttpResponse<any> = await lastValueFrom(
+        this.HTTP.postForm(
+          '/candidate/postFile/saveOrUpdateCandidateScoreCard',
+          formData,
+          'recruitement'
+        )
+      );
+
+      // ✅ 1. CHECK FOR BACKEND-SPECIFIC ERRORS FIRST
+      if (res?.body?.error) {
+        this.alertService.alert(
+          true,
+          res.body.error.message || 'An error occurred on the server.'
+        );
+        throw new Error(res.body.error.message); // This will reject the promise
+      }
+
+      // ✅ 2. AWAIT THE SUCCESS ALERT. The function will pause here.
+      await this.alertService.alert(false, 'Data saved successfully!');
+
+      // ✅ 3. This code runs ONLY AFTER the user clicks "OK" on the alert.
+      this.getParameterValuesAndPatch();
+      this.cdr.markForCheck();
+      // The promise resolves automatically here, allowing the stepper to proceed.
+    } catch (err: any) {
+      // This block catches both network errors and the backend error we threw above.
+      const errorMessage =
+        err.error?.message ||
+        err.message ||
+        'An unknown error occurred while saving.';
+      this.alertService.alert(true, `Error: ${errorMessage}`);
+      this.cdr.markForCheck();
+
+      // Re-throw the error to ensure the promise is rejected.
+      throw err;
+    }
 
     this.emitFormData();
   } // ❌ REMOVED: The old saveRecords method is no longer needed.

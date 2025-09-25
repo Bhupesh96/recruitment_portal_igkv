@@ -15,11 +15,11 @@
     class="w-full font-['Source Sans Pro',sans-serif]"
   >
     <form [formGroup]="form" (ngSubmit)="submitForm()">
-      <div class="space-y-8 text-sm text-gray-700">
+      <div class="space-y-8 text-sm text-blue-700">
         <!-- Notes Section -->
         <div
           *ngIf="notes.length"
-          class="p-4 bg-blue-50 border border-blue-200 rounded-md"
+          class="p-4 bg-blue-50 border border-gray-200 rounded-md"
         >
           <ul class="list-disc list-inside space-y-2">
             <li *ngFor="let note of notes">
@@ -44,7 +44,7 @@
 
         <!-- Heading -->
         <h5
-          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
+          class="bg-blue-100 border border-gray-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
         >
           <svg
             class="h-5 w-5 text-blue-600"
@@ -82,10 +82,10 @@
               [formControlName]="
                 'is' + getUniqueKey(subheading, i) + 'Selected'
               "
-              class="mr-2 text-blue-600 focus:ring-blue-600"
+              class="mr-2 text-blue-600 focus:ring-gray-600"
             />
             <h6
-              class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
+              class="bg-blue-100 border border-gray-200 rounded-md px-3 py-2 text-sm font-medium text-blue-600 flex items-center gap-2"
             >
               <svg
                 class="h-5 w-5 text-blue-600"
@@ -120,7 +120,7 @@
                   subheading.a_rec_adv_post_detail_id
                 ).length
               "
-              class="text-center py-4 text-gray-600"
+              class="text-center py-4 text-blue-600"
             >
               No parameters available for this section.
             </div>
@@ -157,7 +157,7 @@
                     "
                   />
 
-                  <label class="block text-sm font-medium text-gray-600">
+                  <label class="block text-sm font-medium text-blue-600">
                     {{ param.score_field_parameter_name }}
                     <span
                       *ngIf="
@@ -188,7 +188,7 @@
                         )
                       "
                       accept="application/pdf,image/*"
-                      class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      class="mt-1 block w-full text-sm text-blue-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
 
                     <!-- Show existing file -->
@@ -251,6 +251,15 @@
 
                   <ng-template #controlTypeSwitch>
                     <ng-container [ngSwitch]="param.control_type">
+                      <textarea
+                        *ngSwitchCase="'TR'"
+                        [formControlName]="param.score_field_parameter_name"
+                        [placeholder]="
+                          'Enter ' + param.score_field_parameter_name
+                        "
+                        rows="3"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                      ></textarea>
                       <!-- Text/Number Input -->
                       <input
                         *ngSwitchCase="'T'"
@@ -262,14 +271,17 @@
                           'Enter ' + param.score_field_parameter_name
                         "
                         [attr.min]="param.isDatatype === 'number' ? 0 : null"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        [attr.pattern]="
+                          param.isDatatype === 'text' ? '^[a-zA-Z ]*$' : null
+                        "
+                        (keydown)="allowAlphabetsOnly($event, param)"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
-
                       <!-- Dropdown -->
                       <select
-                        *ngSwitchCase="'D'"
+                        *ngSwitchCase="'DC'"
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -279,7 +291,25 @@
                           *ngFor="
                             let option of dropdownData.get(param.isQuery_id)
                           "
-                          [value]="option.data_id"
+                          [value]="option.data_name"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'D'"
+                        [formControlName]="param.score_field_parameter_name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="
+                            let option of dropdownData.get(param.isQuery_id)
+                          "
+                          [value]="option.data_name"
                         >
                           {{ option.data_name }}
                         </option>
@@ -289,7 +319,7 @@
                       <select
                         *ngSwitchCase="'DY'"
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
                         <option value="">Select Year</option>
 
@@ -297,7 +327,7 @@
                           *ngFor="
                             let option of dropdownData.get(param.isQuery_id)
                           "
-                          [value]="option.data_id"
+                          [value]="option.data_name"
                         >
                           {{ option.data_name }}
                         </option>
@@ -316,7 +346,7 @@
                             )
                           "
                           accept="application/pdf,image/*"
-                          class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          class="mt-1 block w-full text-sm text-blue-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
 
                         <!-- Show existing file -->
@@ -393,7 +423,7 @@
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-blue-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
                     </ng-container>
                   </ng-template>
@@ -408,8 +438,27 @@
                     "
                     class="text-red-600 text-xs mt-1"
                   >
-                    {{ param.score_field_parameter_name }} is required
+                    <div
+                      *ngIf="
+                        group
+                          .get(param.score_field_parameter_name)
+                          ?.hasError('required')
+                      "
+                    >
+                      {{ param.score_field_parameter_name }} is required.
+                    </div>
+
+                    <div
+                      *ngIf="
+                        group
+                          .get(param.score_field_parameter_name)
+                          ?.hasError('pattern')
+                      "
+                    >
+                      Only alphabetic characters are allowed.
+                    </div>
                   </div>
+
                   <div
                     *ngIf="
                       group

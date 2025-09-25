@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import Swal from 'sweetalert2';
+import Swal, { SweetAlertResult } from 'sweetalert2';
 
 @Injectable({
   providedIn: 'root'
@@ -9,7 +9,11 @@ export class AlertService {
   constructor() {
   }
 
-  alert(is_error: boolean, message: string, timer: null | number = null) {
+   alert(
+    is_error: boolean,
+    message: string,
+    timer: null | number = null
+  ): Promise<SweetAlertResult<any>> { // <--- 1. Changed return type
     const type = is_error ? 'error' : 'success';
     const options: any = {
       title: message ?? '',
@@ -17,10 +21,18 @@ export class AlertService {
       icon: type,
       showConfirmButton: false,
     };
-    if (timer) options.timer = timer;
-    else options.showConfirmButton = true;
-    Swal.fire(options);
+
+    // Only show a confirm button if it's not a timed alert
+    if (timer) {
+      options.timer = timer;
+    } else {
+      options.showConfirmButton = true;
+      options.confirmButtonText = 'OK'; // Set button text for clarity
+    }
+
+    return Swal.fire(options); // <--- 2. Return the promise
   }
+
 
   alertStatus(status: number, message: string, timer: null | number = null): void {
     const isSuccess = status >= 200 && status < 300;

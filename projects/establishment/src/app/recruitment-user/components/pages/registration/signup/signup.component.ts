@@ -248,29 +248,29 @@ export class SignupComponent implements OnInit {
       post_code: this.postCode,
     };
 
-    this.http.post('http://localhost:3000/api/signup', signupData).subscribe({
-      next: (response: any) => {
-        this.signupSuccess = response.message || 'User registered successfully';
-        this.mobile = '';
-        this.email = '';
-        this.password = '';
-        this.confirmPassword = '';
-        this.isVerified = false;
-        this.otpSent = false;
-        this.otpSuccess = '';
-        this.generateCaptcha();
-        this.showSuccessAlert = true;
-        setTimeout(() => {
-          this.showSuccessAlert = false;
-          this.loginClicked.emit(); // Switch to login template
-        }, 3000);
-      },
-      error: (error) => {
-        this.signupError = error.error?.message || 'Registration failed';
-        if (error.status === 409) {
-          this.generateCaptcha();
-        }
-      },
-    });
+    // this.http.post('http://localhost:3000/api/signup', signupData).subscribe({
+    //   next: (response: any) => {
+    //     this.signupSuccess = response.message || 'User registered successfully';
+    //     this.mobile = '';
+    //     this.email = '';
+    //     this.password = '';
+    //     this.confirmPassword = '';
+    //     this.isVerified = false;
+    //     this.otpSent = false;
+    //     this.otpSuccess = '';
+    //     this.generateCaptcha();
+    //     this.showSuccessAlert = true;
+    //     setTimeout(() => {
+    //       this.showSuccessAlert = false;
+    //       this.loginClicked.emit(); // Switch to login template
+    //     }, 3000);
+    //   },
+    //   error: (error) => {
+    //     this.signupError = error.error?.message || 'Registration failed';
+    //     if (error.status === 409) {
+    //       this.generateCaptcha();
+    //     }
+    //   },
+    // });
   }
 }

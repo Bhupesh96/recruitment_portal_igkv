@@ -1717,7 +1717,8 @@ export class Step1Component implements OnChanges, OnInit {
         formData,
         'recruitement'
       ).subscribe({
-        next: (res) => {
+        next: async (res) => {
+        
           if (res?.body?.error) {
             this.alert.alert(
               true,
@@ -1727,7 +1728,7 @@ export class Step1Component implements OnChanges, OnInit {
             return;
           }
 
-          this.alert.alert(false, 'All candidate details saved successfully!');
+           await this.alert.alert(false, 'All candidate details saved successfully!');
 
           // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
           // additional info to update our local state (`savedAdditionalInfo`).

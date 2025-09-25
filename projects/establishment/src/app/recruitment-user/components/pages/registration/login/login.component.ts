@@ -86,26 +86,26 @@ export class LoginComponent {
       password: this.password,
     };
 
-    this.httpService
-      .postData('/security/login', loginData, 'common')
-      .subscribe({
-        next: (response: any) => {
-          this.alertService.alert(
-            false,
-            response.message || 'Login successful',
-            2000
-          );
-          this.loginSuccessFull = response.message || 'Login successful';
-          this.registrationNo = '';
-          this.password = '';
-          this.loginSuccess.emit();
-          this.authService.redirect(); // Use AuthService's redirect logic
-        },
-        error: (error: HttpErrorResponse) => {
-          this.alertService.alert(true, error.error?.message || 'Login failed');
-          this.loginError = error.error?.message || 'Login failed';
-        },
-      });
+    // this.httpService
+    //   .postData('/security/login', loginData, 'common')
+    //   .subscribe({
+    //     next: (response: any) => {
+    //       this.alertService.alert(
+    //         false,
+    //         response.message || 'Login successful',
+    //         2000
+    //       );
+    //       this.loginSuccessFull = response.message || 'Login successful';
+    //       this.registrationNo = '';
+    //       this.password = '';
+    //       this.loginSuccess.emit();
+    //       this.authService.redirect(); // Use AuthService's redirect logic
+    //     },
+    //     error: (error: HttpErrorResponse) => {
+    //       this.alertService.alert(true, error.error?.message || 'Login failed');
+    //       this.loginError = error.error?.message || 'Login failed';
+    //     },
+    //   });
   }
 
   onResetPassword() {
