@@ -26,7 +26,7 @@
         <div class="overflow-x-auto">
           <div class="min-w-[768px]">
             <table
-              class="w-full bg-white rounded-md border border-gray-100 shadow-sm text-sm"
+              class="w-full bg-white rounded-md border border-gray-100 shadow-sm text-base"
             >
               <thead class="bg-blue-700 text-white">
                 <tr>
@@ -62,7 +62,7 @@
                     <td class="px-3 py-2">
                       <input
                         type="text"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-600 text-xs sm:text-sm cursor-not-allowed"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-600 text-xs sm:text-base cursor-not-allowed"
                         formControlName="name"
                         readonly
                       />
@@ -71,7 +71,7 @@
                     <td class="px-3 py-2">
                       <input
                         type="file"
-                        class="w-full text-xs sm:text-sm text-gray-600 file:bg-blue-600 file:text-white file:border-none file:px-3 file:py-1 file:rounded-md file:text-xs file:cursor-pointer hover:file:bg-blue-700"
+                        class="w-full text-xs sm:text-base text-gray-600 file:bg-blue-600 file:text-white file:border-none file:px-3 file:py-1 file:rounded-md file:text-xs file:cursor-pointer hover:file:bg-blue-700"
                         (change)="onFileChange($event, i)"
                         accept=".pdf,.jpg,.jpeg,.png"
                         [attr.data-file-input]="
@@ -151,7 +151,7 @@
                     <td class="px-3 py-2">
                       <input
                         type="text"
-                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-xs sm:text-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-xs sm:text-base focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
                         formControlName="remark"
                         placeholder="Remark (optional)"
                       />

@@ -15,7 +15,7 @@
     class="w-full font-['Source Sans Pro',sans-serif]"
   >
     <form [formGroup]="form" (ngSubmit)="submitForm()">
-      <div class="space-y-8 text-sm text-blue-700">
+      <div class="space-y-8 text-base text-blue-700">
         <!-- Notes Section -->
         <div
           *ngIf="notes.length"
@@ -44,7 +44,7 @@
 
         <!-- Heading -->
        <h5
-          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-sm font-medium text-gray-600 flex items-center gap-2"
+          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-medium text-gray-600 flex items-center gap-2"
         >
           <svg
             class="h-5 w-5 text-blue-600"
@@ -85,7 +85,7 @@
               class="mr-2 text-gray-600 focus:ring-gray-600"
             />
             <h6
-              class="bg-blue-100 border border-gray-200 rounded-md px-3 py-2 text-sm font-medium text-gray-600 flex items-center gap-2"
+              class="bg-blue-100 border border-gray-200 rounded-md px-3 py-2 text-base font-medium text-gray-600 flex items-center gap-2"
             >
               <svg
                 class="h-5 w-5 text-blue-600"
@@ -157,7 +157,7 @@
                     "
                   />
 
-                  <label class="block text-sm font-medium text-gray-600">
+                  <label class="block text-base font-medium text-gray-600">
                     {{ param.score_field_parameter_name }}
                     <span
                       *ngIf="
@@ -188,7 +188,7 @@
                         )
                       "
                       accept="application/pdf,image/*"
-                      class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
 
                     <!-- Show existing file -->
@@ -258,7 +258,7 @@
                           'Enter ' + param.score_field_parameter_name
                         "
                         rows="3"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       ></textarea>
                       <!-- Text/Number Input -->
                       <input
@@ -275,13 +275,13 @@
                           param.isDatatype === 'text' ? '^[a-zA-Z ]*$' : null
                         "
                         (keydown)="allowAlphabetsOnly($event, param)"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
                       <!-- Dropdown -->
                       <select
                         *ngSwitchCase="'DC'"
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
+                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -299,7 +299,7 @@
                       <select
                         *ngSwitchCase="'D'"
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -319,7 +319,7 @@
                       <select
                         *ngSwitchCase="'DY'"
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
                         <option value="">Select Year</option>
 
@@ -346,7 +346,7 @@
                             )
                           "
                           accept="application/pdf,image/*"
-                          class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
 
                         <!-- Show existing file -->
@@ -423,7 +423,7 @@
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
                     </ng-container>
                   </ng-template>

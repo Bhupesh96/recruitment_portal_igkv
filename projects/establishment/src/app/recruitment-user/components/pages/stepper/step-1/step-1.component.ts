@@ -195,6 +195,22 @@ export class Step1Component implements OnChanges, OnInit {
   ngOnInit(): void {
     this.initializeFormListeners();
     this.initializeFormWithData();
+    this.getAdditionalInfoQuestions().subscribe(
+      (response) =>
+        console.log(
+          'Additional Info Response:',
+          JSON.stringify(response.body.data, null, 2)
+        ),
+      (error) => console.error('Error fetching additional info:', error)
+    );
+     this.getUserData().subscribe(
+      (response) =>
+        console.log(
+          'User Data Response:',
+          JSON.stringify(response.body.data, null, 2)
+        ),
+      (error) => console.error('Error fetching additional info:', error)
+    );
   }
 
   private initializeFormWithData(): void {
@@ -320,8 +336,6 @@ export class Step1Component implements OnChanges, OnInit {
 
     // This is the core logic that filters the options
     const updateCategoryOptions = (isResident: string | null) => {
-      console.log(`Resident status changed to: ${isResident}`); // For debugging
-
       if (isResident === 'N') {
         // NOT a resident
         this.filteredCategoryOptions = this.categoryQuestion.options.filter(
@@ -403,7 +417,6 @@ export class Step1Component implements OnChanges, OnInit {
     );
   }
 
-
   private getPostByAdvertisement(advertisementId: number): Observable<any> {
     return this.HTTP.getParam(
       '/master/get/getPostByAdvertiment',
@@ -419,15 +432,6 @@ export class Step1Component implements OnChanges, OnInit {
       'recruitement'
     );
   }
-
-  private getLanguageTypes(): Observable<any> {
-    return this.HTTP.getParam(
-      '/master/get/getLanguageType',
-      {},
-      'recruitement'
-    );
-  }
-
 
   private getAdditionalInfoQuestions(): Observable<any> {
     return this.HTTP.getParam(
@@ -473,7 +477,6 @@ export class Step1Component implements OnChanges, OnInit {
   // --- Form & UI Event Handlers ---
 
   private patchUserData(data: any): void {
-   
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
@@ -535,7 +538,7 @@ export class Step1Component implements OnChanges, OnInit {
       Current_Country_Id: data.Current_Country_Id,
       Current_Pin_Code: data.Current_Pin_Code,
     });
-   
+
     const sameAddress =
       data.Permanent_Address1 === data.Current_Address1 &&
       data.Permanent_City === data.Current_City &&
@@ -1718,7 +1721,6 @@ export class Step1Component implements OnChanges, OnInit {
         'recruitement'
       ).subscribe({
         next: async (res) => {
-        
           if (res?.body?.error) {
             this.alert.alert(
               true,
@@ -1728,7 +1730,10 @@ export class Step1Component implements OnChanges, OnInit {
             return;
           }
 
-           await this.alert.alert(false, 'All candidate details saved successfully!');
+          await this.alert.alert(
+            false,
+            'All candidate details saved successfully!'
+          );
 
           // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
           // additional info to update our local state (`savedAdditionalInfo`).
