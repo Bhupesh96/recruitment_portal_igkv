@@ -23,7 +23,10 @@ import { HttpService } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
-
+import {
+  RecruitmentStateService,
+  UserRecruitmentData,
+} from '../../recruitment-state.service';
 interface DetailFormGroup {
   type: FormControl<string | null>;
   _rowIndex: FormControl<number | null>; // Explicitly define _rowIndex
@@ -100,7 +103,7 @@ export class Step3Component implements OnInit {
   existingParentDetailId: number | null = null;
   dropdownData: Map<number, any[]> = new Map<number, any[]>();
   private previousCounts: Map<string, number> = new Map();
-
+  private userData: UserRecruitmentData | null = null;
   private parameterIdsToDelete: number[] = [];
   private highestRowIndexMap: Map<string, number> = new Map();
   constructor(
@@ -109,7 +112,8 @@ export class Step3Component implements OnInit {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private utils: UtilsService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private recruitmentState: RecruitmentStateService
   ) {
     this.form = this.fb.group({
       subHeadings: this.fb.group({}),
@@ -117,6 +121,7 @@ export class Step3Component implements OnInit {
       firstMissedMandatory: [''],
       mandatorySubheadingsSelected: [false, Validators.requiredTrue],
     });
+    this.userData = this.recruitmentState.getCurrentUserData();
   }
 
   get detailsArray(): FormArray<FormGroup<DetailFormGroup>> {
@@ -136,7 +141,7 @@ export class Step3Component implements OnInit {
     });
   }
 
-   public getExistingRowCount(item: any): number {
+  public getExistingRowCount(item: any): number {
     if (!item || !this.detailsArray) {
       return 0;
     }
@@ -449,8 +454,8 @@ export class Step3Component implements OnInit {
   }
 
   private getParameterValuesAndPatch(): void {
-    const registrationNo = 24000001;
-    const a_rec_adv_main_id = 120;
+    const registrationNo = this.userData?.registration_no;
+    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
 
     if (!this.heading) {
       console.warn('Heading not loaded, cannot patch values.');
@@ -488,111 +493,119 @@ export class Step3Component implements OnInit {
         );
 
         this.detailsArray.clear();
-        this.subHeadingDetails = {};
         this.filePaths.clear();
         this.existingDetailIds.clear();
         this.existingParameterIds.clear();
-        this.subHeadings.forEach((sub) => {
-          this.subHeadingDetails[sub.m_rec_score_field_id.toString()] = [];
-        });
+        this.highestRowIndexMap.clear();
+        Object.keys(this.subHeadingDetails).forEach(
+          (key) => (this.subHeadingDetails[key] = [])
+        );
 
-        const dataBySubheading = new Map<number, any[]>();
-        savedChildrenData.forEach((item) => {
-          const subHeadingId = item.score_field_parent_id;
-          if (!dataBySubheading.has(subHeadingId)) {
-            dataBySubheading.set(subHeadingId, []);
+        // 2. Group all parameter records into unique rows
+        // A unique row is identified by parent_id + item_id + row_index
+        const rowsGroupedByUniqueKey = new Map<string, any[]>();
+        savedChildrenData.forEach((record) => {
+          const uniqueRowKey = `${record.score_field_parent_id}_${record.m_rec_score_field_id}_${record.parameter_row_index}`;
+          if (!rowsGroupedByUniqueKey.has(uniqueRowKey)) {
+            rowsGroupedByUniqueKey.set(uniqueRowKey, []);
           }
-          dataBySubheading.get(subHeadingId)!.push(item);
+          rowsGroupedByUniqueKey.get(uniqueRowKey)!.push(record);
+
+          // While we're here, populate the map for existing detail IDs
+          const detailKey = `${record.score_field_parent_id}_${record.m_rec_score_field_id}`;
+          this.existingDetailIds.set(
+            detailKey,
+            record.a_rec_app_score_field_detail_id
+          );
         });
 
-        dataBySubheading.forEach((records, subHeadingId) => {
-          const rowsByRowIndex = new Map<number, any[]>();
-          records.forEach((record) => {
-            const rowIndex = record.parameter_row_index;
-            if (!rowsByRowIndex.has(rowIndex)) {
-              rowsByRowIndex.set(rowIndex, []);
-            }
-            rowsByRowIndex.get(rowIndex)!.push(record);
-            const detailKey = `${record.score_field_parent_id}_${record.m_rec_score_field_id}`;
-            this.existingDetailIds.set(
-              detailKey,
-              record.a_rec_app_score_field_detail_id
-            );
-          });
+        // 3. Create and patch a FormGroup for each unique row
+        rowsGroupedByUniqueKey.forEach((rowData, uniqueRowKey) => {
+          if (rowData.length === 0) return;
 
-          const sortedRows = Array.from(rowsByRowIndex.entries()).sort(
-            ([a], [b]) => a - b
+          const [subHeadingIdStr, scoreFieldIdStr, rowIndexStr] =
+            uniqueRowKey.split('_');
+          const subHeadingId = Number(subHeadingIdStr);
+          const scoreFieldId = Number(scoreFieldIdStr);
+          const rowIndex = Number(rowIndexStr);
+
+          // Update the highest known row index for this item type
+          const mapKey = `${subHeadingId}_${scoreFieldId}`;
+          const currentMax = this.highestRowIndexMap.get(mapKey) || 0;
+          if (rowIndex > currentMax) {
+            this.highestRowIndexMap.set(mapKey, rowIndex);
+          }
+
+          // Create a new, correctly structured FormGroup for this row
+          const newGroup = this.createDetailGroup(
+            scoreFieldId.toString(),
+            subHeadingId,
+            rowIndex
           );
-          const itemCounts = new Map<number, number>();
 
-          sortedRows.forEach(([rowIndex, rowData]) => {
-            if (rowData.length === 0) return;
-
-            const firstRecord = rowData[0];
-            const scoreFieldId = firstRecord.m_rec_score_field_id;
-            const mapKey = `${subHeadingId}_${scoreFieldId}`;
-            const currentMax = this.highestRowIndexMap.get(mapKey) || 0;
-            if (rowIndex > currentMax) {
-              this.highestRowIndexMap.set(mapKey, rowIndex);
-            }
-            itemCounts.set(
-              scoreFieldId,
-              (itemCounts.get(scoreFieldId) || 0) + 1
+          // Patch the saved values into the new group
+          rowData.forEach((paramData) => {
+            const param = this.getParametersForSubHeading(subHeadingId).find(
+              (p) =>
+                p.m_rec_score_field_parameter_new_id ===
+                paramData.m_rec_score_field_parameter_new_id
             );
+            if (param) {
+              const controlName = param.normalizedKey;
+              const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
 
-            // --- Start of Corrected Logic ---
-            // 1. Create the group using the centralized method that has the correct validators.
-            const newGroup = this.createDetailGroup(
-              scoreFieldId.toString(),
-              subHeadingId,
-              rowIndex
-            );
-
-            // 2. Now, patch the saved values into the correctly built group.
-            rowData.forEach((paramData) => {
-              const param = this.getParametersForSubHeading(subHeadingId).find(
-                (p) =>
-                  p.m_rec_score_field_parameter_new_id ===
-                  paramData.m_rec_score_field_parameter_new_id
+              this.existingParameterIds.set(
+                paramKey,
+                paramData.a_rec_app_score_field_parameter_detail_id
               );
-              if (param) {
-                const controlName = param.normalizedKey;
-                const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
-                this.existingParameterIds.set(
-                  paramKey,
-                  paramData.a_rec_app_score_field_parameter_detail_id
-                );
 
-                if (paramData.parameter_value?.includes('/')) {
-                  this.filePaths.set(paramKey, paramData.parameter_value);
-                  newGroup
-                    .get(controlName)
-                    ?.setValue('FILE_UPLOADED', { emitEvent: false });
-                } else {
-                  newGroup
-                    .get(controlName)
-                    ?.setValue(paramData.parameter_value, { emitEvent: false });
-                }
+              if (paramData.parameter_value?.includes('/')) {
+                // It's a file path
+                this.filePaths.set(paramKey, paramData.parameter_value);
+                newGroup
+                  .get(controlName)
+                  ?.setValue('FILE_UPLOADED', { emitEvent: false });
+              } else {
+                newGroup
+                  .get(controlName)
+                  ?.setValue(paramData.parameter_value, { emitEvent: false });
               }
-            });
-            // --- End of Corrected Logic ---
-
-            this.detailsArray.push(newGroup);
-            const subHeadingIdStr = subHeadingId.toString();
-            if (!this.subHeadingDetails[subHeadingIdStr]) {
-              this.subHeadingDetails[subHeadingIdStr] = [];
             }
-            this.subHeadingDetails[subHeadingIdStr].push(newGroup);
           });
 
-          const subHeadingMeta = this.subHeadings.find(
-            (s) => s.m_rec_score_field_id === subHeadingId
+          // Add the completed group to the main FormArray
+          this.detailsArray.push(newGroup);
+        });
+
+        // 4. Rebuild the `subHeadingDetails` map used by the template
+        this.detailsArray.controls.forEach((control) => {
+          const typeValue = control.get('type')?.value;
+          const subHeading = this.subHeadings.find((sh) =>
+            sh.items.some(
+              (item: any) => item.m_rec_score_field_id.toString() === typeValue
+            )
           );
-          if (subHeadingMeta) {
-            const subGroup = this.form.get(
-              `subHeadings.${subHeadingId}`
-            ) as FormGroup;
-            subHeadingMeta.items.forEach((item: any) => {
+          if (subHeading) {
+            const key = subHeading.m_rec_score_field_id.toString();
+            this.subHeadingDetails[key].push(
+              control as FormGroup<DetailFormGroup>
+            );
+          }
+        });
+
+        // 5. Update the "count" dropdowns based on the rows we actually created
+        const itemCounts = new Map<number, number>();
+        this.detailsArray.controls.forEach((control) => {
+          const scoreFieldId = Number(control.get('type')?.value);
+          itemCounts.set(scoreFieldId, (itemCounts.get(scoreFieldId) || 0) + 1);
+        });
+
+        this.subHeadings.forEach((subHeading) => {
+          const subGroup = this.form.get(
+            `subHeadings.${subHeading.m_rec_score_field_id}`
+          ) as FormGroup;
+          if (subGroup) {
+            subHeading.items.forEach((item: any) => {
               const count = itemCounts.get(item.m_rec_score_field_id) || 0;
               subGroup
                 .get(`${item.normalizedKey}.count`)
@@ -615,7 +628,7 @@ export class Step3Component implements OnInit {
   }
 
   loadFormStructure() {
-    const a_rec_adv_main_id = 120;
+    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
     const m_rec_score_field_id = 8; // Main Heading ID
 
     this.HTTP.getData(
@@ -1138,51 +1151,56 @@ export class Step3Component implements OnInit {
   }
 
   // Helper method to prepare form data for emission (optional, to avoid duplication)
-private getFormData(): any {
-  // Get the full raw value of the form, including the _rowIndex
-  const formValue = this.form.getRawValue();
+  private getFormData(): any {
+    // Get the full raw value of the form, including the _rowIndex
+    const formValue = this.form.getRawValue();
 
-  // ✅ Create a new 'details' array that excludes the '_rowIndex' from each object
-  const detailsWithoutRowIndex = formValue.details.map((detail: any) => {
-    const { _rowIndex, ...rest } = detail; // Use destructuring to separate _rowIndex
-    return rest; // Return only the remaining properties
-  });
+    // ✅ Create a new 'details' array that excludes the '_rowIndex' from each object
+    const detailsWithoutRowIndex = formValue.details.map((detail: any) => {
+      const { _rowIndex, ...rest } = detail; // Use destructuring to separate _rowIndex
+      return rest; // Return only the remaining properties
+    });
 
-  const subheadingsData = this.subHeadings.reduce((acc, sub) => {
-    acc[sub.m_rec_score_field_id] = {
-      m_rec_score_field_id: sub.m_rec_score_field_id,
-      score_field_name_e: sub.score_field_name_e,
-      a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-      items: sub.items.map((item: any) => ({
-        m_rec_score_field_id: item.m_rec_score_field_id,
-        score_field_name_e: item.score_field_name_e,
-        normalizedKey: item.normalizedKey,
-      })),
+    const subheadingsData = this.subHeadings.reduce((acc, sub) => {
+      acc[sub.m_rec_score_field_id] = {
+        m_rec_score_field_id: sub.m_rec_score_field_id,
+        score_field_name_e: sub.score_field_name_e,
+        a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+        items: sub.items.map((item: any) => ({
+          m_rec_score_field_id: item.m_rec_score_field_id,
+          score_field_name_e: item.score_field_name_e,
+          normalizedKey: item.normalizedKey,
+        })),
+      };
+      return acc;
+    }, {} as { [key: string]: any });
+
+    // Construct the final object for emission
+    return {
+      ...formValue, // Spread the original to get other form data
+      details: detailsWithoutRowIndex, // Overwrite the 'details' property with our cleaned version
+      _isValid: this.form.valid,
+      heading: {
+        score_field_title_name: this.score_field_title_name,
+        m_rec_score_field_id: 8,
+        a_rec_adv_post_detail_id: 254,
+      },
+      subheadings: subheadingsData,
     };
-    return acc;
-  }, {} as { [key: string]: any });
-  
-  // Construct the final object for emission
-  return {
-    ...formValue, // Spread the original to get other form data
-    details: detailsWithoutRowIndex, // Overwrite the 'details' property with our cleaned version
-    _isValid: this.form.valid,
-    heading: {
-      score_field_title_name: this.score_field_title_name,
-      m_rec_score_field_id: 8,
-      a_rec_adv_post_detail_id: 254,
-    },
-    subheadings: subheadingsData,
-  };
-}
+  }
 
   // in step-3.component.ts
 
   saveToDatabase(): Promise<void> {
     // ✅ Wrap the entire logic in a new Promise
     return new Promise((resolve, reject) => {
-      const registrationNo = 24000001;
-      const a_rec_adv_main_id = 120;
+      const registrationNo = this.userData?.registration_no;
+      const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+      if (!registrationNo || !a_rec_adv_main_id) {
+        const errorMsg = 'User identification is missing. Cannot save data.';
+        this.alertService.alert(true, errorMsg);
+        return reject(new Error(errorMsg)); // Stop the function here
+      }
       const formData = new FormData();
       const finalDetailList: any[] = [];
       const finalParameterList: any[] = [];
@@ -1250,7 +1268,7 @@ private getFormData(): any {
           action_type: existingDetailId ? 'U' : 'C',
           action_date: new Date().toISOString(),
           action_remark: existingDetailId ? 'data updated' : 'data inserted',
-          action_ip_address: '127.0.0.1',
+
           action_by: 1,
         };
         finalDetailList.push(detailRecord);
@@ -1320,7 +1338,7 @@ private getFormData(): any {
               action_remark: existingParamId
                 ? 'parameter updated'
                 : 'parameter inserted',
-              action_ip_address: '127.0.0.1',
+
               action_by: 1,
             };
             finalParameterList.push(parameter);
@@ -1454,7 +1472,7 @@ private getFormData(): any {
       verify_remark: 'Not Verified',
       action_type: 'U',
       action_date: new Date().toISOString(),
-      action_ip_address: '127.0.0.1',
+
       action_remark: 'parent data updated from recruitment form',
       action_by: 1,
       delete_flag: 'N',

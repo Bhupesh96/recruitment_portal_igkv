@@ -32,7 +32,7 @@ import {
 } from 'rxjs';
 import { HttpService, SharedModule } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { UtilsService } from './utils.service';
+import { RecruitmentStateService } from '../../recruitment-state.service';
 import { AlertService } from 'shared';
 import { LoaderService } from 'shared';
 
@@ -57,6 +57,7 @@ export class Step1Component implements OnChanges, OnInit {
     { propertyName: 'advertisementList', queryId: 108 },
   ];
   form: FormGroup;
+  showSubjectDropdown = false;
   salutations: any[] = [];
   subjectList: any[] = [];
   religionList: any[] = [];
@@ -132,17 +133,36 @@ export class Step1Component implements OnChanges, OnInit {
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private alert: AlertService,
-    private loader: LoaderService
+    private loader: LoaderService,
+    private recruitmentState: RecruitmentStateService
   ) {
+    const initialUserData = this.recruitmentState.getCurrentUserData();
+    this.showSubjectDropdown = !!initialUserData?.subject_id;
     this.form = this.fb.group({
-      registration_no: ['24000001'],
-      a_rec_adv_main_id: ['115', Validators.required],
+      a_rec_app_main_id: [null],
+      registration_no: [
+        initialUserData?.registration_no || null,
+        Validators.required,
+      ],
+      a_rec_adv_main_id: [
+        { value: initialUserData?.a_rec_adv_main_id || null, disabled: true },
+        Validators.required,
+      ],
       post_name: [''],
-      post_code: ['', Validators.required],
-      session_id: ['2', Validators.required],
-      subject_id: [''],
-      Salutation_E: ['', Validators.required],
-      Salutation_H: ['', Validators.required],
+      post_code: [
+        { value: initialUserData?.post_code || null, disabled: true },
+        Validators.required,
+      ],
+      session_id: [
+        initialUserData?.academic_session_id || null,
+        Validators.required,
+      ],
+      subject_id: [
+        { value: initialUserData?.subject_id || 0, disabled: true },
+        this.showSubjectDropdown ? Validators.required : [], // Validator is also conditional
+      ],
+      Salutation_E: [null, Validators.required],
+      Salutation_H: [null, Validators.required],
       Applicant_First_Name_E: ['', Validators.required],
       Applicant_Middle_Name_E: [''],
       Applicant_Last_Name_E: [''],
@@ -151,35 +171,38 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Last_Name_H: [''],
       Applicant_Father_Name_E: ['', Validators.required],
       Applicant_Mother_Name_E: ['', Validators.required],
-      gender_id: ['', Validators.required],
-      DOB: ['', Validators.required],
+      gender_id: [null, Validators.required], // Radios also benefit from null
+      DOB: [null, Validators.required],
       age: [{ value: '', disabled: true }],
       Mobile_No: [
-        '',
+        { value: '', disabled: true },
         [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)],
       ],
-      Email_Id: ['', [Validators.required, Validators.email]],
+      Email_Id: [
+        { value: '', disabled: true },
+        [Validators.required, Validators.email],
+      ],
       Birth_Place: ['', Validators.required],
-      Birth_District_Id: ['', Validators.required],
+      Birth_District_Id: [null, Validators.required], // Changed from '' to null
       Birth_State_Id: [null, Validators.required],
-      Birth_Country_Id: ['', Validators.required],
+      Birth_Country_Id: [null, Validators.required], // Changed from '' to null
       Identification_Mark1: ['', Validators.required],
       Identification_Mark2: ['', Validators.required],
-      religion_code: ['', Validators.required],
+      religion_code: [null, Validators.required], // Changed from '' to null
       Permanent_Address1: ['', Validators.required],
       Permanent_City: ['', Validators.required],
-      Permanent_District_Id: ['', Validators.required],
-      Permanent_State_Id: ['', Validators.required],
-      Permanent_Country_Id: ['', Validators.required],
+      Permanent_District_Id: [null, Validators.required], // Changed from '' to null
+      Permanent_State_Id: [null, Validators.required], // Changed from '' to null
+      Permanent_Country_Id: [null, Validators.required], // Changed from '' to null
       Permanent_Pin_Code: [
         '',
         [Validators.required, Validators.pattern(/^\d{6}$/)],
       ],
       Current_Address1: ['', Validators.required],
       Current_City: ['', Validators.required],
-      Current_District_Id: ['', Validators.required],
-      Current_State_Id: ['', Validators.required],
-      Current_Country_Id: ['', Validators.required],
+      Current_District_Id: [null, Validators.required], // Changed from '' to null
+      Current_State_Id: [null, Validators.required], // Changed from '' to null
+      Current_Country_Id: [null, Validators.required], // Changed from '' to null
       Current_Pin_Code: [
         '',
         [Validators.required, Validators.pattern(/^\d{6}$/)],
@@ -203,7 +226,7 @@ export class Step1Component implements OnChanges, OnInit {
         ),
       (error) => console.error('Error fetching additional info:', error)
     );
-     this.getUserData().subscribe(
+    this.getUserData().subscribe(
       (response) =>
         console.log(
           'User Data Response:',
@@ -362,6 +385,19 @@ export class Step1Component implements OnChanges, OnInit {
   }
   private initializeFormListeners(): void {
     this.setupLiveHindiTranslation();
+    this.form.get('Salutation_E')?.valueChanges.subscribe((selectedId) => {
+      if (selectedId && this.salutations.length > 0) {
+        const selectedSalutation = this.salutations.find(
+          (s) => s.id == selectedId
+        );
+
+        if (selectedSalutation) {
+          this.form
+            .get('Salutation_H')
+            ?.setValue(selectedSalutation.id, { emitEvent: false });
+        }
+      }
+    });
 
     this.form.get('DOB')?.valueChanges.subscribe((dobValue) => {
       if (dobValue) this.calculateAge(dobValue);
@@ -386,7 +422,6 @@ export class Step1Component implements OnChanges, OnInit {
         this.copyPermanentToCurrentAddress();
         this.disableCurrentAddressFields();
       } else {
-        this.clearCurrentAddress();
         this.enableCurrentAddressFields();
       }
     });
@@ -401,7 +436,7 @@ export class Step1Component implements OnChanges, OnInit {
   // --- API Data Access Methods (Moved from Service) ---
 
   private getUserData(): Observable<any> {
-    const registrationNo = 24000001; // 🔒 Hardcoded for now
+    const registrationNo = this.recruitmentState.getRegistrationNumber();
     return this.HTTP.getParam(
       '/master/get/getApplicant',
       { registration_no: registrationNo },
@@ -442,7 +477,7 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   private getSavedLanguages(): Observable<any> {
-    const registrationNo = 24000001;
+    const registrationNo = this.recruitmentState.getRegistrationNumber();
     return this.HTTP.getParam(
       '/master/get/getLanguagesByRegistration',
       { registration_no: registrationNo },
@@ -498,8 +533,9 @@ export class Step1Component implements OnChanges, OnInit {
       this.form.get('signature')?.updateValueAndValidity();
     }
     this.form.patchValue({
+      a_rec_app_main_id: data.a_rec_app_main_id,
       post_code: data.post_code,
-      subject_id: data.subject_id,
+      subject_id: data.subject_id || 0,
       registration_no: data.registration_no,
       a_rec_adv_main_id: data.a_rec_adv_main_id,
       session_id: data.academic_session_id,
@@ -515,9 +551,9 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Father_Name_E: data.Applicant_Father_Name_E,
       Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
       gender_id: data.gender_id,
-      DOB: this.formatDateToYYYYMMDD(data.DOB),
-      Mobile_No: data.app_mobile_no,
-      Email_Id: data.app_email_id,
+      DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
+      Mobile_No: String(data.mobile_no),
+      Email_Id: data.email_id,
       Birth_Place: data.Birth_Place,
       Birth_District_Id: data.Birth_District_Id,
       Birth_State_Id: data.Birth_State_Id,
@@ -538,19 +574,6 @@ export class Step1Component implements OnChanges, OnInit {
       Current_Country_Id: data.Current_Country_Id,
       Current_Pin_Code: data.Current_Pin_Code,
     });
-
-    const sameAddress =
-      data.Permanent_Address1 === data.Current_Address1 &&
-      data.Permanent_City === data.Current_City &&
-      data.Permanent_District_Id === data.Current_District_Id &&
-      data.Permanent_State_Id === data.Current_State_Id &&
-      data.Permanent_Country_Id === data.Current_Country_Id &&
-      data.Permanent_Pin_Code === data.Current_Pin_Code;
-    this.form.patchValue({ presentSame: sameAddress });
-    if (sameAddress) {
-      this.copyPermanentToCurrentAddress();
-      this.disableCurrentAddressFields();
-    }
   }
 
   private patchUserLanguages(langData: any[]): void {
@@ -1308,24 +1331,6 @@ export class Step1Component implements OnChanges, OnInit {
     this.form.get('Current_State_Id')?.enable();
     this.form.get('Current_Country_Id')?.enable();
     this.form.get('Current_Pin_Code')?.enable();
-  }
-
-  getSalutation(): void {
-    this.HTTP.getParam(
-      '/master/get/getSalutation/',
-      {},
-      'recruitement'
-    ).subscribe((result: any): void => {
-      this.salutations = result.body.data;
-      this.form.get('Salutation_E')?.valueChanges.subscribe((selectedId) => {
-        const selected = this.salutations.find(
-          (s) => s.salutation_id == selectedId
-        );
-        if (selected) {
-          this.form.get('Salutation_H')?.setValue(selected.salutation_id);
-        }
-      });
-    });
   }
 
   markFormGroupTouched(group: FormGroup | FormArray): void {

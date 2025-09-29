@@ -23,7 +23,10 @@ interface Advertisement {
 interface Post {
   post_code: number;
   post_name: string;
-  post_status_name:string;
+  post_status_name: string;
+  a_rec_adv_post_detail_id: number; // Add this ID from your post API response
+  subjects: any[]; // To hold the list of subjects for this post
+  selectedSubjectId: number | null; // To store the ID of the selected subject
   activeTab: 'login' | 'signup' | 'news' | 'complaint';
   expanded: boolean;
 }
@@ -89,17 +92,12 @@ export class HomeComponent implements OnInit {
     this.currentStep = 'login';
   }
 
-  backToSelection() {
-    this.showLogin = false;
-    this.showSignup = true; // Ensure signup is visible again
-  }
-
   switchToLogin() {
     this.showLogin = true;
     this.showSignup = false;
   }
 
-  switchToSignup() {
+  showSelectionView() {
     this.showLogin = false;
     this.showSignup = true;
   }
@@ -195,46 +193,88 @@ export class HomeComponent implements OnInit {
   // }
 
   fetchPostsByAdvertisement(adId: string) {
-  // Parameters are now a plain object, which is cleaner.
-  // NOTE: I've assumed the parameter key is 'a_rec_adv_main_id'. 
-  // Please verify this with your backend API. It was 'mapScoreId' in the old code.
-  const params = {
-    a_rec_adv_main_id: adId, 
-  };
+    // Parameters are now a plain object, which is cleaner.
+    // NOTE: I've assumed the parameter key is 'a_rec_adv_main_id'.
+    // Please verify this with your backend API. It was 'mapScoreId' in the old code.
+    const params = {
+      a_rec_adv_main_id: adId,
+    };
 
-  // Changed to use the custom HTTP service for consistency.
-  // The endpoint is assumed to follow the same '/master/get/...' pattern.
-  this.HTTP.getParam(
-    '/publicapi/get/getPostByAdvertimentForLogin/', 
-    params,
-    'recruitement'
-  ).subscribe({
-    next: (result: any) => {
-      // Access the data from result.body.data, matching the service's response structure.
-      const postsList = result.body.data || []; // Default to empty array if data is null
+    // Changed to use the custom HTTP service for consistency.
+    // The endpoint is assumed to follow the same '/master/get/...' pattern.
+    this.HTTP.getParam(
+      '/publicapi/get/getPostByAdvertimentForLogin/',
+      params,
+      'recruitement'
+    ).subscribe({
+      next: (result: any) => {
+        // Access the data from result.body.data, matching the service's response structure.
+        const postsList = result.body.data || []; // Default to empty array if data is null
 
-      // The original mapping logic to add UI-specific properties is preserved.
-      this.allPosts = postsList.map((post: any) => ({
-        post_code: post.post_code,
-        post_name: post.post_name,
-        post_status_name:post.post_status_name,
-        activeTab: 'signup' as 'login' | 'signup' | 'news' | 'complaint', // Default to signup
-        expanded: false,
-      }));
+        // The original mapping logic to add UI-specific properties is preserved.
+        this.allPosts = postsList.map((post: any) => ({
+          post_code: post.post_code,
+          post_name: post.post_name,
+          post_status_name: post.post_status_name,
+          a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id, // <-- Map the new ID
+          subjects: [], // Initialize as an empty array
+          selectedSubjectId: null, // Initialize as null
+          activeTab: 'signup' as 'login' | 'signup' | 'news' | 'complaint',
+          expanded: false,
+        }));
+        this.allPosts.forEach((post) => {
+          if (post.a_rec_adv_post_detail_id) {
+            this.fetchSubjectsForPost(post);
+          }
+        });
+        // Added for easier debugging, similar to your other methods.
+        console.log(
+          '🟢 JSON Posts List:',
+          JSON.stringify(this.allPosts, null, 2)
+        );
+      },
+      error: (error) => {
+        console.error('Error fetching posts:', error);
+        this.allPosts = []; // Clear posts on error
+      },
+    });
+  }
+  fetchSubjectsForPost(post: Post) {
+    const params = {
+      a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
+    };
 
-      // Added for easier debugging, similar to your other methods.
-      console.log(
-        '🟢 JSON Posts List:',
-        JSON.stringify(this.allPosts, null, 2)
-      );
-    },
-    error: (error) => {
-      console.error('Error fetching posts:', error);
-      this.allPosts = []; // Clear posts on error
-    },
-  });
-}
+    this.HTTP.getParam(
+      '/publicapi/get/getSubjectsByPostDetailIdForLogin',
+      params,
+      'recruitement' // <-- FIX: Changed the service key
+    ).subscribe({
+      next: (result: any) => {
+        if (result.body && result.body.data) {
+          post.subjects = result.body.data;
+          console.log(
+            `✅ Subjects loaded for post ${post.post_code}:`,
+            JSON.stringify(post.subjects, null, 2)
+          );
+        }
+      },
+      error: (err) => {
+        // This will now show you any errors with the API call
+        console.error(
+          `❌ Error fetching subjects for post ${post.post_code}:`,
+          err
+        );
+      },
+    });
+  }
 
+  getSubjectIdForPost(post: Post): number | null {
+    if (post.subjects && post.subjects.length > 0) {
+      return post.selectedSubjectId;
+    }
+
+    return 0;
+  }
   get filteredAds(): Advertisement[] {
     return this.ads;
   }
@@ -250,24 +290,24 @@ export class HomeComponent implements OnInit {
   togglePost(post: Post) {
     post.expanded = !post.expanded;
   }
- onSessionChange() {
-  this.selectedAd = '';
-  this.allPosts = [];
-  this.ads = [];
 
-  const selectedSessionId = +this.selectedSession;
+  onSessionChange() {
+    this.selectedAd = '';
+    this.allPosts = [];
+    this.ads = [];
 
-  // Correct the property name from .Academic_Session_Id to .academic_session_id
-  const selectedSession = this.sessions.find(
-    (s) => s.academic_session_id === selectedSessionId // <-- FIX
-  );
+    // ✅ FIX: Assign the value to the class property `this.selectedSessionId`
+    this.selectedSessionId = this.selectedSession
+      ? +this.selectedSession
+      : null;
 
-  console.log('Session ', selectedSessionId);
+    console.log('Session ID set to: ', this.selectedSessionId);
 
-  if (selectedSession) {
-    this.getAdvertisement(selectedSessionId);
+    if (this.selectedSessionId) {
+      // Pass the updated class property to the function
+      this.getAdvertisement(this.selectedSessionId);
+    }
   }
-}
 
   onAdChange() {
     if (this.selectedAd) {

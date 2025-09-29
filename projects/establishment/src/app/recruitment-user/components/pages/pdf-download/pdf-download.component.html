@@ -1,1 +1,878 @@
-<p>pdf-download works!</p>
+<div class="a4-container" #printSection *ngIf="isDataLoaded">
+  <div class="section">
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        border: 1px solid black;
+        padding: 4px 8px;
+      "
+    >
+      <div style="width: 70px; height: 70px">
+        <img
+          src="assets/logo.png"
+          alt="Logo"
+          style="width: 100%; height: 100%; object-fit: contain"
+        />
+      </div>
+      <div style="text-align: center; flex: 1; line-height: 1.2">
+        <div
+          style="font-size: 16px; font-weight: bold; text-transform: uppercase"
+        >
+          Indira Gandhi Krishi Vishwavidyalaya
+        </div>
+        <div
+          style="
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin: 4px 0;
+          "
+        >
+          KRISHAK NAGAR, RAIPUR (CHHATTISGARH) - 492012
+        </div>
+        <div
+          style="
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 4px 0;
+          "
+        >
+          इंदिरा गांधी कृषि विश्वविद्यालय, रायपुर (छत्तीसगढ़)-४९२०१२
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div style="border-top: 2px solid black; margin: 8px 0"></div>
+    <div style="text-align: center; flex: 1; line-height: 1.2; margin: 8px 0">
+      <div style="font-size: 10pt; font-weight: 900; text-transform: uppercase">
+        APPLICATION FORM FOR {{ formData[1]?.advertisment_name || "-" }}
+      </div>
+      <div
+        style="
+          font-size: 10pt;
+          font-weight: 800;
+          margin-top: 2pt;
+          line-height: 1;
+        "
+      >
+        (PAY SCALE RS.56100-177500 + GP 5400)
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div style="border: 1px solid black; padding: 8px; margin: 8px 0">
+      <div style="display: flex">
+        <div style="flex: 1">
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 2px;
+              font-size: 11px;
+              line-height: 1.4;
+            "
+          >
+            <div>
+              <span style="font-weight: 600">Registration No.</span>:
+              {{ formData[1]?.registration_no || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Registration Date</span>:
+              {{ formData[1]?.registration_date || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Applied Post</span>:
+              {{ formData[1]?.post_name || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Applied Subject</span>:
+              {{ formData[1]?.Subject_Name_E || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Payment Reference No. (IGKV)</span
+              >: {{ formData[1]?.payment_ref || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Payment Date</span>:
+              {{ formData[1]?.payment_date || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Amount</span>:
+              {{ formData[1]?.payment_amount || "-" }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Bank Reference No.</span>:
+              {{ formData[1]?.bank_ref || "-" }}
+            </div>
+          </div>
+        </div>
+        <div style="margin-left: 8px">
+          <div style="border: 1px solid black; width: 100px; height: 100px">
+            <img
+              [src]="getFileUrl(formData[1]?.candidate_photo)"
+              alt="Photo"
+              style="width: 100%; height: 100%; object-fit: cover"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+      <div class="section-heading-bar">Applicant Basic Detail</div>
+      <div style="padding: 8px">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 16px;
+          "
+        >
+          <div>
+            <span style="font-weight: 600">Full Name (Eng)</span>:
+            {{ formData[1]?.Salutation_E_Name }}
+            {{ formData[1]?.Applicant_First_Name_E }}
+            {{ formData[1]?.Applicant_Middle_Name_E }}
+            {{ formData[1]?.Applicant_Last_Name_E }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Full Name (Hin)</span>:
+            {{ formData[1]?.Salutation_H_Name }}
+            {{ formData[1]?.Applicant_First_Name_H }}
+            {{ formData[1]?.Applicant_Middle_Name_H }}
+            {{ formData[1]?.Applicant_Last_Name_H }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Gender</span>:
+            {{
+              formData[1]?.Gender_Id === "M"
+                ? "Male"
+                : formData[1]?.Gender_Id === "F"
+                ? "Female"
+                : "Other"
+            }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Date of Birth</span>:
+            {{ formData[1]?.DOB | date : "dd-MM-yyyy" }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Age (as on 31/01/2025)</span>:
+            {{ formData[1]?.age }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Father's Name</span>:
+            {{ formData[1]?.Applicant_Father_Name_E }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Mother's Name</span>:
+            {{ formData[1]?.Applicant_Mother_Name_E }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Identification Mark 1</span>:
+            {{ formData[1]?.Identification_Mark1 }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Identification Mark 2</span>:
+            {{ formData[1]?.Identification_Mark2 }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Are You Married?</span>:
+            {{ formData[1]?.Is_Married_YN === "Y" ? "Yes" : "No" }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Bonafide CG Resident</span>:
+            {{ formData[1]?.Is_CG_Domocile === "Y" ? "Yes" : "No" }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Disability</span>:
+            {{ formData[1]?.Is_Disability === "Y" ? "Yes" : "No" }}
+          </div>
+          <div>
+            <span style="font-weight: 600">In-Service</span>:
+            {{ formData[1]?.In_Service_YN === "Y" ? "Yes" : "No" }}
+          </div>
+          <div>
+            <span style="font-weight: 600">Local Language Knowledge</span>:
+            {{ formData[1]?.Is_Local_Lang_Knowledge === "Y" ? "Yes" : "No" }}
+          </div>
+        </div>
+
+        <div
+          style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 8px"
+        >
+          <div
+            class="sub-section-heading-bar"
+            style="
+              margin: -8px -8px 8px -8px;
+              border-bottom: 1px solid black;
+              border-top: 1px solid black;
+              padding: 4px 8px;
+            "
+          >
+            Permanent Address:
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 4px 16px;
+            "
+          >
+            <div>
+              <span style="font-weight: 600">Address</span>:
+              {{ formData[1]?.Permanent_Address1 }}
+            </div>
+            <div>
+              <span style="font-weight: 600">City</span>:
+              {{ formData[1]?.Permanent_City }}
+            </div>
+            <div>
+              <span style="font-weight: 600">District</span>:
+              {{ formData[1]?.Permanent_District_Name }}
+            </div>
+            <div>
+              <span style="font-weight: 600">State</span>:
+              {{ formData[1]?.Permanent_State_Name }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Country</span>:
+              {{ formData[1]?.Permanent_Country_Name }}
+            </div>
+            <div>
+              <span style="font-weight: 600">Pincode</span>:
+              {{ formData[1]?.Permanent_Pin_Code }}
+            </div>
+          </div>
+        </div>
+        <div
+          *ngIf="formData[1]?.additionalInfoDetails?.length > 0"
+          style="border-top: 1px solid #ccc; margin-top: 8px; padding-top: 8px"
+        >
+          <div
+            class="sub-section-heading-bar"
+            style="
+              margin: -8px -8px 8px -8px;
+              border-bottom: 1px solid black;
+              border-top: 1px solid black;
+              padding: 4px 8px;
+            "
+          >
+            Additional Information:
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 4px 16px;
+            "
+          >
+            <ng-container
+              *ngFor="let item of formData[1].additionalInfoDetails"
+            >
+              <div>
+                <span style="font-weight: 600">{{ item.question }}</span
+                >:
+                {{ formatValue(item.answer) }}
+              </div>
+            </ng-container>
+          </div>
+          <div
+            style="
+              border-top: 1px solid #ccc;
+              margin-top: 8px;
+              padding-top: 8px;
+            "
+          >
+            <div
+              class="sub-section-heading-bar"
+              style="
+                margin: -8px -8px 8px -8px;
+                border-bottom: 1px solid black;
+                border-top: 1px solid black;
+                padding: 4px 8px;
+              "
+            >
+              Present Address (For Correspondence):
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4px 16px;
+              "
+            >
+              <div>
+                <span style="font-weight: 600">Address</span>:
+                {{ formData[1]?.Current_Address1 }}
+              </div>
+              <div>
+                <span style="font-weight: 600">City</span>:
+                {{ formData[1]?.Current_City }}
+              </div>
+              <div>
+                <span style="font-weight: 600">District</span>:
+                {{ formData[1]?.Current_District_Name }}
+              </div>
+              <div>
+                <span style="font-weight: 600">State</span>:
+                {{ formData[1]?.Current_State_Name }}
+              </div>
+              <div>
+                <span style="font-weight: 600">Country</span>:
+                {{ formData[1]?.Current_Country_Name }}
+              </div>
+              <div>
+                <span style="font-weight: 600">Pincode</span>:
+                {{ formData[1]?.Current_Pin_Code }}
+              </div>
+              <div>
+                <span style="font-weight: 600">Mobile Number</span>:
+                {{ formData[1]?.Mobile_No }}
+              </div>
+              <div>
+                <span style="font-weight: 600">Email</span>:
+                {{ formData[1]?.Email_Id }}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              border-top: 1px solid #ccc;
+              margin-top: 8px;
+              padding-top: 8px;
+            "
+          >
+            <div
+              class="sub-section-heading-bar"
+              style="
+                margin: -8px -8px 8px -8px;
+                border-bottom: 1px solid black;
+                border-top: 1px solid black;
+                padding: 4px 8px;
+              "
+            >
+              Birth Place:
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4px 16px;
+              "
+            >
+              <div>
+                <span style="font-weight: 600">Village/City/Block</span>:
+                {{ formData[1]?.Birth_Place }}
+              </div>
+              <div>
+                <span style="font-weight: 600">District</span>:
+                {{ formData[1]?.Birth_District_Name }}
+              </div>
+              <div>
+                <span style="font-weight: 600">State</span>:
+                {{ formData[1]?.Birth_State_Name }}
+              </div>
+              <div>
+                <span style="font-weight: 600">Country</span>:
+                {{ formData[1]?.Birth_Country_Name }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" *ngIf="formData[1]?.languages?.length > 0">
+      <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+        <div class="section-heading-bar">Language Detail</div>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr 1fr;
+            font-weight: 600;
+            background-color: #f3f4f6;
+          "
+        >
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            S.No.
+          </div>
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            Language Type
+          </div>
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            Language
+          </div>
+          <div style="padding: 4px 8px; border-bottom: 1px solid black">
+            Language Skill
+          </div>
+        </div>
+        <div
+          *ngFor="let lang of formData[1]?.languages; let i = index"
+          style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr"
+        >
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            {{ i + 1 }}
+          </div>
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            {{ lang.language_type }}
+          </div>
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            {{ lang.language_name }}
+          </div>
+          <div style="padding: 4px 8px; border-bottom: 1px solid black">
+            {{ lang.language_skill }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" *ngIf="getQualificationSections().length > 0">
+      <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+        <div class="section-heading-bar">
+          {{
+            formData[2]?.heading?.score_field_title_name ||
+              "EDUCATIONAL QUALIFICATION"
+          }}
+        </div>
+        <ng-container *ngFor="let qualSection of getQualificationSections()">
+          <div style="break-inside: avoid">
+            <div class="sub-section-heading-bar">{{ qualSection.title }}</div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+                background-color: #f3f4f6;
+                font-weight: 600;
+              "
+            >
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                  word-break: break-word;
+                "
+              >
+                Name of university/ Institute/Board
+              </div>
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                Name of degree
+              </div>
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                Subject(s) (major)/Group
+              </div>
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                Division
+              </div>
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                Passing Year
+              </div>
+              <div
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                Percentage Obtained
+              </div>
+              <div style="padding: 4px; border-bottom: 1px solid black">
+                OGPA (If any)
+              </div>
+            </div>
+            <ng-container *ngFor="let detail of qualSection.qualifications">
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(7, minmax(0, 1fr));
+                  border-bottom: 1px solid black;
+                "
+              >
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail["University/Board"] || "-" }}
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail.Degree || "-" }}
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail["Subject/Group"] || "-" }}
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail.Division || "-" }}
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail["Passing Year"] || "-" }}
+                </div>
+                <div style="border-right: 1px solid black; padding: 4px 8px">
+                  {{ detail["Percentage Obtained"] || "-" }}
+                </div>
+                <div style="padding: 4px 8px">{{ detail.OGPA || "-" }}</div>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <ng-container *ngFor="let i of [3, 4, 6]">
+      <div class="section" *ngIf="getSubheadingsWithDetails(i).length > 0">
+        <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+          <div class="section-heading-bar">
+            {{ formData[i]?.heading?.score_field_title_name }}
+          </div>
+          <ng-container *ngFor="let section of getSubheadingsWithDetails(i)">
+            <div style="break-inside: avoid">
+              <div class="sub-section-heading-bar">{{ section.title }}</div>
+              <div
+                [style.grid-template-columns]="
+                  'repeat(' + section.headers.length + ', 1fr)'
+                "
+                style="
+                  display: grid;
+                  background-color: #f3f4f6;
+                  font-weight: 600;
+                "
+              >
+                <div
+                  *ngFor="let header of section.headers"
+                  style="
+                    border-right: 1px solid black;
+                    padding: 4px;
+                    border-bottom: 1px solid black;
+                  "
+                >
+                  {{ formatHeader(header) }}
+                </div>
+              </div>
+              <ng-container *ngFor="let detail of section.details">
+                <div
+                  [style.grid-template-columns]="
+                    'repeat(' + section.headers.length + ', 1fr)'
+                  "
+                  style="display: grid; border-bottom: 1px solid black"
+                >
+                  <div
+                    *ngFor="let header of section.headers"
+                    style="border-right: 1px solid black; padding: 4px 8px"
+                  >
+                    {{ formatValue(detail[header]) }}
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </ng-container>
+
+    <div class="section" *ngIf="getExperienceSections().length > 0">
+      <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+        <div class="section-heading-bar">
+          {{ formData[5]?.heading?.score_field_title_name || "EXPERIENCE" }}
+        </div>
+        <ng-container *ngFor="let expSection of getExperienceSections()">
+          <div style="break-inside: avoid">
+            <div class="sub-section-heading-bar">{{ expSection.title }}</div>
+            <div
+              [style.grid-template-columns]="
+                'repeat(' + expSection.headers.length + ', 1fr)'
+              "
+              style="display: grid; background-color: #f3f4f6; font-weight: 600"
+            >
+              <div
+                *ngFor="let header of expSection.headers"
+                style="
+                  border-right: 1px solid black;
+                  padding: 4px;
+                  border-bottom: 1px solid black;
+                "
+              >
+                {{ formatHeader(header) }}
+              </div>
+            </div>
+            <ng-container *ngFor="let experience of expSection.experiences">
+              <div
+                [style.grid-template-columns]="
+                  'repeat(' + expSection.headers.length + ', 1fr)'
+                "
+                style="display: grid; border-bottom: 1px solid black"
+              >
+                <div
+                  *ngFor="let header of expSection.headers"
+                  style="border-right: 1px solid black; padding: 4px 8px"
+                >
+                  {{ formatValue(experience[header]) }}
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="section" *ngIf="getAttachmentsWithRemarks().length > 0">
+      <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+        <div class="section-heading-bar">
+          {{
+            formData[7]?.heading?.score_field_title_name || "OTHER ATTACHMENTS"
+          }}
+        </div>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 40px 2fr 1fr;
+            background-color: #f3f4f6;
+            font-weight: 600;
+          "
+        >
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            S.No.
+          </div>
+          <div
+            style="
+              border-right: 1px solid black;
+              padding: 4px 8px;
+              border-bottom: 1px solid black;
+            "
+          >
+            Attachment Type
+          </div>
+          <div style="padding: 4px 8px; border-bottom: 1px solid black">
+            Remark
+          </div>
+        </div>
+        <ng-container
+          *ngFor="let attachment of getAttachmentsWithRemarks(); let i = index"
+        >
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 40px 2fr 1fr;
+              border-bottom: 1px solid black;
+            "
+          >
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ i + 1 }}
+            </div>
+            <div style="border-right: 1px solid black; padding: 4px 8px">
+              {{ attachment.type }}
+            </div>
+            <div style="padding: 4px 8px">{{ attachment.remark }}</div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="section">
+      <div style="font-size: 11px; line-height: 1.4; border: 1px solid black">
+        <div
+          style="
+            text-align: center;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-bottom: 1px solid black;
+            background-color: #f3f4f6;
+          "
+        >
+          DECLARATION
+        </div>
+        <div style="padding: 8px">
+          <p style="margin-bottom: 8px" [innerHTML]="declarationText"></p>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              margin-top: 16px;
+            "
+          >
+            <div>
+              <div><span style="font-weight: 600">Place</span>: JABALPUR</div>
+              <div><span style="font-weight: 600">Date</span>: 07-01-2025</div>
+            </div>
+            <div></div>
+            <div style="text-align: center">
+              <img
+                [src]="getFileUrl(formData[1]?.candidate_signature)"
+                alt="Signature"
+                style="width: 80px; height: auto; margin: 0 auto"
+              />
+              <div style="font-size: 10px; margin-top: 4px">
+                Signature of the Applicant
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid black; margin-top: 16px">
+          <div
+            style="
+              text-align: center;
+              font-weight: 600;
+              padding: 4px 8px;
+              background-color: #f3f4f6;
+              border-bottom: 1px solid black;
+            "
+          >
+            REMARKS OF THE PRESENT EMPLOYER
+          </div>
+          <div
+            style="
+              text-align: center;
+              font-size: 10px;
+              font-style: italic;
+              margin-bottom: 8px;
+            "
+          >
+            (In case of those who are already in service)
+          </div>
+          <div style="padding: 8px">
+            <p style="margin-bottom: 8px">
+              The applicant
+              <strong
+                >{{ formData[1]?.Salutation_E_Name }}
+                {{ formData[1]?.Applicant_First_Name_E }}
+                {{ formData[1]?.Applicant_Middle_Name_E }}
+                {{ formData[1]?.Applicant_Last_Name_E }}</strong
+              >
+              is holding a permanent/temporary post of
+              <span
+                style="
+                  display: inline-block;
+                  border-bottom: 1px solid black;
+                  width: 128px;
+                "
+                >{{ formData[8]?.current_post }}</span
+              >
+              in the scale of Rs.
+              <span
+                style="
+                  display: inline-block;
+                  border-bottom: 1px solid black;
+                  width: 96px;
+                "
+                >{{ formData[8]?.salary_scale }}</span
+              >
+              per month. His/Her application is forwarded and he/she will be
+              relieved in case he/she is selected for the post applied for.
+            </p>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                margin-top: 16px;
+              "
+            >
+              <div>
+                <div>
+                  Place
+                  <span
+                    style="
+                      display: inline-block;
+                      border-bottom: 1px solid black;
+                      width: 96px;
+                    "
+                    >{{ formData[8]?.employer_place }}</span
+                  >
+                </div>
+                <div>
+                  Date
+                  <span
+                    style="
+                      display: inline-block;
+                      border-bottom: 1px solid black;
+                      width: 96px;
+                    "
+                    >{{ formData[8]?.employer_date }}</span
+                  >
+                </div>
+              </div>
+              <div></div>
+              <div style="text-align: center">
+                <div style="margin-bottom: 4px">Signature</div>
+                <div style="font-size: 10px">
+                  Designation of Officer (with official Seal)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+</div>

@@ -41,7 +41,7 @@
           class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-medium text-blue-600 flex items-center gap-2"
         >
           <svg
-             class="h-5 w-5 text-blue-600"
+            class="h-5 w-5 text-blue-600"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -118,7 +118,9 @@
                       "
                     />
 
-                    <label class="block text-base font-medium text-gray-600 mb-1">
+                    <label
+                      class="block text-base font-medium text-gray-600 mb-1"
+                    >
                       {{ param.score_field_parameter_name }}
                       <span
                         *ngIf="param.is_mandatory === 'Y'"
@@ -375,7 +377,18 @@
                 </div>
               </div>
             </ng-container>
-
+            <ng-container
+              *ngIf="
+                getParameters(
+                  subheading.m_rec_score_field_id,
+                  subheading.a_rec_adv_post_detail_id
+                ).length === 0
+              "
+            >
+              <div class="p-4 text-center text-gray-500 bg-gray-50 rounded-md">
+                <p>No parameters available for this section.</p>
+              </div>
+            </ng-container>
             <button
               type="button"
               (click)="addQualification(subheading, i)"

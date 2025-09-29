@@ -12,6 +12,7 @@ import { Step6Component } from './step-6/step-6.component';
 import { Step9Component } from './step-9/step-9.component';
 import { HeaderComponent } from '../../header/header.component';
 import { FooterComponent } from '../../footer/footer.component';
+import { PdfDownloadComponent } from '../pdf-download/pdf-download.component';
 import { AlertService } from 'shared';
 
 @Component({
@@ -30,6 +31,7 @@ import { AlertService } from 'shared';
     Step5Component,
     Step6Component,
     Step9Component,
+    PdfDownloadComponent,
   ],
   templateUrl: './stepper.component.html',
   styleUrls: ['./stepper.component.scss'],
@@ -59,7 +61,8 @@ export class StepperComponent {
   @ViewChild(Step5Component, { static: false }) step5Component?: Step5Component;
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
-
+  @ViewChild('pdfDownloadComponent')
+  pdfDownloadComponent!: PdfDownloadComponent;
   steps = [
     'Personal Info',
     'Education',
@@ -71,11 +74,21 @@ export class StepperComponent {
   ];
   currentStep = 1;
   formData: { [key: number]: { [key: string]: any } } = {};
-
+  private printTriggered = false;
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService
   ) {}
+  ngAfterViewChecked(): void {
+    // Check if the print action was requested and the component is ready
+    if (this.printTriggered && this.pdfDownloadComponent) {
+      // Call the print function
+      this.pdfDownloadComponent.printAsPdf();
+
+      // Reset the flag to prevent it from running again
+      this.printTriggered = false;
+    }
+  }
 
   async nextStep() {
     try {
@@ -152,11 +165,18 @@ export class StepperComponent {
   }
 
   onFinalSubmitSuccess() {
-    console.log(
-      'Application has been successfully submitted! Disabling navigation.'
-    );
-    this.alertService.alert(false, 'Redirecting to dashboard...', 3000);
-    // In a real application, you would navigate to a new page here.
-    // For example: this.router.navigate(['/application-success']);
+    console.log('Final submit success. Preparing to print...');
+
+    if (this.pdfDownloadComponent) {
+      // 1. Pass the complete formData directly to the PDF component.
+      // This will trigger Angular's change detection.
+      this.pdfDownloadComponent.formData = this.formData;
+
+      // 2. Set the flag. ngAfterViewChecked will now take care of printing
+      //    as soon as the view is updated with the new formData.
+      this.printTriggered = true;
+    } else {
+      console.error('PDF component not found!');
+    }
   }
 }

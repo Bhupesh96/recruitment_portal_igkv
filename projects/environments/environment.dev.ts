@@ -32,7 +32,7 @@ export const reportConfig = {
 export const moduleMapping: any = {
   adminModule: `${host}:4300`,
   homeModule: `${host}:4200/common`,
-  loginModule: `${host}:4200/user/login`,
+  loginModule: `${host}:4340/home`,
   recruitementModule: `${host}:4340`,
   academicModule: `${host}:4310`,
   admissionModule: `${host}:4320`,

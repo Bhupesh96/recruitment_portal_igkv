@@ -21,7 +21,10 @@ import { HttpService, SharedModule } from 'shared';
 import { Output, EventEmitter } from '@angular/core';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
-
+import {
+  RecruitmentStateService,
+  UserRecruitmentData,
+} from '../../recruitment-state.service';
 interface Heading {
   a_rec_adv_main_id: number;
   a_rec_adv_post_detail_id: number;
@@ -101,6 +104,7 @@ export class Step2Component implements OnInit {
   existingDetailIds: Map<string, number> = new Map();
   existingParameterIds: Map<string, number> = new Map();
   existingParentDetailId: number | null = null;
+  private userData: UserRecruitmentData | null = null;
   constructor(
     private fb: FormBuilder,
     private http: HttpClient,
@@ -108,8 +112,10 @@ export class Step2Component implements OnInit {
     private HTTP: HttpService,
     private sanitizer: DomSanitizer,
     private utils: UtilsService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private recruitmentState: RecruitmentStateService
   ) {
+    this.userData = this.recruitmentState.getCurrentUserData();
     this.form = this.fb.group({});
   }
 
@@ -165,7 +171,8 @@ export class Step2Component implements OnInit {
   sanitizeFileUrl(filePath: string): SafeUrl {
     let fileName = filePath.split('/').pop() || '';
     fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
-    const url = `http://192.168.1.57:3500/recruitment/24000001/${fileName}`;
+    const registrationNo = this.userData?.registration_no;
+    const url = `http://192.168.1.57:3500/recruitment/${registrationNo}/${fileName}`;
     return this.sanitizer.bypassSecurityTrustUrl(url);
   }
 
@@ -301,94 +308,98 @@ export class Step2Component implements OnInit {
       );
   }
 
- // in step-2.component.ts
+  // in step-2.component.ts
 
-private buildFormControls(): void {
-  this.form.addControl(
-    'heading',
-    this.fb.control(this.heading?.score_field_title_name || '')
-  );
-  this.form.addControl('firstMissedMandatory', this.fb.control(''));
-  this.form.addControl(
-    'mandatorySubheadingsSelected',
-    this.fb.control(false, Validators.requiredTrue)
-  );
-
-  this.subheadings.forEach((subheading, index) => {
-    const key = this.getUniqueKey(subheading, index);
-    const params = this.getParameters(
-      subheading.m_rec_score_field_id,
-      subheading.a_rec_adv_post_detail_id
-    );
-
-    this.form.addControl(`is${key}Selected`, this.fb.control(false));
+  private buildFormControls(): void {
     this.form.addControl(
-      `qualifications${key}`,
-      this.fb.array(
-        params.length
-          ? [this.createQualificationGroup(subheading, false)]
-          : []
-      )
+      'heading',
+      this.fb.control(this.heading?.score_field_title_name || '')
+    );
+    this.form.addControl('firstMissedMandatory', this.fb.control(''));
+    this.form.addControl(
+      'mandatorySubheadingsSelected',
+      this.fb.control(false, Validators.requiredTrue)
     );
 
-    // ✅ --- START: MODIFIED LOGIC ---
-    const selectionControl = this.form.get(`is${key}Selected`);
-    if (!selectionControl) return; // Safety check
+    this.subheadings.forEach((subheading, index) => {
+      const key = this.getUniqueKey(subheading, index);
+      const params = this.getParameters(
+        subheading.m_rec_score_field_id,
+        subheading.a_rec_adv_post_detail_id
+      );
 
-    selectionControl.valueChanges.subscribe((isSelected) => {
-      const arrayName = `qualifications${key}`;
-      
-      if (!isSelected) {
-        // If the user is UNCHECKING the box, show the confirmation alert.
-        this.alertService
-          .confirmAlert(
-            'Confirm Action',
-            'Are you sure you want to remove this qualification? All entered data for this section will be cleared.',
-            'warning'
-          )
-          .then((result: any) => {
-            if (result.isConfirmed) {
-              // User clicked "Yes": Clear the data and update validators.
-              this.toggleValidators(arrayName, subheading, false);
-              const formArray = this.form.get(arrayName) as FormArray;
-              if (formArray && formArray.at(0)) {
-                const group = formArray.at(0) as FormGroup;
-                const detailId = group.get('a_rec_app_score_field_detail_id')?.value;
-                group.reset({ a_rec_app_score_field_detail_id: detailId || '' });
+      this.form.addControl(`is${key}Selected`, this.fb.control(false));
+      this.form.addControl(
+        `qualifications${key}`,
+        this.fb.array(
+          params.length
+            ? [this.createQualificationGroup(subheading, false)]
+            : []
+        )
+      );
+
+      // ✅ --- START: MODIFIED LOGIC ---
+      const selectionControl = this.form.get(`is${key}Selected`);
+      if (!selectionControl) return; // Safety check
+
+      selectionControl.valueChanges.subscribe((isSelected) => {
+        const arrayName = `qualifications${key}`;
+
+        if (!isSelected) {
+          // If the user is UNCHECKING the box, show the confirmation alert.
+          this.alertService
+            .confirmAlert(
+              'Confirm Action',
+              'Are you sure you want to remove this qualification? All entered data for this section will be cleared.',
+              'warning'
+            )
+            .then((result: any) => {
+              if (result.isConfirmed) {
+                // User clicked "Yes": Clear the data and update validators.
+                this.toggleValidators(arrayName, subheading, false);
+                const formArray = this.form.get(arrayName) as FormArray;
+                if (formArray && formArray.at(0)) {
+                  const group = formArray.at(0) as FormGroup;
+                  const detailId = group.get(
+                    'a_rec_app_score_field_detail_id'
+                  )?.value;
+                  group.reset({
+                    a_rec_app_score_field_detail_id: detailId || '',
+                  });
+                }
+              } else {
+                // User clicked "No": Re-check the box without triggering this event again.
+                selectionControl.setValue(true, { emitEvent: false });
               }
-            } else {
-              // User clicked "No": Re-check the box without triggering this event again.
-              selectionControl.setValue(true, { emitEvent: false });
-            }
-            // Update the overall form validity check after the user has made a choice.
+              // Update the overall form validity check after the user has made a choice.
+              this.checkMandatorySubheadingsAndParameters();
+              this.cdr.markForCheck();
+            });
+        } else {
+          // If the user is CHECKING the box, just enable validators.
+          this.toggleValidators(arrayName, subheading, true);
+          this.checkMandatorySubheadingsAndParameters();
+          this.cdr.markForCheck();
+        }
+      });
+      // ✅ --- END: MODIFIED LOGIC ---
+
+      // (The rest of your existing logic in this loop remains the same)
+      const formArray = this.form.get(`qualifications${key}`) as FormArray;
+      formArray.controls.forEach((control) => {
+        const group = control as FormGroup;
+        params.forEach((param) => {
+          const controlName = param.score_field_parameter_name;
+          group.get(controlName)?.valueChanges.subscribe(() => {
             this.checkMandatorySubheadingsAndParameters();
             this.cdr.markForCheck();
           });
-      } else {
-        // If the user is CHECKING the box, just enable validators.
-        this.toggleValidators(arrayName, subheading, true);
-        this.checkMandatorySubheadingsAndParameters();
-        this.cdr.markForCheck();
-      }
-    });
-    // ✅ --- END: MODIFIED LOGIC ---
-
-    // (The rest of your existing logic in this loop remains the same)
-    const formArray = this.form.get(`qualifications${key}`) as FormArray;
-    formArray.controls.forEach((control) => {
-      const group = control as FormGroup;
-      params.forEach((param) => {
-        const controlName = param.score_field_parameter_name;
-        group.get(controlName)?.valueChanges.subscribe(() => {
-          this.checkMandatorySubheadingsAndParameters();
-          this.cdr.markForCheck();
         });
       });
     });
-  });
 
-  this.checkMandatorySubheadingsAndParameters();
-}
+    this.checkMandatorySubheadingsAndParameters();
+  }
 
   private createQualificationGroup(
     sub: Subheading,
@@ -506,7 +517,7 @@ private buildFormControls(): void {
   }
 
   private loadFormData(): Observable<void> {
-    const a_rec_adv_main_id = 120;
+    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
     const m_rec_score_field_id = 1;
     const m_rec_score_field = 'N'; //Heading
 
@@ -605,8 +616,8 @@ private buildFormControls(): void {
       return;
     }
 
-    const registration_no = 24000001;
-    const a_rec_app_main_id = 120;
+    const registration_no = this.userData?.registration_no;
+    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
 
     // Request to get the child records (10th, 12th, etc.)
     const childrenRequest = this.HTTP.getParam(
@@ -744,229 +755,237 @@ private buildFormControls(): void {
     return `recruitment/${registrationNo}/${fileName}`;
   }
 
+  submitForm(): Promise<void> {
+    this.form.markAllAsTouched();
+    this.checkMandatorySubheadingsAndParameters();
+    this.emitFormData(); // Emit data so the stepper can check validity
 
-submitForm(): Promise<void> {
-  this.form.markAllAsTouched();
-  this.checkMandatorySubheadingsAndParameters();
-  this.emitFormData(); // Emit data so the stepper can check validity
+    if (this.form.invalid) {
+      const firstMissed = this.form.get('firstMissedMandatory')?.value;
+      this.alertService.alert(
+        true,
+        firstMissed
+          ? `${firstMissed} is mandatory. Please provide the required information.`
+          : 'Please fill all mandatory fields.'
+      );
+      // Reject the promise if the form is invalid
+      return Promise.reject(new Error('Form is invalid'));
+    }
 
-  if (this.form.invalid) {
-    const firstMissed = this.form.get('firstMissedMandatory')?.value;
-    this.alertService.alert(
-      true,
-      firstMissed
-        ? `${firstMissed} is mandatory. Please provide the required information.`
-        : 'Please fill all mandatory fields.'
-    );
-    // Reject the promise if the form is invalid
-    return Promise.reject(new Error('Form is invalid'));
-  }
+    // Wrap the entire API logic in a new Promise
+    return new Promise((resolve, reject) => {
+      const registrationNo = this.userData?.registration_no;
+      const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
 
-  // Wrap the entire API logic in a new Promise
-  return new Promise((resolve, reject) => {
-    // --- Configuration ---
-    const registrationNo = 24000001;
-    const a_rec_adv_main_id = 120;
-    const formData = new FormData();
-
-    // --- Payload Preparation ---
-    const allDetails: any[] = [];
-    const allParameters: any[] = [];
-    let parentCalculatedValue = 0;
-
-    // STEP 1: Loop through all subheadings to gather data for C/U/D
-    this.subheadings.forEach((sub, index) => {
-      const key = this.getUniqueKey(sub, index);
-      const isSelected = this.form.get(`is${key}Selected`)?.value;
-      const formArray = this.form.get(`qualifications${key}`) as FormArray;
-      const group = formArray.at(0) as FormGroup;
-      if (!group) return;
-
-      const existingDetailId = group.get(
-        'a_rec_app_score_field_detail_id'
-      )?.value;
-
-      if (isSelected) {
-        // --- LOGIC FOR CREATE / UPDATE ---
-        const formValues = group.getRawValue();
-        const percentage = +group.get('Percentage Obtained')?.value || 0;
-
-        const scoreResult = this.utils.calculateScore(
-          1,
-          {
-            educations: [
-              {
-                scoreFieldId: sub.m_rec_score_field_id,
-                weight: sub.score_field_field_weightage,
-                inputValue: percentage,
-                maxValue: sub.score_field_field_marks,
-              },
-            ],
-          },
-          this.heading?.score_field_field_marks || 60
-        );
-        parentCalculatedValue += scoreResult.score_field_calculated_value;
-
-        const detail = {
-          a_rec_app_score_field_detail_id: existingDetailId || undefined,
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_adv_main_id,
-          a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-          score_field_parent_id: sub.score_field_parent_id,
-          m_rec_score_field_id: sub.m_rec_score_field_id,
-          m_rec_score_field_method_id: 1,
-          score_field_value: percentage,
-          score_field_actual_value: scoreResult.score_field_actual_value,
-          score_field_calculated_value:
-            scoreResult.score_field_calculated_value,
-          field_marks: sub.score_field_field_marks || 0,
-          field_weightage: sub.score_field_field_weightage || 0,
-          verify_remark: 'Not Verified',
-          action_type: existingDetailId ? 'U' : 'C',
-          action_date: new Date().toISOString(),
-          action_ip_address: '127.0.0.1',
-          action_remark: 'data inserted/updated',
-          action_by: 1,
-          score_field_row_index: 1,
-          delete_flag: 'N', // Explicitly set to 'N' for create/update
-        };
-        allDetails.push(detail);
-
-        this.getParameters(
-          sub.m_rec_score_field_id,
-          sub.a_rec_adv_post_detail_id
-        ).forEach((param) => {
-          const paramName = param.score_field_parameter_name;
-          const paramValue = formValues[paramName];
-          const isFile = paramValue instanceof File;
-          const existingParamId = group.get(
-            `param_${param.m_rec_score_field_parameter_new_id}_id`
-          )?.value;
-
-          if (paramValue) {
-            let finalParameterValue = '';
-            if (isFile) {
-              finalParameterValue = this.generateFilePath(
-                registrationNo,
-                paramValue,
-                sub.score_field_parent_id,
-                sub.m_rec_score_field_id,
-                param.m_rec_score_field_parameter_new_id,
-                1
-              );
-              const fileControlName = `file_${sub.score_field_parent_id}_${
-                sub.m_rec_score_field_id
-              }_${param.m_rec_score_field_parameter_new_id}_${
-                param.parameter_display_order || 0
-              }_1`;
-              formData.append(fileControlName, paramValue, paramValue.name);
-            } else {
-              finalParameterValue = String(paramValue ?? '');
-            }
-
-            const parameter = {
-              a_rec_app_score_field_parameter_detail_id:
-                existingParamId || undefined,
-              registration_no: registrationNo,
-              a_rec_app_score_field_detail_id: existingDetailId || undefined,
-              score_field_parent_id: sub.score_field_parent_id,
-              m_rec_score_field_id: sub.m_rec_score_field_id,
-              m_rec_score_field_parameter_new_id:
-                param.m_rec_score_field_parameter_new_id,
-              parameter_value: finalParameterValue,
-              parameter_row_index: 1,
-              parameter_display_no: param.parameter_display_order,
-              verify_remark: 'Not Verified',
-              active_status: 'Y',
-              action_type: existingParamId ? 'U' : 'C',
-              action_date: new Date().toISOString(),
-              action_remark: 'parameter inserted/updated',
-              action_by: 1,
-              delete_flag: 'N',
-            };
-            allParameters.push(parameter);
-          }
-        });
-      } else if (!isSelected && existingDetailId) {
-        // --- LOGIC FOR DELETION ---
-        const detailToDelete = {
-          a_rec_app_score_field_detail_id: existingDetailId,
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_adv_main_id,
-          a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-          score_field_parent_id: sub.score_field_parent_id,
-          m_rec_score_field_id: sub.m_rec_score_field_id,
-          delete_flag: 'Y',
-          action_type: 'U',
-        };
-        allDetails.push(detailToDelete);
+      // If there's no registration number, we can't proceed.
+      if (!registrationNo || !a_rec_adv_main_id) {
+        const errorMsg = 'User identification is missing. Cannot submit.';
+        this.alertService.alert(true, errorMsg);
+        return reject(new Error(errorMsg));
       }
-    });
+      const formData = new FormData();
 
-    // STEP 2: Create Parent Record
-    const parentRecord = {
-      ...(this.existingParentDetailId && {
-        a_rec_app_score_field_detail_id: this.existingParentDetailId,
-      }),
-      registration_no: registrationNo,
-      a_rec_app_main_id: a_rec_adv_main_id,
-      a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
-      score_field_parent_id: 0,
-      m_rec_score_field_id: this.heading?.m_rec_score_field_id,
-      m_rec_score_field_method_id: 1,
-      score_field_value: this.heading?.score_field_field_marks || 60,
-      score_field_actual_value: parentCalculatedValue,
-      score_field_calculated_value: Math.min(
-        parentCalculatedValue,
-        this.heading?.score_field_field_marks || 60
-      ),
-      field_marks: this.heading?.score_field_field_marks || 60,
-      field_weightage: this.heading?.score_field_field_weightage || 0,
-      verify_remark: 'Not Verified',
-      action_type: 'U',
-      action_date: new Date().toISOString(),
-      action_remark: 'parent data updated from recruitment form',
-      action_by: 1,
-      delete_flag: 'N',
-    };
+      // --- Payload Preparation ---
+      const allDetails: any[] = [];
+      const allParameters: any[] = [];
+      let parentCalculatedValue = 0;
 
-    // STEP 3: Append all data to FormData
-    formData.append('parentScore', JSON.stringify(parentRecord));
-    formData.append('registration_no', registrationNo.toString());
-    formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
-    formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
+      // STEP 1: Loop through all subheadings to gather data for C/U/D
+      this.subheadings.forEach((sub, index) => {
+        const key = this.getUniqueKey(sub, index);
+        const isSelected = this.form.get(`is${key}Selected`)?.value;
+        const formArray = this.form.get(`qualifications${key}`) as FormArray;
+        const group = formArray.at(0) as FormGroup;
+        if (!group) return;
 
-    // STEP 4: Make the SINGLE API call
-    this.HTTP.postForm(
-      '/candidate/postFile/saveOrUpdateCandidateScoreCard',
-      formData,
-      'recruitement'
-    ).subscribe({
-      // Make the 'next' handler async to allow 'await'
-      next: async (res) => {
-        // 1. CHECK FOR BACKEND ERRORS FIRST
-        if (res?.body?.error) {
-          this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
-          reject(new Error(res.body.error.message));
-          return;
+        const existingDetailId = group.get(
+          'a_rec_app_score_field_detail_id'
+        )?.value;
+
+        if (isSelected) {
+          // --- LOGIC FOR CREATE / UPDATE ---
+          const formValues = group.getRawValue();
+          const percentage = +group.get('Percentage Obtained')?.value || 0;
+
+          const scoreResult = this.utils.calculateScore(
+            1,
+            {
+              educations: [
+                {
+                  scoreFieldId: sub.m_rec_score_field_id,
+                  weight: sub.score_field_field_weightage,
+                  inputValue: percentage,
+                  maxValue: sub.score_field_field_marks,
+                },
+              ],
+            },
+            this.heading?.score_field_field_marks || 60
+          );
+          parentCalculatedValue += scoreResult.score_field_calculated_value;
+
+          const detail = {
+            a_rec_app_score_field_detail_id: existingDetailId || undefined,
+            registration_no: registrationNo,
+            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+            score_field_parent_id: sub.score_field_parent_id,
+            m_rec_score_field_id: sub.m_rec_score_field_id,
+            m_rec_score_field_method_id: 1,
+            score_field_value: percentage,
+            score_field_actual_value: scoreResult.score_field_actual_value,
+            score_field_calculated_value:
+              scoreResult.score_field_calculated_value,
+            field_marks: sub.score_field_field_marks || 0,
+            field_weightage: sub.score_field_field_weightage || 0,
+            verify_remark: 'Not Verified',
+            action_type: existingDetailId ? 'U' : 'C',
+            action_date: new Date().toISOString(),
+            action_ip_address: '127.0.0.1',
+            action_remark: 'data inserted/updated',
+            action_by: 1,
+            score_field_row_index: 1,
+            delete_flag: 'N', // Explicitly set to 'N' for create/update
+          };
+          allDetails.push(detail);
+
+          this.getParameters(
+            sub.m_rec_score_field_id,
+            sub.a_rec_adv_post_detail_id
+          ).forEach((param) => {
+            const paramName = param.score_field_parameter_name;
+            const paramValue = formValues[paramName];
+            const isFile = paramValue instanceof File;
+            const existingParamId = group.get(
+              `param_${param.m_rec_score_field_parameter_new_id}_id`
+            )?.value;
+
+            if (paramValue) {
+              let finalParameterValue = '';
+              if (isFile) {
+                finalParameterValue = this.generateFilePath(
+                  registrationNo,
+                  paramValue,
+                  sub.score_field_parent_id,
+                  sub.m_rec_score_field_id,
+                  param.m_rec_score_field_parameter_new_id,
+                  1
+                );
+                const fileControlName = `file_${sub.score_field_parent_id}_${
+                  sub.m_rec_score_field_id
+                }_${param.m_rec_score_field_parameter_new_id}_${
+                  param.parameter_display_order || 0
+                }_1`;
+                formData.append(fileControlName, paramValue, paramValue.name);
+              } else {
+                finalParameterValue = String(paramValue ?? '');
+              }
+
+              const parameter = {
+                a_rec_app_score_field_parameter_detail_id:
+                  existingParamId || undefined,
+                registration_no: registrationNo,
+                a_rec_app_score_field_detail_id: existingDetailId || undefined,
+                score_field_parent_id: sub.score_field_parent_id,
+                m_rec_score_field_id: sub.m_rec_score_field_id,
+                m_rec_score_field_parameter_new_id:
+                  param.m_rec_score_field_parameter_new_id,
+                parameter_value: finalParameterValue,
+                parameter_row_index: 1,
+                parameter_display_no: param.parameter_display_order,
+                verify_remark: 'Not Verified',
+                active_status: 'Y',
+                action_type: existingParamId ? 'U' : 'C',
+                action_date: new Date().toISOString(),
+                action_remark: 'parameter inserted/updated',
+                action_by: 1,
+                delete_flag: 'N',
+              };
+              allParameters.push(parameter);
+            }
+          });
+        } else if (!isSelected && existingDetailId) {
+          // --- LOGIC FOR DELETION ---
+          const detailToDelete = {
+            a_rec_app_score_field_detail_id: existingDetailId,
+            registration_no: registrationNo,
+            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+            score_field_parent_id: sub.score_field_parent_id,
+            m_rec_score_field_id: sub.m_rec_score_field_id,
+            delete_flag: 'Y',
+            action_type: 'U',
+          };
+          allDetails.push(detailToDelete);
         }
+      });
 
-        // 2. AWAIT the success alert. The function will pause here.
-        await this.alertService.alert(false, 'Data saved successfully!');
+      // STEP 2: Create Parent Record
+      const parentRecord = {
+        ...(this.existingParentDetailId && {
+          a_rec_app_score_field_detail_id: this.existingParentDetailId,
+        }),
+        registration_no: registrationNo,
+        a_rec_app_main_id: a_rec_adv_main_id,
+        a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
+        score_field_parent_id: 0,
+        m_rec_score_field_id: this.heading?.m_rec_score_field_id,
+        m_rec_score_field_method_id: 1,
+        score_field_value: this.heading?.score_field_field_marks || 60,
+        score_field_actual_value: parentCalculatedValue,
+        score_field_calculated_value: Math.min(
+          parentCalculatedValue,
+          this.heading?.score_field_field_marks || 60
+        ),
+        field_marks: this.heading?.score_field_field_marks || 60,
+        field_weightage: this.heading?.score_field_field_weightage || 0,
+        verify_remark: 'Not Verified',
+        action_type: 'U',
+        action_date: new Date().toISOString(),
+        action_remark: 'parent data updated from recruitment form',
+        action_by: 1,
+        delete_flag: 'N',
+      };
 
-        // 3. This code runs ONLY AFTER the alert is closed.
-        this.getParameterValuesAndPatch(); // Refresh data from DB
-        this.cdr.markForCheck();
-        resolve(); // Resolve the promise to let the stepper proceed.
-      },
-      error: (err) => {
-        this.alertService.alert(true, `Error saving data: ${err.message}`);
-        this.cdr.markForCheck();
-        reject(err); // Reject the promise on API error
-      },
+      // STEP 3: Append all data to FormData
+      formData.append('parentScore', JSON.stringify(parentRecord));
+      formData.append('registration_no', registrationNo.toString());
+      formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
+      formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
+
+      // STEP 4: Make the SINGLE API call
+      this.HTTP.postForm(
+        '/candidate/postFile/saveOrUpdateCandidateScoreCard',
+        formData,
+        'recruitement'
+      ).subscribe({
+        // Make the 'next' handler async to allow 'await'
+        next: async (res) => {
+          // 1. CHECK FOR BACKEND ERRORS FIRST
+          if (res?.body?.error) {
+            this.alertService.alert(
+              true,
+              res.body.error.message || 'An error occurred on the server.'
+            );
+            reject(new Error(res.body.error.message));
+            return;
+          }
+
+          // 2. AWAIT the success alert. The function will pause here.
+          await this.alertService.alert(false, 'Data saved successfully!');
+
+          // 3. This code runs ONLY AFTER the alert is closed.
+          this.getParameterValuesAndPatch(); // Refresh data from DB
+          this.cdr.markForCheck();
+          resolve(); // Resolve the promise to let the stepper proceed.
+        },
+        error: (err) => {
+          this.alertService.alert(true, `Error saving data: ${err.message}`);
+          this.cdr.markForCheck();
+          reject(err); // Reject the promise on API error
+        },
+      });
     });
-  });
-}
+  }
 
   private emitFormData(): void {
     const subheadingsData = this.subheadings.reduce((acc, sub, index) => {

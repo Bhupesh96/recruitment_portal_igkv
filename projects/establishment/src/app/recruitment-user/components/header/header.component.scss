@@ -9,12 +9,46 @@
     align-items: center;
     text-align: center;
     gap: 0.5rem;
-
     @media (min-width: 768px) {
       flex-direction: row;
-      justify-content: center;
+      justify-content: center; /* keep logo+text centered */
       align-items: center;
-      text-align: left;
+      position: relative; /* allow absolute positioning for logout */
+    }
+  }
+  .logout-container {
+    @media (min-width: 768px) {
+      position: absolute;
+      right: 1rem; /* 👈 stick to right corner */
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+  .logout-button {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #574cf0; /* Tailwind red-500 */
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    border-radius: 9999px; /* pill shape */
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+
+    svg {
+      height: 1.1rem;
+      width: 1.1rem;
+    }
+
+    &:hover {
+      background: #dc2626; /* darker red */
+    }
+
+    &:active {
+      transform: scale(0.96); /* subtle click effect */
     }
   }
 
@@ -49,7 +83,7 @@
     h1 {
       font-size: 1.25rem;
       font-weight: 600;
-      font-family: 'UnifrakturCook', cursive;
+      font-family: "UnifrakturCook", cursive;
 
       @media (min-width: 768px) {
         font-size: 1.75rem;
@@ -59,7 +93,7 @@
     h2 {
       font-size: 1rem;
       font-weight: 500;
-      font-family: 'UnifrakturCook', cursive;
+      font-family: "UnifrakturCook", cursive;
       margin-top: 0.25rem;
 
       @media (min-width: 768px) {

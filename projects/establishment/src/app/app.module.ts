@@ -13,9 +13,10 @@ import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-do
 import { Step9Component } from './recruitment-user/components/pages/stepper/step-9/step-9.component';
 
 @NgModule({
-  declarations: [AppComponent, PdfDownloadComponent],
+  declarations: [AppComponent],
   imports: [
     BrowserModule,
+    PdfDownloadComponent,
     BrowserAnimationsModule,
     AppRoutingModule,
     NgSelectModule,

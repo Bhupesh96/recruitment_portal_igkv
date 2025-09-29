@@ -23,7 +23,10 @@ import { switchMap, tap, catchError, map } from 'rxjs/operators';
 import { HttpService, SharedModule } from 'shared';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
-
+import {
+  RecruitmentStateService,
+  UserRecruitmentData,
+} from '../../recruitment-state.service';
 // Interfaces (no changes)
 interface Heading {
   a_rec_adv_main_id: number;
@@ -93,6 +96,7 @@ export class Step5Component implements OnInit {
   notes: Note[] = [];
   loading = true;
   errorMessage: string | null = null;
+  private userData: UserRecruitmentData | null = null;
   years: number[] = [];
   employment: string[] = [];
   filePaths: Map<string, string> = new Map();
@@ -106,9 +110,11 @@ export class Step5Component implements OnInit {
     private HTTP: HttpService,
     private sanitizer: DomSanitizer,
     private utils: UtilsService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private recruitmentState: RecruitmentStateService
   ) {
     this.form = this.fb.group({});
+    this.userData = this.recruitmentState.getCurrentUserData();
   }
 
   ngOnInit(): void {
@@ -156,8 +162,8 @@ export class Step5Component implements OnInit {
   private getParameterValuesAndPatch(): void {
     if (!this.heading) return;
 
-    const registration_no = 24000001;
-    const a_rec_app_main_id = 120;
+    const registration_no = this.userData?.registration_no;
+    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
 
     const childrenRequest = this.HTTP.getParam(
       '/candidate/get/getParameterValues',
@@ -485,7 +491,7 @@ export class Step5Component implements OnInit {
   }
 
   private loadFormData(): Observable<void> {
-    const a_rec_adv_main_id = 120;
+    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
     const m_rec_score_field_id = 32;
 
     const headingRequest = this.HTTP.getParam(
@@ -731,7 +737,7 @@ export class Step5Component implements OnInit {
         true,
         `${firstMissed}. Please provide the required information.`
       );
-      return;
+      return Promise.reject(new Error('Mandatory field missing.')); // REJECT here
     }
     if (this.form.invalid) {
       this.alertService.alert(
@@ -742,8 +748,15 @@ export class Step5Component implements OnInit {
     }
 
     // --- Configuration ---
-    const registrationNo = 24000001;
-    const a_rec_app_main_id = 120;
+    const registrationNo = this.userData?.registration_no;
+    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    if (!registrationNo || !a_rec_app_main_id) {
+      this.alertService.alert(
+        true,
+        'Cannot submit, user identification is missing.'
+      );
+      return Promise.reject(new Error('User identification is missing.'));
+    }
     const formData = new FormData();
 
     // --- Payload Preparation ---

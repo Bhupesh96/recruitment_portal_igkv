@@ -1,2 +1,27 @@
 /* You can add global styles to this file, and also import other style files */
 @import "tailwindcss";
+@media print {
+  /* 1. Hide every element on the page by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* 2. Make ONLY the PDF container and its children visible */
+  #pdfPrintSection,
+  #pdfPrintSection * {
+    visibility: visible;
+  }
+
+  /* 3. Position the PDF container to take up the whole print page */
+  #pdfPrintSection {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* 4. Ensure no unwanted margins from the body */
+  body {
+    margin: 0;
+  }
+}

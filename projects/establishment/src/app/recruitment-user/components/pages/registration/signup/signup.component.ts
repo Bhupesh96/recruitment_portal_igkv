@@ -1,8 +1,19 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-
+import { HttpService } from 'shared';
+import { environment } from 'environment';
+import CryptoJS from 'crypto-js';
+import { AlertService } from 'shared';
+import { EncryptionService } from 'shared';
 @Component({
   selector: 'app-signup',
   standalone: true,
@@ -13,8 +24,15 @@ export class SignupComponent implements OnInit {
   @Input() academicSessionId: number | null = null;
   @Input() advertisementId: string = '';
   @Input() postCode: number | null = null;
+  @Input() subjectId: number | null = null;
+  @Input() subjectsAvailable: boolean = false;
   @Output() loginClicked = new EventEmitter<void>();
-
+  @ViewChild('captchaContainer', { static: false }) dataContainer!: ElementRef;
+  public captchaKey: any = environment.CAPTCHA_SECRET_KEY;
+  public passwordKey: any = environment.PASSWORD_SECRET_KEY;
+  public generatedCaptcha: any = '';
+  user: any;
+  pass: any;
   onLoginClick() {
     this.loginClicked.emit();
   }
@@ -22,13 +40,8 @@ export class SignupComponent implements OnInit {
   email = '';
   password = '';
   confirmPassword = '';
-
-  // Captcha
-  num1 = 0;
-  num2 = 0;
-  userAnswer = '';
   captchaError = '';
-
+  userAnswer = '';
   // OTP
   otpMobile = '';
   otpEmail = '';
@@ -52,17 +65,23 @@ export class SignupComponent implements OnInit {
   signupError = '';
   signupSuccess = '';
   showSuccessAlert = false;
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpService,
+    private alertService: AlertService,
+    private encryptionService: EncryptionService
+  ) {}
 
   ngOnInit() {
-    this.generateCaptcha();
+    this.getCaptcha();
   }
 
-  generateCaptcha() {
-    this.num1 = Math.floor(Math.random() * 10);
-    this.num2 = Math.floor(Math.random() * 10);
-    this.userAnswer = '';
-    this.captchaError = '';
+  getCaptcha() {
+    this.http.getData(`/getCaptcha`).subscribe((res: any) => {
+      if (!res.body.error) {
+        this.dataContainer.nativeElement.innerHTML = res.body.result.svg;
+        this.generatedCaptcha = res.body.result.captcha;
+      }
+    });
   }
 
   validateMobileAndEmail(): boolean {
@@ -96,7 +115,7 @@ export class SignupComponent implements OnInit {
     console.log(`OTP to mobile: ${this.otpMobile}`);
     console.log(`OTP to email: ${this.otpEmail}`);
 
-    this.otpSuccess = 'OTPs sent to mobile and email';
+    this.alertService.alert(false, 'OTPs sent to mobile and email');
     this.otpSent = true;
     this.startResendCooldown();
   }
@@ -113,13 +132,17 @@ export class SignupComponent implements OnInit {
   }
 
   verifyCaptchaAndSendOtp() {
-    const correctAnswer = this.num1 + this.num2;
-    if (parseInt(this.userAnswer) !== correctAnswer) {
-      this.captchaError = 'Incorrect captcha answer';
-      this.generateCaptcha();
+    const bytes: any = CryptoJS.AES.decrypt(
+      this.generatedCaptcha,
+      this.captchaKey
+    );
+    let txtCaptcha = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (this.userAnswer !== txtCaptcha) {
+      this.alertService.alert(true, 'Incorrect captcha');
+      this.getCaptcha(); // refresh captcha
       return;
     }
-    this.captchaError = '';
     this.sendOtp();
   }
 
@@ -169,9 +192,7 @@ export class SignupComponent implements OnInit {
   }
 
   handleAction() {
-    this.otpError = '';
     this.signupError = '';
-    this.signupSuccess = '';
 
     if (!this.otpSent) {
       if (!this.validateMobileAndEmail()) {
@@ -184,10 +205,12 @@ export class SignupComponent implements OnInit {
         this.enteredOtpEmail === this.otpEmail
       ) {
         this.isVerified = true;
-        this.otpSuccess =
-          'OTP verification successful. Please set your password.';
+        this.alertService.alert(
+          false,
+          'OTP verification successful. Please set your password'
+        );
       } else {
-        this.otpError = 'Invalid OTP(s). Please try again.';
+        this.alertService.alert(true, 'Invalid OTP(s). Please try again');
       }
     } else {
       this.onSignup();
@@ -204,73 +227,83 @@ export class SignupComponent implements OnInit {
     this.signupError = '';
     this.signupSuccess = '';
 
+    // --- All your existing validation logic remains here ---
+    if (this.subjectsAvailable && this.subjectId === null) {
+      this.alertService.alert(true, 'Please select a subject for the post.');
+      return; // Stop the signup process
+    }
     if (!this.isVerified) {
-      if (
-        this.enteredOtpMobile === this.otpMobile &&
-        this.enteredOtpEmail === this.otpEmail
-      ) {
-        this.isVerified = true;
-        this.otpSuccess =
-          'OTP verification successful. Please set your password.';
-      } else {
-        this.otpError = 'Invalid OTP(s). Please try again.';
-      }
+      this.alertService.alert(true, 'Please verify OTP first.');
       return;
     }
-
+    if (this.subjectId === null) {
+      this.alertService.alert(true, 'Please select a subject for the post.');
+      return;
+    }
     if (!/^\d{10}$/.test(this.mobile)) {
       this.signupError = 'Please enter a valid 10-digit mobile number';
       return;
     }
-
     if (!this.isPasswordValid()) {
       this.signupError =
         'Password must include uppercase, lowercase, number, special character, and be at least 8 characters long.';
       return;
     }
-
     if (this.password !== this.confirmPassword) {
-      this.signupError = 'Passwords do not match';
+      this.alertService.alert(true, 'Passwords do not match');
       return;
     }
-
     if (!this.academicSessionId || !this.advertisementId || !this.postCode) {
-      this.signupError = 'Please select a session, advertisement, and post.';
+      this.alertService.alert(
+        true,
+        'Please select a session, advertisement, and post'
+      );
       return;
     }
+    // --- End of validation ---
 
-    const signupData = {
-      mobile: this.mobile,
-      email: this.email,
-      password: this.password,
+    const encryptedPassword = CryptoJS.AES.encrypt(
+      this.password,
+      this.passwordKey
+    ).toString();
+
+    const payload = {
+      mobile_no: this.mobile,
+      email_id: this.email,
+      password: encryptedPassword,
       academic_session_id: this.academicSessionId,
       a_rec_adv_main_id: this.advertisementId,
       post_code: this.postCode,
+      subject_id: this.subjectId,
     };
 
-    // this.http.post('http://localhost:3000/api/signup', signupData).subscribe({
-    //   next: (response: any) => {
-    //     this.signupSuccess = response.message || 'User registered successfully';
-    //     this.mobile = '';
-    //     this.email = '';
-    //     this.password = '';
-    //     this.confirmPassword = '';
-    //     this.isVerified = false;
-    //     this.otpSent = false;
-    //     this.otpSuccess = '';
-    //     this.generateCaptcha();
-    //     this.showSuccessAlert = true;
-    //     setTimeout(() => {
-    //       this.showSuccessAlert = false;
-    //       this.loginClicked.emit(); // Switch to login template
-    //     }, 3000);
-    //   },
-    //   error: (error) => {
-    //     this.signupError = error.error?.message || 'Registration failed';
-    //     if (error.status === 409) {
-    //       this.generateCaptcha();
-    //     }
-    //   },
-    // });
+    // ✅ 2. Call your backend API
+    // IMPORTANT: Replace '/publicapi/register/saveCandidateRegistrationDetail' with your actual endpoint
+    this.http
+      .postData(
+        '/publicapi/post/saveCandidateRegistrationDetail',
+        payload,
+        'recruitement'
+      )
+      .subscribe({
+        next: async (res) => {
+          if (res?.body?.error) {
+            this.alertService.alert(
+              true,
+              res.body.error.message || 'An error occurred.'
+            );
+            return;
+          }
+
+          // Success handling
+          this.signupSuccess = 'Registration successful';
+          this.showSuccessAlert = true;
+          this.alertService.alert(false, 'Registration successful');
+        },
+        error: (err) => {
+          console.error(err);
+          this.alertService.alert(true, 'Something went wrong.');
+        },
+      });
   }
 }

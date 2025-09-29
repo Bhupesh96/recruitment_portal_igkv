@@ -6,7 +6,7 @@ import { Observable, take } from 'rxjs';
 import { HttpService } from './http.service';
 import { Router } from '@angular/router';
 import { EncryptionService } from './encryption.service';
-
+import { AlertService } from 'shared';
 @Injectable({
   providedIn: 'root',
 })
@@ -15,16 +15,23 @@ export class AuthService {
     private cookie: CookieService,
     private http: HttpService,
     private router: Router,
-    private es: EncryptionService
+    private es: EncryptionService,
+    private alertService: AlertService
   ) {}
 
   logout() {
-    this.http.getData('/security/logout', 'common').subscribe(() => {
-      this.cookie.deleteAll('/');
-      window.open(moduleMapping.loginModule, '_self');
-    });
-  }
+    this.http
+      .getData('/scoreCardEntry/logout', 'recruitement')
+      .subscribe(() => {
+        this.cookie.deleteAll('/');
 
+        this.alertService
+          .alert(false, 'You have been logged out successfully!', 1500)
+          .then(() => {
+            window.open(moduleMapping.loginModule, '_self');
+          });
+      });
+  }
   isLoggedIn(): boolean {
     const cookie = this.cookie.get('session');
     return !!cookie;

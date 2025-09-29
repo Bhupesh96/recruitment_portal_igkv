@@ -18,7 +18,10 @@ import { AlertService, HttpService, LoaderService } from 'shared';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-
+import {
+  RecruitmentStateService,
+  UserRecruitmentData,
+} from '../../recruitment-state.service';
 @Component({
   selector: 'app-step-9',
   standalone: true,
@@ -41,7 +44,6 @@ export class Step9Component implements OnInit, OnDestroy {
     'Submission',
   ];
 
-  // ✨✨✨ MODIFIED SECTION: Added 'gender_id' to the exclusion list ✨✨✨
   personalInfoExcludeKeys = new Set([
     'a_rec_adv_main_id',
     'post_code',
@@ -104,18 +106,20 @@ export class Step9Component implements OnInit, OnDestroy {
   form: FormGroup;
   isSubmitted = false;
   declarationText: SafeHtml = '';
-  private a_rec_adv_main_id = 120;
+  private userData: UserRecruitmentData | null = null;
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
     private fb: FormBuilder,
     private http: HttpService,
     private sanitizer: DomSanitizer,
-    private loader: LoaderService
+    private loader: LoaderService,
+    private recruitmentState: RecruitmentStateService
   ) {
     this.form = this.fb.group({
       declaration: [false, Validators.requiredTrue],
     });
+    this.userData = this.recruitmentState.getCurrentUserData();
   }
 
   ngOnInit(): void {
@@ -129,7 +133,13 @@ export class Step9Component implements OnInit, OnDestroy {
       });
   }
   loadDeclaration(): void {
-    const apiUrl = `/master/get/getLatestAdvertisement?a_rec_adv_main_id=${this.a_rec_adv_main_id}`;
+    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+    if (!a_rec_adv_main_id) {
+      this.declarationText =
+        'Could not load declaration: Advertisement ID missing.';
+      return;
+    }
+    const apiUrl = `/master/get/getLatestAdvertisement?a_rec_adv_main_id=${a_rec_adv_main_id}`;
     this.http.getData(apiUrl, 'recruitement').subscribe({
       next: (response: any) => {
         const data = response?.body?.data?.[0];
@@ -160,118 +170,138 @@ export class Step9Component implements OnInit, OnDestroy {
   }
 
   // ✨✨✨ MODIFIED SECTION: Added logic to format Gender ✨✨✨
-getProcessedPersonalInfo(): { key: string; value: string }[] {
-  const info = this.formData[1];
-  if (!info) return [];
+  getProcessedPersonalInfo(): { key: string; value: string }[] {
+    const info = this.formData[1];
+    if (!info) return [];
 
-  const processedData: { key: string; value: string }[] = [];
+    const processedData: { key: string; value: string }[] = [];
 
-  // 1. Combine Name Fields
-  const fullNameE = [
-    info['Salutation_E_Name'],
-    info['Applicant_First_Name_E'],
-    info['Applicant_Middle_Name_E'],
-    info['Applicant_Last_Name_E'],
-  ]
-    .filter(Boolean)
-    .join(' ');
-  processedData.push({ key: 'Applicant Full Name (English)', value: fullNameE });
+    // 1. Combine Name Fields
+    const fullNameE = [
+      info['Salutation_E_Name'],
+      info['Applicant_First_Name_E'],
+      info['Applicant_Middle_Name_E'],
+      info['Applicant_Last_Name_E'],
+    ]
+      .filter(Boolean)
+      .join(' ');
+    processedData.push({
+      key: 'Applicant Full Name (English)',
+      value: fullNameE,
+    });
 
-  const fullNameH = [
-    info['Salutation_H_Name'],
-    info['Applicant_First_Name_H'],
-    info['Applicant_Middle_Name_H'],
-    info['Applicant_Last_Name_H'],
-  ]
-    .filter(Boolean)
-    .join(' ');
-  processedData.push({ key: 'Applicant Full Name (Hindi)', value: fullNameH });
+    const fullNameH = [
+      info['Salutation_H_Name'],
+      info['Applicant_First_Name_H'],
+      info['Applicant_Middle_Name_H'],
+      info['Applicant_Last_Name_H'],
+    ]
+      .filter(Boolean)
+      .join(' ');
+    processedData.push({
+      key: 'Applicant Full Name (Hindi)',
+      value: fullNameH,
+    });
 
-  // 2. Add other important fields in a logical order
-  processedData.push({ key: "Father's Name", value: this.formatValue(info['Applicant_Father_Name_E']) });
-  processedData.push({ key: "Mother's Name", value: this.formatValue(info['Applicant_Mother_Name_E']) });
+    // 2. Add other important fields in a logical order
+    processedData.push({
+      key: "Father's Name",
+      value: this.formatValue(info['Applicant_Father_Name_E']),
+    });
+    processedData.push({
+      key: "Mother's Name",
+      value: this.formatValue(info['Applicant_Mother_Name_E']),
+    });
 
-  // Handle Gender translation
-  let genderDisplay = '—';
-  switch (info['gender_id']) {
-    case 'M':
-      genderDisplay = 'Male';
-      break;
-    case 'F':
-      genderDisplay = 'Female';
-      break;
-    case 'T':
-      genderDisplay = 'Third Gender';
-      break;
-  }
-  processedData.push({ key: 'Gender', value: genderDisplay });
-  
-  processedData.push({ key: 'Date of Birth', value: this.formatDateDDMMYYYY(info['DOB']) });
-  processedData.push({ key: `Age as on ${new Date().toLocaleDateString('en-IN')}`, value: this.formatValue(info['age']) });
-  
-  // 3. Combine Birth Place
-  const birthPlace = [
-    info['Birth_Place'],
-    info['Birth_District_Name'],
-    info['Birth_State_Name'],
-    info['Birth_Country_Name'],
-  ]
-    .filter(Boolean)
-    .join(', ');
-  processedData.push({ key: 'Birth Place', value: birthPlace });
+    // Handle Gender translation
+    let genderDisplay = '—';
+    switch (info['gender_id']) {
+      case 'M':
+        genderDisplay = 'Male';
+        break;
+      case 'F':
+        genderDisplay = 'Female';
+        break;
+      case 'T':
+        genderDisplay = 'Third Gender';
+        break;
+    }
+    processedData.push({ key: 'Gender', value: genderDisplay });
 
-  // 4. Combine Permanent Address
-  const permanentAddress = [
-    info['Permanent_Address1'],
-    info['Permanent_City'],
-    info['Permanent_District_Name'],
-    info['Permanent_State_Name'],
-    info['Permanent_Country_Name'],
-  ]
-    .filter(Boolean)
-    .join(', ') + (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
-  processedData.push({ key: 'Permanent Address', value: permanentAddress });
+    processedData.push({
+      key: 'Date of Birth',
+      value: this.formatDateDDMMYYYY(info['DOB']),
+    });
+    processedData.push({
+      key: `Age as on ${new Date().toLocaleDateString('en-IN')}`,
+      value: this.formatValue(info['age']),
+    });
 
-  // ✨✨✨ MODIFIED SECTION: Now shows the full address ✨✨✨
-  // 5. Combine Current Address
-  if (info['presentSame']) {
-    // If same, use the permanent address value we already built
-    processedData.push({ key: 'Current Address', value: permanentAddress });
-  } else {
-    // If different, build the current address string
-    const currentAddress =
+    // 3. Combine Birth Place
+    const birthPlace = [
+      info['Birth_Place'],
+      info['Birth_District_Name'],
+      info['Birth_State_Name'],
+      info['Birth_Country_Name'],
+    ]
+      .filter(Boolean)
+      .join(', ');
+    processedData.push({ key: 'Birth Place', value: birthPlace });
+
+    // 4. Combine Permanent Address
+    const permanentAddress =
       [
-        info['Current_Address1'],
-        info['Current_City'],
-        info['Current_District_Name'],
-        info['Current_State_Name'],
-        info['Current_Country_Name'],
+        info['Permanent_Address1'],
+        info['Permanent_City'],
+        info['Permanent_District_Name'],
+        info['Permanent_State_Name'],
+        info['Permanent_Country_Name'],
       ]
         .filter(Boolean)
         .join(', ') +
-      (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
-    processedData.push({ key: 'Current Address', value: currentAddress });
-  }
+      (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
+    processedData.push({ key: 'Permanent Address', value: permanentAddress });
 
-  // 6. Iterate over remaining keys that are not in the exclusion list
-  for (const key of this.getFormDataKeys(info)) {
-    if (
-      !this.personalInfoExcludeKeys.has(key) &&
-      info[key] &&
-      key !== 'languages' &&
-      !key.startsWith('question_') &&
-      !key.startsWith('condition_') &&
-      key !== 'additionalInfoDetails'
-    ) {
-      processedData.push({
-        key: this.formatKey(key),
-        value: this.formatValue(info[key]),
-      });
+    // ✨✨✨ MODIFIED SECTION: Now shows the full address ✨✨✨
+    // 5. Combine Current Address
+    if (info['presentSame']) {
+      // If same, use the permanent address value we already built
+      processedData.push({ key: 'Current Address', value: permanentAddress });
+    } else {
+      // If different, build the current address string
+      const currentAddress =
+        [
+          info['Current_Address1'],
+          info['Current_City'],
+          info['Current_District_Name'],
+          info['Current_State_Name'],
+          info['Current_Country_Name'],
+        ]
+          .filter(Boolean)
+          .join(', ') +
+        (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
+      processedData.push({ key: 'Current Address', value: currentAddress });
     }
-  }
 
-  return processedData;
-}
+    // 6. Iterate over remaining keys that are not in the exclusion list
+    for (const key of this.getFormDataKeys(info)) {
+      if (
+        !this.personalInfoExcludeKeys.has(key) &&
+        info[key] &&
+        key !== 'languages' &&
+        !key.startsWith('question_') &&
+        !key.startsWith('condition_') &&
+        key !== 'additionalInfoDetails'
+      ) {
+        processedData.push({
+          key: this.formatKey(key),
+          value: this.formatValue(info[key]),
+        });
+      }
+    }
+
+    return processedData;
+  }
   isExperienceKey(key: string): boolean {
     if (!key) return false;
     return /^\d+_\d+_\d+$/.test(key);
@@ -415,6 +445,7 @@ getProcessedPersonalInfo(): { key: string; value: string }[] {
       }
 
       const registrationNo = this.formData[1]?.['registration_no'];
+      const a_rec_app_main_id = this.formData[1]?.['a_rec_app_main_id'];
       if (!registrationNo) {
         this.alertService.alert(
           true,
@@ -427,7 +458,10 @@ getProcessedPersonalInfo(): { key: string; value: string }[] {
       this.isSubmitted = true;
       this.form.disable();
 
-      const payload = { registration_no: registrationNo };
+      const payload = {
+        registration_no: registrationNo,
+        a_rec_app_main_id: a_rec_app_main_id,
+      };
 
       this.http
         .postForm(

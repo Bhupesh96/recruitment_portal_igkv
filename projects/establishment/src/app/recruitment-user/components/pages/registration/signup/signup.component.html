@@ -1,32 +1,4 @@
 <div class="w-full">
-  <!-- Animated Success Alert -->
-  <div
-    *ngIf="showSuccessAlert"
-    class="fixed top-8 left-1/2 transform -translate-x-1/2 bg-white border border-green-300 text-green-700 px-6 py-4 rounded-2xl shadow-xl flex items-center gap-4 animate-fade-in z-50"
-  >
-    <div class="bg-green-100 p-2 rounded-full">
-      <svg
-        class="w-6 h-6 text-green-600"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M5 13l4 4L19 7"
-        />
-      </svg>
-    </div>
-    <div class="flex flex-col">
-      <span class="font-semibold text-base">Signup Successful!</span>
-      <span class="text-sm text-gray-600"
-        >Redirecting to login in 3 seconds...</span
-      >
-    </div>
-  </div>
-
   <div class="bg-white w-full flex flex-col lg:flex-row animate-fadeIn">
     <!-- Form Section -->
     <div class="w-full lg:w-1/2 p-4 md:p-8 lg:p-12">
@@ -65,6 +37,7 @@
             required
             pattern="^[6-9][0-9]{9}$"
             maxlength="10"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
             class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
           />
           <div
@@ -76,12 +49,18 @@
             class="text-xs text-red-600 mt-1"
           >
             <div
-              *ngIf="mobileField.errors?.['required'] || mobileError === 'Mobile number is required'"
+              *ngIf="
+                mobileField.errors?.['required'] ||
+                mobileError === 'Mobile number is required'
+              "
             >
               Mobile number is required.
             </div>
             <div
-              *ngIf="mobileField.errors?.['pattern'] || mobileError === 'Please enter a valid 10-digit mobile number'"
+              *ngIf="
+                mobileField.errors?.['pattern'] ||
+                mobileError === 'Please enter a valid 10-digit mobile number'
+              "
             >
               Enter a valid 10-digit Indian mobile number.
             </div>
@@ -142,73 +121,48 @@
         <!-- Captcha Section -->
         <div class="mt-4" *ngIf="!isVerified">
           <div
-            class="flex items-center gap-3 bg-gray-100 px-4 py-3 shadow-inner border border-gray-200 relative overflow-hidden"
+            class="flex items-center gap-3 bg-gray-100 px-4 py-3 shadow-inner border border-gray-200 rounded-md"
           >
+            <!-- Captcha SVG -->
             <div
-              class="flex items-center gap-1 font-mono text-lg font-bold text-gray-800 select-none"
-            >
-              <span class="transform -rotate-2 scale-105 tracking-wider">{{
-                num1
-              }}</span>
-              <span class="transform rotate-6 text-blue-600">+</span>
-              <span class="transform -rotate-3 scale-110 tracking-tight">{{
-                num2
-              }}</span>
-              <span class="transform rotate-3 text-gray-400">=</span>
-            </div>
-            <input
-              type="text"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              [(ngModel)]="userAnswer"
-              name="captcha"
-              class="w-20 sm:w-24 border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
-            />
+              #captchaContainer
+              class="flex-shrink-0 w-40 h-12 flex items-center justify-center border border-gray-300 bg-white rounded"
+            ></div>
 
-            <button
-              type="button"
-              (click)="generateCaptcha()"
-              class="ml-auto text-gray-400 hover:text-blue-600 transition"
-              title="Refresh Captcha"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
+            <!-- Input + Refresh -->
+            <div class="flex items-center gap-2">
+              <!-- User Input -->
+              <input
+                type="text"
+                [(ngModel)]="userAnswer"
+                name="captcha"
+                placeholder="Enter Captcha"
+                class="w-32 border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded transition"
+              />
+
+              <!-- Refresh Button -->
+              <button
+                type="button"
+                (click)="getCaptcha()"
+                class="text-gray-500 hover:text-blue-600 transition"
+                title="Refresh Captcha"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14"
-                />
-              </svg>
-            </button>
-            <svg
-              class="absolute inset-0 w-full h-full opacity-10 pointer-events-none"
-            >
-              <line
-                x1="0"
-                y1="100%"
-                x2="100%"
-                y2="0"
-                stroke="black"
-                stroke-width="1"
-              />
-              <line
-                x1="0"
-                y1="0"
-                x2="100%"
-                y2="100%"
-                stroke="black"
-                stroke-width="1"
-              />
-            </svg>
-          </div>
-          <div *ngIf="captchaError" class="text-xs text-red-600 mt-1">
-            {{ captchaError }}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -221,8 +175,7 @@
         </div>
 
         <!-- OTP Inputs -->
-        <!-- OTP Inputs -->
-        <div *ngIf="otpMobile && otpEmail && !isVerified" class="space-y-6">
+        <div *ngIf="otpSent && !isVerified" class="space-y-6">
           <div class="flex gap-4 mt-4">
             <div class="flex-1">
               <label
@@ -231,12 +184,31 @@
                 Mobile OTP
               </label>
               <input
-                type="text"
+                type="tel"
                 [(ngModel)]="enteredOtpMobile"
                 name="otpMobile"
+                #otpMobileField="ngModel"
                 placeholder="Mobile OTP"
+                required
+                pattern="\d{6}"
+                maxlength="6"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                 class="w-full border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               />
+              <div
+                *ngIf="
+                  otpMobileField.invalid &&
+                  (otpMobileField.dirty || otpMobileField.touched)
+                "
+                class="text-xs text-red-600 mt-1"
+              >
+                <div *ngIf="otpMobileField.errors?.['required']">
+                  OTP is required.
+                </div>
+                <div *ngIf="otpMobileField.errors?.['pattern']">
+                  Must be 6 digits.
+                </div>
+              </div>
             </div>
             <div class="flex-1">
               <label
@@ -245,12 +217,31 @@
                 Email OTP
               </label>
               <input
-                type="text"
+                type="tel"
                 [(ngModel)]="enteredOtpEmail"
                 name="otpEmail"
+                #otpEmailField="ngModel"
                 placeholder="Email OTP"
+                required
+                pattern="\d{6}"
+                maxlength="6"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                 class="w-full border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               />
+              <div
+                *ngIf="
+                  otpEmailField.invalid &&
+                  (otpEmailField.dirty || otpEmailField.touched)
+                "
+                class="text-xs text-red-600 mt-1"
+              >
+                <div *ngIf="otpEmailField.errors?.['required']">
+                  OTP is required.
+                </div>
+                <div *ngIf="otpEmailField.errors?.['pattern']">
+                  Must be 6 digits.
+                </div>
+              </div>
             </div>
           </div>
           <div *ngIf="otpError" class="text-xs text-red-600 mt-1">
@@ -298,6 +289,7 @@
               [(ngModel)]="password"
               (ngModelChange)="validatePassword()"
               name="password"
+              autocomplete="new-password"
               class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               required
             />
@@ -311,7 +303,7 @@
               {{ passwordValidationMessage }}
             </div>
           </div>
-          <div class="mt-4 relative">
+          <div class="mt-4">
             <label
               class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
             >
@@ -331,55 +323,62 @@
               </svg>
               Confirm Password
             </label>
-            <input
-              [type]="showConfirmPassword ? 'text' : 'password'"
-              [(ngModel)]="confirmPassword"
-              (ngModelChange)="checkPasswordMatch()"
-              name="confirmPassword"
-              class="w-full border border-gray-300 px-4 py-2 pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
-            />
-            <!-- Eye Icon -->
-            <button
-              type="button"
-              (click)="showConfirmPassword = !showConfirmPassword"
-              class="absolute right-4 top-9 text-gray-500 hover:text-blue-600"
-            >
-              <svg
-                *ngIf="!showConfirmPassword"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="currentColor"
-                class="w-5 h-5"
+
+            <div class="relative">
+              <input
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                [(ngModel)]="confirmPassword"
+                (ngModelChange)="checkPasswordMatch()"
+                name="confirmPassword"
+                autocomplete="new-password"
+                class="w-full border border-gray-300 px-4 py-2 pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+              />
+
+              <button
+                type="button"
+                (click)="showConfirmPassword = !showConfirmPassword"
+                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-blue-600"
+                aria-label="Toggle password visibility"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M2.25 12s3.75-6.75 9.75-6.75 9.75 6.75 9.75 6.75-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <svg
-                *ngIf="showConfirmPassword"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="currentColor"
-                class="w-5 h-5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M3.98 8.223a10.477 10.477 0 00-.723 1.001A10.47 10.47 0 002.25 12c0 .9.119 1.77.34 2.592m1.39 2.706a10.477 10.477 0 002.786 2.284m3.965 1.032a10.513 10.513 0 004.158 0m3.966-1.032a10.478 10.478 0 002.786-2.284m1.391-2.706A10.47 10.47 0 0021.75 12c0-.9-.119-1.77-.34-2.592m-1.39-2.706a10.478 10.478 0 00-2.786-2.284M12 15a3 3 0 003-3m0 0a3 3 0 00-3-3m0 0a3 3 0 00-3 3m0 0a3 3 0 003 3zm9 9L3 3"
-                />
-              </svg>
-            </button>
+                <svg
+                  *ngIf="!showConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+
+                <svg
+                  *ngIf="showConfirmPassword"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-5 h-5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L6.228 6.228"
+                  />
+                </svg>
+              </button>
+            </div>
+
             <div
               class="mt-2 text-sm font-medium"
               [ngClass]="{
@@ -427,7 +426,7 @@
     <!-- Image Section -->
     <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-gray-50">
       <img
-        src="images/employees.png"
+        src="/assets/employees.png"
         alt="Signup Visual"
         class="max-h-[500px] w-full object-contain lg:p-6"
       />

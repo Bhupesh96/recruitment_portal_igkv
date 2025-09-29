@@ -31,4 +31,223 @@
     object-fit: contain;
     border: 1px solid #333;
   }
+  /* Base print styles */
+  @page {
+    size: A4;
+    margin: 6mm;
+    border: 0.5pt solid black;
+  }
+
+  /* Main container */
+  .a4-container {
+    width: 595.28pt;
+    padding: 17.01pt;
+    box-sizing: border-box;
+    background-color: white;
+    margin: 0 auto; /* This centers the container horizontally */
+  }
+
+  /* Section styling */
+  .section {
+    break-inside: avoid;
+    margin-bottom: 11.34pt;
+  }
+
+  /* Headings */
+  .main-heading {
+    text-align: center;
+    flex: 1;
+    line-height: 1.2;
+    margin: 8px 0;
+  }
+  .main-heading-text {
+    font-size: 10pt;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+  .sub-heading-text {
+    font-size: 10pt;
+    font-weight: 800;
+    margin-top: 2pt;
+    line-height: 1;
+  }
+  .section-heading-bar {
+    background-color: #d1d5db;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-bottom: 1px solid black;
+  }
+  .sub-section-heading-bar {
+    background-color: #f3f4f6;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-bottom: 1px solid black;
+  }
+
+  /* Container for information and tables */
+  .info-container,
+  .table-container {
+    font-size: 11px;
+    line-height: 1.4;
+    border: 1px solid black;
+  }
+
+  /* Grid layouts for content */
+  .registration-info {
+    display: flex;
+    border: 1px solid black;
+    padding: 8px;
+    margin: 8px 0;
+  }
+  .info-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+  }
+  .photo-container {
+    margin-left: 8px;
+    width: 100px;
+    height: 100px;
+    border: 1px solid black;
+  }
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 4px 8px;
+    margin: 8px 0;
+  }
+  .full-width-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 4px 8px;
+    margin: 8px 0;
+  }
+
+  /* Table styling */
+  .table-header-row {
+    background-color: #d1d5db;
+    font-weight: 600;
+    border-top: 1px solid black;
+    display: grid;
+  }
+  .table-row {
+    display: grid;
+    border-bottom: 1px solid black;
+  }
+  .table-cell {
+    padding: 4px 8px;
+    border-right: 1px solid black;
+    word-break: break-word;
+    white-space: normal;
+  }
+  .table-cell:last-child {
+    border-right: none;
+  }
+
+  /* Specific grid templates for tables */
+  .lang-table-grid {
+    grid-template-columns: 40px repeat(3, 1fr);
+  }
+  .qual-table-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .ach-table-grid,
+  .ec-table-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pub-table-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+  .exp-table-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .attach-table-grid {
+    grid-template-columns: 40px 2fr 1fr;
+  }
+  .border-top {
+    border-top: 1px solid black;
+  }
+
+  /* Declaration section */
+  .declaration-container {
+    border: 1px solid black;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .declaration-heading {
+    text-align: center;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-bottom: 1px solid black;
+    background-color: #f3f4f6;
+  }
+  .declaration-content {
+    padding: 8px;
+  }
+  .declaration-text {
+    margin-bottom: 8px;
+  }
+  .signature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 16px;
+  }
+  .signature-box {
+    text-align: center;
+  }
+  .signature-image {
+    width: 80px;
+    height: auto;
+    margin: 0 auto;
+  }
+  .signature-label {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+
+  /* Remarks section */
+  .remarks-heading {
+    text-align: center;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-bottom: 1px solid black;
+    background-color: #f3f4f6;
+  }
+  .remarks-subheading {
+    text-align: center;
+    font-size: 10px;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .remarks-content {
+    padding: 8px;
+  }
+  .underlined-text {
+    display: inline-block;
+    border-bottom: 1px solid black;
+    width: 128px;
+  }
+
+  /* Force background colors in print */
+}
+
+/* 3. Position the PDF container to take up the whole print page */
+#pdfPrintSection {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+/* 4. Ensure no unwanted margins from the body */
+body {
+  margin: 0;
 }

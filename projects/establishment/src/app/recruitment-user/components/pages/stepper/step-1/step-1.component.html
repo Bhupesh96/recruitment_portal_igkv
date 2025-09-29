@@ -31,7 +31,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
-            <option value="" disabled selected>Select Salutation</option>
+            <option [ngValue]="null" selected>Select Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
               {{ sal.data_name }}
             </option>
@@ -107,7 +107,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
-            <option value="" disabled selected>Salutation</option>
+            <option [ngValue]="null" selected>Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
               {{ sal.salutation_name_h }}
             </option>
@@ -193,11 +193,7 @@
           >
           <select
             formControlName="a_rec_adv_main_id"
-            [class.border-red-500]="
-              form.get('a_rec_adv_main_id')?.invalid &&
-              form.get('a_rec_adv_main_id')?.touched
-            "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option
               *ngFor="let adv of advertisementList"
@@ -222,10 +218,7 @@
           >
           <select
             formControlName="post_code"
-            [class.border-red-500]="
-              form.get('post_code')?.invalid && form.get('post_code')?.touched
-            "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option *ngFor="let post of postList" [value]="post.post_code">
               {{ post.post_name }} - ({{ post.post_status_name }})
@@ -240,13 +233,13 @@
             Post is required
           </div>
         </div>
-        <div>
+        <div *ngIf="showSubjectDropdown">
           <label class="block mb-1 text-gray-600 text-base font-medium"
             >Subject</label
           >
           <select
             formControlName="subject_id"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option value="" disabled selected>Select Subject</option>
             <option
@@ -384,7 +377,7 @@
             formControlName="religion_code"
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select Religion</option>
+            <option [ngValue]="null" selected>Select Religion</option>
 
             <option
               *ngFor="let religion of religionList"
@@ -798,6 +791,16 @@
                     >
                       Date cannot be after
                       {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
+
+
+
+
+
+
+
+
+
+
                       }}.
                     </ng-container>
                   </div>
@@ -839,7 +842,7 @@
           >
           <input
             formControlName="Permanent_Address1"
-            (input)="onCharacterInput($event)"
+            type="text"
             [class.border-red-500]="
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
@@ -893,7 +896,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled>Select Country</option>
+            <option [ngValue]="null" disabled>Select Country</option>
             <option
               *ngFor="let country of countryList"
               [value]="country.data_id"
@@ -923,7 +926,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select State</option>
+            <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
               {{ state.data_name }}
             </option>
@@ -950,7 +953,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select District</option>
+            <option [ngValue]="null" selected>Select District</option>
             <option
               *ngFor="let district of districtList"
               [value]="district.district_id"
@@ -1045,7 +1048,7 @@
           >
           <input
             formControlName="Current_Address1"
-            (input)="onCharacterInput($event)"
+            input="text"
             [class.border-red-500]="
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
@@ -1099,7 +1102,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled>Select Country</option>
+            <option [ngValue]="null" disabled>Select Country</option>
             <option
               *ngFor="let country of countryList"
               [value]="country.country_id"
@@ -1129,7 +1132,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select State</option>
+            <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
               {{ state.data_name }}
             </option>
@@ -1156,7 +1159,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select District</option>
+            <option [ngValue]="null" selected>Select District</option>
             <option
               *ngFor="let district of districtList"
               [value]="district.district_id"
@@ -1239,7 +1242,7 @@
             [class.border-red-500]="
               form.get('Email_Id')?.invalid && form.get('Email_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Email Address"
           />
           <div
@@ -1269,7 +1272,7 @@
             [class.border-red-500]="
               form.get('Mobile_No')?.invalid && form.get('Mobile_No')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Mobile Number"
           />
           <div
@@ -1350,7 +1353,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled>Select Country</option>
+            <option [ngValue]="null">Select Country</option>
             <option
               *ngFor="let country of countryList"
               [value]="country.country_id"
@@ -1380,7 +1383,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select State</option>
+            <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
               {{ state.data_name }}
             </option>
@@ -1407,7 +1410,7 @@
             "
             class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
           >
-            <option value="" disabled selected>Select District</option>
+            <option [ngValue]="null" disabled selected>Select District</option>
             <option
               *ngFor="let district of districtList"
               [value]="district.district_id"
