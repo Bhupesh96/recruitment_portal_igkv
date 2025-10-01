@@ -50,11 +50,11 @@
   animation: dotFlashing 1s infinite alternate;
   animation-delay: 1s;
 }
-@media (min-width: 1200px) {
-  .divLoader {
-   width: calc(100% - 300px);
-  }
-}
+// @media (min-width: 1200px) {
+//   .divLoader {
+//    width: calc(100% - 300px);
+//   }
+// }
 
 
 @keyframes dotFlashing {

@@ -19,7 +19,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
-import { HttpService } from 'shared';
+import { HttpService, LoaderService } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
@@ -113,7 +113,8 @@ export class Step6Component implements OnInit {
     private cdr: ChangeDetectorRef,
     private utils: UtilsService,
     private alertService: AlertService,
-    private recruitmentState: RecruitmentStateService
+    private recruitmentState: RecruitmentStateService,
+    private loader: LoaderService
   ) {
     this.form = this.fb.group({
       subHeadings: this.fb.group({}),
@@ -129,6 +130,7 @@ export class Step6Component implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loader.showLoader();
     this.loadFormStructure();
     this.form.get('subHeadings')?.valueChanges.subscribe(() => {
       this.generateDetailsTable();
@@ -617,11 +619,13 @@ export class Step6Component implements OnInit {
         });
 
         this.checkMandatorySubheadingsAndParameters();
+        this.loader.hideLoader();
         this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('❌ Error fetching parameter values:', err);
         this.alertService.alert(true, 'Failed to load existing data.');
+        this.loader.hideLoader();
         this.cdr.markForCheck();
       },
     });
@@ -756,18 +760,21 @@ export class Step6Component implements OnInit {
                     '❌ Error fetching items/params/dropdowns:',
                     err
                   );
+                  this.loader.hideLoader();
                   this.alertService.alert(true, 'Failed to load form details.');
                 },
               });
           },
           error: (err) => {
             console.error('❌ Error fetching subheadings:', err);
+            this.loader.hideLoader();
             this.alertService.alert(true, 'Failed to load form structure.');
           },
         });
       },
       error: (err) => {
         console.error('❌ Error fetching heading:', err);
+        this.loader.hideLoader();
         this.alertService.alert(
           true,
           'Failed to load main form configuration.'
@@ -1194,6 +1201,7 @@ export class Step6Component implements OnInit {
   saveToDatabase(): Promise<void> {
     // ✅ Wrap the entire logic in a new Promise
     return new Promise((resolve, reject) => {
+      this.loader.showLoader();
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
       if (!registrationNo || !a_rec_adv_main_id) {
@@ -1391,10 +1399,11 @@ export class Step6Component implements OnInit {
               true,
               res.body.error.message || 'An error occurred on the server.'
             );
+            this.loader.hideLoader();
             reject(new Error(res.body.error.message));
             return;
           }
-
+          this.loader.hideLoader();
           // ✅ 2. AWAIT the success alert. The function will pause here.
           await this.alertService.alert(false, 'Data saved successfully!');
 
@@ -1410,6 +1419,7 @@ export class Step6Component implements OnInit {
             'Error saving records: ' + (err.error?.message || err.message)
           );
           this.cdr.markForCheck();
+          this.loader.hideLoader();
           reject(err); // ✅ Reject the promise on API error
         },
       });

@@ -237,7 +237,7 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   private initializeFormWithData(): void {
-    this.loader.show();
+    this.loader.showLoader();
 
     // 1. Automatically create API calls for all dropdowns from the configuration array
     const dropdownRequests = this.dropdownConfig.map((config) =>
@@ -298,11 +298,11 @@ export class Step1Component implements OnChanges, OnInit {
             () => {
               this.setupCustomLogicListeners();
               this.loadAdvertisementDetails();
-              this.loader.hide();
+              this.loader.hideLoader();
             }
           );
         } else {
-          this.loader.hide();
+          this.loader.hideLoader();
         }
       },
       error: (err: any) => {
@@ -311,7 +311,7 @@ export class Step1Component implements OnChanges, OnInit {
           true,
           'Failed to load essential application data. Please refresh the page.'
         );
-        this.loader.hide();
+        this.loader.hideLoader();
       },
     });
   }
@@ -1575,6 +1575,7 @@ export class Step1Component implements OnChanges, OnInit {
       this.alert.alert(true, firstErrorMessage);
       return Promise.reject(new Error('Form is invalid'));
     }
+    this.loader.showLoader();
 
     const formData = new FormData();
     const formValue = this.form.getRawValue();
@@ -1734,7 +1735,7 @@ export class Step1Component implements OnChanges, OnInit {
             reject(new Error(res.body.error.message));
             return;
           }
-
+          this.loader.hideLoader();
           await this.alert.alert(
             false,
             'All candidate details saved successfully!'
@@ -1771,6 +1772,7 @@ export class Step1Component implements OnChanges, OnInit {
 
           this.emitFormData();
           this.cdr.markForCheck();
+
           resolve();
         },
         error: (err) => {
@@ -1780,6 +1782,7 @@ export class Step1Component implements OnChanges, OnInit {
             err.error?.message ||
             'Failed to save details. Please try again.';
           this.alert.alert(true, errorMessage);
+          this.loader.hideLoader();
           reject(err);
         },
       });

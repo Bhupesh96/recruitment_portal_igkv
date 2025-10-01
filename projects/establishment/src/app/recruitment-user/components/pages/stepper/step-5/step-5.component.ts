@@ -20,7 +20,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, forkJoin, lastValueFrom, of } from 'rxjs';
 import { switchMap, tap, catchError, map } from 'rxjs/operators';
-import { HttpService, SharedModule } from 'shared';
+import { HttpService, LoaderService, SharedModule } from 'shared';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
 import {
@@ -111,13 +111,15 @@ export class Step5Component implements OnInit {
     private sanitizer: DomSanitizer,
     private utils: UtilsService,
     private alertService: AlertService,
-    private recruitmentState: RecruitmentStateService
+    private recruitmentState: RecruitmentStateService,
+    private loader: LoaderService
   ) {
     this.form = this.fb.group({});
     this.userData = this.recruitmentState.getCurrentUserData();
   }
 
   ngOnInit(): void {
+    this.loader.showLoader();
     this.loadFormData().subscribe(() => {
       this.getParameterValuesAndPatch();
     });
@@ -296,11 +298,13 @@ export class Step5Component implements OnInit {
         this.checkMandatorySubheadingsAndParameters();
         this.updateTotalExperience();
         this.cdr.markForCheck();
+        this.loader.hideLoader();
       },
       error: (err) => {
         this.errorMessage = 'Failed to load saved data: ' + err.message;
         this.alertService.alert(true, this.errorMessage);
         this.cdr.markForCheck();
+        this.loader.hideLoader();
       },
     });
   } // No changes to addQualification, removeQualification, createQualificationGroup, recalculateExperience
@@ -565,6 +569,7 @@ export class Step5Component implements OnInit {
       catchError((error) => {
         this.errorMessage = 'Error loading form: ' + error.message;
         this.loading = false;
+        this.loader.hideLoader();
         this.cdr.markForCheck();
         throw error;
       })
@@ -936,7 +941,7 @@ export class Step5Component implements OnInit {
     formData.append('registration_no', registrationNo.toString());
     formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
     formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
-
+    this.loader.showLoader();
     // STEP 4: Make the SINGLE API call
     try {
       // Convert the Observable to a Promise to use await
@@ -954,9 +959,10 @@ export class Step5Component implements OnInit {
           true,
           res.body.error.message || 'An error occurred on the server.'
         );
+        this.loader.hideLoader();
         throw new Error(res.body.error.message); // This will reject the promise
       }
-
+      this.loader.hideLoader();
       // ✅ 2. AWAIT THE SUCCESS ALERT. The function will pause here.
       await this.alertService.alert(false, 'Data saved successfully!');
 
@@ -971,6 +977,7 @@ export class Step5Component implements OnInit {
         err.message ||
         'An unknown error occurred while saving.';
       this.alertService.alert(true, `Error: ${errorMessage}`);
+      this.loader.hideLoader();
       this.cdr.markForCheck();
 
       // Re-throw the error to ensure the promise is rejected.

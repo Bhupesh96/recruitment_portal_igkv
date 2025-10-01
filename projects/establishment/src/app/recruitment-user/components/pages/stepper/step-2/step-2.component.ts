@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
 import { switchMap, tap, catchError, map } from 'rxjs/operators';
-import { HttpService, SharedModule } from 'shared';
+import { HttpService, LoaderService, SharedModule } from 'shared';
 import { Output, EventEmitter } from '@angular/core';
 import { UtilsService } from '../../utils.service';
 import { AlertService } from 'shared';
@@ -113,13 +113,15 @@ export class Step2Component implements OnInit {
     private sanitizer: DomSanitizer,
     private utils: UtilsService,
     private alertService: AlertService,
-    private recruitmentState: RecruitmentStateService
+    private recruitmentState: RecruitmentStateService,
+    private loader: LoaderService
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
     this.form = this.fb.group({});
   }
 
   ngOnInit(): void {
+    this.loader.showLoader();
     this.loadFormData().subscribe({
       next: () => {
         this.getParameterValuesAndPatch();
@@ -128,6 +130,7 @@ export class Step2Component implements OnInit {
         this.errorMessage = 'Failed to load form data: ' + err.message;
         this.alertService.alert(true, this.errorMessage);
         this.loading = false;
+        this.loader.hideLoader();
         this.cdr.markForCheck();
       },
     });
@@ -727,11 +730,13 @@ export class Step2Component implements OnInit {
         });
 
         this.checkMandatorySubheadingsAndParameters();
+        this.loader.hideLoader();
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.errorMessage = 'Failed to load saved data: ' + err.message;
         this.alertService.alert(true, this.errorMessage);
+        this.cdr.markForCheck();
         this.cdr.markForCheck();
       },
     });
@@ -771,7 +776,7 @@ export class Step2Component implements OnInit {
       // Reject the promise if the form is invalid
       return Promise.reject(new Error('Form is invalid'));
     }
-
+    this.loader.showLoader();
     // Wrap the entire API logic in a new Promise
     return new Promise((resolve, reject) => {
       const registrationNo = this.userData?.registration_no;
@@ -969,7 +974,7 @@ export class Step2Component implements OnInit {
             reject(new Error(res.body.error.message));
             return;
           }
-
+          this.loader.hideLoader();
           // 2. AWAIT the success alert. The function will pause here.
           await this.alertService.alert(false, 'Data saved successfully!');
 
@@ -980,6 +985,7 @@ export class Step2Component implements OnInit {
         },
         error: (err) => {
           this.alertService.alert(true, `Error saving data: ${err.message}`);
+          this.loader.hideLoader();
           this.cdr.markForCheck();
           reject(err); // Reject the promise on API error
         },
@@ -988,8 +994,69 @@ export class Step2Component implements OnInit {
   }
 
   private emitFormData(): void {
-    const subheadingsData = this.subheadings.reduce((acc, sub, index) => {
+    // This object will hold the clean, structured data for selected qualifications.
+    const qualificationsData: { [key: string]: any[] } = {};
+
+    this.subheadings.forEach((sub, index) => {
       const key = this.getUniqueKey(sub, index);
+      const isSelected = this.form.get(`is${key}Selected`)?.value;
+
+      // Only process and emit data for the qualifications the user has selected.
+      if (isSelected) {
+        const formArray = this.form.get(`qualifications${key}`) as FormArray;
+        const group = formArray.at(0) as FormGroup;
+        if (!group) return;
+
+        const rawValues = group.getRawValue();
+        const processedQualification: { [key: string]: any } = {};
+
+        // Get all parameters for this specific subheading
+        const parameters = this.getParameters(
+          sub.m_rec_score_field_id,
+          sub.a_rec_adv_post_detail_id
+        );
+
+        parameters.forEach((param) => {
+          const paramName = param.score_field_parameter_name;
+          const value = rawValues[paramName];
+
+          // Check if the parameter is a file upload
+          if (param.control_type === 'A' || param.isDatatype === 'attachment') {
+            if (value instanceof File) {
+              // Case 1: A new file has been selected by the user.
+              // We emit the actual File object.
+              processedQualification[paramName] = value;
+            } else {
+              // Case 2: No new file was selected. Check for a pre-existing file from the server.
+              const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_0`;
+              const existingFilePath = this.filePaths.get(fileKey);
+              if (existingFilePath) {
+                // We emit the string path of the existing file.
+                processedQualification[paramName] = existingFilePath;
+              } else {
+                processedQualification[paramName] = null; // No file exists
+              }
+            }
+          } else {
+            // It's not a file, so just use the standard form value.
+            processedQualification[paramName] = value;
+          }
+        });
+
+        // Add the ID fields to the processed data
+        processedQualification['a_rec_app_score_field_detail_id'] =
+          rawValues['a_rec_app_score_field_detail_id'];
+
+        // Assign the fully processed object to our clean data structure.
+        qualificationsData[key.replace('qualifications', '')] = [
+          processedQualification,
+        ];
+      }
+    });
+
+    // This object combines data from subheadings for easier access in the preview.
+    const subheadingsInfo = this.subheadings.reduce((acc, sub, index) => {
+      const key = this.getUniqueKey(sub, index).replace('qualifications', '');
       acc[key] = {
         m_rec_score_field_id: sub.m_rec_score_field_id,
         score_field_title_name: sub.score_field_title_name,
@@ -998,16 +1065,15 @@ export class Step2Component implements OnInit {
       return acc;
     }, {} as { [key: string]: any });
 
+    // Construct the final data object to be emitted.
     const emitData = {
-      ...this.form.getRawValue(),
       _isValid: this.form.valid,
       heading: this.heading,
-      subheadings: subheadingsData,
-      filePaths: Array.from(this.filePaths.entries()).reduce(
-        (obj, [key, value]) => ({ ...obj, [key]: value }),
-        {}
-      ),
-    }; // console.log( //   '📤 Step2 form emitting data:', //   JSON.stringify(emitData, null, 2) // );
+      subheadings: subheadingsInfo,
+      // We no longer spread `form.getRawValue()` but use our clean structure instead.
+      ...qualificationsData,
+    };
+
     this.formData.emit(emitData);
   }
 }

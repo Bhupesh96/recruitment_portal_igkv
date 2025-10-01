@@ -11,6 +11,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
 import { Step9Component } from './recruitment-user/components/pages/stepper/step-9/step-9.component';
+import { DotLoaderComponent } from "../../../shared/component/dot-loader/dot-loader.component";
 
 @NgModule({
   declarations: [AppComponent],
@@ -24,7 +25,8 @@ import { Step9Component } from './recruitment-user/components/pages/stepper/step
     CommonModule,
     SharedModule,
     NgbModule,
-  ],
+    DotLoaderComponent
+],
   providers: [],
   bootstrap: [AppComponent],
 })

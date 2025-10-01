@@ -83,7 +83,7 @@ export class StepperComponent {
     // Check if the print action was requested and the component is ready
     if (this.printTriggered && this.pdfDownloadComponent) {
       // Call the print function
-      this.pdfDownloadComponent.printAsPdf();
+      this.pdfDownloadComponent.downloadAsPdf();
 
       // Reset the flag to prevent it from running again
       this.printTriggered = false;
