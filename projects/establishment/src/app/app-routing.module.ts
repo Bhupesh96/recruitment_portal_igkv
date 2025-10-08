@@ -12,6 +12,7 @@ import { LoginComponent } from './recruitment-user/components/pages/registration
 import { StepperComponent } from './recruitment-user/components/pages/stepper/stepper.component';
 import { PdfPreviewComponent } from './recruitment-user/components/pages/pdf-preview/pdf-preview.component';
 import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
+import { ScreeningComponent } from './recruitment-user/components/pages/screening/screening/screening.component';
 
 const routes: Routes = [
   {
@@ -29,6 +30,7 @@ const routes: Routes = [
       { path: 'stepper', component: StepperComponent },
       { path: 'pdf-preview', component: PdfPreviewComponent },
       { path: 'pdf-download', component: PdfDownloadComponent },
+      { path: 'screening', component: ScreeningComponent },
       { path: '**', redirectTo: 'home' },
     ],
   },

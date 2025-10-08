@@ -1,27 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
 @import "tailwindcss";
-@media print {
-  /* 1. Hide every element on the page by default */
-  body * {
-    visibility: hidden;
-  }
+/* Add this to src/styles.scss */
 
-  /* 2. Make ONLY the PDF container and its children visible */
-  #pdfPrintSection,
-  #pdfPrintSection * {
-    visibility: visible;
-  }
-
-  /* 3. Position the PDF container to take up the whole print page */
-  #pdfPrintSection {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-
-  /* 4. Ensure no unwanted margins from the body */
-  body {
-    margin: 0;
-  }
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: #f3f4f6 !important; /* Tailwind's bg-gray-100 */
+  cursor: not-allowed !important;
+  color: #6b7280 !important; /* Tailwind's text-gray-500 */
+  border-color: #d1d5db !important; /* A slightly darker border */
 }

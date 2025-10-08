@@ -1,5 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { SharedDataService } from '../shared-data.service';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -73,7 +79,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       console.error('Content element not found!');
       return;
     }
-    this.loader.show();
+    this.loader.showLoader();
     const styleNodes = document.querySelectorAll(
       'style, link[rel="stylesheet"]'
     );
@@ -103,16 +109,15 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     const payload = { html: fullHtmlPayload };
     this.httpService.postBlob(apiUrl, payload, null, 'common').subscribe({
       next: (res) => {
-     
         const a = document.createElement('a');
-       
+
         a.download = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
-      
-        this.loader.hide();
+
+        this.loader.hideLoader();
       },
       error: (err) => {
         console.error('❌ PDF Generation Failed:', err);
-        this.loader.hide();
+        this.loader.hideLoader();
       },
     });
   }
@@ -155,42 +160,44 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     });
   }
 
- private getProcessedSteps(): any[] {
-    return Object.keys(this.formData)
-      .map(Number)
-      .filter((key) => key > 1) // Exclude personal info (step 1)
-      .sort((a, b) => a - b)
-      .map((key) => {
-        const stepData = this.formData[key];
-        // The check for empty sections is now moved to the end
-        if (!stepData || Object.keys(stepData).length <= 1) return null;
+  private getProcessedSteps(): any[] {
+    return (
+      Object.keys(this.formData)
+        .map(Number)
+        .filter((key) => key > 1) // Exclude personal info (step 1)
+        .sort((a, b) => a - b)
+        .map((key) => {
+          const stepData = this.formData[key];
+          // The check for empty sections is now moved to the end
+          if (!stepData || Object.keys(stepData).length <= 1) return null;
 
-        let stepType = '';
-        let sections: any[] = [];
+          let stepType = '';
+          let sections: any[] = [];
 
-        if (this.isQualificationStep(stepData)) {
-          stepType = 'qualification';
-          sections = this.getQualificationSections(stepData);
-        } else if (this.isExperienceStep(stepData)) {
-          stepType = 'experience';
-          sections = this.getExperienceSections(stepData);
-        } else if (this.isDetailsStep(stepData)) {
-          stepType = 'details';
-          sections = this.getSubheadingsWithDetails(stepData);
-        }
+          if (this.isQualificationStep(stepData)) {
+            stepType = 'qualification';
+            sections = this.getQualificationSections(stepData);
+          } else if (this.isExperienceStep(stepData)) {
+            stepType = 'experience';
+            sections = this.getExperienceSections(stepData);
+          } else if (this.isDetailsStep(stepData)) {
+            stepType = 'details';
+            sections = this.getSubheadingsWithDetails(stepData);
+          }
 
-        // Only return a step object if it has content to display
-        if (sections.length === 0 && !stepData.attachments) return null; 
+          // Only return a step object if it has content to display
+          if (sections.length === 0 && !stepData.attachments) return null;
 
-        return {
-          key: key,
-          heading: stepData?.heading?.score_field_title_name || 'Details',
-          type: stepType,
-          sections: sections,
-        };
-      })
-      // ✅ CORRECTED LINE: The incorrect type predicate "step is object" is removed.
-      .filter(step => step !== null);
+          return {
+            key: key,
+            heading: stepData?.heading?.score_field_title_name || 'Details',
+            type: stepType,
+            sections: sections,
+          };
+        })
+        // ✅ CORRECTED LINE: The incorrect type predicate "step is object" is removed.
+        .filter((step) => step !== null)
+    );
   }
 
   isFileValue(value: any): boolean {
@@ -236,9 +243,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   private isDetailsStep(stepData: any): boolean {
-    return (
-      stepData && Array.isArray(stepData.details) && stepData.subheadings
-    );
+    return stepData && Array.isArray(stepData.details) && stepData.subheadings;
   }
 
   private getQualificationSections(stepData: any): any[] {
@@ -298,8 +303,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
         if (experiences.length > 0) {
           return {
             title:
-              stepData.subheadings[key]?.score_field_title_name ||
-              'Experience',
+              stepData.subheadings[key]?.score_field_title_name || 'Experience',
             experiences: experiences,
             headers: this.getDisplayableKeys(experiences[0]),
           };
@@ -322,19 +326,23 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
 
     const subheadKeys = Object.keys(stepData.subheadings || {});
     return stepData.attachments
-      .map((att: { document: string | null; remark: string }, index: number) => {
-        if (att.remark && att.remark.trim() !== '') {
-          const key = subheadKeys[index];
-          if (key) {
-            const type =
-              stepData.subheadings[key]?.score_field_title_name ||
-              `Attachment ${index + 1}`;
-            return { type, remark: att.remark };
+      .map(
+        (att: { document: string | null; remark: string }, index: number) => {
+          if (att.remark && att.remark.trim() !== '') {
+            const key = subheadKeys[index];
+            if (key) {
+              const type =
+                stepData.subheadings[key]?.score_field_title_name ||
+                `Attachment ${index + 1}`;
+              return { type, remark: att.remark };
+            }
           }
+          return null;
         }
-        return null;
-      })
-      .filter((item: any): item is { type: string; remark: string } => item !== null);
+      )
+      .filter(
+        (item: any): item is { type: string; remark: string } => item !== null
+      );
   }
 
   // Helper to translate a detail 'type' ID to its display name
@@ -345,7 +353,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       const subhead = stepData.subheadings[subheadKey];
       if (subhead && Array.isArray(subhead.items)) {
         const foundItem = subhead.items.find(
-          (item: any) => item.m_rec_score_field_id.toString() === detailType.toString()
+          (item: any) =>
+            item.m_rec_score_field_id.toString() === detailType.toString()
         );
         if (foundItem) {
           return foundItem.score_field_name_e;

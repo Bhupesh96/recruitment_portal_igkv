@@ -1,0 +1,81 @@
+<div class="p-4 sm:p-6 bg-white">
+  <div class="w-full flex justify-center py-4 border-b">
+    <!-- keep overflow-x-auto so many steps scroll on small screens -->
+    <div class="w-full overflow-x-auto">
+      <!-- centered/narrow bar: max-w-5xl limits the visual width of the stepper only -->
+      <div
+        class="mx-auto max-w-5xl flex items-center justify-center space-x-2 sm:space-x-4"
+      >
+        <ng-container *ngFor="let step of steps; let i = index">
+          <div
+            class="flex items-center"
+            [class.cursor-pointer]="i < currentStep || completedSteps[i]"
+            (click)="goToStep(i + 1)"
+          >
+            <div
+              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300"
+              [ngClass]="{
+                'bg-indigo-600 text-white shadow-lg': currentStep === i + 1,
+                'bg-green-600 text-white': currentStep > i + 1,
+                'bg-gray-200 text-gray-700': currentStep < i + 1
+              }"
+            >
+              {{ i + 1 }}
+            </div>
+
+            <div class="ml-2 text-sm font-medium whitespace-nowrap">
+              {{ step }}
+            </div>
+
+            <div
+              *ngIf="i < steps.length - 1"
+              class="h-0.5 w-6 sm:w-10 md:w-14 lg:w-20 ml-2 transition-colors duration-300"
+              [ngClass]="{
+                'bg-green-600': currentStep > i + 1,
+                'bg-gray-200': currentStep <= i + 1
+              }"
+            ></div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+  <div class="w-full mt-8 min-h-[300px]">
+    <div @fadeSlide *ngIf="currentStep === 1">
+      <app-step-1 (formData)="updateFormData(1, $event)"></app-step-1>
+    </div>
+    <div @fadeSlide *ngIf="currentStep === 2">
+      <app-step-2 (formData)="updateFormData(2, $event)"></app-step-2>
+    </div>
+    <div @fadeSlide *ngIf="currentStep === 3">
+      <app-step-3 (formData)="updateFormData(3, $event)"></app-step-3>
+    </div>
+    <div @fadeSlide *ngIf="currentStep === 4">
+      <app-step-4 (formData)="updateFormData(4, $event)"></app-step-4>
+    </div>
+    <div @fadeSlide *ngIf="currentStep === 5">
+      <app-step-5 (formData)="updateFormData(5, $event)"></app-step-5>
+    </div>
+    <div @fadeSlide *ngIf="currentStep === 6">
+      <app-step-6 (formData)="updateFormData(6, $event)"></app-step-6>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center mt-8 pt-4 border-t">
+    <button
+      (click)="prevStep()"
+      [disabled]="currentStep === 1"
+      class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Back
+    </button>
+    <button
+      (click)="nextStep()"
+      class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition"
+    >
+      {{
+        currentStep === steps.length ? "Submit Application" : "Update & Continue"
+      }}
+    </button>
+  </div>
+</div>

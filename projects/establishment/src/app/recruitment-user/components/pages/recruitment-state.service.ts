@@ -33,6 +33,11 @@ export class RecruitmentStateService {
   public readonly userData$: Observable<UserRecruitmentData | null> =
     this._userData.asObservable();
 
+  private readonly _screeningCandidateData =
+    new BehaviorSubject<UserRecruitmentData | null>(null);
+  public readonly screeningCandidateData$ =
+    this._screeningCandidateData.asObservable();
+
   constructor(private authService: AuthService) {
     // When the service is first created, it immediately checks the AuthService.
     const currentUser = this.authService.currentUser;
@@ -77,5 +82,12 @@ export class RecruitmentStateService {
   public getRegistrationNumber(): number | null {
     // The '??' (nullish coalescing operator) is a safe way to return null if the user data or the property is missing.
     return this.getCurrentUserData()?.registration_no ?? null;
+  }
+  public setScreeningCandidate(data: UserRecruitmentData | null): void {
+    this._screeningCandidateData.next(data);
+  }
+
+  public getScreeningCandidateData(): UserRecruitmentData | null {
+    return this._screeningCandidateData.getValue();
   }
 }

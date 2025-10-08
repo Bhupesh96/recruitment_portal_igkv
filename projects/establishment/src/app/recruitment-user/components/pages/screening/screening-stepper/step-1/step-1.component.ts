@@ -32,7 +32,7 @@ import {
 } from 'rxjs';
 import { HttpService, SharedModule } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { RecruitmentStateService } from '../../recruitment-state.service';
+import { RecruitmentStateService } from '../../../recruitment-state.service';
 import { AlertService } from 'shared';
 import { LoaderService } from 'shared';
 
@@ -436,7 +436,8 @@ export class Step1Component implements OnChanges, OnInit {
   // --- API Data Access Methods (Moved from Service) ---
 
   private getUserData(): Observable<any> {
-    const registrationNo = this.recruitmentState.getRegistrationNumber();
+    const candidateData = this.recruitmentState.getScreeningCandidateData();
+    const registrationNo = candidateData?.registration_no;
     return this.HTTP.getParam(
       '/master/get/getApplicant',
       { registration_no: registrationNo },
@@ -477,7 +478,8 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   private getSavedLanguages(): Observable<any> {
-    const registrationNo = this.recruitmentState.getRegistrationNumber();
+    const candidateData = this.recruitmentState.getScreeningCandidateData();
+    const registrationNo = candidateData?.registration_no;
     return this.HTTP.getParam(
       '/master/get/getLanguagesByRegistration',
       { registration_no: registrationNo },
