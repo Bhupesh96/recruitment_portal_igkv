@@ -199,7 +199,7 @@
               *ngFor="let adv of advertisementList"
               [value]="adv.a_rec_adv_main_id"
             >
-              {{ adv.advertisment_name }}
+              {{ adv.advertisment_no }}
             </option>
           </select>
           <div
@@ -801,6 +801,13 @@
 
 
 
+
+
+
+
+
+
+
                       }}.
                     </ng-container>
                   </div>
@@ -955,8 +962,8 @@
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of permanentDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>
@@ -1148,9 +1155,10 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >District<span class="text-red-500">*</span></label
-          >
+          <label class="block mb-1 text-gray-600 text-base font-medium">
+            District<span class="text-red-500">*</span>
+          </label>
+
           <select
             formControlName="Current_District_Id"
             [class.border-red-500]="
@@ -1161,12 +1169,13 @@
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of currentDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>
           </select>
+
           <div
             *ngIf="
               form.get('Current_District_Id')?.invalid &&
@@ -1412,8 +1421,8 @@
           >
             <option [ngValue]="null" disabled selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of birthDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>

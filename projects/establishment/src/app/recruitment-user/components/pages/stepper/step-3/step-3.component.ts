@@ -465,14 +465,14 @@ export class Step3Component implements OnInit {
     }
 
     const parentRequest = this.HTTP.getData(
-      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}`,
+      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}&Application_Step_Flag_CES=C`,
       'recruitement'
     );
 
     const childParentIds = this.subHeadings.map((s) => s.m_rec_score_field_id);
     const childrenRequests = childParentIds.map((id) =>
       this.HTTP.getData(
-        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${id}`,
+        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${id}&Application_Step_Flag_CES=C`,
         'recruitement'
       )
     );

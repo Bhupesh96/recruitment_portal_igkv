@@ -2,9 +2,9 @@
   <div class="space-y-8 text-base text-gray-700">
     <!-- Applicant Name Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -18,7 +18,7 @@
         </svg>
         Applicant name
       </h6>
-      <div class="grid md:grid-cols-4 gap-4">
+      <div class="grid md:grid-cols-4 gap-x-3 gap-y-2">
         <div>
           <label class="block mb-1 text-gray-600 text-base font-medium"
             >Salutation (English)<span class="text-red-500">*</span></label
@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <div class="grid md:grid-cols-4 gap-4 mt-4">
+      <div class="grid md:grid-cols-4 gap-4 mt-1">
         <div>
           <label class="block mb-1 text-gray-600 text-base font-medium"
             >Salutation (Hindi)<span class="text-red-500">*</span></label
@@ -170,9 +170,9 @@
 
     <!-- Basic Details Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -199,7 +199,7 @@
               *ngFor="let adv of advertisementList"
               [value]="adv.a_rec_adv_main_id"
             >
-              {{ adv.advertisment_name }}
+              {{ adv.advertisment_no }}
             </option>
           </select>
           <div
@@ -450,9 +450,9 @@
 
     <!-- Additional Information Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -467,332 +467,351 @@
         Additional Information
       </h6>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 text-base">
-        <ng-container *ngFor="let question of additionalQuestions">
-          <ng-container *ngIf="question.question_id === 2">
-            <div
-              *ngIf="form.get('question_3')?.value"
-              class="flex flex-col space-y-1"
+      <!-- Compact Masonry-Style Layout -->
+      <div
+        class="[columns:1] md:[columns:2] lg:[columns:3] [column-fill:_balance] [column-gap:1rem]"
+      >
+        <div
+          *ngFor="let question of additionalQuestions"
+          class="break-inside-avoid mb-4 border border-gray-200 rounded-xl p-4 bg-white shadow-sm"
+        >
+          <!-- Question Label -->
+          <label class="block text-gray-600 text-base font-medium mb-1">
+            {{ question.question_label }}
+            <span *ngIf="question.is_required === 'Y'" class="text-red-500"
+              >*</span
             >
-              <div>
-                <label class="block text-gray-600 text-base font-medium">
-                  {{ question.question_label
-                  }}<span class="text-red-500">*</span>
-                </label>
-                <div class="flex items-center gap-4 flex-wrap pt-1">
-                  <label
-                    *ngFor="let option of filteredCategoryOptions"
-                    class="flex items-center"
-                  >
-                    <input
-                      type="radio"
-                      [name]="'question_' + question.question_id"
-                      [value]="option.option_value"
-                      [checked]="
-                        form.get('question_' + question.question_id)?.value ===
-                        option.option_value
-                      "
-                      (change)="
-                        handleRadioChange(
-                          'question_' + question.question_id,
-                          option.option_value
-                        )
-                      "
-                      class="mr-1 text-gray-600 focus:ring-gray-600"
-                    />
-                    {{ option.option_label }}
-                  </label>
-                </div>
-                <div
-                  *ngIf="
-                    form.get('question_' + question.question_id)?.invalid &&
-                    form.get('question_' + question.question_id)?.touched
-                  "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  This field is required
-                </div>
-              </div>
+          </label>
 
-              <ng-container
-                *ngIf="getSelectedOption(question)?.has_condition === 'Y'"
+          <!-- Question Options -->
+          <div class="flex flex-wrap items-center gap-2">
+            <ng-container
+              *ngIf="question.question_id === 2; else standardOptions"
+            >
+              <label
+                *ngFor="let option of filteredCategoryOptions"
+                class="flex items-center gap-1"
               >
-                <div
-                  *ngFor="
-                    let condition of getSelectedOption(question)?.conditions
+                <input
+                  type="radio"
+                  [name]="'question_' + question.question_id"
+                  [value]="option.option_value"
+                  [checked]="
+                    form.get('question_' + question.question_id)?.value ===
+                    option.option_value
                   "
-                  class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
+                  [disabled]="isScreeningMode"
+                  (change)="
+                    handleRadioChange(
+                      'question_' + question.question_id,
+                      option.option_value
+                    )
+                  "
+                  class="h-3.5 w-3.5 text-gray-600 focus:ring-gray-600"
+                />
+                {{ option.option_label }}
+              </label>
+            </ng-container>
+            <ng-template #standardOptions>
+              <label
+                *ngFor="let option of question.options"
+                class="flex items-center gap-1"
+              >
+                <input
+                  type="radio"
+                  [name]="'question_' + question.question_id"
+                  [value]="option.option_value"
+                  [checked]="
+                    form.get('question_' + question.question_id)?.value ===
+                    option.option_value
+                  "
+                  [disabled]="isScreeningMode"
+                  (change)="
+                    handleRadioChange(
+                      'question_' + question.question_id,
+                      option.option_value
+                    )
+                  "
+                  class="h-3.5 w-3.5 text-gray-600 focus:ring-gray-600"
+                />
+                {{ option.option_label }}
+              </label>
+            </ng-template>
+          </div>
+
+          <div
+            *ngIf="
+              form.get('question_' + question.question_id)?.invalid &&
+              form.get('question_' + question.question_id)?.touched
+            "
+            class="text-red-500 text-xs mt-1"
+          >
+            This field is required
+          </div>
+
+          <!-- Conditional Fields -->
+          <ng-container
+            *ngIf="getSelectedOption(question)?.has_condition === 'Y'"
+          >
+            <div
+              *ngFor="let condition of getSelectedOption(question)?.conditions"
+              class="mt-2 pl-2 border-l-2 p-2 rounded-xl break-inside-avoid transition-all duration-200"
+              [ngClass]="{
+                'bg-green-200 border-green-300':
+                  getConditionStatus(condition) == '1' ||
+                  getConditionStatus(condition) == '8',
+                'bg-red-200 border-red-300':
+                  getConditionStatus(condition) == '2',
+                'bg-white border-gray-200':
+                  getConditionStatus(condition) != '1' &&
+                  getConditionStatus(condition) != '8' &&
+                  getConditionStatus(condition) != '2'
+              }"
+            >
+              <!-- Condition Label -->
+              <label class="block text-gray-500 text-base font-semibold mb-1">
+                {{ condition.dependent_field_label }}
+                <span
+                  *ngIf="condition.condition_required === 'Y'"
+                  class="text-red-500"
+                  >*</span
                 >
-                  <label class="block text-gray-500 text-base font-semibold">
-                    {{ condition.dependent_field_label }}
-                    <span
-                      *ngIf="condition.condition_required === 'Y'"
-                      class="text-red-500"
-                      >*</span
-                    >
-                  </label>
+              </label>
 
-                  <ng-container [ngSwitch]="condition.condition_data_type">
-                    <ng-container *ngSwitchCase="'file'">
-                      <div
-                        *ngIf="
-                          getAdditionalFilePath(
-                            'condition_' + condition.condition_id
-                          ) as filePath
-                        "
-                        class="mt-2 flex items-center gap-4"
-                      >
-                        <a
-                          [href]="getFileUrl(filePath)"
-                          target="_blank"
-                          class="text-xs !text-green-600 hover:underline flex items-center"
-                        >
-                          <svg
-                            class="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          View Uploaded File
-                        </a>
-                      </div>
-                    </ng-container>
-                  </ng-container>
-
+              <!-- Condition Input -->
+              <ng-container [ngSwitch]="condition.condition_data_type">
+                <!-- File Input -->
+                <ng-container *ngSwitchCase="'file'">
                   <div
                     *ngIf="
-                      form.get('condition_' + condition.condition_id)
-                        ?.invalid &&
-                      form.get('condition_' + condition.condition_id)?.touched
+                      getAdditionalFilePath(
+                        'condition_' + condition.condition_id
+                      ) as filePath
                     "
-                    class="text-red-500 text-xs mt-1"
+                    class="mt-2 flex items-center gap-2"
                   >
-                    {{ condition.dependent_field_label }} is required
-                  </div>
-                </div>
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <ng-container *ngIf="question.question_id !== 2">
-            <div class="flex flex-col space-y-1">
-              <div>
-                <label class="block text-gray-600 text-base font-medium">
-                  {{ question.question_label
-                  }}<span
-                    *ngIf="question.is_required === 'Y'"
-                    class="text-red-500"
-                    >*</span
-                  >
-                </label>
-                <div class="flex items-center gap-4 flex-wrap pt-1">
-                  <label
-                    *ngFor="let option of question.options"
-                    class="flex items-center"
-                  >
-                    <input
-                      type="radio"
-                      [name]="'question_' + question.question_id"
-                      [value]="option.option_value"
-                      [checked]="
-                        form.get('question_' + question.question_id)?.value ===
-                        option.option_value
-                      "
-                      (change)="
-                        handleRadioChange(
-                          'question_' + question.question_id,
-                          option.option_value
-                        )
-                      "
-                      class="mr-1 text-gray-600 focus:ring-gray-600"
-                    />
-                    {{ option.option_label }}
-                  </label>
-                </div>
-                <div
-                  *ngIf="
-                    form.get('question_' + question.question_id)?.invalid &&
-                    form.get('question_' + question.question_id)?.touched
-                  "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  This field is required
-                </div>
-              </div>
-
-              <ng-container
-                *ngIf="getSelectedOption(question)?.has_condition === 'Y'"
-              >
-                <div
-                  *ngFor="
-                    let condition of getSelectedOption(question)?.conditions
-                  "
-                  class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
-                >
-                  <label class="block text-gray-500 text-base font-semibold">
-                    {{ condition.dependent_field_label }}
-                    <span
-                      *ngIf="condition.condition_required === 'Y'"
-                      class="text-red-500"
-                      >*</span
+                    <a
+                      [href]="getFileUrl(filePath)"
+                      target="_blank"
+                      class="text-xs !text-green-600 hover:underline flex items-center"
                     >
-                  </label>
+                      <svg
+                        class="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      View Uploaded File
+                    </a>
+                  </div>
 
-                  <ng-container [ngSwitch]="condition.condition_data_type">
-                    <input
-                      *ngSwitchCase="'date'"
-                      type="date"
-                      [formControlName]="'condition_' + condition.condition_id"
-                      (change)="
-                        condition.condition_id === 1 &&
-                          onMarriageDateChange($event)
-                      "
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                    />
-
-                    <ng-container *ngSwitchCase="'file'">
+                  <!-- Verify Status & Remark -->
+                  <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        class="block mb-1 text-gray-500 text-sm font-medium"
+                        >Verify Status<span class="text-red-500">*</span></label
+                      >
+                      <select
+                        [formControlName]="
+                          'verify_status_' + condition.condition_id
+                        "
+                        class="w-full border border-gray-300 rounded-md px-2 py-1 text-base bg-white focus:ring-1 focus:ring-gray-600"
+                        [class.border-red-500]="
+                          form.get('verify_status_' + condition.condition_id)
+                            ?.invalid &&
+                          form.get('verify_status_' + condition.condition_id)
+                            ?.touched
+                        "
+                      >
+                        <option [ngValue]="null" selected>Select Status</option>
+                        <option
+                          *ngFor="let status of verifyStatusList"
+                          [value]="status.data_id"
+                        >
+                          {{ status.data_name }}
+                        </option>
+                      </select>
                       <div
                         *ngIf="
-                          getAdditionalFilePath(
-                            'condition_' + condition.condition_id
-                          ) as filePath
+                          form.get('verify_status_' + condition.condition_id)
+                            ?.invalid &&
+                          form.get('verify_status_' + condition.condition_id)
+                            ?.touched
                         "
-                        class="mt-2 flex items-center gap-4"
+                        class="text-red-500 text-xs mt-1"
                       >
-                        <a
-                          [href]="getFileUrl(filePath)"
-                          target="_blank"
-                          class="text-xs !text-green-600 hover:underline flex items-center"
+                        Status is required
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        class="block mb-1 text-gray-500 text-sm font-medium"
+                        >Verify Remark
+                        <span
+                          *ngIf="
+                            form.get('verify_status_' + condition.condition_id)
+                              ?.value == 2
+                          "
+                          class="text-red-500"
+                          >*</span
                         >
-                          <svg
-                            class="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          View Uploaded File
-                        </a>
-                      </div>
-                    </ng-container>
-
-                    <ng-container *ngSwitchCase="'radio'">
-                      <div class="flex items-center gap-4 flex-wrap pt-1">
-                        <label class="flex items-center">
-                          <input
-                            type="radio"
-                            [formControlName]="
-                              'condition_' + condition.condition_id
-                            "
-                            value="Y"
-                            class="mr-1 text-gray-600 focus:ring-gray-600"
-                          />
-                          Yes
-                        </label>
-                        <label class="flex items-center">
-                          <input
-                            type="radio"
-                            [formControlName]="
-                              'condition_' + condition.condition_id
-                            "
-                            value="N"
-                            class="mr-1 text-gray-600 focus:ring-gray-600"
-                          />
-                          No
-                        </label>
-                      </div>
-                    </ng-container>
-
-                    <ng-container *ngSwitchCase="'select'">
+                      </label>
                       <select
+                        [formControlName]="
+                          'verify_remark_' + condition.condition_id
+                        "
+                        class="w-full border border-gray-300 rounded-md px-2 py-1 text-base bg-white focus:ring-1 focus:ring-gray-600"
+                        [class.border-red-500]="
+                          form.get('verify_remark_' + condition.condition_id)
+                            ?.invalid &&
+                          form.get('verify_remark_' + condition.condition_id)
+                            ?.touched
+                        "
+                      >
+                        <option [ngValue]="null" selected>Select Remark</option>
+                        <option
+                          *ngFor="let remark of verifyRemarkList"
+                          [value]="remark.data_id"
+                        >
+                          {{ remark.data_name }}
+                        </option>
+                      </select>
+                      <div
+                        *ngIf="
+                          form.get('verify_remark_' + condition.condition_id)
+                            ?.invalid &&
+                          form.get('verify_remark_' + condition.condition_id)
+                            ?.touched
+                        "
+                        class="text-red-500 text-xs mt-1"
+                      >
+                        Remark is required when status is Rejected
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Date Input -->
+                <input
+                  *ngSwitchCase="'date'"
+                  type="date"
+                  [formControlName]="'condition_' + condition.condition_id"
+                  (change)="
+                    condition.condition_id === 1 && onMarriageDateChange($event)
+                  "
+                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-base bg-white focus:ring-1 focus:ring-gray-600"
+                />
+
+                <!-- Radio Input -->
+                <ng-container *ngSwitchCase="'radio'">
+                  <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-1">
+                      <input
+                        type="radio"
                         [formControlName]="
                           'condition_' + condition.condition_id
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">Select Disability Type</option>
-                        <option
-                          *ngFor="let type of disabilityTypes"
-                          [value]="type.data_id"
-                        >
-                          {{ type.data_name }}
-                        </option>
-                      </select>
-                    </ng-container>
-
-                    <input
-                      *ngSwitchDefault
-                      [type]="condition.condition_data_type"
-                      [formControlName]="'condition_' + condition.condition_id"
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                    />
-                  </ng-container>
-
-                  <div
-                    *ngIf="
-                      form.get('condition_' + condition.condition_id)
-                        ?.invalid &&
-                      form.get('condition_' + condition.condition_id)?.touched
-                    "
-                    class="text-red-500 text-xs mt-1"
-                  >
-                    <ng-container
-                      *ngIf="
-                        form
-                          .get('condition_' + condition.condition_id)
-                          ?.hasError('required')
-                      "
-                    >
-                      {{ condition.dependent_field_label }} is required
-                    </ng-container>
-                    <ng-container
-                      *ngIf="
-                        form
-                          .get('condition_' + condition.condition_id)
-                          ?.hasError('invalidMarriageDateMax')
-                      "
-                    >
-                      Date cannot be after
-                      {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
-
-
-
-
-
-
-
-
-
-
-
-                      }}.
-                    </ng-container>
+                        value="Y"
+                        [disabled]="isScreeningMode"
+                        class="h-3.5 w-3.5 text-gray-600"
+                      />
+                      Yes
+                    </label>
+                    <label class="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        [formControlName]="
+                          'condition_' + condition.condition_id
+                        "
+                        value="N"
+                        class="h-3.5 w-3.5 text-gray-600"
+                      />
+                      No
+                    </label>
                   </div>
-                </div>
+                </ng-container>
+
+                <!-- Select Input -->
+                <ng-container *ngSwitchCase="'select'">
+                  <select
+                    [formControlName]="'condition_' + condition.condition_id"
+                    class="w-full border border-gray-300 rounded-md px-2 py-1 text-base bg-white focus:ring-1 focus:ring-gray-600"
+                  >
+                    <option [ngValue]="null">Select Disability Type</option>
+                    <option
+                      *ngFor="let type of disabilityTypes"
+                      [value]="type.data_id"
+                    >
+                      {{ type.data_name }}
+                    </option>
+                  </select>
+                </ng-container>
+
+                <!-- Default Input -->
+                <input
+                  *ngSwitchDefault
+                  [type]="condition.condition_data_type"
+                  [formControlName]="'condition_' + condition.condition_id"
+                  class="w-full border border-gray-300 rounded-md px-2 py-1 text-base bg-white focus:ring-1 focus:ring-gray-600"
+                />
               </ng-container>
+
+              <!-- Validation Errors -->
+              <div
+                *ngIf="
+                  form.get('condition_' + condition.condition_id)?.invalid &&
+                  form.get('condition_' + condition.condition_id)?.touched
+                "
+                class="text-red-500 text-xs mt-1"
+              >
+                <ng-container
+                  *ngIf="
+                    form
+                      .get('condition_' + condition.condition_id)
+                      ?.hasError('required')
+                  "
+                >
+                  {{ condition.dependent_field_label }} is required
+                </ng-container>
+                <ng-container
+                  *ngIf="
+                    form
+                      .get('condition_' + condition.condition_id)
+                      ?.hasError('invalidMarriageDateMax')
+                  "
+                >
+                  Date cannot be after
+                  {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
+
+
+
+
+
+
+
+                  }}.
+                </ng-container>
+              </div>
             </div>
           </ng-container>
-        </ng-container>
+        </div>
       </div>
     </div>
+
     <!-- Permanent Address Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+    <div class="space-y-3 border border-gray-300 rounded-lg p-4">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -932,8 +951,8 @@
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of permanentDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>
@@ -998,7 +1017,7 @@
         class="text-base font-medium text-gray-600 flex items-center gap-2 mt-6"
       >
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1125,9 +1144,10 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >District<span class="text-red-500">*</span></label
-          >
+          <label class="block mb-1 text-gray-600 text-base font-medium">
+            District<span class="text-red-500">*</span>
+          </label>
+
           <select
             formControlName="Current_District_Id"
             [class.border-red-500]="
@@ -1138,12 +1158,13 @@
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of currentDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>
           </select>
+
           <div
             *ngIf="
               form.get('Current_District_Id')?.invalid &&
@@ -1192,9 +1213,9 @@
 
     <!-- Contact Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1271,9 +1292,9 @@
 
     <!-- Place of Birth Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1389,8 +1410,8 @@
           >
             <option [ngValue]="null" disabled selected>Select District</option>
             <option
-              *ngFor="let district of districtList"
-              [value]="district.district_id"
+              *ngFor="let district of birthDistrictList"
+              [ngValue]="district.district_id"
             >
               {{ district.district_name }}
             </option>
@@ -1410,9 +1431,9 @@
 
     <!-- Photo & Signature Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1474,9 +1495,9 @@
 
     <!-- Language Details Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-indigo-600 flex items-center gap-2">
+      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
         <svg
-          class="h-5 w-5 text-indigo-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1496,7 +1517,7 @@
         class="overflow-x-auto rounded-md ring-1 ring-gray-200"
       >
         <table class="min-w-full text-base text-left">
-          <thead class="bg-indigo-100 text-gray-700 uppercase text-xs">
+          <thead class="bg-blue-100 text-gray-700 uppercase text-xs">
             <tr>
               <th class="px-4 py-2 border border-gray-300 text-center w-12">
                 S.No
@@ -1510,13 +1531,16 @@
               <th class="px-4 py-2 border border-gray-300">
                 Language Skill<span class="text-red-500">*</span>
               </th>
+              <th class="px-4 py-2 border border-gray-300 text-center w-16">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr
               *ngFor="let lang of languagesArray.controls; let i = index"
               [formGroupName]="i"
-              class="bg-white hover:bg-indigo-50"
+              class="bg-white hover:bg-blue-50"
             >
               <td class="px-4 py-2 border border-gray-300 text-center">
                 {{ i + 1 }}
@@ -1602,6 +1626,16 @@
                   Language skill is required
                 </div>
               </td>
+              <td class="px-4 py-2 border border-gray-300 text-center">
+                <button
+                  type="button"
+                  (click)="removeLanguage(i)"
+                  [disabled]="isScreeningMode || languagesArray.length === 1"
+                  class="text-red-600 hover:text-red-800 text-base font-semibold"
+                >
+                  ✖
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -1611,7 +1645,8 @@
         <button
           type="button"
           (click)="addLanguage()"
-          class="inline-block px-4 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-base font-medium"
+          class="inline-block px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-base font-medium"
+          [disabled]="isScreeningMode"
         >
           + Add Language
         </button>

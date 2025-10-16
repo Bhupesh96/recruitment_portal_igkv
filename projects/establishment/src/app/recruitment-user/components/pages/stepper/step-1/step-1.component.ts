@@ -63,7 +63,9 @@ export class Step1Component implements OnChanges, OnInit {
   religionList: any[] = [];
   countryList: any[] = [];
   stateList: any[] = [];
-  districtList: any[] = [];
+  permanentDistrictList: any[] = [];
+  currentDistrictList: any[] = [];
+  birthDistrictList: any[] = [];
   languageTypes: any[] = [];
   languages: any[] = [];
   languageSkills: any[] = [];
@@ -74,6 +76,7 @@ export class Step1Component implements OnChanges, OnInit {
   }[] = [];
   advertisementList: {
     a_rec_adv_main_id: number;
+    advertisment_no: string;
     advertisment_name: string;
   }[] = [];
   photoPreview: string | null = null;
@@ -414,17 +417,95 @@ export class Step1Component implements OnChanges, OnInit {
     });
 
     this.form.get('Permanent_State_Id')?.valueChanges.subscribe((stateId) => {
-      this.fetchDistrictsByState(stateId);
-    });
-
-    this.form.get('presentSame')?.valueChanges.subscribe((isSame: boolean) => {
-      if (isSame) {
-        this.copyPermanentToCurrentAddress();
-        this.disableCurrentAddressFields();
-      } else {
-        this.enableCurrentAddressFields();
+      this.permanentDistrictList = []; // Clear previous districts
+      this.form.get('Permanent_District_Id')?.setValue(null); // Reset selection
+      if (stateId) {
+        this.getDistrictsByState(stateId).subscribe((res) => {
+          this.permanentDistrictList = res?.body?.data || [];
+        });
       }
     });
+
+    // Listener for Current State
+    this.form.get('Current_State_Id')?.valueChanges.subscribe((stateId) => {
+      this.currentDistrictList = [];
+      this.form.get('Current_District_Id')?.setValue(null);
+      if (stateId) {
+        this.getDistrictsByState(stateId).subscribe((res) => {
+          this.currentDistrictList = res?.body?.data || [];
+        });
+      }
+    });
+
+    // Listener for Birth State
+    this.form.get('Birth_State_Id')?.valueChanges.subscribe((stateId) => {
+      this.birthDistrictList = [];
+      this.form.get('Birth_District_Id')?.setValue(null);
+      if (stateId) {
+        this.getDistrictsByState(stateId).subscribe((res) => {
+          this.birthDistrictList = res?.body?.data || [];
+        });
+      }
+    });
+
+    this.form
+      .get('presentSame')
+      ?.valueChanges.subscribe((isChecked: boolean) => {
+        if (isChecked) {
+          // 1. Get all the values you need to copy from the permanent address.
+          const permanentValues = {
+            address: this.form.get('Permanent_Address1')?.value,
+            city: this.form.get('Permanent_City')?.value,
+            countryId: this.form.get('Permanent_Country_Id')?.value,
+            stateId: this.form.get('Permanent_State_Id')?.value,
+            districtId: this.form.get('Permanent_District_Id')?.value,
+            pinCode: this.form.get('Permanent_Pin_Code')?.value,
+          };
+
+          // 2. Disable the current address fields first.
+          this.disableCurrentAddressFields();
+
+          // 3. Patch all values EXCEPT the district, as it depends on an API call.
+          this.form.patchValue(
+            {
+              Current_Address1: permanentValues.address,
+              Current_City: permanentValues.city,
+              Current_Country_Id: permanentValues.countryId,
+              Current_State_Id: permanentValues.stateId,
+              Current_Pin_Code: permanentValues.pinCode,
+            },
+            { emitEvent: false }
+          ); // Use emitEvent: false to be safe
+
+          // 4. If a state was selected, fetch its districts.
+          if (permanentValues.stateId) {
+            this.getDistrictsByState(permanentValues.stateId).subscribe(
+              (res) => {
+                // 5. Populate the district list for the UI.
+                this.currentDistrictList = res?.body?.data || [];
+
+                // 6. NOW, it is safe to set the district value.
+                this.form
+                  .get('Current_District_Id')
+                  ?.setValue(permanentValues.districtId, { emitEvent: false });
+
+                // Trigger change detection to ensure the UI updates correctly.
+                this.cdr.markForCheck();
+              }
+            );
+          } else {
+            // If there's no state, just ensure the district list is empty and the value is null.
+            this.currentDistrictList = [];
+            this.form
+              .get('Current_District_Id')
+              ?.setValue(null, { emitEvent: false });
+          }
+        } else {
+          // If the box is unchecked, re-enable and clear the fields.
+          this.enableCurrentAddressFields();
+          this.clearCurrentAddress();
+        }
+      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -512,68 +593,118 @@ export class Step1Component implements OnChanges, OnInit {
   // --- Form & UI Event Handlers ---
 
   private patchUserData(data: any): void {
+    // File handling can stay at the top
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
       this.form.get('photo')?.setValue(data.candidate_photo);
       this.form.get('photo')?.clearValidators();
-      this.form.get('photo')?.updateValueAndValidity();
     } else {
       this.form.get('photo')?.setValidators([Validators.required]);
-      this.form.get('photo')?.updateValueAndValidity();
     }
+    this.form.get('photo')?.updateValueAndValidity();
+
     if (data.candidate_signature) {
       this.filePaths.set('signature', data.candidate_signature);
       this.signaturePreview = this.getFileUrl(data.candidate_signature);
       this.form.get('signature')?.setValue(data.candidate_signature);
       this.form.get('signature')?.clearValidators();
-      this.form.get('signature')?.updateValueAndValidity();
     } else {
       this.form.get('signature')?.setValidators([Validators.required]);
-      this.form.get('signature')?.updateValueAndValidity();
     }
-    this.form.patchValue({
-      a_rec_app_main_id: data.a_rec_app_main_id,
-      post_code: data.post_code,
-      subject_id: data.subject_id || 0,
-      registration_no: data.registration_no,
-      a_rec_adv_main_id: data.a_rec_adv_main_id,
-      session_id: data.academic_session_id,
-      advertisementNo: data.advertisment_no,
-      Salutation_E: data.Salutation_E,
-      Salutation_H: data.Salutation_E,
-      Applicant_First_Name_E: data.Applicant_First_Name_E,
-      Applicant_Middle_Name_E: data.Applicant_Middle_Name_E,
-      Applicant_Last_Name_E: data.Applicant_Last_Name_E,
-      Applicant_First_Name_H: data.Applicant_First_Name_H,
-      Applicant_Middle_Name_H: data.Applicant_Middle_Name_H,
-      Applicant_Last_Name_H: data.Applicant_Last_Name_H,
-      Applicant_Father_Name_E: data.Applicant_Father_Name_E,
-      Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
-      gender_id: data.gender_id,
-      DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
-      Mobile_No: String(data.mobile_no),
-      Email_Id: data.email_id,
-      Birth_Place: data.Birth_Place,
-      Birth_District_Id: data.Birth_District_Id,
-      Birth_State_Id: data.Birth_State_Id,
-      Birth_Country_Id: data.Birth_Country_Id,
-      Identification_Mark1: data.Identification_Mark1,
-      Identification_Mark2: data.Identification_Mark2,
-      religion_code: data.religion_code,
-      Permanent_Address1: data.Permanent_Address1,
-      Permanent_City: data.Permanent_City,
-      Permanent_District_Id: data.Permanent_District_Id,
-      Permanent_State_Id: data.Permanent_State_Id,
-      Permanent_Country_Id: data.Permanent_Country_Id,
-      Permanent_Pin_Code: data.Permanent_Pin_Code,
-      Current_Address1: data.Current_Address1,
-      Current_City: data.Current_City,
-      Current_District_Id: data.Current_District_Id,
-      Current_State_Id: data.Current_State_Id,
-      Current_Country_Id: data.Current_Country_Id,
-      Current_Pin_Code: data.Current_Pin_Code,
-    });
+    this.form.get('signature')?.updateValueAndValidity();
+
+    // Prepare district requests
+    const districtRequests: { [key: string]: Observable<any> } = {};
+    if (data.Permanent_State_Id) {
+      districtRequests['permanent'] = this.getDistrictsByState(
+        data.Permanent_State_Id
+      );
+    }
+    if (data.Current_State_Id) {
+      districtRequests['current'] = this.getDistrictsByState(
+        data.Current_State_Id
+      );
+    }
+    if (data.Birth_State_Id) {
+      districtRequests['birth'] = this.getDistrictsByState(data.Birth_State_Id);
+    }
+
+    // Helper function to perform the patch operation
+    const patchTheForm = () => {
+      this.form.patchValue(
+        {
+          a_rec_app_main_id: data.a_rec_app_main_id,
+          post_code: data.post_code,
+          subject_id: data.subject_id || 0,
+          registration_no: data.registration_no,
+          a_rec_adv_main_id: data.a_rec_adv_main_id,
+          session_id: data.academic_session_id,
+          Salutation_E: data.Salutation_E,
+          Salutation_H: data.Salutation_E,
+          Applicant_First_Name_E: data.Applicant_First_Name_E,
+          Applicant_Middle_Name_E: data.Applicant_Middle_Name_E,
+          Applicant_Last_Name_E: data.Applicant_Last_Name_E,
+          Applicant_First_Name_H: data.Applicant_First_Name_H,
+          Applicant_Middle_Name_H: data.Applicant_Middle_Name_H,
+          Applicant_Last_Name_H: data.Applicant_Last_Name_H,
+          Applicant_Father_Name_E: data.Applicant_Father_Name_E,
+          Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
+          gender_id: data.gender_id,
+          DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
+          Mobile_No: String(data.mobile_no),
+          Email_Id: data.email_id,
+          Birth_Place: data.Birth_Place,
+          Birth_District_Id: data.Birth_District_Id,
+          Birth_State_Id: data.Birth_State_Id,
+          Birth_Country_Id: data.Birth_Country_Id,
+          Identification_Mark1: data.Identification_Mark1,
+          Identification_Mark2: data.Identification_Mark2,
+          religion_code: data.religion_code,
+          Permanent_Address1: data.Permanent_Address1,
+          Permanent_City: data.Permanent_City,
+          Permanent_District_Id: data.Permanent_District_Id,
+          Permanent_State_Id: data.Permanent_State_Id,
+          Permanent_Country_Id: data.Permanent_Country_Id,
+          Permanent_Pin_Code: data.Permanent_Pin_Code,
+          Current_Address1: data.Current_Address1,
+          Current_City: data.Current_City,
+          Current_District_Id: data.Current_District_Id,
+          Current_State_Id: data.Current_State_Id,
+          Current_Country_Id: data.Current_Country_Id,
+          Current_Pin_Code: data.Current_Pin_Code,
+        },
+        { emitEvent: false }
+      );
+      this.cdr.markForCheck(); // Trigger change detection
+    };
+
+    // If we have districts to fetch...
+    if (Object.keys(districtRequests).length > 0) {
+      forkJoin(districtRequests).subscribe({
+        next: (responses: any) => {
+          // 1. Populate the district lists FIRST
+          if (responses.permanent) {
+            this.permanentDistrictList = responses.permanent?.body?.data || [];
+          }
+          if (responses.current) {
+            this.currentDistrictList = responses.current?.body?.data || [];
+          }
+          if (responses.birth) {
+            this.birthDistrictList = responses.birth?.body?.data || [];
+          }
+          // 2. NOW that the lists are full, patch the form
+          patchTheForm();
+        },
+        error: (err) => {
+          this.alert.alert(true, 'Error loading district data.');
+          patchTheForm(); // Still patch the rest of the form on error
+        },
+      });
+    } else {
+      // If no districts to fetch, patch immediately
+      patchTheForm();
+    }
   }
 
   private patchUserLanguages(langData: any[]): void {
@@ -636,33 +767,6 @@ export class Step1Component implements OnChanges, OnInit {
         this.form.get('subject_id')?.setValue('');
       },
     });
-  }
-
-  private fetchDistrictsByState(stateId: number | null): void {
-    if (stateId) {
-      this.getDistrictsByState(stateId).subscribe({
-        next: (response: any) => {
-          this.districtList = response?.body?.data || [];
-          const existingDistrictId = this.form.get(
-            'Permanent_District_Id'
-          )?.value;
-          const found = this.districtList.some(
-            (d) => d.district_id === existingDistrictId
-          );
-          if (!found) {
-            this.form.get('Permanent_District_Id')?.setValue('');
-          }
-        },
-        error: (err) => {
-          this.alert.alert(true, 'Error loading districts. Please try again.');
-          this.districtList = [];
-          this.form.get('Permanent_District_Id')?.setValue('');
-        },
-      });
-    } else if (!stateId) {
-      this.districtList = [];
-      this.form.get('Permanent_District_Id')?.setValue('');
-    }
   }
 
   private calculateAge(dobValue: string): void {
@@ -868,6 +972,7 @@ export class Step1Component implements OnChanges, OnInit {
                 item.input_field.startsWith('recruitment/')
               ) {
                 this.additionalFilePaths.set(controlName, item.input_field);
+                control.setValue(item.input_field, { emitEvent: false });
               } else {
                 control.setValue(item.input_field);
               }
@@ -1292,16 +1397,42 @@ export class Step1Component implements OnChanges, OnInit {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-
   copyPermanentToCurrentAddress(): void {
-    this.form.patchValue({
-      Current_Address1: this.form.get('Permanent_Address1')?.value,
-      Current_City: this.form.get('Permanent_City')?.value,
-      Current_District_Id: this.form.get('Permanent_District_Id')?.value,
-      Current_State_Id: this.form.get('Permanent_State_Id')?.value,
-      Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
-      Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
-    });
+    // Get the values we need to copy
+    const stateId = this.form.get('Permanent_State_Id')?.value;
+    const districtId = this.form.get('Permanent_District_Id')?.value;
+
+    // 1. Set the state value SILENTLY to prevent its listener from firing.
+    this.form.get('Current_State_Id')?.setValue(stateId, { emitEvent: false });
+
+    if (stateId) {
+      // 2. Fetch the districts for the selected state.
+      this.getDistrictsByState(stateId).subscribe((res) => {
+        // 3. Populate the district dropdown's options.
+        this.currentDistrictList = res?.body?.data || [];
+        this.cdr.markForCheck(); // Ensure the UI updates with the new options
+
+        // 4. THE FIX: Patch the REMAINING fields.
+        // We EXCLUDE Current_State_Id from this patch because it's already set
+        // and we don't want to re-trigger its valueChanges listener.
+        this.form.patchValue({
+          Current_Address1: this.form.get('Permanent_Address1')?.value,
+          Current_City: this.form.get('Permanent_City')?.value,
+          Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
+          Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
+          Current_District_Id: districtId, // Now we can safely set the district
+        });
+      });
+    } else {
+      // If no state was selected, just copy the other fields.
+      this.form.patchValue({
+        Current_Address1: this.form.get('Permanent_Address1')?.value,
+        Current_City: this.form.get('Permanent_City')?.value,
+        Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
+        Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
+        Current_District_Id: null, // No state, so no district
+      });
+    }
   }
 
   clearCurrentAddress(): void {
@@ -1316,12 +1447,15 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   disableCurrentAddressFields(): void {
-    this.form.get('Current_Address1')?.disable();
-    this.form.get('Current_City')?.disable();
-    this.form.get('Current_District_Id')?.disable();
-    this.form.get('Current_State_Id')?.disable();
-    this.form.get('Current_Country_Id')?.disable();
-    this.form.get('Current_Pin_Code')?.disable();
+    // THE FIX: Add { emitEvent: false } to every call.
+    const options = { emitEvent: false };
+
+    this.form.get('Current_Address1')?.disable(options);
+    this.form.get('Current_City')?.disable(options);
+    this.form.get('Current_District_Id')?.disable(options);
+    this.form.get('Current_State_Id')?.disable(options); // This is the key line
+    this.form.get('Current_Country_Id')?.disable(options);
+    this.form.get('Current_Pin_Code')?.disable(options);
   }
 
   enableCurrentAddressFields(): void {
@@ -1339,7 +1473,6 @@ export class Step1Component implements OnChanges, OnInit {
         this.markFormGroupTouched(control);
       } else {
         control.markAsTouched();
-        control.updateValueAndValidity();
       }
     });
   }
@@ -1382,32 +1515,41 @@ export class Step1Component implements OnChanges, OnInit {
           (s) => s.state_id === Number(formValue.Permanent_State_Id)
         )?.name || '',
       Permanent_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Permanent_District_Id)
+        this.permanentDistrictList.find(
+          // Use the correct list
+          (d: any) => d.district_id === Number(formValue.Permanent_District_Id) // Add the 'any' type
         )?.district_name || '',
+
       Current_Country_Name:
         this.countryList.find(
-          (c) => c.country_id === Number(formValue.Current_Country_Id)
+          (c: any) => c.country_id === Number(formValue.Current_Country_Id)
         )?.country_name || '',
+
       Current_State_Name:
         this.stateList.find(
-          (s) => s.state_id === Number(formValue.Current_State_Id)
+          (s: any) => s.state_id === Number(formValue.Current_State_Id)
         )?.name || '',
+
       Current_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Current_District_Id)
+        this.currentDistrictList.find(
+          // Use the correct list
+          (d: any) => d.district_id === Number(formValue.Current_District_Id) // Add the 'any' type
         )?.district_name || '',
+
       Birth_Country_Name:
         this.countryList.find(
-          (c) => c.country_id === Number(formValue.Birth_Country_Id)
+          (c: any) => c.country_id === Number(formValue.Birth_Country_Id)
         )?.country_name || '',
+
       Birth_State_Name:
         this.stateList.find(
-          (s) => s.state_id === Number(formValue.Birth_State_Id)
+          (s: any) => s.state_id === Number(formValue.Birth_State_Id)
         )?.name || '',
+
       Birth_District_Name:
-        this.districtList.find(
-          (d) => d.district_id === Number(formValue.Birth_District_Id)
+        this.birthDistrictList.find(
+          // Use the correct list
+          (d: any) => d.district_id === Number(formValue.Birth_District_Id) // Add the 'any' type
         )?.district_name || '',
       languages: formValue.languages.map((lang: any) => ({
         ...lang,

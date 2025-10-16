@@ -66,12 +66,15 @@ interface Parameter {
   control_type: 'T' | 'D' | 'DY' | 'A' | 'DV' | 'TV' | 'TM' | 'TO' | 'DP';
   parameter_display_order: number;
   is_mandatory?: string;
-  isForCandidate:string;
-  isForScreening:string;
+  isForCandidate: string;
+  isForScreening: string;
   isDatatype: string;
   isCalculationColumn: string;
   isQuery_id: number;
   data_type_size: number;
+  score_field_parent_id: number;
+  dropdownOptions?: any[];
+  m_parameter_master_id: number;
 }
 
 interface Note {
@@ -138,17 +141,24 @@ export class Step2Component implements OnInit {
       },
     });
   }
-  private getDropdownData(queryId: number): Observable<any[]> {
+  private getDropdownData(
+    queryId: number,
+    extraParams: { [key: string]: any } = {} // ✅ ADD extraParams
+  ): Observable<any[]> {
     if (!queryId || queryId === 0) {
-      return of([]); // Return empty if no valid query ID
+      return of([]);
     }
+
+    // ✅ MERGE query_id with any extra parameters
+    const payload = { query_id: queryId, ...extraParams };
+
     return this.HTTP.getParam(
       '/master/get/getDataByQueryId',
-      { query_id: queryId },
+      payload,
       'recruitement'
     ).pipe(
       map((res: any) => res?.body?.data || []),
-      catchError(() => of([])) // On error, return an empty array
+      catchError(() => of([]))
     );
   }
   getUniqueKey(sub: Subheading, index: number): string {
@@ -462,6 +472,7 @@ export class Step2Component implements OnInit {
     });
 
     group.addControl('a_rec_app_score_field_detail_id', this.fb.control(''));
+    group.addControl('Application_Step_Flag_CES', this.fb.control(''));
     return group;
   }
   public allowAlphabetsOnly(event: KeyboardEvent, param: Parameter): void {
@@ -588,33 +599,47 @@ export class Step2Component implements OnInit {
             // Find all unique query_ids that need to be fetched
             const dropdownRequests = this.parameters
               .filter((p) => p.isQuery_id && p.isQuery_id > 0)
-              .map((p) =>
-                this.getDropdownData(p.isQuery_id).pipe(
-                  // We map the result to an object containing the id and the data
-                  map((data) => ({ queryId: p.isQuery_id, data }))
-                )
-              );
+              .map((p: Parameter) => {
+                // Type the parameter for clarity
+
+                const extraParams: { [key: string]: any } = {};
+
+                // If the query needs the parent ID, add it to the payload.
+                if (p.isQuery_id === 259) {
+                  extraParams['Score_Field_Parent_Id'] =
+                    p.score_field_parent_id;
+                }
+                // Add other conditions here if needed:
+                // else if (p.isQuery_id === XXX) { ... }
+
+                // Call the updated function with the extra params
+                return this.getDropdownData(p.isQuery_id, extraParams).pipe(
+                  // Map the result to an object containing the original parameter and its data
+                  map((data) => ({ parameter: p, data }))
+                );
+              });
+            // ✅ --- END MODIFICATION ---
 
             if (dropdownRequests.length === 0) {
-              return of(null); // No dropdowns to fetch
+              return of(null);
             }
 
-            return forkJoin(dropdownRequests); // Fetch all dropdown data
+            return forkJoin(dropdownRequests);
           }),
           tap((dropdownResults) => {
             if (dropdownResults) {
-              // Populate our dropdownData Map
+              // Instead of populating dropdownData map, attach the options to the parameter itself
               dropdownResults.forEach((result) => {
-                this.dropdownData.set(result.queryId, result.data);
+                if (result && result.parameter) {
+                  result.parameter.dropdownOptions = result.data;
+                }
               });
             }
 
-            // This part is now in the final tap
             this.buildFormControls();
             this.loading = false;
             this.cdr.markForCheck();
           }),
-          // ✅ END MODIFICATION HERE
 
           switchMap(() => {
             return new Observable<void>((observer) => observer.next());
@@ -633,130 +658,192 @@ export class Step2Component implements OnInit {
 
   private getParameterValuesAndPatch(): void {
     if (!this.heading) {
+      this.loader.hideLoader();
       return;
     }
 
     const registration_no = this.userData?.registration_no;
     const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    const score_field_parent_id = this.heading.m_rec_score_field_id;
 
-    // Request to get the child records (10th, 12th, etc.)
-    const childrenRequest = this.HTTP.getParam(
-      '/candidate/get/getParameterValues',
-      {
-        registration_no,
-        a_rec_app_main_id,
-        score_field_parent_id: this.heading.m_rec_score_field_id,
-      },
-      'recruitement'
-    );
+    // Helper function to create the API request for a given flag ('E' or 'C')
+    const createDataRequest = (flag: 'E' | 'C') => {
+      const childrenRequest = this.HTTP.getParam(
+        '/candidate/get/getParameterValues',
+        {
+          registration_no,
+          a_rec_app_main_id,
+          score_field_parent_id,
+          Application_Step_Flag_CES: flag, // The flag is now a parameter
+        },
+        'recruitement'
+      );
+      const parentRequest = this.HTTP.getParam(
+        '/candidate/get/getParameterValues',
+        {
+          registration_no,
+          a_rec_app_main_id,
+          m_rec_score_field_id: score_field_parent_id,
+          score_field_parent_id: 0,
+          Application_Step_Flag_CES: flag, // The flag is now a parameter
+        },
+        'recruitement'
+      );
+      return forkJoin({ children: childrenRequest, parent: parentRequest });
+    };
 
-    // Request to get the parent record itself (Educational Qualification)
-    const parentRequest = this.HTTP.getParam(
-      '/candidate/get/getParameterValues',
-      {
-        registration_no,
-        a_rec_app_main_id,
-        m_rec_score_field_id: this.heading.m_rec_score_field_id,
-        score_field_parent_id: 0, // Parent records have a parent_id of 0
-      },
-      'recruitement'
-    );
+    // **START: MODIFIED LOGIC**
+    // 1. Always request Screener ('E') data first.
+    createDataRequest('E')
+      .pipe(
+        switchMap(({ children, parent }) => {
+          const screenerChildrenData = children.body?.data || [];
 
-    forkJoin({ children: childrenRequest, parent: parentRequest }).subscribe({
-      next: ({ children, parent }) => {
-        const savedChildren = children.body?.data || [];
-        const savedParent = parent.body?.data || [];
-
-        // ✅ STORE THE PARENT ID
-        if (savedParent.length > 0) {
-          this.existingParentDetailId =
-            savedParent[0].a_rec_app_score_field_detail_id;
-        }
-
-        this.filePaths.clear();
-        this.existingDetailIds.clear();
-        this.existingParameterIds.clear();
-
-        savedChildren.forEach((item: any) => {
-          const key = `${item.m_rec_score_field_id}_${
-            item.a_rec_adv_post_detail_id
-          }_${this.subheadings.findIndex(
-            (s) =>
-              s.m_rec_score_field_id === item.m_rec_score_field_id &&
-              s.a_rec_adv_post_detail_id === item.a_rec_adv_post_detail_id
-          )}`;
-          const rowIndex = item.parameter_row_index
-            ? item.parameter_row_index - 1
-            : 0;
-
-          this.existingDetailIds.set(
-            `${item.m_rec_score_field_id}_${item.a_rec_adv_post_detail_id}`,
-            item.a_rec_app_score_field_detail_id
-          );
-          this.existingParameterIds.set(
-            `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_new_id}_0`,
-            item.a_rec_app_score_field_parameter_detail_id
-          );
-
-          if (item.parameter_value?.includes('.pdf')) {
-            this.filePaths.set(
-              `${key}_${item.m_rec_score_field_parameter_new_id}_${rowIndex}`,
-              item.parameter_value
+          // 2. Check if the screener data array is not empty.
+          if (screenerChildrenData.length > 0) {
+            // If data exists, wrap it in an observable (of) and pass it down the stream.
+            return of({
+              data: screenerChildrenData,
+              parentData: parent.body?.data || [],
+              type: 'E',
+            });
+          } else {
+            // 3. If NO screener data, switch to a new API call for Candidate ('C') data.
+            return createDataRequest('C').pipe(
+              map((candidateResult) => ({
+                data: candidateResult.children.body?.data || [],
+                parentData: candidateResult.parent.body?.data || [],
+                type: 'C',
+              }))
             );
           }
+        })
+      )
+      .subscribe({
+        next: ({ data, parentData, type }) => {
+          // Reset form state before patching
+          this.filePaths.clear();
+          // NOTE: You might need to fully reset your form arrays here if patching can happen multiple times
 
-          const formArray = this.form.get(`qualifications${key}`) as FormArray;
-          if (formArray?.at(0)) {
-            const control = formArray.at(0) as FormGroup;
-            if (item.a_rec_app_score_field_detail_id) {
-              control
-                .get('a_rec_app_score_field_detail_id')
-                ?.setValue(item.a_rec_app_score_field_detail_id, {
-                  emitEvent: false,
-                });
-            }
-            const paramIdControl = `param_${item.m_rec_score_field_parameter_new_id}_id`;
-            if (
-              item.a_rec_app_score_field_parameter_detail_id &&
-              control.get(paramIdControl)
-            ) {
-              control
-                .get(paramIdControl)
-                ?.setValue(item.a_rec_app_score_field_parameter_detail_id, {
-                  emitEvent: false,
-                });
-            }
-            const fieldName = this.parameters.find(
-              (p) =>
-                p.m_rec_score_field_parameter_new_id ===
-                item.m_rec_score_field_parameter_new_id
-            )?.score_field_parameter_name;
-            if (fieldName && control.get(fieldName)) {
-              if (item.parameter_value.includes('.pdf')) {
-                control.get(fieldName)?.setValue(null, { emitEvent: false });
-              } else {
-                control
-                  .get(fieldName)
-                  ?.setValue(item.parameter_value, { emitEvent: false });
-              }
+          // If we are patching screener data, find and store its parent ID.
+          if (type === 'E') {
+            const screenerParentRecord = parentData.find(
+              (p: any) => p.Application_Step_Flag_CES === 'E'
+            );
+            this.existingParentDetailId =
+              screenerParentRecord?.a_rec_app_score_field_detail_id || null;
+          } else {
+            // If we are patching candidate data, there is no existing parent screener ID.
+            this.existingParentDetailId = null;
+          }
+
+          // 4. The patching logic now only needs to process ONE set of data.
+          data.forEach((item: any) => {
+            const subIndex = this.subheadings.findIndex(
+              (s) => s.m_rec_score_field_id === item.m_rec_score_field_id
+            );
+            if (subIndex === -1) return; // Skip if subheading not found
+
+            const key = this.getUniqueKey(this.subheadings[subIndex], subIndex);
+            const formArray = this.form.get(
+              `qualifications${key}`
+            ) as FormArray;
+
+            if (formArray?.at(0)) {
+              const group = formArray.at(0) as FormGroup;
               this.form
                 .get(`is${key}Selected`)
                 ?.setValue(true, { emitEvent: false });
-            }
-          }
-        });
 
-        this.checkMandatorySubheadingsAndParameters();
-        this.loader.hideLoader();
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        this.errorMessage = 'Failed to load saved data: ' + err.message;
-        this.alertService.alert(true, this.errorMessage);
-        this.cdr.markForCheck();
-        this.cdr.markForCheck();
-      },
-    });
+              const fieldName = this.parameters.find(
+                (p) =>
+                  p.m_rec_score_field_parameter_new_id ===
+                  item.m_rec_score_field_parameter_new_id
+              )?.score_field_parameter_name;
+
+              if (fieldName && group.get(fieldName)) {
+                // Handle file paths
+                if (item.parameter_value?.includes('.pdf')) {
+                  const rowIndex = item.parameter_row_index
+                    ? item.parameter_row_index - 1
+                    : 0;
+                  this.filePaths.set(
+                    `${key}_${item.m_rec_score_field_parameter_new_id}_${rowIndex}`,
+                    item.parameter_value
+                  );
+                  group.get(fieldName)?.setValue(null, { emitEvent: false });
+                } else {
+                  // Handle regular values
+                  group
+                    .get(fieldName)
+                    ?.setValue(item.parameter_value, { emitEvent: false });
+                }
+              }
+
+              // Only patch the record IDs if it's screener ('E') data.
+              // For candidate data, we only pre-fill the values, not the IDs.
+              if (type === 'E') {
+                group
+                  .get('a_rec_app_score_field_detail_id')
+                  ?.setValue(item.a_rec_app_score_field_detail_id, {
+                    emitEvent: false,
+                  });
+                group
+                  .get('Application_Step_Flag_CES')
+                  ?.setValue('E', { emitEvent: false });
+                const paramIdControl = `param_${item.m_rec_score_field_parameter_new_id}_id`;
+                if (group.get(paramIdControl)) {
+                  group
+                    .get(paramIdControl)
+                    ?.setValue(item.a_rec_app_score_field_parameter_detail_id, {
+                      emitEvent: false,
+                    });
+                }
+              }
+            }
+          });
+
+          this.checkMandatorySubheadingsAndParameters();
+          this.loader.hideLoader();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.errorMessage = 'Failed to load saved data: ' + err.message;
+          this.alertService.alert(true, this.errorMessage);
+          this.loader.hideLoader();
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  public getVerificationStatus(
+    subheading: Subheading,
+    index: number
+  ): string | null {
+    // 1. Find the specific "Verify Status" parameter using its master ID.
+    const verifyStatusParam = this.getParameters(
+      subheading.m_rec_score_field_id,
+      subheading.a_rec_adv_post_detail_id
+    ).find((p) => p.m_parameter_master_id === 68);
+
+    // If this section doesn't have a status field, do nothing.
+    if (!verifyStatusParam) {
+      return null;
+    }
+
+    // 2. Get the name of the form control (e.g., "Verify Status").
+    const controlName = verifyStatusParam.score_field_parameter_name;
+
+    // 3. Find the corresponding FormGroup in the form.
+    const key = this.getUniqueKey(subheading, index);
+    const formArray = this.form.get(`qualifications${key}`) as FormArray;
+    if (!formArray || !formArray.at(0)) {
+      return null;
+    }
+    const group = formArray.at(0) as FormGroup;
+
+    // 4. Return the current value of that control.
+    return group.get(controlName)?.value;
   }
   private generateFilePath(
     registrationNo: number,
@@ -827,22 +914,52 @@ export class Step2Component implements OnInit {
         if (isSelected) {
           // --- LOGIC FOR CREATE / UPDATE ---
           const formValues = group.getRawValue();
-          const percentage = +group.get('Percentage Obtained')?.value || 0;
 
-          const scoreResult = this.utils.calculateScore(
+          let documentStatusFlagId: number | null = null;
+          let documentStatusRemarkId: number | null = null;
+
+          this.getParameters(
+            sub.m_rec_score_field_id,
+            sub.a_rec_adv_post_detail_id
+          ).forEach((param) => {
+            if (param.m_parameter_master_id === 68) {
+              documentStatusFlagId =
+                formValues[param.score_field_parameter_name] || null;
+            }
+            if (param.m_parameter_master_id === 69) {
+              documentStatusRemarkId =
+                formValues[param.score_field_parameter_name] || null;
+            }
+          });
+
+          // Initialize variables for calculation.
+          let scoreValue = +group.get('Percentage Obtained')?.value || 0;
+          let scoreResult = this.utils.calculateScore(
             1,
             {
               educations: [
                 {
                   scoreFieldId: sub.m_rec_score_field_id,
                   weight: sub.score_field_field_weightage,
-                  inputValue: percentage,
+                  inputValue: scoreValue,
                   maxValue: sub.score_field_field_marks,
                 },
               ],
             },
             this.heading?.score_field_field_marks || 60
           );
+
+          // If the section is rejected (status ID is 2), override all values to 0.
+          if (documentStatusFlagId == 2) {
+            scoreValue = 0;
+            scoreResult = {
+              // ✅ FIX 1: Add the missing 'score_field_value' property.
+              score_field_value: 0,
+              score_field_actual_value: 0,
+              score_field_calculated_value: 0,
+            };
+          }
+
           parentCalculatedValue += scoreResult.score_field_calculated_value;
 
           const detail = {
@@ -853,55 +970,58 @@ export class Step2Component implements OnInit {
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
             m_rec_score_field_method_id: 1,
-            score_field_value: percentage,
+
+            // ✅ FIX 2: Use the correct variable name 'scoreValue'.
+            score_field_value: scoreValue,
+
             score_field_actual_value: scoreResult.score_field_actual_value,
             score_field_calculated_value:
               scoreResult.score_field_calculated_value,
             field_marks: sub.score_field_field_marks || 0,
             field_weightage: sub.score_field_field_weightage || 0,
+            Document_Status_Flag_Id: documentStatusFlagId,
+            Document_Status_Remark_Id: documentStatusRemarkId,
             verify_remark: 'Not Verified',
             action_type: existingDetailId ? 'U' : 'C',
             action_date: new Date().toISOString(),
-            action_ip_address: '127.0.0.1',
+
             action_remark: 'data inserted/updated',
             action_by: 1,
             score_field_row_index: 1,
-            delete_flag: 'N', // Explicitly set to 'N' for create/update
+            delete_flag: 'N',
+            Application_Step_Flag_CES: 'E',
           };
           allDetails.push(detail);
+
+          // ... inside the .forEach((sub, index) => { ... }) loop
 
           this.getParameters(
             sub.m_rec_score_field_id,
             sub.a_rec_adv_post_detail_id
           ).forEach((param) => {
             const paramName = param.score_field_parameter_name;
-            const paramValue = formValues[paramName];
-            const isFile = paramValue instanceof File;
             const existingParamId = group.get(
               `param_${param.m_rec_score_field_parameter_new_id}_id`
             )?.value;
 
-            if (paramValue) {
-              let finalParameterValue = '';
-              if (isFile) {
-                finalParameterValue = this.generateFilePath(
-                  registrationNo,
-                  paramValue,
-                  sub.score_field_parent_id,
-                  sub.m_rec_score_field_id,
-                  param.m_rec_score_field_parameter_new_id,
-                  1
-                );
-                const fileControlName = `file_${sub.score_field_parent_id}_${
-                  sub.m_rec_score_field_id
-                }_${param.m_rec_score_field_parameter_new_id}_${
-                  param.parameter_display_order || 0
-                }_1`;
-                formData.append(fileControlName, paramValue, paramValue.name);
-              } else {
-                finalParameterValue = String(paramValue ?? '');
-              }
+            let finalParameterValue = '';
+            const isFileParameter =
+              param.control_type === 'A' || param.isDatatype === 'attachment';
 
+            // ✅ START: MODIFIED LOGIC
+            if (isFileParameter) {
+              const rowIndex = 0; // The row is at index 0
+              const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`; // ✅ Correct index
+              finalParameterValue = this.filePaths.get(fileKey) || '';
+            } else {
+              // For all other normal fields, use the value from the form.
+              const paramValue = formValues[paramName];
+              finalParameterValue = String(paramValue ?? '');
+            }
+            // ✅ END: MODIFIED LOGIC
+
+            // We only create a parameter object if there's a value to save.
+            if (finalParameterValue) {
               const parameter = {
                 a_rec_app_score_field_parameter_detail_id:
                   existingParamId || undefined,
@@ -911,16 +1031,17 @@ export class Step2Component implements OnInit {
                 m_rec_score_field_id: sub.m_rec_score_field_id,
                 m_rec_score_field_parameter_new_id:
                   param.m_rec_score_field_parameter_new_id,
-                parameter_value: finalParameterValue,
+                parameter_value: finalParameterValue, // The value is now correctly determined
                 parameter_row_index: 1,
                 parameter_display_no: param.parameter_display_order,
                 verify_remark: 'Not Verified',
                 active_status: 'Y',
-                action_type: existingParamId ? 'U' : 'C',
                 action_date: new Date().toISOString(),
                 action_remark: 'parameter inserted/updated',
                 action_by: 1,
-                delete_flag: 'N',
+                Application_Step_Flag_CES: 'E',
+                Document_Status_Flag_Id: documentStatusFlagId,
+                Document_Status_Remark_Id: documentStatusRemarkId,
               };
               allParameters.push(parameter);
             }
@@ -960,7 +1081,7 @@ export class Step2Component implements OnInit {
         ),
         field_marks: this.heading?.score_field_field_marks || 60,
         field_weightage: this.heading?.score_field_field_weightage || 0,
-        verify_remark: 'Not Verified',
+        Application_Step_Flag_CES: 'E',
         action_type: 'U',
         action_date: new Date().toISOString(),
         action_remark: 'parent data updated from recruitment form',
@@ -976,7 +1097,7 @@ export class Step2Component implements OnInit {
 
       // STEP 4: Make the SINGLE API call
       this.HTTP.postForm(
-        '/candidate/postFile/saveOrUpdateCandidateScoreCard',
+        '/candidate/postFile/saveOrUpdateCandidateScoreCardForScreening',
         formData,
         'recruitement'
       ).subscribe({
@@ -984,6 +1105,7 @@ export class Step2Component implements OnInit {
         next: async (res) => {
           // 1. CHECK FOR BACKEND ERRORS FIRST
           if (res?.body?.error) {
+            this.loader.hideLoader();
             this.alertService.alert(
               true,
               res.body.error.message || 'An error occurred on the server.'

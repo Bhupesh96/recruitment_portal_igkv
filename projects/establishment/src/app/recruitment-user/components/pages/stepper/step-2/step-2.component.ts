@@ -629,6 +629,7 @@ export class Step2Component implements OnInit {
         registration_no,
         a_rec_app_main_id,
         score_field_parent_id: this.heading.m_rec_score_field_id,
+        Application_Step_Flag_CES: 'C', 
       },
       'recruitement'
     );

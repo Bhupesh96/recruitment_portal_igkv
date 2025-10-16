@@ -143,7 +143,7 @@ export class Step7Component implements OnInit {
   loadSavedParameterValues(): void {
     const { registrationNo, a_rec_adv_main_id, score_field_parent_id } = this;
     this.HTTP.getData(
-      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${score_field_parent_id}`,
+      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${score_field_parent_id}&Application_Step_Flag_CES=C`,
       'recruitement'
     ).subscribe({
       next: (res: any) => {

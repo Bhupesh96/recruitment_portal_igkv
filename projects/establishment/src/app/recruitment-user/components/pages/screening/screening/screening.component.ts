@@ -162,18 +162,36 @@ export class ScreeningComponent implements OnInit {
     );
   }
   get currentStats() {
-    // This will calculate stats based on the VISIBLE candidates
-    const filteredList = this.filteredCandidates;
+    // Step 1: Create a base list filtered by everything EXCEPT status.
+    const baseList = this.candidates.filter(
+      (c) =>
+        (!this.selected.advertisement ||
+          c.advertisementId === this.selected.advertisement) &&
+        (!this.selected.post || c.postId === this.selected.post) &&
+        (!this.selected.subject || c.subjectId === this.selected.subject)
+    );
 
+    // Step 2: Apply the text search to this base list.
+    const searchTerm = this.searchText.toLowerCase().trim();
+    const finalList = !searchTerm
+      ? baseList
+      : baseList.filter(
+          (c) =>
+            c.name.toLowerCase().includes(searchTerm) ||
+            c.registrationNo.toString().includes(searchTerm) ||
+            c.post.toLowerCase().includes(searchTerm) ||
+            c.category.toLowerCase().includes(searchTerm)
+        );
+
+    // Step 3: Calculate all stats from this final, status-agnostic list.
     return {
-      total: filteredList.length,
-      allotted: filteredList.filter((c) => c.status === 'Allotted').length,
-      pending: filteredList.filter((c) => c.status === 'Pending').length,
-      selected: filteredList.filter((c) => c.status === 'Selected').length,
-      rejected: filteredList.filter((c) => c.status === 'Rejected').length,
+      total: finalList.length, // This is the CORRECT total count.
+      allotted: finalList.filter((c) => c.status === 'Allotted').length,
+      pending: finalList.filter((c) => c.status === 'Pending').length,
+      selected: finalList.filter((c) => c.status === 'Selected').length,
+      rejected: finalList.filter((c) => c.status === 'Rejected').length,
     };
   }
-
   /** Get name by ID from dropdown array */
   getNameById(arr: DropdownItem[], id: number | string | null): string {
     if (!id || !arr || arr.length === 0) return 'N/A'; // Added guard clause
@@ -314,7 +332,6 @@ export class ScreeningComponent implements OnInit {
     this.viewingProfileIndex = index;
   }
   closeProfile() {
- 
     this.recruitmentState.setScreeningCandidate(null);
     this.viewingProfile = false;
   }
@@ -338,6 +355,7 @@ export class ScreeningComponent implements OnInit {
     this.posts = [];
     this.subjects = [];
     this.candidates = [];
+    this.expandedIndex = null;
     this.loadAdvertisements();
   }
 

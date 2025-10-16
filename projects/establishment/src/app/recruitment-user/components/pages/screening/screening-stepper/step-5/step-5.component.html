@@ -1,392 +1,362 @@
-<div class="w-full px-2 sm:px-4 md:px-8">
-  <div *ngIf="loading" class="text-center py-4">
-    <p>Loading form data...</p>
-  </div>
-
-  <div *ngIf="!loading && errorMessage" class="text-center py-4 text-red-600">
-    <p>{{ errorMessage }}</p>
+<div class="w-full px-2 sm:px-4 md:px-8 font-['Source Sans Pro',sans-serif]">
+  <div *ngIf="loading" class="flex justify-center items-center h-48">
+    <div class="animate-pulse text-gray-600 text-lg">Loading form data...</div>
   </div>
 
   <div
-    *ngIf="!loading && !errorMessage"
-    class="w-full font-['Source Sans Pro',sans-serif]"
+    *ngIf="!loading && errorMessage"
+    class="text-center py-6 text-red-700 bg-red-50 border border-red-200 rounded-lg shadow-sm"
   >
-    <form [formGroup]="form" (ngSubmit)="submitForm()">
-      <div class="space-y-8 text-base text-gray-700">
-        <div
-          *ngIf="notes.length"
-          class="p-4 bg-indigo-50 border border-gray-200 rounded-md"
-        >
-          <ul class="list-disc list-inside space-y-2">
-            <li *ngFor="let note of notes">
-              <strong>NOTE:</strong> {{ note.message }}
-            </li>
-          </ul>
+    <p class="font-medium">{{ errorMessage }}</p>
+  </div>
+
+  <div *ngIf="!loading && !errorMessage">
+    <form [formGroup]="form" (ngSubmit)="submitForm()" class="space-y-8">
+      <div
+        *ngIf="notes.length"
+        class="p-4 bg-indigo-50 border border-indigo-100 rounded-lg shadow-sm"
+      >
+        <ul class="list-disc list-inside space-y-1 text-sm text-indigo-800">
+          <li *ngFor="let note of notes">
+            <strong>Note:</strong> {{ note.message }}
+          </li>
+        </ul>
+      </div>
+
+      <div
+        *ngIf="
+          form.get('mandatorySubheadingsSelected')?.invalid && form.touched
+        "
+        class="text-red-700 bg-red-50 border border-red-200 p-3 rounded-md text-sm"
+      >
+        <div *ngIf="form.get('firstMissedMandatory')?.value">
+          <strong>Mandatory Field Required:</strong>
+          {{ form.get("firstMissedMandatory")?.value }} must be provided.
         </div>
+      </div>
 
+      <h5
+        *ngIf="heading"
+        class="flex items-center gap-2 px-4 py-3 rounded-md bg-gradient-to-r from-indigo-100 to-indigo-50 border border-indigo-200 text-indigo-700 font-semibold shadow-sm"
+      >
+        <svg
+          class="h-5 w-5 text-indigo-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+        </svg>
+        {{ heading.score_field_title_name }}
+      </h5>
+
+      <div *ngFor="let subheading of subheadings; let i = index">
         <div
-          *ngIf="
-            form.get('mandatorySubheadingsSelected')?.invalid && form.touched
-          "
-          class="text-red-600 text-xs mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
+          class="mt-6 p-6 bg-white rounded-lg border border-gray-200 shadow-sm"
         >
-          <div *ngIf="form.get('firstMissedMandatory')?.value">
-            <strong>Mandatory Field Required:</strong>
-            {{ form.get("firstMissedMandatory")?.value }} must be provided.
-          </div>
-        </div>
-
-        <h5
-          *ngIf="heading"
-          class="bg-indigo-100 border border-indigo-200 rounded-md px-3 py-2 text-base font-medium text-indigo-600 flex items-center gap-2"
-        >
-          <svg
-            class="h-5 w-5 text-indigo-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-          {{ heading.score_field_title_name }}
-        </h5>
-
-        <div
-          *ngFor="let subheading of subheadings; let i = index"
-          class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
-        >
-          <h6
-            class="bg-indigo-100 border border-indigo-200 rounded-md px-3 py-2 text-base font-medium text-indigo-600 flex items-center gap-2 mb-4"
-          >
-            <svg
-              class="h-10 w-10 text-indigo-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <span class="break-words">{{
-              subheading.score_field_title_name
-            }}</span>
+          <h6 class="text-lg font-semibold text-gray-800 mb-4 bg-blue-100 p-2 rounded-md">
+            {{ subheading.score_field_title_name }}
           </h6>
 
-          <div [formArrayName]="getUniqueKey(subheading, i)" class="mt-4">
-            <ng-container
-              *ngFor="
-                let group of getQualifications(getUniqueKey(subheading, i))
-                  .controls;
-                let j = index
-              "
-            >
-              <div
-                [formGroupName]="j"
-                [class.hidden]="group.get('is_deleted')?.value"
-                class="space-y-6 mb-6 p-4 border border-gray-200 rounded-md relative"
-              >
-                <input
-                  type="hidden"
-                  formControlName="a_rec_app_score_field_detail_id"
-                />
-                <input type="hidden" formControlName="is_deleted" />
+          <div
+            *ngIf="
+              !getParameters(
+                subheading.m_rec_score_field_id,
+                subheading.a_rec_adv_post_detail_id
+              ).length
+            "
+            class="p-4 text-center text-gray-500 bg-gray-50 rounded-md"
+          >
+            <p>No parameters available for this section.</p>
+          </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div
+          <div
+            *ngIf="
+              getParameters(
+                subheading.m_rec_score_field_id,
+                subheading.a_rec_adv_post_detail_id
+              ).length
+            "
+            [formArrayName]="getUniqueKey(subheading, i)"
+            class="overflow-x-auto rounded-lg border border-gray-200"
+          >
+            <table class="min-w-full border-collapse">
+              <thead class="bg-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th
                     *ngFor="
                       let param of getParameters(
                         subheading.m_rec_score_field_id,
                         subheading.a_rec_adv_post_detail_id
                       )
                     "
+                    class="px-1 py-1 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-200"
                   >
-                    <input
-                      type="hidden"
-                      [formControlName]="
-                        'param_' +
-                        param.m_rec_score_field_parameter_new_id +
-                        '_id'
-                      "
-                    />
-
-                    <label
-                      class="block text-base font-medium text-gray-600 mb-1"
+                    {{ param.score_field_parameter_name }}
+                    <span
+                      *ngIf="param.is_mandatory === 'Y'"
+                      class="text-red-600"
+                      >*</span
                     >
-                      {{ param.score_field_parameter_name }}
-                      <span
-                        *ngIf="param.is_mandatory === 'Y'"
-                        class="text-red-600"
-                        >*</span
-                      >
-                    </label>
-
-                    <ng-container [ngSwitch]="param.control_type">
-                      <textarea
-                        *ngSwitchCase="'TR'"
-                        [formControlName]="param.score_field_parameter_name"
-                        [placeholder]="
-                          'Enter ' + param.score_field_parameter_name
-                        "
-                        rows="3"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
-                      ></textarea>
-
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                <ng-container
+                  *ngFor="
+                    let group of getQualifications(getUniqueKey(subheading, i))
+                      .controls;
+                    let j = index
+                  "
+                >
+                  <tr
+                    [formGroupName]="j"
+                    [class.hidden]="group.get('is_deleted')?.value"
+                    [class.bg-green-200]="
+                      getVerificationStatusForRow(group) == '1' ||
+                      getVerificationStatusForRow(group) == '8'
+                    "
+                    [class.bg-red-200]="
+                      getVerificationStatusForRow(group) == '2'
+                    "
+                  >
+                    <td
+                      *ngFor="
+                        let param of getParameters(
+                          subheading.m_rec_score_field_id,
+                          subheading.a_rec_adv_post_detail_id
+                        )
+                      "
+                      class="px-1 py-2 align-top"
+                    >
                       <input
-                        *ngSwitchCase="'DT'"
-                        type="date"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        type="hidden"
+                        [formControlName]="
+                          'param_' +
+                          param.m_rec_score_field_parameter_new_id +
+                          '_id'
+                        "
                       />
-                      <select
-                        *ngSwitchCase="'DC'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
-                      >
-                        <option value="">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
+                      <input
+                        type="hidden"
+                        formControlName="a_rec_app_score_field_detail_id"
+                      />
+                      <input type="hidden" formControlName="is_deleted" />
 
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
+                      <ng-container [ngSwitch]="param.control_type">
+                        <textarea
+                          *ngSwitchCase="'TR'"
+                          [formControlName]="param.score_field_parameter_name"
+                          [placeholder]="
+                            'Enter ' + param.score_field_parameter_name
                           "
-                          [value]="option.data_name"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-                      <select
-                        *ngSwitchCase="'DP'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_name"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-
-                      <select
-                        *ngSwitchCase="'DY'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_name"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-
-                      <select
-                        *ngSwitchCase="'DE'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_name"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-                      <select
-                        *ngSwitchCase="'D'"
-                        [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option value="">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_name"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-
-                      <ng-container *ngSwitchCase="'A'">
+                          rows="3"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        ></textarea>
                         <input
-                          type="file"
-                          (change)="
-                            onFileSelected(
-                              $event,
-                              j,
-                              getUniqueKey(subheading, i),
-                              param.score_field_parameter_name
-                            )
-                          "
-                          accept="application/pdf,image/jpeg,image/png"
-                          class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-base file:font-semibold file:bg-indigo-50 file:text-gray-700 hover:file:bg-indigo-100"
+                          *ngSwitchCase="'DT'"
+                          type="date"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
 
-                        <!-- Show uploaded file link if exists -->
-                        <a
-                          *ngIf="
-                            !group.get(param.score_field_parameter_name)
-                              ?.value &&
-                            getFilePath(
-                              getUniqueKey(subheading, i),
-                              param.m_rec_score_field_parameter_new_id,
-                              j
-                            ) as filePath
-                          "
-                          [href]="sanitizeFileUrl(filePath)"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="text-xs !text-green-600 hover:underline flex items-center mt-1"
+                        <select
+                          *ngSwitchCase="'DC'"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                          <svg
-                            class="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                          <option value="">
+                            Select {{ param.score_field_parameter_name }}
+                          </option>
+                          <option
+                            *ngFor="let option of param.dropdownOptions"
+                            [value]="option.data_id"
                           >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          View Uploaded File
-                        </a>
+                            {{ option.data_name }}
+                          </option>
+                        </select>
 
-                        <!-- Show "File not uploaded" if no file exists -->
-                        <div
-                          *ngIf="
-                            !group.get(param.score_field_parameter_name)
-                              ?.value &&
-                            !getFilePath(
-                              getUniqueKey(subheading, i),
-                              param.m_rec_score_field_parameter_new_id,
-                              j
-                            )
-                          "
-                          class="text-xs text-red-600 mt-1 block"
+                        <select
+                          *ngSwitchCase="'DP'"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                          File not uploaded
-                        </div>
-
-                        <!-- Show new selected file name -->
-                        <div
-                          *ngIf="
-                            group.get(param.score_field_parameter_name)
-                              ?.value as newFile
-                          "
-                          class="mt-2 text-xs text-green-700 flex items-center"
-                        >
-                          <svg
-                            class="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                          <option [ngValue]="null">
+                            Select {{ param.score_field_parameter_name }}
+                          </option>
+                          <option
+                            *ngFor="let option of param.dropdownOptions"
+                            [value]="option.data_id"
                           >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          {{ newFile.name }}
-                        </div>
+                            {{ option.data_name }}
+                          </option>
+                        </select>
+                        <select
+                          *ngSwitchCase="'DY'"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option [ngValue]="null">
+                            Select {{ param.score_field_parameter_name }}
+                          </option>
+                          <option
+                            *ngFor="let option of param.dropdownOptions"
+                            [value]="option.data_id"
+                          >
+                            {{ option.data_name }}
+                          </option>
+                        </select>
+                        <select
+                          *ngSwitchCase="'DE'"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option [ngValue]="null">
+                            Select {{ param.score_field_parameter_name }}
+                          </option>
+                          <option
+                            *ngFor="let option of param.dropdownOptions"
+                            [value]="option.data_id"
+                          >
+                            {{ option.data_name }}
+                          </option>
+                        </select>
+                        <select
+                          *ngSwitchCase="'D'"
+                          [formControlName]="param.score_field_parameter_name"
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">
+                            Select {{ param.score_field_parameter_name }}
+                          </option>
+                          <option
+                            *ngFor="let option of param.dropdownOptions"
+                            [value]="option.data_id"
+                          >
+                            {{ option.data_name }}
+                          </option>
+                        </select>
+
+                        <ng-container *ngSwitchCase="'A'">
+                          <a
+                            *ngIf="
+                              !group.get(param.score_field_parameter_name)
+                                ?.value &&
+                              getFilePath(
+                                getUniqueKey(subheading, i),
+                                param.m_rec_score_field_parameter_new_id,
+                                j
+                              ) as filePath
+                            "
+                            [href]="sanitizeFileUrl(filePath)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-xs !text-green-600 hover:underline flex items-center mt-1"
+                          >
+                            <svg
+                              class="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            View Uploaded File
+                          </a>
+
+                          <div
+                            *ngIf="
+                              !group.get(param.score_field_parameter_name)
+                                ?.value &&
+                              !getFilePath(
+                                getUniqueKey(subheading, i),
+                                param.m_rec_score_field_parameter_new_id,
+                                j
+                              )
+                            "
+                            class="text-xs text-red-600 mt-1 block"
+                          >
+                            File not uploaded
+                          </div>
+
+                          <div
+                            *ngIf="
+                              group.get(param.score_field_parameter_name)
+                                ?.value as newFile
+                            "
+                            class="mt-2 text-xs text-green-700 flex items-center"
+                          >
+                            <svg
+                              class="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            {{ newFile.name }}
+                          </div>
+                        </ng-container>
+                        <input
+                          *ngSwitchDefault
+                          [type]="
+                            param.isDatatype === 'number' ? 'number' : 'text'
+                          "
+                          [formControlName]="param.score_field_parameter_name"
+                          [placeholder]="
+                            'Enter ' + param.score_field_parameter_name
+                          "
+                          class="w-full min-w-[80px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                       </ng-container>
 
-                      <input
-                        *ngSwitchDefault
-                        [type]="
-                          param.isDatatype === 'number' ? 'number' : 'text'
-                        "
-                        [formControlName]="param.score_field_parameter_name"
-                        [placeholder]="
-                          'Enter ' + param.score_field_parameter_name
-                        "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                        [attr.pattern]="
-                          param.control_type === 'T' &&
-                          param.isDatatype === 'text'
-                            ? '^[a-zA-Z ()]*$'
-                            : null
-                        "
-                        (keydown)="allowAlphabetsOnly($event, param)"
-                      />
-                    </ng-container>
-
-                    <div
-                      *ngIf="
-                        group.get(param.score_field_parameter_name)?.touched &&
-                        group.get(param.score_field_parameter_name)?.invalid
-                      "
-                      class="text-red-600 text-xs mt-1"
-                    >
                       <div
                         *ngIf="
-                          group
-                            .get(param.score_field_parameter_name)
-                            ?.hasError('required')
+                          group.get(param.score_field_parameter_name)
+                            ?.touched &&
+                          group.get(param.score_field_parameter_name)?.invalid
                         "
+                        class="text-red-600 text-xs mt-1"
                       >
-                        This field is required.
+                        <div
+                          *ngIf="
+                            group
+                              .get(param.score_field_parameter_name)
+                              ?.hasError('required')
+                          "
+                        >
+                          This field is required.
+                        </div>
+                        <div
+                          *ngIf="
+                            group
+                              .get(param.score_field_parameter_name)
+                              ?.hasError('pattern')
+                          "
+                        >
+                          Only alphabetic characters and () are allowed.
+                        </div>
                       </div>
-
-                      <div
-                        *ngIf="
-                          group
-                            .get(param.score_field_parameter_name)
-                            ?.hasError('pattern')
-                        "
-                      >
-                        Only alphabetic characters and () are allowed.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ng-container>
-            <ng-container
-              *ngIf="
-                getParameters(
-                  subheading.m_rec_score_field_id,
-                  subheading.a_rec_adv_post_detail_id
-                ).length === 0
-              "
-            >
-              <div class="p-4 text-center text-gray-500 bg-gray-50 rounded-md">
-                <p>No parameters available for this section.</p>
-              </div>
-            </ng-container>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
