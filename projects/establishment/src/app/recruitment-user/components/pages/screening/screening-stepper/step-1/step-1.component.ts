@@ -143,7 +143,11 @@ export class Step1Component implements OnChanges, OnInit {
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService
   ) {
-    const initialUserData = this.recruitmentState.getCurrentUserData();
+    const initialUserData = this.recruitmentState.getScreeningCandidateData();
+    console.log(
+      'data saved for step-1 for screening: ',
+      JSON.stringify(initialUserData, null, 2)
+    );
     this.showSubjectDropdown = !!initialUserData?.subject_id;
     this.form = this.fb.group({
       a_rec_app_main_id: [null],
@@ -501,13 +505,49 @@ export class Step1Component implements OnChanges, OnInit {
   private getUserData(): Observable<any> {
     const candidateData = this.recruitmentState.getScreeningCandidateData();
     const registrationNo = candidateData?.registration_no;
+
+    // ✅ MODIFIED: Always request screening record first, fallback to candidate record
     return this.HTTP.getParam(
       '/master/get/getApplicant',
-      { registration_no: registrationNo },
+      {
+        registration_no: registrationNo,
+        Application_Step_Flag_CES: 'E', // First try to get screening record
+      },
       'recruitement'
+    ).pipe(
+      switchMap((screeningResponse: any) => {
+        // If screening record exists and has data, use it
+        if (
+          screeningResponse?.body?.data &&
+          screeningResponse.body.data.length > 0
+        ) {
+          console.log(
+            '✅ Found screening record (E)',
+            screeningResponse.body.data[0]
+          );
+          return of(screeningResponse);
+        } else {
+          // If no screening record, fallback to candidate record
+          console.log(
+            '⚠️ No screening record found, falling back to candidate record'
+          );
+          return this.HTTP.getParam(
+            '/master/get/getApplicant',
+            {
+              registration_no: registrationNo,
+              Application_Step_Flag_CES: 'C', // Get candidate record
+            },
+            'recruitement'
+          );
+        }
+      }),
+      catchError((error) => {
+        console.error('Error fetching user data:', error);
+        // If both fail, return empty
+        return of({ body: { data: [] } });
+      })
     );
   }
-
   private getSubjectsByPostCode(postCode: number): Observable<any> {
     return this.HTTP.getParam(
       '/master/get/getSubjectsByPost',
@@ -589,6 +629,16 @@ export class Step1Component implements OnChanges, OnInit {
 
   private patchUserData(data: any): void {
     // File handling remains the same
+    if (!data) return;
+
+    // ✅ CRITICAL: Store the screening record ID
+    this.screenerAppMainId = data.a_rec_app_main_id;
+    console.log(
+      '📝 Stored screening record ID:',
+      this.screenerAppMainId,
+      'with flag:',
+      data.Application_Step_Flag_CES
+    );
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
@@ -608,7 +658,12 @@ export class Step1Component implements OnChanges, OnInit {
       this.form.get('signature')?.setValidators([Validators.required]);
     }
     this.form.get('signature')?.updateValueAndValidity();
-
+    if (data.a_rec_adv_main_id) {
+      this.fetchPostsByAdvertisement(data.a_rec_adv_main_id);
+    }
+    if (data.post_code) {
+      this.fetchSubjectsByPost(data.post_code);
+    }
     // Prepare district requests
     const districtRequests: { [key: string]: Observable<any> } = {};
     if (data.Permanent_State_Id) {
@@ -952,6 +1007,10 @@ export class Step1Component implements OnChanges, OnInit {
             this.screenerAppMainId = mainScreenerRecord.a_rec_app_main_id;
             // *** THIS IS THE NEW, CRITICAL LINE ***
             // Immediately update the form's main ID with the screener's ID.
+            console.log(
+              'Found existing screening record ID:',
+              this.screenerAppMainId
+            );
             this.form
               .get('a_rec_app_main_id')
               ?.setValue(this.screenerAppMainId);
@@ -1820,7 +1879,16 @@ export class Step1Component implements OnChanges, OnInit {
     // Only add the ID back if we have a valid screener ID for an UPDATE.
     // If this.screenerAppMainId is null (for a new record), the field will be omitted entirely.
     if (this.screenerAppMainId) {
+      // We have an existing screening record - UPDATE
       mainPayloadForJson.a_rec_app_main_id = this.screenerAppMainId;
+      console.log(
+        'Using existing screening record ID:',
+        this.screenerAppMainId
+      );
+    } else {
+      // New screening record - ensure no ID is sent
+      delete mainPayloadForJson.a_rec_app_main_id;
+      console.log('Creating new screening record');
     }
 
     // File handling remains the same

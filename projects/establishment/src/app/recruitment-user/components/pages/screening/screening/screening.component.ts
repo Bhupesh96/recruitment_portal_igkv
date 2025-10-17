@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { catchError, map, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of, switchMap, forkJoin } from 'rxjs';
 import { AlertService, HttpService } from 'shared';
 import { HeaderComponent } from '../../../header/header.component';
 import { FooterComponent } from '../../../footer/footer.component';
@@ -93,40 +93,70 @@ export class ScreeningComponent implements OnInit {
     });
   }
 
-  /** Load candidates from API */
+  /** Fetches additional info for a single candidate, including category */
+  private getAdditionalInfo(registrationNo: number): Observable<any[]> {
+    return this.HTTP.getParam(
+      '/candidate/get/getAddtionInfoDetails',
+      {
+        registration_no: registrationNo,
+        Application_Step_Flag_CES: 'C',
+      },
+      'recruitement'
+    ).pipe(
+      map((res: any) => res?.body?.data || []),
+      catchError(() => of([])) // Return an empty array on error to not break forkJoin
+    );
+  }
+
+  /** Load candidates and their additional info from API */
   private loadCandidates() {
+    this.resetViewState();
     this.HTTP.getData(
       '/candidate/get/getRecruitementCandidateList',
       'recruitement'
     )
       .pipe(
-        map((res: any) => {
-          const data = res.body.data || [];
-          console.log('Candidate list: ', JSON.stringify(data, null, 2));
-          return data.map(
-            (c: any) =>
-              ({
-                registrationNo: c.registration_no,
-                name: `${c.Applicant_First_Name_E} ${
-                  c.Applicant_Middle_Name_E || ''
-                } ${c.Applicant_Last_Name_E}`,
-                age: this.calculateAge(c.DOB),
-                category: this.getCategoryName(c.candidate_category_id),
+        switchMap((res: any) => {
+          const candidatesData = res.body.data || [];
+          if (candidatesData.length === 0) {
+            return of([]); // If no candidates, return an empty observable array
+          }
 
-                // FIX 2: Map all IDs and names, including the missing subject
-                advertisementId: c.a_rec_adv_main_id,
-                postId: c.post_code,
-                subjectId: c.subject_id,
+          // Create an array of observables, one for each candidate's additional info
+          const additionalInfoRequests = candidatesData.map((c: any) =>
+            this.getAdditionalInfo(c.registration_no)
+          );
 
-                advertisement: this.getNameById(
-                  this.advertisements,
-                  c.a_rec_adv_main_id
-                ),
-                post: this.getNameById(this.posts, c.post_code), // Used getNameById for consistency
-                subject: this.getNameById(this.subjects, c.subject_id), // <-- Added subject mapping
+          // Use forkJoin to wait for all additional info requests to complete
+          return forkJoin(additionalInfoRequests).pipe(
+            map((additionalInfos: any) => {
+              // Now map the original candidate data, combining it with the fetched additional info
+              return candidatesData.map((c: any, index: number) => {
+                const additionalInfo = additionalInfos[index];
 
-                details: '',
-              } as Candidate)
+                // Find the category object from the additional info response
+                const categoryInfo = additionalInfo.find(
+                  (info: any) => info.question_id === 2
+                );
+                
+                // Extract the category name, defaulting to 'N/A'
+                const category = categoryInfo ? categoryInfo.input_field : 'N/A';
+
+                return {
+                  registrationNo: c.registration_no,
+                  name: `${c.Applicant_First_Name_E} ${c.Applicant_Middle_Name_E || ''} ${c.Applicant_Last_Name_E}`,
+                  age: this.calculateAge(c.DOB),
+                  category: category, // Use the dynamically fetched category
+                  advertisementId: c.a_rec_adv_main_id,
+                  postId: c.post_code,
+                  subjectId: c.subject_id,
+                  advertisement: this.getNameById(this.advertisements, c.a_rec_adv_main_id),
+                  post: this.getNameById(this.posts, c.post_code),
+                  subject: this.getNameById(this.subjects, c.subject_id),
+                  details: '',
+                } as Candidate;
+              });
+            })
           );
         })
       )
@@ -134,7 +164,11 @@ export class ScreeningComponent implements OnInit {
         this.candidates = candidates;
       });
   }
-
+  private resetViewState() {
+    this.expandedIndex = null;
+    this.viewingProfileIndex = null;
+    this.viewingProfile = false;
+  }
   /** Generic dropdown API */
   private getDropdownData(
     queryId: number,
@@ -280,7 +314,7 @@ export class ScreeningComponent implements OnInit {
     this.posts = [];
     this.subjects = [];
     this.candidates = []; // Clear previous candidates immediately
-
+    this.resetViewState();
     if (!adId) {
       return;
     }
@@ -297,6 +331,7 @@ export class ScreeningComponent implements OnInit {
   onPostChange(postId: number | null) {
     this.selected.subject = null;
     this.subjects = [];
+    this.resetViewState();
     if (!postId) return;
     this.getDropdownData(99, { post_code: postId }).subscribe(
       (res) => (this.subjects = res)
@@ -370,3 +405,4 @@ export class ScreeningComponent implements OnInit {
     return post?.status ?? '-';
   }
 }
+

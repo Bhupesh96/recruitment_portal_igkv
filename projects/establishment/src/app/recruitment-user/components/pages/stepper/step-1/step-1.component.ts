@@ -613,7 +613,12 @@ export class Step1Component implements OnChanges, OnInit {
       this.form.get('signature')?.setValidators([Validators.required]);
     }
     this.form.get('signature')?.updateValueAndValidity();
-
+    if (data.a_rec_adv_main_id) {
+      this.fetchPostsByAdvertisement(data.a_rec_adv_main_id);
+    }
+    if (data.post_code) {
+      this.fetchSubjectsByPost(data.post_code);
+    }
     // Prepare district requests
     const districtRequests: { [key: string]: Observable<any> } = {};
     if (data.Permanent_State_Id) {
