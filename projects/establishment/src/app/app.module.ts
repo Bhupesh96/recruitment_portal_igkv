@@ -15,6 +15,9 @@ import { DotLoaderComponent } from "../../../shared/component/dot-loader/dot-loa
 import { ScreeningComponent } from './recruitment-user/components/pages/screening/screening/screening.component';
 import { HeaderComponent } from "./recruitment-user/components/header/header.component";
 
+import { StepFinalDecisionComponent } from './recruitment-user/components/pages/scoring/step-final-decision/step-final-decision.component';
+import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti.component';
+
 @NgModule({
   declarations: [AppComponent],
   imports: [

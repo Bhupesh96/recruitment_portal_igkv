@@ -13,6 +13,8 @@ import { StepperComponent } from './recruitment-user/components/pages/stepper/st
 import { PdfPreviewComponent } from './recruitment-user/components/pages/pdf-preview/pdf-preview.component';
 import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
 import { ScreeningComponent } from './recruitment-user/components/pages/screening/screening/screening.component';
+import { ScoringComponent } from './recruitment-user/components/pages/scoring/scoring/scoring.component';
+import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti.component';
 
 const routes: Routes = [
   {
@@ -31,6 +33,8 @@ const routes: Routes = [
       { path: 'pdf-preview', component: PdfPreviewComponent },
       { path: 'pdf-download', component: PdfDownloadComponent },
       { path: 'screening', component: ScreeningComponent },
+      // { path: 'scoring', component: ScoringComponent },
+      { path: 'dawapatti', component: DawapattiComponent },
       { path: '**', redirectTo: 'home' },
     ],
   },

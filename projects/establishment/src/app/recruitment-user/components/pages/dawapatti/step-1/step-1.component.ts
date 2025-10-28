@@ -32,7 +32,7 @@ import {
 } from 'rxjs';
 import { HttpService, SharedModule } from 'shared';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { RecruitmentStateService } from '../../../recruitment-state.service';
+import { RecruitmentStateService } from '../../recruitment-state.service';
 import { AlertService } from 'shared';
 import { LoaderService } from 'shared';
 
@@ -69,7 +69,6 @@ export class Step1Component implements OnChanges, OnInit {
   languageTypes: any[] = [];
   languages: any[] = [];
   languageSkills: any[] = [];
-  public isScreeningMode: boolean = true;
   postList: {
     post_code: number;
     post_name: string;
@@ -89,11 +88,8 @@ export class Step1Component implements OnChanges, OnInit {
   private savedAdditionalInfo: any[] = [];
   categoryQuestion: any = null; // To hold the 'Applied Category' question object
   filteredCategoryOptions: any[] = []; // To hold the dynamically filtered options
-  public verifyStatusList: any[] = [];
-  public verifyRemarkList: any[] = [];
+
   disabilityTypes: any[] = []; // <-- ADD THIS LINE
-  private isUpdatingScreenerRecord = false; // Flag to track if we are updating an 'E' record
-  private screenerAppMainId: number | null = null;
   private fieldNameMap: { [key: string]: string } = {
     registration_no: 'Registration Number',
     a_rec_adv_main_id: 'Advertisement',
@@ -143,11 +139,7 @@ export class Step1Component implements OnChanges, OnInit {
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService
   ) {
-    const initialUserData = this.recruitmentState.getScreeningCandidateData();
-    console.log(
-      'data saved for step-1 for screening: ',
-      JSON.stringify(initialUserData, null, 2)
-    );
+    const initialUserData = this.recruitmentState.getCurrentUserData();
     this.showSubjectDropdown = !!initialUserData?.subject_id;
     this.form = this.fb.group({
       a_rec_app_main_id: [null],
@@ -184,8 +176,6 @@ export class Step1Component implements OnChanges, OnInit {
       Applicant_Mother_Name_E: ['', Validators.required],
       gender_id: [null, Validators.required], // Radios also benefit from null
       DOB: [null, Validators.required],
-      Document_Status_Flag_Id: [null, Validators.required], // Add Status control
-      Document_Status_Remark_Id: [null],
       age: [{ value: '', disabled: true }],
       Mobile_No: [
         { value: '', disabled: true },
@@ -231,24 +221,24 @@ export class Step1Component implements OnChanges, OnInit {
   ngOnInit(): void {
     this.initializeFormListeners();
     this.initializeFormWithData();
-    this.setupDOBRemarkValidation();
+    this.getAdditionalInfoQuestions().subscribe(
+      (response) =>
+        console.log(
+          'Additional Info Response:',
+          JSON.stringify(response.body.data, null, 2)
+        ),
+      (error) => console.error('Error fetching additional info:', error)
+    );
+    this.getUserData().subscribe(
+      (response) =>
+        console.log(
+          'User Data Response:',
+          JSON.stringify(response.body.data, null, 2)
+        ),
+      (error) => console.error('Error fetching additional info:', error)
+    );
   }
-  private setupDOBRemarkValidation(): void {
-    const statusControl = this.form.get('Document_Status_Flag_Id');
-    const remarkControl = this.form.get('Document_Status_Remark_Id');
 
-    if (statusControl && remarkControl) {
-      statusControl.valueChanges.subscribe((statusId) => {
-        if (statusId === 2) {
-          // Assuming '2' means Rejected
-          remarkControl.setValidators(Validators.required);
-        } else {
-          remarkControl.clearValidators();
-        }
-        remarkControl.updateValueAndValidity();
-      });
-    }
-  }
   private initializeFormWithData(): void {
     this.loader.showLoader();
 
@@ -262,8 +252,6 @@ export class Step1Component implements OnChanges, OnInit {
       this.getAdditionalInfoQuestions(),
       this.getUserData(),
       this.getSavedLanguages(),
-      this.getDropdownData(258), // API call for Verify Status
-      this.getDropdownData(259, { Score_Field_Parent_Id: 0 }),
     ];
 
     // 3. Combine all requests into a single array for forkJoin
@@ -280,8 +268,6 @@ export class Step1Component implements OnChanges, OnInit {
         const additionalQuestionsRes = responses[this.dropdownConfig.length];
         const userDataRes = responses[this.dropdownConfig.length + 1];
         const savedLanguagesRes = responses[this.dropdownConfig.length + 2];
-        this.verifyStatusList = responses[this.dropdownConfig.length + 3]; // Assign Verify Status data
-        this.verifyRemarkList = responses[this.dropdownConfig.length + 4];
 
         // 6. Process the remaining data as before
         let questions = additionalQuestionsRes?.body?.data?.questions || [];
@@ -315,7 +301,6 @@ export class Step1Component implements OnChanges, OnInit {
             () => {
               this.setupCustomLogicListeners();
               this.loadAdvertisementDetails();
-              this.disableFormForScreening();
               this.loader.hideLoader();
             }
           );
@@ -334,6 +319,9 @@ export class Step1Component implements OnChanges, OnInit {
     });
   }
 
+  /**
+   * Sets up all reactive form `valueChanges` subscriptions to handle dynamic UI and data fetching.
+   */
   private getDropdownData(
     queryId: number,
     params: { [key: string]: any } = {}
@@ -348,8 +336,10 @@ export class Step1Component implements OnChanges, OnInit {
         if (data.length === 0) {
           return [{ id: '', name: 'No Data Available', disabled: true }];
         }
+
+        // ✅ IMPROVED MAPPING: Keeps original properties AND adds standard ones.
         return data.map((item: any) => ({
-          ...item,
+          ...item, // This keeps all original properties (like salutation_name_h)
           id: item.data_id,
           name: item.data_name,
           disabled: false,
@@ -360,31 +350,42 @@ export class Step1Component implements OnChanges, OnInit {
       })
     );
   }
-
   private setupCustomLogicListeners(): void {
     const residentControl = this.form.get('question_3');
     const categoryControl = this.form.get('question_2');
 
+    // Exit if controls aren't available (defensive check)
     if (!residentControl || !categoryControl || !this.categoryQuestion) {
+      console.error('Required controls for custom logic were not found.');
       return;
     }
+
+    // This is the core logic that filters the options
     const updateCategoryOptions = (isResident: string | null) => {
       if (isResident === 'N') {
+        // NOT a resident
         this.filteredCategoryOptions = this.categoryQuestion.options.filter(
           (opt: any) => opt.option_value === 'UR'
         );
+        // If the current selection is not 'UR', change it to 'UR'
         if (categoryControl.value !== 'UR') {
           categoryControl.setValue('UR');
         }
       } else {
+        // IS a resident (or value is null/undefined initially)
+        // Show all available options
         this.filteredCategoryOptions = this.categoryQuestion.options;
       }
+      // Tell Angular to update the view
       this.cdr.markForCheck();
     };
+
+    // 1. Subscribe to any future changes the user makes
     residentControl.valueChanges.subscribe(updateCategoryOptions);
+
+    // 2. Call the logic immediately to set the correct initial state
     updateCategoryOptions(residentControl.value);
   }
-
   private initializeFormListeners(): void {
     this.setupLiveHindiTranslation();
     this.form.get('Salutation_E')?.valueChanges.subscribe((selectedId) => {
@@ -416,11 +417,8 @@ export class Step1Component implements OnChanges, OnInit {
     });
 
     this.form.get('Permanent_State_Id')?.valueChanges.subscribe((stateId) => {
-      this.permanentDistrictList = [];
-      // ✅ Add emitEvent: false here
-      this.form
-        .get('Permanent_District_Id')
-        ?.setValue(null, { emitEvent: false });
+      this.permanentDistrictList = []; // Clear previous districts
+      this.form.get('Permanent_District_Id')?.setValue(null); // Reset selection
       if (stateId) {
         this.getDistrictsByState(stateId).subscribe((res) => {
           this.permanentDistrictList = res?.body?.data || [];
@@ -431,10 +429,7 @@ export class Step1Component implements OnChanges, OnInit {
     // Listener for Current State
     this.form.get('Current_State_Id')?.valueChanges.subscribe((stateId) => {
       this.currentDistrictList = [];
-      // ✅ Add emitEvent: false here
-      this.form
-        .get('Current_District_Id')
-        ?.setValue(null, { emitEvent: false });
+      this.form.get('Current_District_Id')?.setValue(null);
       if (stateId) {
         this.getDistrictsByState(stateId).subscribe((res) => {
           this.currentDistrictList = res?.body?.data || [];
@@ -445,8 +440,7 @@ export class Step1Component implements OnChanges, OnInit {
     // Listener for Birth State
     this.form.get('Birth_State_Id')?.valueChanges.subscribe((stateId) => {
       this.birthDistrictList = [];
-      // ✅ Add emitEvent: false here
-      this.form.get('Birth_District_Id')?.setValue(null, { emitEvent: false });
+      this.form.get('Birth_District_Id')?.setValue(null);
       if (stateId) {
         this.getDistrictsByState(stateId).subscribe((res) => {
           this.birthDistrictList = res?.body?.data || [];
@@ -520,52 +514,17 @@ export class Step1Component implements OnChanges, OnInit {
     }
   }
 
-  private getUserData(): Observable<any> {
-    const candidateData = this.recruitmentState.getScreeningCandidateData();
-    const registrationNo = candidateData?.registration_no;
+  // --- API Data Access Methods (Moved from Service) ---
 
-    // ✅ MODIFIED: Always request screening record first, fallback to candidate record
+  private getUserData(): Observable<any> {
+    const registrationNo = this.recruitmentState.getRegistrationNumber();
     return this.HTTP.getParam(
       '/master/get/getApplicant',
-      {
-        registration_no: registrationNo,
-        Application_Step_Flag_CES: 'E', // First try to get screening record
-      },
+      { registration_no: registrationNo },
       'recruitement'
-    ).pipe(
-      switchMap((screeningResponse: any) => {
-        // If screening record exists and has data, use it
-        if (
-          screeningResponse?.body?.data &&
-          screeningResponse.body.data.length > 0
-        ) {
-          console.log(
-            '✅ Found screening record (E)',
-            screeningResponse.body.data[0]
-          );
-          return of(screeningResponse);
-        } else {
-          // If no screening record, fallback to candidate record
-          console.log(
-            '⚠️ No screening record found, falling back to candidate record'
-          );
-          return this.HTTP.getParam(
-            '/master/get/getApplicant',
-            {
-              registration_no: registrationNo,
-              Application_Step_Flag_CES: 'C', // Get candidate record
-            },
-            'recruitement'
-          );
-        }
-      }),
-      catchError((error) => {
-        console.error('Error fetching user data:', error);
-        // If both fail, return empty
-        return of({ body: { data: [] } });
-      })
     );
   }
+
   private getSubjectsByPostCode(postCode: number): Observable<any> {
     return this.HTTP.getParam(
       '/master/get/getSubjectsByPost',
@@ -597,17 +556,9 @@ export class Step1Component implements OnChanges, OnInit {
       'recruitement'
     );
   }
-  public getConditionStatus(condition: any): string | null {
-    if (!condition || !condition.condition_id) {
-      return null;
-    }
-    const controlName = `verify_status_${condition.condition_id}`;
-    const control = this.form.get(controlName);
-    return control ? control.value : null;
-  }
+
   private getSavedLanguages(): Observable<any> {
-    const candidateData = this.recruitmentState.getScreeningCandidateData();
-    const registrationNo = candidateData?.registration_no;
+    const registrationNo = this.recruitmentState.getRegistrationNumber();
     return this.HTTP.getParam(
       '/master/get/getLanguagesByRegistration',
       { registration_no: registrationNo },
@@ -615,16 +566,10 @@ export class Step1Component implements OnChanges, OnInit {
     );
   }
 
-  private getSavedAdditionalInfo(
-    registrationNo: number,
-    flag: 'C' | 'E'
-  ): Observable<any> {
+  private getSavedAdditionalInfo(registrationNo: number): Observable<any> {
     return this.HTTP.getParam(
       '/candidate/get/getAddtionInfoDetails',
-      {
-        question_label: registrationNo,
-        Application_Step_Flag_CES: flag,
-      },
+      { question_label: registrationNo },
       'recruitement'
     );
   }
@@ -639,61 +584,42 @@ export class Step1Component implements OnChanges, OnInit {
 
   private saveAdditionalInfo(formData: FormData): Observable<any> {
     return this.HTTP.postForm(
-      '/candidate/postFile/saveOrUpdateAdditionalInformationForScreening',
+      '/candidate/postFile/saveOrUpdateAdditionalInformation',
       formData,
       'recruitement'
     );
   }
 
+  // --- Form & UI Event Handlers ---
+
   private patchUserData(data: any): void {
-    if (!data) return; // Exit if no data provided
-
-    // Store the screener ID if available
-    this.screenerAppMainId = data.a_rec_app_main_id;
-    console.log(
-      '📝 Stored screening record ID:',
-      this.screenerAppMainId,
-      'with flag:',
-      data.Application_Step_Flag_CES
-    );
-
-    // --- File Handling (Keep as is, ensure emitEvent: false) ---
+    // File handling can stay at the top
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
-      // Patch value silently and clear validators if file exists
-      this.form
-        .get('photo')
-        ?.setValue(data.candidate_photo, { emitEvent: false });
+      this.form.get('photo')?.setValue(data.candidate_photo);
       this.form.get('photo')?.clearValidators();
     } else {
-      this.form.get('photo')?.setValidators([Validators.required]); // Require if no file exists
+      this.form.get('photo')?.setValidators([Validators.required]);
     }
-    this.form.get('photo')?.updateValueAndValidity(); // Update control state
+    this.form.get('photo')?.updateValueAndValidity();
 
     if (data.candidate_signature) {
       this.filePaths.set('signature', data.candidate_signature);
       this.signaturePreview = this.getFileUrl(data.candidate_signature);
-      // Patch value silently and clear validators if file exists
-      this.form
-        .get('signature')
-        ?.setValue(data.candidate_signature, { emitEvent: false });
+      this.form.get('signature')?.setValue(data.candidate_signature);
       this.form.get('signature')?.clearValidators();
     } else {
-      this.form.get('signature')?.setValidators([Validators.required]); // Require if no file exists
+      this.form.get('signature')?.setValidators([Validators.required]);
     }
-    this.form.get('signature')?.updateValueAndValidity(); // Update control state
-    // --- End File Handling ---
-
-    // Trigger fetching related data based on patched IDs
+    this.form.get('signature')?.updateValueAndValidity();
     if (data.a_rec_adv_main_id) {
       this.fetchPostsByAdvertisement(data.a_rec_adv_main_id);
     }
     if (data.post_code) {
       this.fetchSubjectsByPost(data.post_code);
     }
-
-    // Prepare requests to fetch district lists based on state IDs
+    // Prepare district requests
     const districtRequests: { [key: string]: Observable<any> } = {};
     if (data.Permanent_State_Id) {
       districtRequests['permanent'] = this.getDistrictsByState(
@@ -709,21 +635,18 @@ export class Step1Component implements OnChanges, OnInit {
       districtRequests['birth'] = this.getDistrictsByState(data.Birth_State_Id);
     }
 
-    // Define the patching function (to be called after districts are loaded, if needed)
+    // Helper function to perform the patch operation
     const patchTheForm = () => {
       this.form.patchValue(
         {
-          // Map API data to form controls, ensuring type conversions for dropdowns
           a_rec_app_main_id: data.a_rec_app_main_id,
-          post_code: data.post_code ? Number(data.post_code) : null,
-          subject_id: data.subject_id ? Number(data.subject_id) : 0, // Default to 0 if null/missing
+          post_code: data.post_code,
+          subject_id: data.subject_id || 0,
           registration_no: data.registration_no,
-          a_rec_adv_main_id: data.a_rec_adv_main_id
-            ? Number(data.a_rec_adv_main_id)
-            : null,
-          session_id: data.academic_session_id || data.session_id, // Use correct field name from API
-          Salutation_E: data.Salutation_E ? Number(data.Salutation_E) : null,
-          Salutation_H: data.Salutation_E ? Number(data.Salutation_E) : null, // Assuming H uses E's ID
+          a_rec_adv_main_id: data.a_rec_adv_main_id,
+          session_id: data.academic_session_id,
+          Salutation_E: data.Salutation_E,
+          Salutation_H: data.Salutation_E,
           Applicant_First_Name_E: data.Applicant_First_Name_E,
           Applicant_Middle_Name_E: data.Applicant_Middle_Name_E,
           Applicant_Last_Name_E: data.Applicant_Last_Name_E,
@@ -732,90 +655,68 @@ export class Step1Component implements OnChanges, OnInit {
           Applicant_Last_Name_H: data.Applicant_Last_Name_H,
           Applicant_Father_Name_E: data.Applicant_Father_Name_E,
           Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
-          gender_id: data.gender_id, // Usually string 'M', 'F', 'T'
+          gender_id: data.gender_id,
           DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
-          // Patch DOB status/remark, converting to number if not null
-          Document_Status_Flag_Id: data.Document_Status_Flag_Id
-            ? Number(data.Document_Status_Flag_Id)
-            : null,
-          Document_Status_Remark_Id: data.Document_Status_Remark_Id
-            ? Number(data.Document_Status_Remark_Id)
-            : null,
-          Mobile_No: String(data.mobile_no || data.Mobile_No || ''), // Allow for different API field names
-          Email_Id: data.email_id || data.Email_Id, // Allow for different API field names
+          Mobile_No: String(data.mobile_no),
+          Email_Id: data.email_id,
           Birth_Place: data.Birth_Place,
-          Birth_District_Id: data.Birth_District_Id
-            ? Number(data.Birth_District_Id)
-            : null,
-          Birth_State_Id: data.Birth_State_Id
-            ? Number(data.Birth_State_Id)
-            : null,
-          Birth_Country_Id: data.Birth_Country_Id
-            ? Number(data.Birth_Country_Id)
-            : null,
+          Birth_District_Id: data.Birth_District_Id,
+          Birth_State_Id: data.Birth_State_Id,
+          Birth_Country_Id: data.Birth_Country_Id,
           Identification_Mark1: data.Identification_Mark1,
           Identification_Mark2: data.Identification_Mark2,
-          religion_code: data.religion_code ? Number(data.religion_code) : null,
+          religion_code: data.religion_code,
           Permanent_Address1: data.Permanent_Address1,
           Permanent_City: data.Permanent_City,
-          Permanent_District_Id: data.Permanent_District_Id
-            ? Number(data.Permanent_District_Id)
-            : null,
-          Permanent_State_Id: data.Permanent_State_Id
-            ? Number(data.Permanent_State_Id)
-            : null,
-          Permanent_Country_Id: data.Permanent_Country_Id
-            ? Number(data.Permanent_Country_Id)
-            : null,
+          Permanent_District_Id: data.Permanent_District_Id,
+          Permanent_State_Id: data.Permanent_State_Id,
+          Permanent_Country_Id: data.Permanent_Country_Id,
           Permanent_Pin_Code: data.Permanent_Pin_Code,
           Current_Address1: data.Current_Address1,
           Current_City: data.Current_City,
-          Current_District_Id: data.Current_District_Id
-            ? Number(data.Current_District_Id)
-            : null,
-          Current_State_Id: data.Current_State_Id
-            ? Number(data.Current_State_Id)
-            : null,
-          Current_Country_Id: data.Current_Country_Id
-            ? Number(data.Current_Country_Id)
-            : null,
+          Current_District_Id: data.Current_District_Id,
+          Current_State_Id: data.Current_State_Id,
+          Current_Country_Id: data.Current_Country_Id,
           Current_Pin_Code: data.Current_Pin_Code,
-          // Note: photo and signature are handled via setValue before patchTheForm if needed
         },
-        { emitEvent: false } // Prevent triggering valueChanges listeners during patch
+        { emitEvent: false }
       );
-      this.cdr.markForCheck(); // Ensure UI updates after patching
+      this.cdr.markForCheck(); // Trigger change detection
     };
 
-    // Load districts if necessary, then patch the form
+    // If we have districts to fetch...
     if (Object.keys(districtRequests).length > 0) {
       forkJoin(districtRequests).subscribe({
         next: (responses: any) => {
-          // Populate district lists from responses
-          if (responses.permanent)
+          // 1. Populate the district lists FIRST
+          if (responses.permanent) {
             this.permanentDistrictList = responses.permanent?.body?.data || [];
-          if (responses.current)
+          }
+          if (responses.current) {
             this.currentDistrictList = responses.current?.body?.data || [];
-          if (responses.birth)
+          }
+          if (responses.birth) {
             this.birthDistrictList = responses.birth?.body?.data || [];
-          this.cdr.markForCheck(); // Update UI with district options *before* patching
-          patchTheForm(); // Patch form *after* lists are ready
+          }
+          // 2. NOW that the lists are full, patch the form
+          patchTheForm();
         },
         error: (err) => {
-          console.error('Error loading district data:', err);
           this.alert.alert(true, 'Error loading district data.');
-          patchTheForm(); // Still attempt to patch other form fields on error
+          patchTheForm(); // Still patch the rest of the form on error
         },
       });
     } else {
-      patchTheForm(); // No districts to load, patch immediately
+      // If no districts to fetch, patch immediately
+      patchTheForm();
     }
   }
+
   private patchUserLanguages(langData: any[]): void {
     const langFormArray = this.form.get('languages') as FormArray;
     langFormArray.clear();
     if (langData.length === 0) {
-      langFormArray.push(this.createLanguageGroup());
+      langFormArray.push(this.createLanguageGroup()); // Add one empty row if none saved
       return;
     }
     langData.forEach((lang: any) => {
@@ -884,6 +785,7 @@ export class Step1Component implements OnChanges, OnInit {
     let years = today.getFullYear() - dob.getFullYear();
     let months = today.getMonth() - dob.getMonth();
     let days = today.getDate() - dob.getDate();
+
     if (days < 0) {
       months--;
       const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
@@ -914,7 +816,6 @@ export class Step1Component implements OnChanges, OnInit {
   get maxMarriageDate(): string {
     return new Date().toISOString().split('T')[0];
   }
-
   onConditionalFileSelected(
     event: Event,
     controlName: string,
@@ -922,8 +823,11 @@ export class Step1Component implements OnChanges, OnInit {
   ): void {
     const input = event.target as HTMLInputElement;
     const control = this.form.get(controlName);
+
     if (input.files?.length && control) {
       const file = input.files[0];
+
+      // Validate file size if a max size is specified in the API response
       if (maxSizeKB) {
         const maxSizeInBytes = maxSizeKB * 1024;
         if (file.size > maxSizeInBytes) {
@@ -933,14 +837,18 @@ export class Step1Component implements OnChanges, OnInit {
               file.size / 1024
             )}KB.`
           );
+          // Clear the invalid file from the input and form control
           input.value = '';
           control.setValue(null);
           control.markAsTouched();
           return;
         }
       }
+
+      // If validation passes, update the form control with the file object
       control.setValue(file);
     } else if (control) {
+      // If no file is selected, clear the control
       control.setValue(null);
     }
   }
@@ -1008,6 +916,10 @@ export class Step1Component implements OnChanges, OnInit {
       next: (res) => {
         if (res?.body?.data?.length > 0) {
           this.advertisementDetails = res.body.data[0];
+          console.log(
+            '✅ Advertisement Details Loaded:',
+            this.advertisementDetails
+          );
           const dobControl = this.form.get('DOB');
           if (dobControl && this.advertisementDetails.age_calculation_date) {
             dobControl.setValidators([
@@ -1026,168 +938,63 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   private loadAndPatchAdditionalInfo(registrationNo: number): Observable<void> {
-    // Determine which flag ('E' or 'C') to use for fetching based on whether a screener ID exists
-    const flagToFetch: 'E' | 'C' = this.screenerAppMainId ? 'E' : 'C';
-    console.log(
-      `Fetching additional info with flag: ${flagToFetch} for reg no: ${registrationNo}`
-    );
-
-    return this.getSavedAdditionalInfo(registrationNo, flagToFetch).pipe(
+    // Return the Observable stream instead of subscribing inside the function
+    return this.getSavedAdditionalInfo(registrationNo).pipe(
+      // Use the 'map' operator to handle the successful response
       map((res) => {
-        // Use map to transform the data within the observable stream
         const savedInfo: any[] = res?.body?.data || [];
-        console.log(
-          `Saved additional info (${flagToFetch}): `,
-          JSON.stringify(savedInfo, null, 2)
-        );
-        this.savedAdditionalInfo = savedInfo; // Store the fetched raw data
+        this.savedAdditionalInfo = savedInfo;
 
-        const savedAnswersMap = new Map<number, any>(); // Map for main question answers { question_id -> record }
-        const savedConditionsMap = new Map<number, any>(); // Map for conditional answers { condition_id -> record }
-
-        // Populate the maps for efficient lookup
+        // Create a map of saved answers for easy lookup
+        const savedAnswersMap = new Map<number, any>();
         savedInfo.forEach((item) => {
+          // Map answers to questions
           if (item.condition_id === null) {
-            // It's an answer to a main question
             savedAnswersMap.set(item.question_id, item);
-          } else {
-            // It's an answer to a conditional field
-            savedConditionsMap.set(item.condition_id, item);
           }
         });
 
-        // --- Patch Form Controls ---
+        // Loop through ALL questions from the master list
         this.additionalQuestions.forEach((question) => {
-          // 1. Patch Main Question Control
-          const mainControlName = `question_${question.question_id}`;
-          const mainControl = this.form.get(mainControlName);
-          if (mainControl) {
+          const controlName = `question_${question.question_id}`;
+          const control = this.form.get(controlName);
+          if (control) {
             const savedAnswer = savedAnswersMap.get(question.question_id);
-            if (savedAnswer) {
-              // Find the option corresponding to the saved option_id
-              const selectedOption = question.options.find(
-                (opt: any) => opt.option_id === savedAnswer.option_id
-              );
-              // Patch the *value* ('Y', 'N', 'UR', etc.) into the radio/select control
-              mainControl.setValue(
-                selectedOption ? selectedOption.option_value : null,
-                { emitEvent: false }
-              );
-            } else {
-              // No saved answer for this question
-              mainControl.setValue(null, { emitEvent: false });
+            // Set the value if found, otherwise set it to null.
+            control.setValue(savedAnswer ? savedAnswer.input_field : null);
+          }
+        });
+
+        // Now, patch all the conditional fields
+        savedInfo.forEach((item) => {
+          if (item.condition_id !== null) {
+            const controlName = `condition_${item.condition_id}`;
+            const control = this.form.get(controlName);
+            if (control) {
+              if (
+                item.input_field &&
+                typeof item.input_field === 'string' &&
+                item.input_field.startsWith('recruitment/')
+              ) {
+                this.additionalFilePaths.set(controlName, item.input_field);
+                control.setValue(item.input_field, { emitEvent: false });
+              } else {
+                control.setValue(item.input_field);
+              }
             }
           }
+        });
 
-          // 2. Patch Conditional Controls (Inputs, Files, Status, Remarks)
-          question.options.forEach((option: any) => {
-            if (option.has_condition === 'Y' && option.conditions) {
-              option.conditions.forEach((condition: any) => {
-                const conditionControlName = `condition_${condition.condition_id}`;
-                const conditionControl = this.form.get(conditionControlName);
-                const savedConditionData = savedConditionsMap.get(
-                  condition.condition_id
-                ); // Get saved data for this specific condition
-
-                if (conditionControl) {
-                  // Check if the form control exists
-                  if (savedConditionData) {
-                    // Check if we have saved data for this condition
-                    // Patch the condition's main input value (text, date, select, or file path)
-                    if (condition.condition_data_type === 'file') {
-                      if (savedConditionData.input_field) {
-                        // Check if a file path was saved
-                        this.additionalFilePaths.set(
-                          conditionControlName,
-                          savedConditionData.input_field
-                        );
-                        // For file controls, patch the *path string* (not a File object)
-                        conditionControl.setValue(
-                          savedConditionData.input_field,
-                          { emitEvent: false }
-                        );
-                        // Since a file exists, clear validation (it's satisfied by the existing file)
-                        conditionControl.clearValidators();
-                        conditionControl.updateValueAndValidity({
-                          emitEvent: false,
-                        });
-                      } else {
-                        conditionControl.setValue(null, { emitEvent: false }); // No file was saved
-                        // Re-apply required validator if needed (though conditional logic might handle this)
-                        // if (condition.condition_required === 'Y') {
-                        //    conditionControl.setValidators(this.conditionalFileValidator(conditionControlName));
-                        //    conditionControl.updateValueAndValidity({ emitEvent: false });
-                        // }
-                      }
-
-                      // ✅ Patch verification status and remark for this file condition
-                      const statusControl = this.form.get(
-                        `verify_status_${condition.condition_id}`
-                      );
-                      const remarkControl = this.form.get(
-                        `verify_remark_${condition.condition_id}`
-                      );
-
-                      if (statusControl) {
-                        statusControl.setValue(
-                          savedConditionData.Document_Status_Flag_Id
-                            ? Number(savedConditionData.Document_Status_Flag_Id)
-                            : null,
-                          { emitEvent: false }
-                        );
-                      }
-                      if (remarkControl) {
-                        remarkControl.setValue(
-                          savedConditionData.Document_Status_Remark_Id
-                            ? Number(
-                                savedConditionData.Document_Status_Remark_Id
-                              )
-                            : null,
-                          { emitEvent: false }
-                        );
-                      }
-                    } else {
-                      // For non-file types (text, date, radio, select)
-                      // Patch the value directly
-                      conditionControl.setValue(
-                        savedConditionData.input_field,
-                        { emitEvent: false }
-                      );
-                    }
-                  } else {
-                    // No saved data found for this specific condition
-                    conditionControl.setValue(null, { emitEvent: false }); // Reset the condition input
-                    // Also reset any associated verification controls if no data exists
-                    if (condition.condition_data_type === 'file') {
-                      const statusControl = this.form.get(
-                        `verify_status_${condition.condition_id}`
-                      );
-                      const remarkControl = this.form.get(
-                        `verify_remark_${condition.condition_id}`
-                      );
-                      if (statusControl)
-                        statusControl.setValue(null, { emitEvent: false });
-                      if (remarkControl)
-                        remarkControl.setValue(null, { emitEvent: false });
-                    }
-                  }
-                } // End if(conditionControl)
-              }); // End loop through conditions
-            } // End if option has conditions
-          }); // End loop through options
-        }); // End loop through questions
-
-        this.cdr.markForCheck(); // Trigger UI update once all patching is done
-      }), // End map operator
+        this.cdr.markForCheck();
+      }),
+      // Use 'catchError' to handle any failures in the stream
       catchError((err) => {
-        // Catch errors during API call or mapping
-        console.error('Failed to load or patch additional info:', err);
         this.alert.alert(true, 'Failed to load saved additional info.');
-        return of(undefined); // Return an empty observable to allow the main stream to complete
+        // Return an empty observable to allow the chain to complete gracefully
+        return of(undefined);
       })
-    ); // End pipe
+    );
   }
-
   private conditionalFileValidator(controlName: string): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const hasNewFile = control.value instanceof File;
@@ -1207,41 +1014,25 @@ export class Step1Component implements OnChanges, OnInit {
       if (question.is_required === 'Y') {
         validators.push(Validators.required);
       }
+
       this.form.addControl(
         `question_${question.question_id}`,
-        this.fb.control(null, validators)
+        this.fb.control(null, validators) // Initialize main questions with null
       );
+
       question.options.forEach((option: any) => {
         if (option.has_condition === 'Y') {
           option.conditions.forEach((condition: any) => {
             this.form.addControl(
               `condition_${condition.condition_id}`,
+              // ✅ THE FIX: Initialize conditional controls with null instead of ''
               this.fb.control(null)
             );
-            if (condition.condition_data_type === 'file') {
-              const statusControlName = `verify_status_${condition.condition_id}`;
-              const remarkControlName = `verify_remark_${condition.condition_id}`;
-              this.form.addControl(statusControlName, this.fb.control(null));
-              this.form.addControl(remarkControlName, this.fb.control(null));
-              const statusControl = this.form.get(statusControlName);
-              const remarkControl = this.form.get(remarkControlName);
-              if (statusControl && remarkControl) {
-                statusControl.valueChanges.subscribe((statusId) => {
-                  if (statusId === 2) {
-                    remarkControl.setValidators(Validators.required);
-                  } else {
-                    remarkControl.clearValidators();
-                  }
-                  remarkControl.updateValueAndValidity();
-                });
-              }
-            }
           });
         }
       });
     });
   }
-
   onDobChange(event: Event): void {
     const control = this.form.get('DOB');
     if (control?.hasError('invalidDobMax')) {
@@ -1255,7 +1046,7 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   onMarriageDateChange(event: Event): void {
-    const control = this.form.get('condition_1');
+    const control = this.form.get('condition_1'); // Control for Marriage Date
     if (control?.hasError('invalidMarriageDateMax')) {
       const error = control.errors?.['invalidMarriageDateMax'];
       const maxDate = error.max;
@@ -1267,19 +1058,25 @@ export class Step1Component implements OnChanges, OnInit {
     }
   }
 
+  // in step-1.component.ts
+
   private setupConditionalValidators(questions: any[]): void {
     questions.forEach((question) => {
       const questionControl = this.form.get(`question_${question.question_id}`);
       if (!questionControl) return;
+
       questionControl.valueChanges
         .pipe(distinctUntilChanged())
         .subscribe((selectedValue) => {
+          // --- Logic to fetch dynamic dropdown data on demand ---
           if (question.question_id === 5 && selectedValue === 'Y') {
             const disabilityCondition = question.options
               .find((opt: any) => opt.option_value === 'Y')
               ?.conditions?.find(
                 (c: any) => c.condition_data_type === 'select'
               );
+
+            // ✅ START FIX
             const advId = this.form.get('a_rec_adv_main_id')?.value;
             const post_code = this.form.get('post_code')?.value;
             if (
@@ -1287,27 +1084,27 @@ export class Step1Component implements OnChanges, OnInit {
               this.disabilityTypes.length === 0 &&
               advId
             ) {
+              // 1. Pass the advertisement ID as a parameter
               this.getDropdownData(disabilityCondition.query_id, {
                 a_rec_adv_main_id: advId,
                 post_code: post_code,
-              }).subscribe((data: any[]) => {
-                this.disabilityTypes = data;
-                this.cdr.markForCheck();
-              });
+              }).subscribe(
+                // 2. Directly use the returned array
+                (data: any[]) => {
+                  this.disabilityTypes = data;
+                  this.cdr.markForCheck();
+                }
+              );
             }
+            // ✅ END FIX
           }
+
           question.options.forEach((option: any) => {
             const isSelected = option.option_value === selectedValue;
             if (option.has_condition === 'Y') {
               option.conditions.forEach((condition: any) => {
                 const controlName = `condition_${condition.condition_id}`;
                 const conditionControl = this.form.get(controlName);
-                const statusControl = this.form.get(
-                  `verify_status_${condition.condition_id}`
-                );
-                const remarkControl = this.form.get(
-                  `verify_remark_${condition.condition_id}`
-                );
                 if (conditionControl) {
                   if (isSelected && condition.condition_required === 'Y') {
                     const validators: ValidatorFn[] = [];
@@ -1315,9 +1112,6 @@ export class Step1Component implements OnChanges, OnInit {
                       validators.push(
                         this.conditionalFileValidator(controlName)
                       );
-                      if (statusControl) {
-                        statusControl.setValidators(Validators.required);
-                      }
                     } else {
                       validators.push(Validators.required);
                     }
@@ -1335,20 +1129,8 @@ export class Step1Component implements OnChanges, OnInit {
                   } else {
                     conditionControl.clearValidators();
                     conditionControl.reset(null, { emitEvent: false });
-                    if (statusControl) {
-                      statusControl.clearValidators();
-                      statusControl.reset(null, { emitEvent: false });
-                    }
-                    if (remarkControl) {
-                      remarkControl.clearValidators();
-                      remarkControl.reset(null, { emitEvent: false });
-                    }
                   }
                   conditionControl.updateValueAndValidity({ emitEvent: false });
-                  if (statusControl)
-                    statusControl.updateValueAndValidity({ emitEvent: false });
-                  if (remarkControl)
-                    remarkControl.updateValueAndValidity({ emitEvent: false });
                 }
               });
             }
@@ -1357,7 +1139,6 @@ export class Step1Component implements OnChanges, OnInit {
         });
     });
   }
-
   public handleRadioChange(controlName: string, value: any): void {
     const control = this.form.get(controlName);
     if (control) {
@@ -1376,25 +1157,26 @@ export class Step1Component implements OnChanges, OnInit {
       (opt: any) => opt.option_value === control.value
     );
   }
-
   private validateFile(
     file: File,
     allowedTypes: string[],
     errorMessage: string
   ): boolean {
     const isAllowed = allowedTypes.some((type) => {
+      // Handle wildcards like 'image/*'
       if (type.endsWith('/*')) {
         return file.type.startsWith(type.slice(0, -1));
       }
+      // Handle specific types like 'application/pdf'
       return file.type === type;
     });
+
     if (!isAllowed) {
       this.alert.alert(true, errorMessage);
       return false;
     }
     return true;
   }
-
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
@@ -1472,36 +1254,6 @@ export class Step1Component implements OnChanges, OnInit {
       if (control instanceof FormGroup || control instanceof FormArray) {
         errors.push(...this.logValidationErrors(control));
       } else if (control?.invalid && control?.touched) {
-        if (
-          key === 'Document_Status_Flag_Id' ||
-          key === 'Document_Status_Remark_Id'
-        ) {
-          const fieldName = this.fieldNameMap[key] || key;
-          if (control.errors?.['required']) {
-            errors.push(`${fieldName} is required.`);
-          }
-        } else if (
-          key.startsWith('verify_status_') ||
-          key.startsWith('verify_remark_')
-        ) {
-          const conditionId = Number(key.split('_').pop());
-          for (const q of this.additionalQuestions) {
-            for (const o of q.options) {
-              const condition = o.conditions?.find(
-                (c: any) => c.condition_id === conditionId
-              );
-              if (condition) {
-                const fieldName = key.startsWith('verify_status_')
-                  ? 'Verify Status'
-                  : 'Verify Remark';
-                errors.push(
-                  `'${fieldName}' is required for the '${condition.dependent_field_label}' attachment under '${q.question_label}'.`
-                );
-                return;
-              }
-            }
-          }
-        }
         let displayName = this.fieldNameMap[key] || key;
         if (key.startsWith('question_')) {
           const questionId = Number(key.split('_')[1]);
@@ -1517,7 +1269,7 @@ export class Step1Component implements OnChanges, OnInit {
                 (c: any) => c.condition_id === conditionId
               );
               if (condition) {
-                displayName = `${condition.dependent_field_label} (under ${q.question_label})`;
+                displayName = `${condition.dependent_field_label} (for ${q.question_label})`;
                 break;
               }
             }
@@ -1551,14 +1303,7 @@ export class Step1Component implements OnChanges, OnInit {
           (opt: any) => opt.option_value === selectedOptionValue
         );
         if (selectedOption) {
-          const existingMainRecord = this.savedAdditionalInfo.find(
-            (info) =>
-              info.question_id === question.question_id &&
-              info.condition_id === null
-          );
           additionalInfoPayload.push({
-            a_rec_app_main_addtional_info_id:
-              existingMainRecord?.a_rec_app_main_addtional_info_id || null,
             question_id: question.question_id,
             option_id: selectedOption.option_id,
             condition_id: null,
@@ -1567,33 +1312,20 @@ export class Step1Component implements OnChanges, OnInit {
           if (selectedOption.has_condition === 'Y') {
             for (const condition of selectedOption.conditions) {
               const conditionControlName = `condition_${condition.condition_id}`;
-              const conditionValue = this.form.get(conditionControlName)?.value;
+              const conditionControl = this.form.get(conditionControlName);
+              const conditionValue = conditionControl?.value;
               let inputFieldValue = null;
-              const existingConditionRecord = this.savedAdditionalInfo.find(
-                (info) =>
-                  info.question_id === question.question_id &&
-                  info.option_id === selectedOption.option_id &&
-                  info.condition_id === condition.condition_id
-              );
-              if (condition.condition_data_type === 'file') {
-                if (conditionValue instanceof File) {
-                  const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
-                  formData.append(
-                    fileControlName,
-                    conditionValue,
-                    conditionValue.name
-                  );
-                } else {
-                  inputFieldValue =
-                    this.additionalFilePaths.get(conditionControlName) || null;
-                }
+              if (conditionValue instanceof File) {
+                const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
+                formData.append(
+                  fileControlName,
+                  conditionValue,
+                  conditionValue.name
+                );
               } else {
                 inputFieldValue = conditionValue;
               }
               additionalInfoPayload.push({
-                a_rec_app_main_addtional_info_id:
-                  existingConditionRecord?.a_rec_app_main_addtional_info_id ||
-                  null,
                 question_id: question.question_id,
                 option_id: selectedOption.option_id,
                 condition_id: condition.condition_id,
@@ -1604,7 +1336,12 @@ export class Step1Component implements OnChanges, OnInit {
         }
       }
     }
+    console.log(
+      '🔼 Frontend payload being sent:',
+      JSON.stringify(additionalInfoPayload, null, 2)
+    );
     if (additionalInfoPayload.length === 0) {
+      console.warn('No additional info data to save.');
       return Promise.resolve();
     }
     formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
@@ -1615,6 +1352,7 @@ export class Step1Component implements OnChanges, OnInit {
             this.alert.alert(true, res.body.error);
             reject(new Error(res.body.error));
           } else {
+            console.log('✅ Additional info saved successfully.');
             resolve();
           }
         },
@@ -1626,11 +1364,16 @@ export class Step1Component implements OnChanges, OnInit {
     });
   }
 
+  // --- Utility & Helper Methods ---
   onCharacterInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const initialValue = input.value;
+
+    // This regex removes anything that is NOT a letter or a space
     const sanitizedValue = initialValue.replace(/[^a-zA-Z\s]/g, '');
+
     if (initialValue !== sanitizedValue) {
+      // Get the form control name from the input element's id or name attribute
       const formControlName = input.getAttribute('formControlName');
       if (formControlName) {
         this.form
@@ -1639,18 +1382,19 @@ export class Step1Component implements OnChanges, OnInit {
       }
     }
   }
-
   onNumericInput(event: Event, controlName: string): void {
     const input = event.target as HTMLInputElement;
     const initialValue = input.value;
+
+    // Remove any non-digit characters
     const sanitizedValue = initialValue.replace(/[^0-9]/g, '');
+
     if (initialValue !== sanitizedValue) {
       this.form
         .get(controlName)
         ?.setValue(sanitizedValue, { emitEvent: false });
     }
   }
-
   formatDateToYYYYMMDD(dateInput: string | Date): string {
     const date = new Date(dateInput);
     const year = date.getFullYear();
@@ -1658,16 +1402,42 @@ export class Step1Component implements OnChanges, OnInit {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-
   copyPermanentToCurrentAddress(): void {
-    this.form.patchValue({
-      Current_Address1: this.form.get('Permanent_Address1')?.value,
-      Current_City: this.form.get('Permanent_City')?.value,
-      Current_District_Id: this.form.get('Permanent_District_Id')?.value,
-      Current_State_Id: this.form.get('Permanent_State_Id')?.value,
-      Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
-      Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
-    });
+    // Get the values we need to copy
+    const stateId = this.form.get('Permanent_State_Id')?.value;
+    const districtId = this.form.get('Permanent_District_Id')?.value;
+
+    // 1. Set the state value SILENTLY to prevent its listener from firing.
+    this.form.get('Current_State_Id')?.setValue(stateId, { emitEvent: false });
+
+    if (stateId) {
+      // 2. Fetch the districts for the selected state.
+      this.getDistrictsByState(stateId).subscribe((res) => {
+        // 3. Populate the district dropdown's options.
+        this.currentDistrictList = res?.body?.data || [];
+        this.cdr.markForCheck(); // Ensure the UI updates with the new options
+
+        // 4. THE FIX: Patch the REMAINING fields.
+        // We EXCLUDE Current_State_Id from this patch because it's already set
+        // and we don't want to re-trigger its valueChanges listener.
+        this.form.patchValue({
+          Current_Address1: this.form.get('Permanent_Address1')?.value,
+          Current_City: this.form.get('Permanent_City')?.value,
+          Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
+          Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
+          Current_District_Id: districtId, // Now we can safely set the district
+        });
+      });
+    } else {
+      // If no state was selected, just copy the other fields.
+      this.form.patchValue({
+        Current_Address1: this.form.get('Permanent_Address1')?.value,
+        Current_City: this.form.get('Permanent_City')?.value,
+        Current_Country_Id: this.form.get('Permanent_Country_Id')?.value,
+        Current_Pin_Code: this.form.get('Permanent_Pin_Code')?.value,
+        Current_District_Id: null, // No state, so no district
+      });
+    }
   }
 
   clearCurrentAddress(): void {
@@ -1682,12 +1452,15 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   disableCurrentAddressFields(): void {
-    this.form.get('Current_Address1')?.disable();
-    this.form.get('Current_City')?.disable();
-    this.form.get('Current_District_Id')?.disable();
-    this.form.get('Current_State_Id')?.disable();
-    this.form.get('Current_Country_Id')?.disable();
-    this.form.get('Current_Pin_Code')?.disable();
+    // THE FIX: Add { emitEvent: false } to every call.
+    const options = { emitEvent: false };
+
+    this.form.get('Current_Address1')?.disable(options);
+    this.form.get('Current_City')?.disable(options);
+    this.form.get('Current_District_Id')?.disable(options);
+    this.form.get('Current_State_Id')?.disable(options); // This is the key line
+    this.form.get('Current_Country_Id')?.disable(options);
+    this.form.get('Current_Pin_Code')?.disable(options);
   }
 
   enableCurrentAddressFields(): void {
@@ -1882,30 +1655,36 @@ export class Step1Component implements OnChanges, OnInit {
       { eng: 'Applicant_Middle_Name_E', hin: 'Applicant_Middle_Name_H' },
       { eng: 'Applicant_Last_Name_E', hin: 'Applicant_Last_Name_H' },
     ];
+
     mapping.forEach(({ eng, hin }) => {
       const engControl = this.form.get(eng);
       const hinControl = this.form.get(hin);
+
       if (engControl && hinControl) {
         engControl.valueChanges
           .pipe(
-            debounceTime(300),
+            debounceTime(300), // Slightly increased debounce time
             distinctUntilChanged(),
             switchMap((value) => {
               const trimmed = (value || '').trim();
               if (trimmed === '') {
                 hinControl.setValue('');
-                return of(null);
+                return of(null); // Return observable that does nothing
               }
+              // Let translateToHindi handle success/failure
               return this.translateToHindi(trimmed);
             })
           )
+          // ✅ Use the object syntax for subscribe to handle errors
           .subscribe({
             next: (result) => {
+              // This block only runs on a SUCCESSFUL translation
               if (result !== null) {
                 hinControl.setValue(result);
               }
             },
             error: (err) => {
+              // On API error, DO NOTHING. The existing Hindi value is preserved.
               console.error('Transliteration failed:', err);
             },
           });
@@ -1921,318 +1700,215 @@ export class Step1Component implements OnChanges, OnInit {
     ).pipe(
       map((response: any) => {
         const transliteration = response?.body?.data?.transliteration;
+        // ✅ Return the value on success, or null if not found
         return transliteration || null;
       }),
       catchError((err) => {
+        // ✅ On network error, re-throw the error to be caught by the subscribe block
         console.error('Transliteration API error:', err);
         throw err;
       })
     );
   }
-  private disableFormForScreening(): void {
-    const disableOptions = { emitEvent: false };
 
-    // Disable main form controls (except verification)
-    Object.keys(this.form.controls).forEach((key) => {
-      const isVerificationControl =
-        key.startsWith('verify_status_') ||
-        key.startsWith('verify_remark_') ||
-        key === 'Document_Status_Flag_Id' ||
-        key === 'Document_Status_Remark_Id';
-
-      // ✅ NEW: Check if it's an additional question control
-      const isAdditionalQuestionControl = key.startsWith('question_');
-      const isConditionalControl = key.startsWith('condition_'); // Conditional controls should also be disabled
-
-      // Only disable if it's NOT a verification control
-      // It *should* disable additional questions and conditions
-      if (!isVerificationControl) {
-        const control = this.form.get(key);
-        if (control) {
-          control.disable(disableOptions);
-        }
-      } else {
-        // Ensure verification controls ARE enabled
-        const control = this.form.get(key);
-        if (control?.disabled) {
-          control.enable(disableOptions);
-        }
-      }
-    });
-
-    // Languages array should still be disabled
-    this.languagesArray.disable(disableOptions);
-
-    // --- Ensure Additional Question controls are explicitly disabled ---
-    // (This might be redundant if the loop above catches them, but ensures clarity)
-    this.additionalQuestions.forEach((question) => {
-      const questionControl = this.form.get(`question_${question.question_id}`);
-      if (questionControl && !questionControl.disabled) {
-        questionControl.disable(disableOptions);
-      }
-      // Also disable conditional controls again, just to be sure
-      question.options.forEach((option: any) => {
-        if (option.has_condition === 'Y' && option.conditions) {
-          option.conditions.forEach((condition: any) => {
-            const condControl = this.form.get(
-              `condition_${condition.condition_id}`
-            );
-            if (condControl && !condControl.disabled) {
-              condControl.disable(disableOptions);
-            }
-          });
-        }
-      });
-    });
-
-    console.log(
-      'Form disabled for screening. Verification controls should remain enabled.'
-    );
-    this.cdr.markForCheck(); // Ensure UI reflects disabled state
-  }
   async submitForm(): Promise<void> {
-    this.emitFormData(); // Emit data for preview or parent component
-    this.markFormGroupTouched(this.form); // Mark all fields as touched for validation
+    this.emitFormData();
+    this.markFormGroupTouched(this.form);
 
-    // Check if the form is valid according to Angular's validators
     if (this.form.invalid) {
       const validationErrors = this.logValidationErrors(this.form);
       const firstErrorMessage =
         validationErrors[0] || 'Please fill all mandatory fields.';
-      this.alert.alert(true, firstErrorMessage); // Show the first validation error
-      return Promise.reject(new Error('Form is invalid')); // Stop submission
+      this.alert.alert(true, firstErrorMessage);
+      return Promise.reject(new Error('Form is invalid'));
     }
+    this.loader.showLoader();
 
-    this.loader.showLoader(); // Show loading indicator
-
-    const formData = new FormData(); // Initialize FormData for file uploads
-    // Use getRawValue() to include disabled controls (like IDs potentially set during load)
+    const formData = new FormData();
     const formValue = this.form.getRawValue();
 
-    // --- 1. Prepare Main Profile Payload ---
     const mainPayloadForJson = { ...formValue };
-    delete mainPayloadForJson.photo; // Remove potential File object for photo
-    delete mainPayloadForJson.signature; // Remove potential File object for signature
+    delete mainPayloadForJson.photo;
+    delete mainPayloadForJson.signature;
 
-    // --- Start Revised ID Logic for Screening Upsert ---
-    let idForPayload: number | null = null;
+    // --- 1. Handle Photo and Signature ---
+    const photoControlValue = formValue.photo;
+    const signatureControlValue = formValue.signature;
 
-    // Prioritize the ID stored in the component state (set during load if 'E' record exists)
-    if (this.screenerAppMainId) {
-      idForPayload = this.screenerAppMainId;
-      console.log(
-        `Using component's stored screenerAppMainId: ${idForPayload}`
-      );
-    }
-    // Fallback: Check if an ID exists in the form's raw value (might be set during patching)
-    else if (mainPayloadForJson.a_rec_app_main_id) {
-      idForPayload = mainPayloadForJson.a_rec_app_main_id;
-      console.log(
-        `Using a_rec_app_main_id from formValue as fallback: ${idForPayload}`
-      );
-      // Optional: Sync component state if it was missing but found in form
-      // this.screenerAppMainId = idForPayload;
-    }
-
-    // Set or delete the ID in the final payload based on whether one was found
-    if (idForPayload) {
-      mainPayloadForJson.a_rec_app_main_id = idForPayload; // Ensure the correct ID is set for UPDATE
-      console.log(`✅ Preparing payload for UPDATE with ID: ${idForPayload}`);
+    if (photoControlValue instanceof File) {
+      formData.append('photo', photoControlValue, photoControlValue.name);
     } else {
-      delete mainPayloadForJson.a_rec_app_main_id; // Ensure no ID is sent for INSERT
-      console.log('ℹ️ Preparing payload for INSERT (no ID found).');
-    }
-    // --- End Revised ID Logic ---
-
-    console.log(
-      '🚀 Frontend mainPayload BEFORE sending:',
-      JSON.stringify(mainPayloadForJson, null, 2)
-    );
-    // Log DOB verification fields specifically
-    console.log(
-      '    >> Frontend DOB Status:',
-      mainPayloadForJson.Document_Status_Flag_Id
-    );
-    console.log(
-      '    >> Frontend DOB Remark:',
-      mainPayloadForJson.Document_Status_Remark_Id
-    );
-
-    // Handle photo file upload or existing path
-    if (formValue.photo instanceof File) {
-      formData.append('photo', formValue.photo, formValue.photo.name);
-      // If sending a new file, don't send the old path in the JSON payload
-      delete mainPayloadForJson.candidate_photo;
-    } else {
-      // Keep existing path if not a new file (value is string path or null)
-      mainPayloadForJson.candidate_photo = formValue.photo;
+      mainPayloadForJson.candidate_photo = photoControlValue;
     }
 
-    // Handle signature file upload or existing path
-    if (formValue.signature instanceof File) {
+    if (signatureControlValue instanceof File) {
       formData.append(
         'signature',
-        formValue.signature,
-        formValue.signature.name
+        signatureControlValue,
+        signatureControlValue.name
       );
-      // If sending a new file, don't send the old path in the JSON payload
-      delete mainPayloadForJson.candidate_signature;
     } else {
-      // Keep existing path if not a new file (value is string path or null)
-      mainPayloadForJson.candidate_signature = formValue.signature;
+      mainPayloadForJson.candidate_signature = signatureControlValue;
     }
 
-    // Append the main JSON payload (now with correct ID handling)
-    formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
-
-    // --- 2. Prepare Languages Payload ---
+    // --- 2. Append Main Payload and Languages ---
     const languagePayload = this.languagesArray.controls.map((ctrl) => ({
-      ...ctrl.getRawValue(), // Use getRawValue as languages array might be disabled
+      ...ctrl.value,
       registration_no: mainPayloadForJson.registration_no,
       a_rec_adv_main_id: mainPayloadForJson.a_rec_adv_main_id,
     }));
+
+    formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
     formData.append('languages', JSON.stringify(languagePayload));
 
-    // --- 3. Prepare Additional Info & Conditional Files Payload ---
+    // --- 3. Prepare Additional Information Payload (based on current form state) ---
     const additionalInfoPayload: any[] = [];
     for (const question of this.additionalQuestions) {
       const questionControlName = `question_${question.question_id}`;
-      const selectedOptionValue = formValue[questionControlName]; // Use raw value
+      const selectedOptionValue = this.form.get(questionControlName)?.value;
 
       if (selectedOptionValue) {
         const selectedOption = question.options.find(
           (opt: any) => opt.option_value === selectedOptionValue
         );
-
         if (selectedOption) {
-          // Add the main question's answer record
+          const existingMainRecord = this.savedAdditionalInfo.find(
+            (info) =>
+              info.question_id === question.question_id &&
+              info.condition_id === null
+          );
+
           additionalInfoPayload.push({
+            a_rec_app_main_addtional_info_id:
+              existingMainRecord?.a_rec_app_main_addtional_info_id || null,
             question_id: question.question_id,
             option_id: selectedOption.option_id,
-            condition_id: null, // Main question has null condition_id
-            input_field: selectedOptionValue, // Store the selected value (e.g., 'Y', 'N')
-            Document_Status_Flag_Id: null, // Status/Remark only apply to conditions (files)
-            Document_Status_Remark_Id: null,
+            condition_id: null,
+            input_field: null,
           });
 
-          // Process conditions if they exist for the selected option
-          if (
-            selectedOption.has_condition === 'Y' &&
-            selectedOption.conditions
-          ) {
+          if (selectedOption.has_condition === 'Y') {
             for (const condition of selectedOption.conditions) {
               const conditionControlName = `condition_${condition.condition_id}`;
-              const conditionValue = formValue[conditionControlName]; // Use raw value
-              let inputFieldValue: any = null; // Value to store in DB (path or text)
+              const conditionValue = this.form.get(conditionControlName)?.value;
+              let inputFieldValue = null;
 
-              // Get verification status/remark controls
-              const statusControl = this.form.get(
-                `verify_status_${condition.condition_id}`
-              );
-              const remarkControl = this.form.get(
-                `verify_remark_${condition.condition_id}`
+              const existingConditionRecord = this.savedAdditionalInfo.find(
+                (info) =>
+                  info.question_id === question.question_id &&
+                  info.option_id === selectedOption.option_id &&
+                  info.condition_id === condition.condition_id
               );
 
-              // Handle file conditions
               if (condition.condition_data_type === 'file') {
                 if (conditionValue instanceof File) {
-                  // New file uploaded
                   const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
                   formData.append(
                     fileControlName,
                     conditionValue,
                     conditionValue.name
                   );
-                  // Backend will generate path, so input_field can be null or filename sent separately if needed
-                  inputFieldValue = null; // Or maybe conditionValue.name if backend needs it? Check backend logic.
                 } else {
-                  // No new file, use existing path from component state if available
                   inputFieldValue =
                     this.additionalFilePaths.get(conditionControlName) || null;
                 }
               } else {
-                // Non-file condition, use the value directly
                 inputFieldValue = conditionValue;
               }
 
-              // Add the condition record to the payload
               additionalInfoPayload.push({
+                a_rec_app_main_addtional_info_id:
+                  existingConditionRecord?.a_rec_app_main_addtional_info_id ||
+                  null,
                 question_id: question.question_id,
                 option_id: selectedOption.option_id,
                 condition_id: condition.condition_id,
                 input_field: inputFieldValue,
-                // Include status and remark from their respective controls (using getRawValue internally)
-                Document_Status_Flag_Id: statusControl?.value || null,
-                Document_Status_Remark_Id: remarkControl?.value || null,
               });
             }
           }
         }
       }
     }
-    formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
-    // Note: Sending additionalInfoQuestions might be redundant if backend doesn't use it for this specific save operation.
-    // formData.append(
-    //   'additionalInfoQuestions',
-    //   JSON.stringify(this.additionalQuestions)
-    // );
 
-    // --- 4. Call the Backend API ---
+    // --- 4. ⭐ NEW LOGIC: Determine which records to delete ---
+    // Create a Set of primary keys from the new payload that should exist in the DB.
+    const newRecordIds = new Set(
+      additionalInfoPayload
+        .map((p) => p.a_rec_app_main_addtional_info_id)
+        .filter((id) => id != null) // Only consider existing records with an ID
+    );
+
+    // Compare the original saved records with the new set. Any missing ID is marked for deletion.
+    const additionalInfoIdsToDelete: number[] = [];
+    this.savedAdditionalInfo.forEach((savedRecord) => {
+      if (!newRecordIds.has(savedRecord.a_rec_app_main_addtional_info_id)) {
+        additionalInfoIdsToDelete.push(
+          savedRecord.a_rec_app_main_addtional_info_id
+        );
+      }
+    });
+
+    // --- 5. Append all data to FormData ---
+    if (additionalInfoPayload.length > 0) {
+      formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
+      formData.append(
+        'additionalInfoQuestions',
+        JSON.stringify(this.additionalQuestions)
+      );
+    }
+
+    // ⭐ NEW: Append the array of IDs to delete. The backend will handle them.
+    if (additionalInfoIdsToDelete.length > 0) {
+      formData.append(
+        'additionalInfoIdsToDelete',
+        JSON.stringify(additionalInfoIdsToDelete)
+      );
+    }
+
+    // --- 6. Make the SINGLE API call ---
     return new Promise((resolve, reject) => {
       this.HTTP.postForm(
-        '/candidate/postFile/saveOrUpdateFullCandidateProfileForScreening', // Endpoint for screening save
+        '/candidate/postFile/saveOrUpdateFullCandidateProfile',
         formData,
         'recruitement'
       ).subscribe({
         next: async (res) => {
-          // Keep async if using await alert
-          this.loader.hideLoader();
           if (res?.body?.error) {
-            // Handle backend-specific errors
+            this.loader.hideLoader();
             this.alert.alert(
               true,
-              res.body.error.message || 'An error occurred during save.'
+              res.body.error.message || 'An error occurred.'
             );
-            // Reject with a specific error code/message if possible
-            reject(new Error(res.body.error.code || 'SAVE_FAILED'));
+            reject(new Error(res.body.error.message));
             return;
           }
+          this.loader.hideLoader();
+          await this.alert.alert(
+            false,
+            'All candidate details saved successfully!'
+          );
 
-          // --- Update Component State After Successful Save ---
-          const returnedAppMainId = res?.body?.data?.a_rec_app_main_id;
-          if (returnedAppMainId && !this.screenerAppMainId) {
-            // This happens after the *first* successful save (INSERT)
-            console.log(
-              `✅ Received new screening ID ${returnedAppMainId} from backend, updating component state.`
+          // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
+          // additional info to update our local state (`savedAdditionalInfo`).
+          // This ensures the next save operation works correctly.
+          const registrationNo = this.form.get('registration_no')?.value;
+          if (registrationNo) {
+            this.getSavedAdditionalInfo(registrationNo).subscribe(
+              (response) => {
+                this.savedAdditionalInfo = response?.body?.data || [];
+              }
             );
-            this.screenerAppMainId = returnedAppMainId;
-            // Silently update the form control value to match the state
-            this.form
-              .get('a_rec_app_main_id')
-              ?.setValue(this.screenerAppMainId, { emitEvent: false });
-          } else if (
-            returnedAppMainId &&
-            this.screenerAppMainId &&
-            this.screenerAppMainId !== returnedAppMainId
-          ) {
-            // Should ideally not happen if logic is correct, but handles unexpected cases
-            console.warn(
-              `Backend returned ID ${returnedAppMainId} which differs from component state ${this.screenerAppMainId}. Updating component state.`
-            );
-            this.screenerAppMainId = returnedAppMainId;
-            this.form
-              .get('a_rec_app_main_id')
-              ?.setValue(this.screenerAppMainId, { emitEvent: false });
           }
-          // Handle potential updates to file paths returned from backend
-          if (res?.body?.data?.photo_path) {
+
+          if (res.body?.data?.photo_path) {
             this.filePaths.set('photo', res.body.data.photo_path);
             this.photoPreview = this.getFileUrl(res.body.data.photo_path);
             this.form
               .get('photo')
               ?.setValue(res.body.data.photo_path, { emitEvent: false });
           }
-          if (res?.body?.data?.signature_path) {
+          if (res.body?.data?.signature_path) {
             this.filePaths.set('signature', res.body.data.signature_path);
             this.signaturePreview = this.getFileUrl(
               res.body.data.signature_path
@@ -2241,43 +1917,21 @@ export class Step1Component implements OnChanges, OnInit {
               .get('signature')
               ?.setValue(res.body.data.signature_path, { emitEvent: false });
           }
-          // Handle potential updates to additional info file paths (if backend returns them)
-          // You would need to parse res.body.data for additional file paths and update this.additionalFilePaths map
 
-          // --- Post-Save Actions ---
-          await this.alert.alert(
-            false,
-            'Screening details saved successfully!'
-          ); // Success message
+          this.emitFormData();
+          this.cdr.markForCheck();
 
-          // Optional: Re-fetch or re-patch data only if absolutely necessary.
-          // Usually, updating the component state (like screenerAppMainId and filePaths) is sufficient.
-          // Re-fetching might overwrite unsaved changes if not careful.
-          // if (formValue.registration_no) {
-          //   console.log("Reloading additional info after successful save...");
-          //   this.loadAndPatchAdditionalInfo(formValue.registration_no).subscribe(() => {
-          //      console.log("Additional info reloaded.");
-          //      this.cdr.markForCheck(); // Ensure UI reflects reloaded data if needed
-          //   });
-          // } else {
-          //   console.warn("Cannot reload additional info: registration number missing.");
-          // }
-
-          this.emitFormData(); // Emit the latest state again
-          this.cdr.markForCheck(); // Trigger change detection
-          resolve(); // Resolve the promise indicating success
+          resolve();
         },
         error: (err) => {
+          const errorDetails = err.error?.details;
+          const errorMessage =
+            errorDetails?.message ||
+            err.error?.message ||
+            'Failed to save details. Please try again.';
+          this.alert.alert(true, errorMessage);
           this.loader.hideLoader();
-          // Extract a meaningful error message
-          const errMsg =
-            err?.error?.details ||
-            err?.error?.message ||
-            'Failed to save screening details. Please try again.';
-          this.alert.alert(true, errMsg);
-          console.error('❌ Error saving screening data:', err); // Log the full error
-          // Reject with the error object from the backend if available
-          reject(err.error || new Error('SAVE_FAILED'));
+          reject(err);
         },
       });
     });

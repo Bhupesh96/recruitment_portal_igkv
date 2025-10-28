@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -6,7 +6,7 @@ import { catchError, map, Observable, of, switchMap, forkJoin } from 'rxjs';
 import { AlertService, HttpService } from 'shared';
 import { HeaderComponent } from '../../../header/header.component';
 import { FooterComponent } from '../../../footer/footer.component';
-import { StepperComponent } from '../screening-stepper/stepper.component';
+import { StepperComponent } from '../scoring-stepper/stepper.component';
 import {
   RecruitmentStateService,
   UserRecruitmentData,
@@ -24,7 +24,6 @@ export interface Candidate {
   post: string;
   subject: string; // <-- Added subject
   status: string;
-  eligibilityStatus: 'Y' | 'N' | null;
   details?: string;
 }
 
@@ -41,11 +40,10 @@ export interface SelectedFilters {
   subject: number | null;
   status: string;
   claimType: string;
-  eligibility: 'Y' | 'N' | 'null' | '';
 }
 
 @Component({
-  selector: 'app-screening',
+  selector: 'app-scoring',
   standalone: true,
   imports: [
     CommonModule,
@@ -55,10 +53,10 @@ export interface SelectedFilters {
     NgSelectModule,
     StepperComponent,
   ],
-  templateUrl: './screening.component.html',
-  styleUrls: ['./screening.component.scss'],
+  templateUrl: './scoring.component.html',
+  styleUrls: ['./scoring.component.scss'],
 })
-export class ScreeningComponent implements OnInit {
+export class ScoringComponent implements OnInit {
   advertisements: DropdownItem[] = [];
   posts: DropdownItem[] = [];
   subjects: DropdownItem[] = [];
@@ -71,7 +69,6 @@ export class ScreeningComponent implements OnInit {
     subject: null,
     status: '',
     claimType: '',
-    eligibility: '',
   };
 
   expandedIndex: number | null = null;
@@ -81,8 +78,7 @@ export class ScreeningComponent implements OnInit {
   constructor(
     private HTTP: HttpService,
     private alert: AlertService,
-    private recruitmentState: RecruitmentStateService,
-    private cdr: ChangeDetectorRef
+    private recruitmentState: RecruitmentStateService
   ) {}
 
   ngOnInit(): void {
@@ -111,37 +107,7 @@ export class ScreeningComponent implements OnInit {
       catchError(() => of([])) // Return an empty array on error to not break forkJoin
     );
   }
-  private getEligibilityStatus(
-    registrationNo: number,
-    advId: number
-  ): Observable<'Y' | 'N' | null> {
-    return this.HTTP.getParam(
-      '/candidate/get/getScreeningOrScoringStatus',
-      {
-        registration_no: registrationNo,
-        a_rec_adv_main_id: advId,
-        Application_Step_Flag_CES: 'E', // Always check the Screening record
-      },
-      'recruitement'
-    ).pipe(
-      map((res: any) => {
-        // Extract the specific field from the response data array (assuming it returns an array)
-        const decision = res?.body?.data?.[0]?.Verification_Finalize_YN;
-        // Ensure we return only 'Y', 'N', or null
-        if (decision === 'Y' || decision === 'N') {
-          return decision;
-        }
-        return null; // Return null if the value is missing, 'S', or anything else
-      }),
-      catchError((error) => {
-        console.error(
-          `Error fetching eligibility status for ${registrationNo}:`,
-          error
-        );
-        return of(null); // Return null on API error to prevent breaking the list
-      })
-    );
-  }
+
   /** Load candidates and their additional info from API */
   private loadCandidates() {
     this.resetViewState();
@@ -153,82 +119,56 @@ export class ScreeningComponent implements OnInit {
         switchMap((res: any) => {
           const candidatesData = res.body.data || [];
           if (candidatesData.length === 0) {
-            return of([]); // No candidates, return empty
+            return of([]); // If no candidates, return an empty observable array
           }
 
-          // --- Step 1: Fetch Additional Info (Category) ---
+          // Create an array of observables, one for each candidate's additional info
           const additionalInfoRequests = candidatesData.map((c: any) =>
             this.getAdditionalInfo(c.registration_no)
           );
 
+          // Use forkJoin to wait for all additional info requests to complete
           return forkJoin(additionalInfoRequests).pipe(
-            // --- Step 2: Combine Base Data + Additional Info ---
             map((additionalInfos: any) => {
+              // Now map the original candidate data, combining it with the fetched additional info
               return candidatesData.map((c: any, index: number) => {
                 const additionalInfo = additionalInfos[index];
+
+                // Find the category object from the additional info response
                 const categoryInfo = additionalInfo.find(
                   (info: any) => info.question_id === 2
                 );
+
+                // Extract the category name, defaulting to 'N/A'
                 const category = categoryInfo
                   ? categoryInfo.input_field
                   : 'N/A';
 
-                // Create preliminary candidate object (without eligibility yet)
                 return {
                   registrationNo: c.registration_no,
                   name: `${c.Applicant_First_Name_E} ${
                     c.Applicant_Middle_Name_E || ''
                   } ${c.Applicant_Last_Name_E}`,
                   age: this.calculateAge(c.DOB),
-                  category: category,
+                  category: category, // Use the dynamically fetched category
                   advertisementId: c.a_rec_adv_main_id,
                   postId: c.post_code,
-                  subjectId: c.subject_id, // Keep as potentially null
+                  subjectId: c.subject_id,
                   advertisement: this.getNameById(
                     this.advertisements,
                     c.a_rec_adv_main_id
                   ),
                   post: this.getNameById(this.posts, c.post_code),
-                  subject: this.getNameById(this.subjects, c.subject_id), // Handle null ID gracefully
-                  status: 'Pending', // Set a default initial status - Modify if API provides this
-                  eligibilityStatus: null, // Initialize eligibilityStatus as null
+                  subject: this.getNameById(this.subjects, c.subject_id),
                   details: '',
-                } as Candidate; // Assert type here
+                } as Candidate;
               });
-            }),
-            // --- Step 3: Fetch Eligibility Status for all candidates ---
-            switchMap((candidatesWithCategory: Candidate[]) => {
-              if (candidatesWithCategory.length === 0) {
-                return of([]); // Pass empty array if no candidates
-              }
-              // Create observables for fetching eligibility status
-              const eligibilityRequests = candidatesWithCategory.map((c) =>
-                this.getEligibilityStatus(c.registrationNo, c.advertisementId)
-              );
-              // Fetch all statuses
-              return forkJoin(eligibilityRequests).pipe(
-                // --- Step 4: Combine Candidate Data + Eligibility Status ---
-                map((eligibilityStatuses: Array<'Y' | 'N' | null>) => {
-                  // Add the fetched status to each candidate object
-                  return candidatesWithCategory.map((candidate, index) => ({
-                    ...candidate,
-                    eligibilityStatus: eligibilityStatuses[index], // Assign the fetched status
-                  }));
-                })
-              );
             })
-          ); // End forkJoin for additional info
-        }), // End initial switchMap
-        catchError((err) => {
-          // Add top-level error handling
-          console.error('Error loading candidates:', err);
-          this.alert.alert(true, 'Failed to load candidate data.');
-          return of([]); // Return empty array on error
+          );
         })
-      ) // End pipe
-      .subscribe((finalCandidates: Candidate[]) => {
-        this.candidates = finalCandidates;
-        this.cdr.markForCheck(); // Ensure UI updates
+      )
+      .subscribe((candidates: Candidate[]) => {
+        this.candidates = candidates;
       });
   }
   private resetViewState() {
@@ -288,9 +228,9 @@ export class ScreeningComponent implements OnInit {
     return {
       total: finalList.length, // This is the CORRECT total count.
       allotted: finalList.filter((c) => c.status === 'Allotted').length,
-      eligible: finalList.filter((c) => c.eligibilityStatus === 'Y').length,
-      notEligible: finalList.filter((c) => c.eligibilityStatus === 'N').length,
-      pending: finalList.filter((c) => c.eligibilityStatus === null).length,
+      pending: finalList.filter((c) => c.status === 'Pending').length,
+      selected: finalList.filter((c) => c.status === 'Selected').length,
+      rejected: finalList.filter((c) => c.status === 'Rejected').length,
     };
   }
   /** Get name by ID from dropdown array */
@@ -352,14 +292,7 @@ export class ScreeningComponent implements OnInit {
           c.advertisementId === this.selected.advertisement) &&
         (!this.selected.post || c.postId === this.selected.post) &&
         (!this.selected.subject || c.subjectId === this.selected.subject) &&
-        (!this.selected.status || c.status === this.selected.status) &&
-        (!this.selected.status || c.status === this.selected.status) &&
-        // Apply eligibility filter (for 'Y', 'N', 'null')
-        (!this.selected.eligibility ||
-          (this.selected.eligibility === 'null'
-            ? c.eligibilityStatus === null
-            : c.eligibilityStatus === this.selected.eligibility))
-      // --- END FIX ---
+        (!this.selected.status || c.status === this.selected.status)
     );
 
     // 2. If there's no search text, return the list as is
@@ -432,7 +365,7 @@ export class ScreeningComponent implements OnInit {
       a_rec_adv_main_id: candidate.advertisementId,
       post_code: candidate.postId,
       subject_id: candidate.subjectId,
-      academic_session_id: null, // Assuming this isn't needed for screening steps
+      academic_session_id: null, // Assuming this isn't needed for scoring steps
     };
 
     this.recruitmentState.setScreeningCandidate(candidateData);
@@ -447,19 +380,8 @@ export class ScreeningComponent implements OnInit {
   /** Filter by status */
   filterByStatus(status: string) {
     this.selected.status = this.selected.status === status ? '' : status;
-    this.selected.eligibility = '';
   }
-  filterByEligibility(eligibility: 'Y' | 'N' | 'null' | '') {
-    // Toggle eligibility or set it
-    this.selected.eligibility =
-      this.selected.eligibility === eligibility ? '' : eligibility;
-    // Clear the status filter if we set an eligibility filter
-    this.selected.status = '';
-  }
-  clearStatusFilters() {
-    this.selected.status = '';
-    this.selected.eligibility = '';
-  }
+
   /** Refresh filters and reload data */
   refreshData() {
     // 1. Reset all filter selections
@@ -469,7 +391,6 @@ export class ScreeningComponent implements OnInit {
       subject: null,
       status: '',
       claimType: '',
-      eligibility: '',
     };
 
     // 2. Clear the dependent dropdowns and the main candidate list

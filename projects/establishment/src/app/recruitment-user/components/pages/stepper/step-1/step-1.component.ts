@@ -520,7 +520,7 @@ export class Step1Component implements OnChanges, OnInit {
     const registrationNo = this.recruitmentState.getRegistrationNumber();
     return this.HTTP.getParam(
       '/master/get/getApplicant',
-      { registration_no: registrationNo },
+      { registration_no: registrationNo, Application_Step_Flag_CES: 'C' },
       'recruitement'
     );
   }
@@ -569,7 +569,7 @@ export class Step1Component implements OnChanges, OnInit {
   private getSavedAdditionalInfo(registrationNo: number): Observable<any> {
     return this.HTTP.getParam(
       '/candidate/get/getAddtionInfoDetails',
-      { question_label: registrationNo },
+      { registration_no: registrationNo, Application_Step_Flag_CES: 'C' },
       'recruitement'
     );
   }
@@ -943,6 +943,10 @@ export class Step1Component implements OnChanges, OnInit {
       // Use the 'map' operator to handle the successful response
       map((res) => {
         const savedInfo: any[] = res?.body?.data || [];
+        console.log(
+          'Saved additional information: ',
+          JSON.stringify(savedInfo, null, 2)
+        );
         this.savedAdditionalInfo = savedInfo;
 
         // Create a map of saved answers for easy lookup
@@ -959,9 +963,21 @@ export class Step1Component implements OnChanges, OnInit {
           const controlName = `question_${question.question_id}`;
           const control = this.form.get(controlName);
           if (control) {
-            const savedAnswer = savedAnswersMap.get(question.question_id);
-            // Set the value if found, otherwise set it to null.
-            control.setValue(savedAnswer ? savedAnswer.input_field : null);
+            const savedAnswer = savedAnswersMap.get(question.question_id); // Gets the record, e.g., { question_id: 1, option_id: 1, ... }
+
+            if (savedAnswer) {
+              // Find the matching option in the question's master list
+              const selectedOption = question.options.find(
+                (opt: any) => opt.option_id === savedAnswer.option_id
+              ); // Set the control's value to the option_value ('Y', 'N', 'UR', etc.)
+
+              control.setValue(
+                selectedOption ? selectedOption.option_value : null
+              );
+            } else {
+              // If no answer was saved for this question, set it to null.
+              control.setValue(null);
+            }
           }
         });
 

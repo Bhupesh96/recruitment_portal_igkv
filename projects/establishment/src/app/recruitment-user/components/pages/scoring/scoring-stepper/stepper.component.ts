@@ -6,18 +6,19 @@ import { HttpClientModule } from '@angular/common/http';
 import { of, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { Step1Component } from './step-1/step-1.component';
-import { Step2Component } from './step-2/step-2.component';
-import { Step3Component } from './step-3/step-3.component';
-import { Step4Component } from './step-4/step-4.component';
-import { Step5Component } from './step-5/step-5.component';
-import { Step6Component } from './step-6/step-6.component';
+
 import { StepFinalDecisionComponent } from '../step-final-decision/step-final-decision.component';
 import { AlertService, HttpService } from 'shared';
 import {
   RecruitmentStateService,
   UserRecruitmentData,
 } from '../../recruitment-state.service';
+import { Step1Component } from './step-1/step-1.component';
+import { Step2Component } from '../../stepper/step-2/step-2.component';
+import { Step3Component } from '../../stepper/step-3/step-3.component';
+import { Step4Component } from '../../stepper/step-4/step-4.component';
+import { Step5Component } from '../../stepper/step-5/step-5.component';
+import { Step6Component } from '../../stepper/step-6/step-6.component';
 
 // Define an interface for the API step data
 interface ApiStep {

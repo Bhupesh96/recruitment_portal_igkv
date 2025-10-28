@@ -576,7 +576,6 @@
                 <input
                   type="radio"
                   [name]="'question_' + question.question_id"
-                  [disabled]="isScreeningMode"
                   [value]="option.option_value"
                   [checked]="
                     form.get('question_' + question.question_id)?.value ===
@@ -601,7 +600,6 @@
                 <input
                   type="radio"
                   [name]="'question_' + question.question_id"
-                  [disabled]="isScreeningMode"
                   [value]="option.option_value"
                   [checked]="
                     form.get('question_' + question.question_id)?.value ===
@@ -871,8 +869,6 @@
                 >
                   Date cannot be after
                   {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
-
-
 
 
 
@@ -1714,12 +1710,7 @@
                 <button
                   type="button"
                   (click)="removeLanguage(i)"
-                  class="text-base font-semibold"
-                  [disabled]="isScreeningMode"
-                  [ngClass]="{
-                    'text-red-600 hover:text-red-800': !isScreeningMode,
-                    'text-gray-400 cursor-not-allowed': isScreeningMode
-                  }"
+                  class="text-red-600 hover:text-red-800 text-base font-semibold"
                 >
                   ✖
                 </button>

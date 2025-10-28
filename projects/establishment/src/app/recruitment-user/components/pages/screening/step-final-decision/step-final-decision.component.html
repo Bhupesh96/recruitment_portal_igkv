@@ -1,0 +1,105 @@
+<div
+  class="final-decision-wrapper bg-gray-50 p-6 rounded-lg max-w-md mx-auto shadow-sm"
+>
+  <!-- 1. Select Eligibility Status -->
+  <div class="decision-section mb-4">
+    <div class="section-header flex items-baseline gap-3 mb-3">
+      <div
+        class="w-6 h-6 flex items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-semibold"
+      >
+        1
+      </div>
+      <h4 class="text-gray-900 font-semibold text-sm">
+        Select Eligibility Status
+      </h4>
+    </div>
+
+    <!-- Toggle Buttons -->
+    <div class="flex gap-2">
+      <!-- Eligible Button -->
+      <button
+        type="button"
+        (click)="onDecisionChange('Y')"
+        [ngClass]="
+          decision === 'Y'
+            ? 'bg-green-600 text-white shadow-md hover:bg-green-700'
+            : 'bg-white text-gray-800 border border-gray-300 hover:bg-green-100'
+        "
+        class="flex-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+      >
+        Eligible
+      </button>
+
+      <button
+        type="button"
+        (click)="onDecisionChange('N')"
+        [ngClass]="
+          decision === 'N'
+            ? 'bg-red-600 text-white shadow-md hover:bg-red-700'
+            : 'bg-white text-gray-800 border border-gray-300 hover:bg-red-100'
+        "
+        class="flex-1 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+      >
+        Not Eligible
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Remarks -->
+  <div class="remarks-section mb-4" *ngIf="decision">
+    <div class="section-header flex items-baseline gap-3 mb-2">
+      <div
+        class="w-6 h-6 flex items-center justify-center rounded-full bg-blue-200 text-gray-700 text-xs font-semibold"
+      >
+        2
+      </div>
+      <h4 class="text-gray-900 font-semibold text-sm">
+        {{
+          decision === "Y"
+            ? "Additional Comments (Optional)"
+            : "Reason for Rejection (Required)"
+        }}
+      </h4>
+    </div>
+
+    <textarea
+      class="w-full p-2 border rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+      rows="3"
+      placeholder="{{
+        decision === 'Y'
+          ? 'Add notes (optional)...'
+          : 'Provide reason for rejection...'
+      }}"
+      [(ngModel)]="remarks"
+      [class.border-red-500]="
+        triggerValidation && decision === 'N' && !remarks.trim()
+      "
+    ></textarea>
+
+    <div
+      *ngIf="triggerValidation && decision === 'N' && !remarks.trim()"
+      class="text-red-600 text-xs mt-1"
+    >
+      Reason is required when marking “Not Eligible”.
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-section" *ngIf="decision">
+    <div
+      [ngClass]="
+        decision === 'Y'
+          ? 'bg-green-50 border-l-4 border-green-500 text-green-700'
+          : 'bg-red-50 border-l-4 border-red-500 text-red-700'
+      "
+      class="p-2 rounded-md text-sm"
+    >
+      <strong>Summary:</strong> Candidate will be marked as
+      <strong>{{ decision === "Y" ? "ELIGIBLE" : "NOT ELIGIBLE" }}</strong
+      >.
+      <span *ngIf="remarks.trim()"
+        ><br /><strong>Remarks:</strong> "{{ remarks }}"</span
+      >
+    </div>
+  </div>
+</div>

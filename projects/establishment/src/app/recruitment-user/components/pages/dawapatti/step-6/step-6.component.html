@@ -1,0 +1,302 @@
+<section class="relative rounded-xl min-h-[200px]">
+  <div class="relative bg-white/90 backdrop-blur-sm rounded-xl">
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <!-- Mandatory Subheading or Parameter Validation Error -->
+      <div
+        *ngIf="
+          form.get('mandatorySubheadingsSelected')?.invalid &&
+          form.get('mandatorySubheadingsSelected')?.touched
+        "
+        class="text-red-600 text-xs mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
+      >
+        <div *ngIf="form.get('firstMissedMandatory')?.value">
+          <strong>Mandatory Field Required:</strong>
+          {{ form.get("firstMissedMandatory")?.value }} must be provided.
+        </div>
+      </div>
+
+      <h5
+        class="text-2xl font-bold text-indigo-900 mb-8 flex items-center gap-2"
+      >
+        <svg
+          class="w-6 h-6 text-indigo-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+          />
+        </svg>
+        {{ score_field_title_name }}
+      </h5>
+
+      <ng-container *ngFor="let subHeading of subHeadings">
+        <div
+          class="mt-3"
+          *ngIf="hasSubHeadingRows(subHeading.m_rec_score_field_id)"
+        >
+          <h6
+            class="text-xl font-semibold text-indigo-900 mb-1 flex items-center gap-1"
+          >
+            <svg
+              class="w-5 h-5 text-indigo-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            {{ subHeading.score_field_name_e }}
+          </h6>
+          <div class="overflow-x-auto">
+            <table
+              class="w-full bg-white rounded-md border border-gray-100 shadow-sm table-auto"
+            >
+              <thead class="bg-indigo-700 text-white">
+                <tr>
+                  <th
+                    class="px-1 py-1 text-left text-xs font-medium tracking-wide"
+                  >
+                    S.No.
+                  </th>
+
+                  <th
+                    class="px-1 py-1 text-left text-xs font-medium tracking-wide"
+                  >
+                    Item Name
+                  </th>
+
+                  <th
+                    *ngFor="
+                      let param of getParametersForSubHeading(
+                        subHeading.m_rec_score_field_id
+                      )
+                    "
+                    class="px-1 py-2 text-left text-xs font-medium tracking-wide"
+                  >
+                    {{ param.score_field_parameter_name }}
+                    <span
+                      *ngIf="param.is_mandatory === 'Y'"
+                      class="text-red-200"
+                      >*</span
+                    >
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr
+                  *ngFor="
+                    let detailForm of getRowsForSubHeading(
+                      subHeading.m_rec_score_field_id
+                    );
+                    let i = index
+                  "
+                  [formGroup]="detailForm"
+                  class="transition border-l-4"
+                  [ngClass]="{
+                    'bg-green-200 border-l-green-600':
+                      getRowVerificationStatus(detailForm) == '1' ||
+                      getRowVerificationStatus(detailForm) == '8',
+                    'bg-red-200 border-l-red-600':
+                      getRowVerificationStatus(detailForm) == '2',
+                    'bg-white border-l-gray-200':
+                      getRowVerificationStatus(detailForm) != '1' &&
+                      getRowVerificationStatus(detailForm) != '8' &&
+                      getRowVerificationStatus(detailForm) != '2'
+                  }"
+                >
+                  <td class="px-4 py-1 text-base font-medium text-gray-600">
+                    {{ i + 1 }}
+                  </td>
+                  <td class="px-4 py-1 text-base">
+                    <input
+                      type="text"
+                      class="w-full border border-gray-200 rounded-md px-2 py-1 text-base bg-indigo-50 text-gray-600 cursor-not-allowed"
+                      [value]="getCheckboxName(detailForm)"
+                      readonly
+                    />
+                  </td>
+
+                  <td
+                    *ngFor="
+                      let param of getParametersForSubHeading(
+                        subHeading.m_rec_score_field_id
+                      )
+                    "
+                    class="px-4 py-1 text-base"
+                  >
+                    <ng-container [ngSwitch]="param.control_type">
+                      <ng-container *ngSwitchCase="'A'">
+                        <div>
+                          <ng-container
+                            *ngIf="
+                              getFilePath(
+                                detailForm,
+                                param.m_rec_score_field_parameter_new_id,
+                                subHeading.m_rec_score_field_id
+                              ) as filePath;
+                              else fileNotUploaded
+                            "
+                          >
+                            <a
+                              [href]="sanitizeFileUrl(filePath)"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="text-xs !text-green-600 hover:underline flex items-center mt-1"
+                            >
+                              <svg
+                                class="h-4 w-4 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                              View Uploaded File
+                            </a>
+                          </ng-container>
+                          <ng-template #fileNotUploaded>
+                            <span class="text-xs text-red-600 mt-1 block"
+                              >File not uploaded</span
+                            >
+                          </ng-template>
+                        </div>
+                      </ng-container>
+
+                      <textarea
+                        *ngSwitchCase="'TR'"
+                        [formControlName]="param.normalizedKey"
+                        [placeholder]="
+                          'Enter ' + param.score_field_parameter_name
+                        "
+                        rows="3"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                      ></textarea>
+                      <!-- Dropdown -->
+                      <select
+                        *ngSwitchCase="'DC'"
+                        [formControlName]="param.normalizedKey"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="let option of param.dropdownOptions"
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'D'"
+                        [formControlName]="param.normalizedKey"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="let option of param.dropdownOptions"
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+                      <select
+                        *ngSwitchCase="'DY'"
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                        [formControlName]="param.normalizedKey"
+                      >
+                        <option value="">
+                          Select {{ param.score_field_parameter_name }}
+                        </option>
+
+                        <option
+                          *ngFor="let option of param.dropdownOptions"
+                          [value]="option.data_id"
+                        >
+                          {{ option.data_name }}
+                        </option>
+                      </select>
+
+                      <input
+                        *ngSwitchDefault
+                        [type]="
+                          param.isDatatype === 'number' ? 'number' : 'text'
+                        "
+                        class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500"
+                        [formControlName]="param.normalizedKey"
+                        [placeholder]="param.score_field_parameter_name"
+                        [attr.min]="param.isDatatype === 'number' ? 0 : null"
+                        [attr.pattern]="
+                          param.control_type === 'T' &&
+                          param.isDatatype === 'text'
+                            ? '^[a-zA-Z ()]*$'
+                            : null
+                        "
+                        (keydown)="allowAlphabetsOnly($event, param)"
+                      />
+                    </ng-container>
+
+                    <div
+                      *ngIf="
+                        detailForm.get(param.normalizedKey)?.touched &&
+                        detailForm.get(param.normalizedKey)?.invalid
+                      "
+                      class="text-red-600 text-xs mt-1"
+                    >
+                      <div
+                        *ngIf="
+                          detailForm
+                            .get(param.normalizedKey)
+                            ?.hasError('required')
+                        "
+                      >
+                        {{ param.score_field_parameter_name }} is required.
+                      </div>
+
+                      <div
+                        *ngIf="
+                          detailForm
+                            .get(param.normalizedKey)
+                            ?.hasError('pattern')
+                        "
+                      >
+                        Only letters and () are allowed.
+                      </div>
+
+                      <div
+                        *ngIf="
+                          detailForm.get(param.normalizedKey)?.hasError('min')
+                        "
+                      >
+                        Value cannot be negative.
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ng-container>
+    </form>
+  </div>
+</section>
