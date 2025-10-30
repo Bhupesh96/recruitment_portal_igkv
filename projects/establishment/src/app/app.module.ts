@@ -10,13 +10,12 @@ import { AppComponent } from './app.component';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
-import { Step9Component } from './recruitment-user/components/pages/stepper/step-9/step-9.component';
-import { DotLoaderComponent } from "../../../shared/component/dot-loader/dot-loader.component";
-import { ScreeningComponent } from './recruitment-user/components/pages/screening/screening/screening.component';
-import { HeaderComponent } from "./recruitment-user/components/header/header.component";
+import { DotLoaderComponent } from '../../../shared/component/dot-loader/dot-loader.component';
+import { HeaderComponent } from './recruitment-user/components/header/header.component';
+import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti/dawapatti.component';
+import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
 
-import { StepFinalDecisionComponent } from './recruitment-user/components/pages/scoring/step-final-decision/step-final-decision.component';
-import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti.component';
+
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,8 +30,10 @@ import { DawapattiComponent } from './recruitment-user/components/pages/dawapatt
     SharedModule,
     NgbModule,
     DotLoaderComponent,
-    HeaderComponent
-],
+    HeaderComponent,
+    DawapattiComponent,
+    ScorecardComponent
+  ],
   providers: [],
   bootstrap: [AppComponent],
 })

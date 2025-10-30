@@ -619,10 +619,11 @@ export class Step1Component implements OnChanges, OnInit {
     registrationNo: number,
     flag: 'C' | 'E'
   ): Observable<any> {
+    console.log('Registration number: ', registrationNo);
     return this.HTTP.getParam(
       '/candidate/get/getAddtionInfoDetails',
       {
-        question_label: registrationNo,
+        registration_no: registrationNo,
         Application_Step_Flag_CES: flag,
       },
       'recruitement'
@@ -1026,20 +1027,45 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   private loadAndPatchAdditionalInfo(registrationNo: number): Observable<void> {
-    // Determine which flag ('E' or 'C') to use for fetching based on whether a screener ID exists
-    const flagToFetch: 'E' | 'C' = this.screenerAppMainId ? 'E' : 'C';
     console.log(
-      `Fetching additional info with flag: ${flagToFetch} for reg no: ${registrationNo}`
+      `Loading additional info for reg no: ${registrationNo}. Checking 'E' first...`
     );
 
-    return this.getSavedAdditionalInfo(registrationNo, flagToFetch).pipe(
-      map((res) => {
-        // Use map to transform the data within the observable stream
-        const savedInfo: any[] = res?.body?.data || [];
-        console.log(
-          `Saved additional info (${flagToFetch}): `,
-          JSON.stringify(savedInfo, null, 2)
-        );
+    // 1. Always try to fetch the 'E' (Screening) record first
+    return this.getSavedAdditionalInfo(registrationNo, 'E').pipe(
+      switchMap((screeningResponse: any) => {
+        const screeningData = screeningResponse?.body?.data;
+
+        // 2. Check if the 'E' record has data
+        if (screeningData && screeningData.length > 0) {
+          console.log(
+            '✅ Found screening (E) additional info, patching...',
+            JSON.stringify(screeningData, null, 2)
+          );
+          // If 'E' data exists, pass it to the 'map' operator
+          return of(screeningData);
+        } else {
+          // 3. 'E' record is empty, so fetch the 'C' (Candidate) record
+          console.log(
+            '⚠️ No screening (E) info found. Falling back to candidate (C) record.'
+          );
+          return this.getSavedAdditionalInfo(registrationNo, 'C').pipe(
+            map((candidateResponse: any) => {
+              const candidateData = candidateResponse?.body?.data || [];
+              console.log(
+                `✅ Found candidate (C) additional info, patching...`,
+                JSON.stringify(candidateData, null, 2)
+              );
+              // Return the data array from the 'C' response
+              return candidateData;
+            })
+          );
+        }
+      }),
+      map((savedInfo: any[]) => {
+        // 4. This 'map' operator now receives data from *either* the 'E' or 'C' call
+        // All the existing patching logic from here down remains the same.
+
         this.savedAdditionalInfo = savedInfo; // Store the fetched raw data
 
         const savedAnswersMap = new Map<number, any>(); // Map for main question answers { question_id -> record }
@@ -1113,11 +1139,6 @@ export class Step1Component implements OnChanges, OnInit {
                         });
                       } else {
                         conditionControl.setValue(null, { emitEvent: false }); // No file was saved
-                        // Re-apply required validator if needed (though conditional logic might handle this)
-                        // if (condition.condition_required === 'Y') {
-                        //    conditionControl.setValidators(this.conditionalFileValidator(conditionControlName));
-                        //    conditionControl.updateValueAndValidity({ emitEvent: false });
-                        // }
                       }
 
                       // ✅ Patch verification status and remark for this file condition

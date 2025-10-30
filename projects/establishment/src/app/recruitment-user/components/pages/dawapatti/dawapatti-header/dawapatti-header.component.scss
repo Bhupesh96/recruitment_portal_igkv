@@ -1,0 +1,75 @@
+.header-container {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb; /* subtle divider */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  height: 64px; /* same as sidebar offset */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  .left-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .university-logo {
+      height: 3.5rem;
+      width: auto;
+    }
+
+    .university-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+
+      h1 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #1f2937;
+        font-family: "UnifrakturCook", cursive;
+      }
+
+      h2 {
+        font-size: 1.0rem;
+        font-weight: 500;
+        color: #4b5563;
+        font-family: "UnifrakturCook", cursive;
+      }
+    }
+  }
+
+  .logout-container {
+    .logout-button {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #2563eb; /* same blue as sidebar highlight */
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+
+      svg {
+        height: 1.1rem;
+        width: 1.1rem;
+      }
+
+      &:hover {
+        background: #1e40af;
+      }
+
+      &:active {
+        transform: scale(0.96);
+      }
+    }
+  }
+}

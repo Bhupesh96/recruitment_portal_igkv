@@ -1,0 +1,101 @@
+<div class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center">
+  <div class="w-full bg-white rounded-sm border border-gray-300 p-5 md:p-6">
+    <!-- Header -->
+    <div
+      class="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-4 md:gap-6"
+    >
+      <!-- Logo -->
+      <img
+        src="/assets/logo.png"
+        alt="IGKV Logo"
+        class="h-8 w-auto md:w-20 md:h-20 object-contain"
+      />
+
+      <!-- University Names -->
+      <div>
+        <!-- English -->
+        <h3
+          class="text-lg md:text-xl font-bold text-gray-900 leading-0 tracking-wide font-['Roboto']"
+        >
+          Indira Gandhi Krishi Vishwavidyalaya, Raipur (C.G.) - 492012
+        </h3>
+
+        <!-- Hindi -->
+        <h5
+          class="text-lg md:text-2xl font-semibold mt-1 font-['Noto_Sans_Devanagari']"
+        >
+          इंदिरा गांधी कृषि विश्वविद्यालय, रायपुर (छ.ग.) - ४९२०१२
+        </h5>
+      </div>
+    </div>
+
+    <!-- Page Content -->
+    <div class="text-gray-700 text-base leading-relaxed font-light py-2">
+      <!-- Applicant Info Section -->
+      <div
+        class="border border-gray-900 overflow-hidden flex flex-col md:flex-row items-stretch"
+      >
+        <!-- Left Info Section -->
+        <div
+          class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-0 p-2 text-[12px] text-left leading-[1] [&>p]:m-0 [&>p]:p-0 [&>p]:py-[1px]"
+        >
+          <p>
+            <span class="font-semibold">Registration No.:</span>
+            {{ applicantData?.registration_no }}
+          </p>
+          <p>
+            <span class="font-semibold">Registration Date:</span> 28-10-2023
+          </p>
+
+          <p>
+            <span class="font-semibold">Applicant Full Name:</span>
+            {{ fullNameE }}
+          </p>
+          <p>
+            <span class="font-semibold">Date of Birth:</span>
+            {{ applicantData?.DOB | date : "dd-MM-yyyy" }}
+          </p>
+
+          <p>
+            <span class="font-semibold">Advertisement No.:</span>
+            {{ applicantData?.advertisment_no }}
+          </p>
+          <p>
+            <span class="font-semibold">Father’s Name:</span>
+            {{ applicantData.Applicant_Father_Name_E }}
+          </p>
+
+          <p *ngIf="applicantData?.subject_id">
+            <span class="font-semibold">Subject:</span>
+            {{ subjectName }}
+          </p>
+          <p><span class="font-semibold">Category:</span> UR</p>
+        </div>
+
+        <!-- Right Photo Section -->
+        <div
+          class="flex justify-center items-center border-t md:border-t-0 md:border-l border-gray-900 bg-gray-50 p-3"
+        >
+          <img
+            *ngIf="applicantData?.candidate_photo"
+            [src]="getFileUrl(applicantData.candidate_photo)"
+            alt="Applicant Photo"
+            class="w-28 h-32 object-cover rounded-sm border border-gray-300"
+          />
+        </div>
+      </div>
+
+      <!-- Candidate Scoring Heading -->
+      <div class="mt-6 border-t border-gray-300 pt-3">
+        <h5
+          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto'] text-center"
+        >
+          Candidate Scoring
+        </h5>
+        <div
+          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
+        ></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+a {
+  text-decoration: none !important;
+}
+
+.active-link {
+  background-color: #2563eb !important; /* blue-600 */
+  color: white !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.active-link svg {
+  color: white !important;
+}
+
+/* Scrollbar styling for neatness */
+ul::-webkit-scrollbar {
+  width: 6px;
+}
+ul::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+/* Keep icons fixed size */
+svg {
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+}
