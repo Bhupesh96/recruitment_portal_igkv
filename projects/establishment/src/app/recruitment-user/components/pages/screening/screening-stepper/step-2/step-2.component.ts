@@ -16,7 +16,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
-import { switchMap, tap, catchError, map } from 'rxjs/operators';
+import { switchMap, tap, catchError, map, filter, take } from 'rxjs/operators';
 import { HttpService, LoaderService, SharedModule } from 'shared';
 import { Output, EventEmitter } from '@angular/core';
 import { UtilsService } from '../../../utils.service';
@@ -663,7 +663,7 @@ export class Step2Component implements OnInit {
     }
 
     const registration_no = this.userData?.registration_no;
-    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
     const score_field_parent_id = this.heading.m_rec_score_field_id;
 
     // Helper function to create the API request for a given flag ('E' or 'C')
@@ -885,9 +885,9 @@ export class Step2Component implements OnInit {
     return new Promise((resolve, reject) => {
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-
+      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
       // If there's no registration number, we can't proceed.
-      if (!registrationNo || !a_rec_adv_main_id) {
+      if (!registrationNo || !a_rec_adv_main_id  || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot submit.';
         this.alertService.alert(true, errorMsg);
         return reject(new Error(errorMsg));
@@ -965,7 +965,7 @@ export class Step2Component implements OnInit {
           const detail = {
             a_rec_app_score_field_detail_id: existingDetailId || undefined,
             registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_app_main_id: a_rec_app_main_id,
             a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -1051,7 +1051,7 @@ export class Step2Component implements OnInit {
           const detailToDelete = {
             a_rec_app_score_field_detail_id: existingDetailId,
             registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_app_main_id: a_rec_app_main_id,
             a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -1068,7 +1068,7 @@ export class Step2Component implements OnInit {
           a_rec_app_score_field_detail_id: this.existingParentDetailId,
         }),
         registration_no: registrationNo,
-        a_rec_app_main_id: a_rec_adv_main_id,
+        a_rec_app_main_id: a_rec_app_main_id,
         a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
         score_field_parent_id: 0,
         m_rec_score_field_id: this.heading?.m_rec_score_field_id,

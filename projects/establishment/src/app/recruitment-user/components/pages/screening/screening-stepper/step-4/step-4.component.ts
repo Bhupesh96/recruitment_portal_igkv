@@ -468,16 +468,16 @@ export class Step4Component implements OnInit {
   ): Observable<{ parent: any; children: any[] }> {
     const registrationNo = this.userData?.registration_no;
     const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id; // The parent request with the flag
-
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
     const parentRequest = this.HTTP.getData(
-      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}&Application_Step_Flag_CES=${flag}`,
+      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_app_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}&Application_Step_Flag_CES=${flag}`,
       'recruitement'
     ); // The children requests with the flag
 
     const childParentIds = this.subHeadings.map((s) => s.m_rec_score_field_id);
     const childrenRequests = childParentIds.map((id) =>
       this.HTTP.getData(
-        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${id}&Application_Step_Flag_CES=${flag}`,
+        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_app_main_id}&score_field_parent_id=${id}&Application_Step_Flag_CES=${flag}`,
         'recruitement'
       )
     );
@@ -488,41 +488,37 @@ export class Step4Component implements OnInit {
         childrenRequests.length > 0 ? forkJoin(childrenRequests) : of([]),
     });
   }
-public getRowVerificationStatus(detailForm: AbstractControl): string | null {
-    // Get the 'type' (m_rec_score_field_id) from the row's form group
-    const typeValue = detailForm.get('type')?.value;
-    if (!typeValue) {
-      return null;
-    }
+  public getRowVerificationStatus(detailForm: AbstractControl): string | null {
+    // Get the 'type' (m_rec_score_field_id) from the row's form group
+    const typeValue = detailForm.get('type')?.value;
+    if (!typeValue) {
+      return null;
+    } // Find the parent subheading that this item belongs to
 
-    // Find the parent subheading that this item belongs to
-    const subHeading = this.subHeadings.find((sub) =>
-      sub.items.some(
-        (item: any) => item.m_rec_score_field_id.toString() === typeValue
-      )
-    );
-    if (!subHeading) {
-      return null;
-    }
+    const subHeading = this.subHeadings.find((sub) =>
+      sub.items.some(
+        (item: any) => item.m_rec_score_field_id.toString() === typeValue
+      )
+    );
+    if (!subHeading) {
+      return null;
+    } // Get all parameters for that subheading
 
-    // Get all parameters for that subheading
-    const params = this.getParametersForSubHeading(
-      subHeading.m_rec_score_field_id
-    );
+    const params = this.getParametersForSubHeading(
+      subHeading.m_rec_score_field_id
+    ); // Find the specific "Verify Status" parameter using its master ID (68) // Note: This assumes 'm_parameter_master_id' is present on your parameter objects
 
-    // Find the specific "Verify Status" parameter using its master ID (68)
-    // Note: This assumes 'm_parameter_master_id' is present on your parameter objects
-    const verifyStatusParam = params.find((p) => p.m_parameter_master_id === 68);
-    if (!verifyStatusParam) {
-      return null;
-    }
+    const verifyStatusParam = params.find(
+      (p) => p.m_parameter_master_id === 68
+    );
+    if (!verifyStatusParam) {
+      return null;
+    } // Get the form control name for the status parameter
 
-    // Get the form control name for the status parameter
-    const controlName = verifyStatusParam.normalizedKey;
+    const controlName = verifyStatusParam.normalizedKey; // Return the current value of that control from the row's form group
 
-    // Return the current value of that control from the row's form group
-    return detailForm.get(controlName)?.value;
-  }
+    return detailForm.get(controlName)?.value;
+  }
   private getParameterValuesAndPatch(): void {
     if (!this.heading) {
       console.warn('Heading not loaded, cannot patch values.');
@@ -1300,7 +1296,8 @@ public getRowVerificationStatus(detailForm: AbstractControl): string | null {
       this.loader.showLoader();
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-      if (!registrationNo || !a_rec_adv_main_id) {
+      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
+      if (!registrationNo || !a_rec_adv_main_id  || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot save data.';
         this.alertService.alert(true, errorMsg);
         this.loader.hideLoader();
@@ -1399,7 +1396,7 @@ public getRowVerificationStatus(detailForm: AbstractControl): string | null {
             a_rec_app_score_field_detail_id: existingDetailId,
           }),
           registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_adv_main_id,
+          a_rec_app_main_id: a_rec_app_main_id,
           a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
           score_field_parent_id: subHeadingId,
           m_rec_score_field_id: scoreFieldId,
@@ -1528,7 +1525,7 @@ public getRowVerificationStatus(detailForm: AbstractControl): string | null {
 
       const parentRecord = this.createParentRecord(
         registrationNo,
-        a_rec_adv_main_id,
+        a_rec_app_main_id,
         parentCalculatedValue
       );
       if (parentRecord) {
@@ -1579,7 +1576,7 @@ public getRowVerificationStatus(detailForm: AbstractControl): string | null {
   // You might need a helper function for the parent record to avoid duplicating code
   private createParentRecord(
     registrationNo: number,
-    a_rec_adv_main_id: number,
+    a_rec_app_main_id: number,
     parentCalculatedValue: number // This value is now passed in
   ): any {
     if (!this.heading) return null; // ⭐ MODIFICATION: Removed the internal recalculation logic. // The parent score is now derived from the sum of its children's scores.
@@ -1591,7 +1588,7 @@ public getRowVerificationStatus(detailForm: AbstractControl): string | null {
         a_rec_app_score_field_detail_id: this.existingParentDetailId,
       }),
       registration_no: registrationNo,
-      a_rec_app_main_id: a_rec_adv_main_id,
+      a_rec_app_main_id: a_rec_app_main_id,
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,

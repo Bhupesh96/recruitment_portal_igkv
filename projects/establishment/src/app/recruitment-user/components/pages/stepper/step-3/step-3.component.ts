@@ -458,21 +458,25 @@ export class Step3Component implements OnInit {
   private getParameterValuesAndPatch(): void {
     const registrationNo = this.userData?.registration_no;
     const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
     if (!this.heading) {
       console.warn('Heading not loaded, cannot patch values.');
       return;
     }
-
+    if (!registrationNo || !a_rec_app_main_id) {
+      console.warn('User data is missing, cannot patch values.');
+      this.loader.hideLoader();
+      return;
+    }
     const parentRequest = this.HTTP.getData(
-      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}&Application_Step_Flag_CES=C`,
+      `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_app_main_id}&score_field_parent_id=0&m_rec_score_field_id=${this.heading.m_rec_score_field_id}&Application_Step_Flag_CES=C`,
       'recruitement'
     );
 
     const childParentIds = this.subHeadings.map((s) => s.m_rec_score_field_id);
     const childrenRequests = childParentIds.map((id) =>
       this.HTTP.getData(
-        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_adv_main_id}&score_field_parent_id=${id}&Application_Step_Flag_CES=C`,
+        `/candidate/get/getParameterValues?registration_no=${registrationNo}&a_rec_app_main_id=${a_rec_app_main_id}&score_field_parent_id=${id}&Application_Step_Flag_CES=C`,
         'recruitement'
       )
     );
@@ -1201,9 +1205,11 @@ export class Step3Component implements OnInit {
       this.loader.showLoader();
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-      if (!registrationNo || !a_rec_adv_main_id) {
+      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
+      if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot save data.';
         this.alertService.alert(true, errorMsg);
+        this.loader.hideLoader(); // Also hide loader on early exit
         return reject(new Error(errorMsg)); // Stop the function here
       }
       const formData = new FormData();
@@ -1256,7 +1262,7 @@ export class Step3Component implements OnInit {
             a_rec_app_score_field_detail_id: existingDetailId,
           }),
           registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_adv_main_id,
+          a_rec_app_main_id: a_rec_app_main_id,
           a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
           score_field_parent_id: subHeadingId,
           m_rec_score_field_id: scoreFieldId,
@@ -1368,7 +1374,7 @@ export class Step3Component implements OnInit {
       // STEP 4: Create the Parent Record
       const parentRecord = this.createParentRecord(
         registrationNo,
-        a_rec_adv_main_id
+        a_rec_app_main_id
       );
       if (parentRecord) {
         formData.append('parentScore', JSON.stringify(parentRecord));
@@ -1426,7 +1432,7 @@ export class Step3Component implements OnInit {
   // You might need a helper function for the parent record to avoid duplicating code
   private createParentRecord(
     registrationNo: number,
-    a_rec_adv_main_id: number
+    a_rec_app_main_id: number
   ): any {
     if (!this.heading) return null;
 
@@ -1466,7 +1472,7 @@ export class Step3Component implements OnInit {
         a_rec_app_score_field_detail_id: this.existingParentDetailId,
       }),
       registration_no: registrationNo,
-      a_rec_app_main_id: a_rec_adv_main_id,
+      a_rec_app_main_id: a_rec_app_main_id,
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,

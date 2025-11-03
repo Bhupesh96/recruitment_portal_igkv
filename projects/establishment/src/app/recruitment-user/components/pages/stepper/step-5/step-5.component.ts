@@ -165,7 +165,7 @@ export class Step5Component implements OnInit {
     if (!this.heading) return;
 
     const registration_no = this.userData?.registration_no;
-    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
     const childrenRequest = this.HTTP.getParam(
       '/candidate/get/getParameterValues',
@@ -755,7 +755,7 @@ export class Step5Component implements OnInit {
 
     // --- Configuration ---
     const registrationNo = this.userData?.registration_no;
-    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
     if (!registrationNo || !a_rec_app_main_id) {
       this.alertService.alert(
         true,

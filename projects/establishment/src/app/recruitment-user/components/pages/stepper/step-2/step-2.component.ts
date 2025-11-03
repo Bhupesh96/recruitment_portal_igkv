@@ -117,6 +117,7 @@ export class Step2Component implements OnInit {
     private loader: LoaderService
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
+    console.log('userdata received: ', JSON.stringify(this.userData, null, 2));
     this.form = this.fb.group({});
   }
 
@@ -620,7 +621,7 @@ export class Step2Component implements OnInit {
     }
 
     const registration_no = this.userData?.registration_no;
-    const a_rec_app_main_id = this.userData?.a_rec_adv_main_id;
+    const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
     // Request to get the child records (10th, 12th, etc.)
     const childrenRequest = this.HTTP.getParam(
@@ -629,7 +630,7 @@ export class Step2Component implements OnInit {
         registration_no,
         a_rec_app_main_id,
         score_field_parent_id: this.heading.m_rec_score_field_id,
-        Application_Step_Flag_CES: 'C', 
+        Application_Step_Flag_CES: 'C',
       },
       'recruitement'
     );
@@ -782,9 +783,9 @@ export class Step2Component implements OnInit {
     return new Promise((resolve, reject) => {
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-
+      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
       // If there's no registration number, we can't proceed.
-      if (!registrationNo || !a_rec_adv_main_id) {
+      if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot submit.';
         this.alertService.alert(true, errorMsg);
         return reject(new Error(errorMsg));
@@ -832,7 +833,7 @@ export class Step2Component implements OnInit {
           const detail = {
             a_rec_app_score_field_detail_id: existingDetailId || undefined,
             registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_app_main_id: a_rec_app_main_id,
             a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -914,7 +915,7 @@ export class Step2Component implements OnInit {
           const detailToDelete = {
             a_rec_app_score_field_detail_id: existingDetailId,
             registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_adv_main_id,
+            a_rec_app_main_id: a_rec_app_main_id,
             a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -931,7 +932,7 @@ export class Step2Component implements OnInit {
           a_rec_app_score_field_detail_id: this.existingParentDetailId,
         }),
         registration_no: registrationNo,
-        a_rec_app_main_id: a_rec_adv_main_id,
+        a_rec_app_main_id: a_rec_app_main_id,
         a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
         score_field_parent_id: 0,
         m_rec_score_field_id: this.heading?.m_rec_score_field_id,

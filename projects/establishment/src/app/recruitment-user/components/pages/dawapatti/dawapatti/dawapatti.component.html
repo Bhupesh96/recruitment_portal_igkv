@@ -1,26 +1,19 @@
 <div class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center">
   <div class="w-full bg-white rounded-sm border border-gray-300 p-5 md:p-6">
-    <!-- Header -->
     <div
       class="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-4 md:gap-6"
     >
-      <!-- Logo -->
       <img
         src="/assets/logo.png"
         alt="IGKV Logo"
         class="h-8 w-auto md:w-20 md:h-20 object-contain"
       />
-
-      <!-- University Names -->
       <div>
-        <!-- English -->
         <h3
           class="text-lg md:text-xl font-bold text-gray-900 leading-0 tracking-wide font-['Roboto']"
         >
           Indira Gandhi Krishi Vishwavidyalaya, Raipur (C.G.) - 492012
         </h3>
-
-        <!-- Hindi -->
         <h5
           class="text-lg md:text-2xl font-semibold mt-1 font-['Noto_Sans_Devanagari']"
         >
@@ -29,63 +22,63 @@
       </div>
     </div>
 
-    <!-- Page Content -->
     <div class="text-gray-700 text-base leading-relaxed font-light py-2">
-      <!-- Applicant Info Section -->
       <div
+        *ngIf="applicantData; else noApplicantData"
         class="border border-gray-900 overflow-hidden flex flex-col md:flex-row items-stretch"
       >
-        <!-- Left Info Section -->
         <div
           class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-0 p-2 text-[12px] text-left leading-[1] [&>p]:m-0 [&>p]:p-0 [&>p]:py-[1px]"
         >
           <p>
             <span class="font-semibold">Registration No.:</span>
-            {{ applicantData?.registration_no }}
+            {{ applicantData.registration_no }}
           </p>
           <p>
             <span class="font-semibold">Registration Date:</span> 28-10-2023
           </p>
-
           <p>
             <span class="font-semibold">Applicant Full Name:</span>
             {{ fullNameE }}
           </p>
           <p>
             <span class="font-semibold">Date of Birth:</span>
-            {{ applicantData?.DOB | date : "dd-MM-yyyy" }}
+            {{ applicantData.DOB | date : "dd-MM-yyyy" }}
           </p>
-
           <p>
             <span class="font-semibold">Advertisement No.:</span>
-            {{ applicantData?.advertisment_no }}
+            {{ applicantData.advertisment_no }}
           </p>
           <p>
             <span class="font-semibold">Father’s Name:</span>
             {{ applicantData.Applicant_Father_Name_E }}
           </p>
-
-          <p *ngIf="applicantData?.subject_id">
+          <p *ngIf="applicantData.subject_id">
             <span class="font-semibold">Subject:</span>
             {{ subjectName }}
           </p>
-          <p><span class="font-semibold">Category:</span> UR</p>
+          <p>
+            <span class="font-semibold">Category:</span> {{ applicantCategory }}
+          </p>
         </div>
 
-        <!-- Right Photo Section -->
         <div
           class="flex justify-center items-center border-t md:border-t-0 md:border-l border-gray-900 bg-gray-50 p-3"
         >
           <img
-            *ngIf="applicantData?.candidate_photo"
+            *ngIf="applicantData.candidate_photo"
             [src]="getFileUrl(applicantData.candidate_photo)"
             alt="Applicant Photo"
             class="w-28 h-32 object-cover rounded-sm border border-gray-300"
           />
         </div>
       </div>
+      <ng-template #noApplicantData>
+        <p class="text-center text-gray-500 italic py-4">
+          Loading applicant data...
+        </p>
+      </ng-template>
 
-      <!-- Candidate Scoring Heading -->
       <div class="mt-6 border-t border-gray-300 pt-3">
         <h5
           class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto'] text-center"
@@ -95,6 +88,133 @@
         <div
           class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
         ></div>
+      </div>
+
+      <div class="mt-4 overflow-x-auto">
+        <table
+          *ngIf="scoringTableData.length > 0; else noScoreData"
+          class="w-full min-w-full border border-gray-300 text-left text-md"
+        >
+          <thead class="bg-gray-100 border-b border-gray-300">
+            <tr>
+              <th
+                scope="col"
+                class="px-4 py-2 font-semibold text-gray-700 w-16"
+              >
+                Sno.
+              </th>
+              <th scope="col" class="px-4 py-2 font-semibold text-gray-700">
+                Details
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
+              >
+                Max Marks
+              </th>
+              <th
+                scope="col"
+                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
+              >
+                Obtained Marks
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let item of scoringTableData; let i = index"
+              class="border-b border-gray-300"
+            >
+              <td class="px-4 py-2 text-gray-700 font-semibold align-top">
+                {{ i + 1 }}.
+              </td>
+
+              <td class="px-4 py-2 text-gray-700 align-top">
+                <span class="font-semibold">{{
+                  item?.score_field_title_name
+                }}</span>
+
+                <table
+                  *ngIf="item.subHeadings.length > 0"
+                  class="w-full mt-2 text-md border border-gray-300"
+                >
+                  <thead class="bg-gray-100">
+                    <tr class="text-left">
+                      <th
+                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600"
+                      >
+                        Sub-Item
+                      </th>
+                      <th
+                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
+                      >
+                        Max Marks
+                      </th>
+                      <th
+                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
+                      >
+                        Scoring by Committee
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      *ngFor="let subItem of item.subHeadings"
+                      class="hover:bg-gray-50"
+                    >
+                      <td class="px-2 py-1 border border-gray-200">
+                        {{ subItem?.score_field_title_name }}
+                      </td>
+                      <td
+                        class="px-2 py-1 border border-gray-200 w-32 text-center"
+                      >
+                        {{ subItem?.score_field_field_marks }}
+                      </td>
+                      <td
+                        class="px-2 py-1 border border-gray-200 w-32 text-center font-medium text-blue-700"
+                      >
+                        {{ subItem?.score_field_calculated_value }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+
+              <td
+                class="px-4 py-2 text-gray-700 font-semibold align-top text-center"
+              >
+                {{ item?.score_field_field_marks }}
+              </td>
+
+              <td
+                class="px-4 py-2 text-blue-800 font-bold align-top text-center"
+              >
+                {{ item.score_field_calculated_value }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ng-template #noScoreData>
+          <p class="text-center text-gray-500 italic mt-4">
+            Loading scoring data...
+          </p>
+        </ng-template>
+      </div>
+      <div class="mt-8 text-center border-t border-gray-300 pt-6">
+        <h5
+          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto']"
+        >
+          MARKS GIVEN BY COMMITTEE / MAX. MARKS
+        </h5>
+        <div
+          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
+        ></div>
+        <p class="text-3xl font-bold text-blue-800 mt-3">
+          {{ totalObtainedMarks | number : "1.2-2" }} /
+          {{ totalMaxMarks | number : "1.2-2" }}
+        </p>
       </div>
     </div>
   </div>

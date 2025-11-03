@@ -93,7 +93,11 @@
                     formControlName="count"
                   >
                     <option [ngValue]="null" selected>Select Count</option>
-                    <option *ngFor="let n of getCountOptions()" [value]="n">
+                    <option
+                      *ngFor="let n of getCountOptions()"
+                      [value]="n"
+                      [disabled]="n <= getExistingRowCount(item)"
+                    >
                       {{ n }}
                     </option>
                   </select>

@@ -20,6 +20,7 @@ export interface Candidate {
   advertisementId: number;
   postId: number;
   subjectId: number;
+  a_rec_app_main_id: number;
   advertisement: string;
   post: string;
   subject: string; // <-- Added subject
@@ -184,6 +185,7 @@ export class ScreeningComponent implements OnInit {
                   advertisementId: c.a_rec_adv_main_id,
                   postId: c.post_code,
                   subjectId: c.subject_id, // Keep as potentially null
+                  a_rec_app_main_id: c.a_rec_app_main_id,
                   advertisement: this.getNameById(
                     this.advertisements,
                     c.a_rec_adv_main_id
@@ -433,6 +435,7 @@ export class ScreeningComponent implements OnInit {
       post_code: candidate.postId,
       subject_id: candidate.subjectId,
       academic_session_id: null, // Assuming this isn't needed for screening steps
+      a_rec_app_main_id: candidate.a_rec_app_main_id,
     };
 
     this.recruitmentState.setScreeningCandidate(candidateData);

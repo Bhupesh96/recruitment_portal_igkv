@@ -12,6 +12,7 @@ export interface UserRecruitmentData {
   post_code: number | null;
   subject_id: number | null;
   academic_session_id: number | null;
+  a_rec_app_main_id: number | null;
   // This allows for any other properties that might exist on the currentUser object.
   [key: string]: any;
 }
@@ -51,6 +52,7 @@ export class RecruitmentStateService {
         post_code: currentUser.post_code,
         subject_id: currentUser.subject_id,
         academic_session_id: currentUser.academic_session_id,
+        a_rec_app_main_id: currentUser.a_rec_app_main_id,
         ...currentUser, // Spread the rest of the properties from the original object
       };
 
@@ -58,7 +60,7 @@ export class RecruitmentStateService {
       this._userData.next(recruitmentData);
       console.log(
         '✅ RecruitmentStateService initialized with data from AuthService:',
-        recruitmentData
+        JSON.stringify(recruitmentData, null, 2)
       );
     } else {
       console.warn(
@@ -88,6 +90,11 @@ export class RecruitmentStateService {
   }
 
   public getScreeningCandidateData(): UserRecruitmentData | null {
-    return this._screeningCandidateData.getValue();
+    const data = this._screeningCandidateData.getValue();
+    console.log(
+      '🔍 getScreeningCandidateData() returning:',
+      JSON.stringify(data, null, 2)
+    );
+    return data;
   }
 }
