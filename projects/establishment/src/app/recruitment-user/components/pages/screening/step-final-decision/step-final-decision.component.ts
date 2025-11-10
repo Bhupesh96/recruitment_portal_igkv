@@ -23,13 +23,12 @@ export class StepFinalDecisionComponent implements OnInit {
   screeningRecordId: number | null = null; // The 'E' record ID (e.g., 58)
   candidateRecordId: number | null = null; // The 'C' record ID (e.g., 12)
   postDetailId: number | null = null;
-  
+  advPostDetailId: number | null = null;
   constructor(
     private http: HttpService,
     private alert: AlertService,
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService
-    
   ) {}
 
   ngOnInit() {
@@ -87,17 +86,31 @@ export class StepFinalDecisionComponent implements OnInit {
             // SET ALL REQUIRED IDs FOR THE 'E' RECORD
             this.screeningRecordId = screeningData.a_rec_app_main_id; // (e.g., 58)
             this.postDetailId = screeningData.post_code;
+
             this.registrationNo = screeningData.registration_no.toString();
 
             console.log(
               '✅ Found screening record ID (E):',
               this.screeningRecordId
             );
-            console.log(
-              '✅ Found post detail ID:',
-              this.postDetailId
-            );
+            console.log('✅ Found post detail ID:', this.postDetailId);
+            if (screeningData.a_rec_adv_main_id && this.postDetailId) {
+              console.log(
+                '🔍 Fetching advPostDetailId using post_code:',
+                this.postDetailId,
+                'and adv_main_id:',
+                screeningData.a_rec_adv_main_id
+              );
 
+              this.getAdvPostDetailId(
+                this.postDetailId,
+                screeningData.a_rec_adv_main_id
+              );
+            } else {
+              console.warn(
+                '⚠️ Missing a_rec_adv_main_id or post_code in screening data.'
+              );
+            }
             // Patch the form fields
             this.decision = screeningData.Verification_Finalize_YN || '';
             this.remarks = screeningData.Verified_Remark || '';
@@ -116,6 +129,46 @@ export class StepFinalDecisionComponent implements OnInit {
           this.alert.alert(
             true,
             'Failed to load screening record information.'
+          );
+        },
+      });
+  }
+
+  // ✅ ADD THIS ENTIRE NEW FUNCTION
+  private getAdvPostDetailId(postCode: number, advMainId: number) {
+    this.loader.showLoader();
+    this.http
+      .getParam(
+        '/candidate/get/getPostDetailIdForScreeningAndScoring',
+        {
+          post_code: postCode,
+          a_rec_adv_main_id: advMainId, // ✅ FIXED (was this.advPostDetailId before)
+        },
+        'recruitement'
+      )
+      .subscribe({
+        next: (response: any) => {
+          this.loader.hideLoader();
+          if (response?.body?.data && response.body.data.length > 0) {
+            const postData = response.body.data[0];
+            console.log(
+              'adv post detail id: ',
+              JSON.stringify(postData, null, 2)
+            );
+            this.advPostDetailId = postData.a_rec_adv_post_detail_id;
+            console.log(
+              '✅ Found a_rec_adv_post_detail_id:',
+              this.advPostDetailId
+            );
+          } else {
+            this.alert.alert(true, 'Could not find matching post detail ID.');
+          }
+        },
+        error: (err) => {
+          this.loader.hideLoader();
+          this.alert.alert(
+            true,
+            'Failed to load adv_post_detail_id information.'
           );
         },
       });
@@ -182,7 +235,9 @@ export class StepFinalDecisionComponent implements OnInit {
         reg: this.registrationNo,
         post: this.postDetailId,
       });
-      throw new Error('Application data (C_ID, E_ID, RegNo, or PostID) missing');
+      throw new Error(
+        'Application data (C_ID, E_ID, RegNo, or PostID) missing'
+      );
     }
 
     this.loader.showLoader();
@@ -191,7 +246,7 @@ export class StepFinalDecisionComponent implements OnInit {
     const syncPayload = {
       registration_no: this.registrationNo,
       app_main_id: this.candidateRecordId, // <-- Use 'C' ID (12)
-      post_detail_id: this.postDetailId,
+      post_detail_id: this.advPostDetailId,
     };
 
     const finalizePayload = {

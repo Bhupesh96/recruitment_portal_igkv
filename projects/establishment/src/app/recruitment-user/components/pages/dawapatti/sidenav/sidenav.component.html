@@ -15,40 +15,6 @@
   <ul
     class="relative flex-1 px-3 py-5 space-y-1 overflow-y-auto z-10 select-none"
   >
-    <!-- Dawapatti -->
-    <li>
-      <a
-        routerLink="/dawapatti-home/dawapatti"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-          stroke="currentColor"
-          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 6h18M3 12h18M3 18h18"
-          />
-        </svg>
-        <span
-          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
-          [class.opacity-0]="!isExpanded"
-          [class.w-0]="!isExpanded"
-          [class.ml-0]="!isExpanded"
-          [class.ml-2]="isExpanded"
-        >
-          Dawapatti
-        </span>
-      </a>
-    </li>
-
     <!-- Score Card -->
     <li>
       <a
@@ -79,6 +45,39 @@
           [class.ml-2]="isExpanded"
         >
           Score Card
+        </span>
+      </a>
+    </li>
+    <!-- Dawapatti -->
+    <li>
+      <a
+        routerLink="/dawapatti-home/dawapatti"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3 6h18M3 12h18M3 18h18"
+          />
+        </svg>
+        <span
+          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
+          [class.opacity-0]="!isExpanded"
+          [class.w-0]="!isExpanded"
+          [class.ml-0]="!isExpanded"
+          [class.ml-2]="isExpanded"
+        >
+          Dawapatti
         </span>
       </a>
     </li>

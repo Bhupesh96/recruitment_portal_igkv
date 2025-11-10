@@ -16,7 +16,6 @@ import { DawapattiComponent } from './recruitment-user/components/pages/dawapatt
 import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
 
 
-
 @NgModule({
   declarations: [AppComponent],
   imports: [

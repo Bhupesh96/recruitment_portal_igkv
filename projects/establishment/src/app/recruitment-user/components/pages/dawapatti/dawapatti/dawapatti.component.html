@@ -1,183 +1,160 @@
-<div class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center">
-  <div class="w-full bg-white rounded-sm border border-gray-300 p-5 md:p-6">
+<div>
+  <div
+    class="w-full bg-white rounded-md border border-gray-300 shadow-sm p-6 md:p-8"
+  >
+    <div class="text-center mb-6">
+      <h3
+        class="text-3xl font-extrabold text-gray-900 tracking-wide font-['Roboto'] uppercase"
+      >
+        Dawapatti
+      </h3>
+
+      <div class="border-t-2 border-gray-600"></div>
+    </div>
+
     <div
-      class="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-4 md:gap-6"
+      *ngIf="applicantData; else noApplicantData"
+      class="border border-gray-900 overflow-hidden flex flex-col md:flex-row items-stretch"
     >
-      <img
-        src="/assets/logo.png"
-        alt="IGKV Logo"
-        class="h-8 w-auto md:w-20 md:h-20 object-contain"
-      />
-      <div>
-        <h3
-          class="text-lg md:text-xl font-bold text-gray-900 leading-0 tracking-wide font-['Roboto']"
-        >
-          Indira Gandhi Krishi Vishwavidyalaya, Raipur (C.G.) - 492012
-        </h3>
-        <h5
-          class="text-lg md:text-2xl font-semibold mt-1 font-['Noto_Sans_Devanagari']"
-        >
-          इंदिरा गांधी कृषि विश्वविद्यालय, रायपुर (छ.ग.) - ४९२०१२
-        </h5>
+      <div
+        class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-0 p-2 text-[12px] text-left leading-[1] [&>p]:m-0 [&>p]:p-0 [&>p]:py-[1px]"
+      >
+        <p>
+          <span class="font-semibold">Registration No.:</span>
+
+          {{ applicantData.registration_no }}
+        </p>
+
+        <p><span class="font-semibold">Registration Date:</span> 28-10-2023</p>
+
+        <p>
+          <span class="font-semibold">Applicant Full Name:</span>
+
+          {{ fullNameE }}
+        </p>
+
+        <p>
+          <span class="font-semibold">Date of Birth:</span>
+
+          {{ applicantData.DOB | date : "dd-MM-yyyy" }}
+        </p>
+
+        <p>
+          <span class="font-semibold">Advertisement No.:</span>
+
+          {{ applicantData.advertisment_no }}
+        </p>
+
+        <p>
+          <span class="font-semibold">Father’s Name:</span>
+
+          {{ applicantData.Applicant_Father_Name_E }}
+        </p>
+
+        <p *ngIf="applicantData.subject_id">
+          <span class="font-semibold">Subject:</span>
+
+          {{ subjectName }}
+        </p>
+
+        <p>
+          <span class="font-semibold">Category:</span> {{ applicantCategory }}
+        </p>
+      </div>
+
+      <div
+        class="flex justify-center items-center border-t md:border-t-0 md:border-l border-gray-900 bg-gray-50 p-3"
+      >
+        <img
+          *ngIf="applicantData.candidate_photo"
+          [src]="getFileUrl(applicantData.candidate_photo)"
+          alt="Applicant Photo"
+          class="w-28 h-32 object-cover rounded-sm border border-gray-300"
+        />
       </div>
     </div>
 
-    <div class="text-gray-700 text-base leading-relaxed font-light py-2">
-      <div
-        *ngIf="applicantData; else noApplicantData"
-        class="border border-gray-900 overflow-hidden flex flex-col md:flex-row items-stretch"
+    <ng-template #noApplicantData>
+      <p class="text-center text-gray-500 italic py-4">
+        Loading applicant data...
+      </p>
+    </ng-template>
+
+    <div class="mt-10">
+      <h5
+        class="text-xl font-bold text-gray-800 tracking-wide border-b-2 border-blue-600 inline-block pb-1"
       >
-        <div
-          class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-0 p-2 text-[12px] text-left leading-[1] [&>p]:m-0 [&>p]:p-0 [&>p]:py-[1px]"
-        >
-          <p>
-            <span class="font-semibold">Registration No.:</span>
-            {{ applicantData.registration_no }}
-          </p>
-          <p>
-            <span class="font-semibold">Registration Date:</span> 28-10-2023
-          </p>
-          <p>
-            <span class="font-semibold">Applicant Full Name:</span>
-            {{ fullNameE }}
-          </p>
-          <p>
-            <span class="font-semibold">Date of Birth:</span>
-            {{ applicantData.DOB | date : "dd-MM-yyyy" }}
-          </p>
-          <p>
-            <span class="font-semibold">Advertisement No.:</span>
-            {{ applicantData.advertisment_no }}
-          </p>
-          <p>
-            <span class="font-semibold">Father’s Name:</span>
-            {{ applicantData.Applicant_Father_Name_E }}
-          </p>
-          <p *ngIf="applicantData.subject_id">
-            <span class="font-semibold">Subject:</span>
-            {{ subjectName }}
-          </p>
-          <p>
-            <span class="font-semibold">Category:</span> {{ applicantCategory }}
-          </p>
-        </div>
+        Candidate Scoring
+      </h5>
+    </div>
 
-        <div
-          class="flex justify-center items-center border-t md:border-t-0 md:border-l border-gray-900 bg-gray-50 p-3"
-        >
-          <img
-            *ngIf="applicantData.candidate_photo"
-            [src]="getFileUrl(applicantData.candidate_photo)"
-            alt="Applicant Photo"
-            class="w-28 h-32 object-cover rounded-sm border border-gray-300"
-          />
-        </div>
-      </div>
-      <ng-template #noApplicantData>
-        <p class="text-center text-gray-500 italic py-4">
-          Loading applicant data...
-        </p>
-      </ng-template>
+    <div class="mt-4 overflow-x-auto">
+      <table
+        *ngIf="scoringTableData.length > 0; else noScoreData"
+        class="w-full border border-gray-300 text-sm md:text-base rounded-md shadow-sm"
+      >
+        <thead class="bg-gray-100 border-b border-gray-300">
+          <tr>
+            <th class="px-4 py-2 font-semibold text-gray-700 w-16">Sno.</th>
 
-      <div class="mt-6 border-t border-gray-300 pt-3">
-        <h5
-          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto'] text-center"
-        >
-          Candidate Scoring
-        </h5>
-        <div
-          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
-        ></div>
-      </div>
+            <th class="px-4 py-2 font-semibold text-gray-700">Details</th>
 
-      <div class="mt-4 overflow-x-auto">
-        <table
-          *ngIf="scoringTableData.length > 0; else noScoreData"
-          class="w-full min-w-full border border-gray-300 text-left text-md"
-        >
-          <thead class="bg-gray-100 border-b border-gray-300">
-            <tr>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-16"
-              >
-                Sno.
-              </th>
-              <th scope="col" class="px-4 py-2 font-semibold text-gray-700">
-                Details
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
-              >
-                Max Marks
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
-              >
-                Obtained Marks
-              </th>
-            </tr>
-          </thead>
+            <th class="px-4 py-1 font-semibold text-gray-700 text-center">
+              Max Marks
+            </th>
 
-          <tbody>
+            <th class="px-4 py-1 font-semibold text-gray-700 text-center">
+              Obtained Marks
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <ng-container *ngFor="let item of scoringTableData; let i = index">
             <tr
-              *ngFor="let item of scoringTableData; let i = index"
-              class="border-b border-gray-300"
+              class="border-b border-gray-300 bg-white hover:bg-gray-50 transition"
             >
               <td class="px-4 py-2 text-gray-700 font-semibold align-top">
                 {{ i + 1 }}.
               </td>
 
-              <td class="px-4 py-2 text-gray-700 align-top">
-                <span class="font-semibold">{{
+              <td class="px-4 py-2 text-gray-800 align-top">
+                <span class="font-semibold text-blue-700 block mb-1">{{
                   item?.score_field_title_name
                 }}</span>
 
                 <table
                   *ngIf="item.subHeadings.length > 0"
-                  class="w-full mt-2 text-md border border-gray-300"
+                  class="w-[100%] ml-4 mt-2 text-sm border border-gray-200 bg-gray-50 rounded-md"
                 >
                   <thead class="bg-gray-100">
-                    <tr class="text-left">
+                    <tr>
                       <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600"
+                        class="px-2 py-1 border-b border-gray-200 font-semibold text-gray-600"
                       >
                         Sub-Item
                       </th>
+
                       <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
+                        class="px-2 py-1 border-b border-gray-200 font-semibold text-gray-600 w-32 text-center"
                       >
                         Max Marks
                       </th>
+
                       <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
+                        class="px-2 py-1 border-b border-gray-200 font-semibold text-gray-600 w-32 text-center"
                       >
-                        Scoring by Committee
+                        Committee Marks
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    <tr
-                      *ngFor="let subItem of item.subHeadings"
-                      class="hover:bg-gray-50"
-                    >
-                      <td class="px-2 py-1 border border-gray-200">
-                        {{ subItem?.score_field_title_name }}
-                      </td>
-                      <td
-                        class="px-2 py-1 border border-gray-200 w-32 text-center"
-                      >
-                        {{ subItem?.score_field_field_marks }}
-                      </td>
-                      <td
-                        class="px-2 py-1 border border-gray-200 w-32 text-center font-medium text-blue-700"
-                      >
-                        {{ subItem?.score_field_calculated_value }}
-                      </td>
-                    </tr>
-                  </tbody>
+
+                  <tbody
+                    *ngTemplateOutlet="
+                      recursiveSubHeadings;
+                      context: { $implicit: item.subHeadings }
+                    "
+                  ></tbody>
                 </table>
               </td>
 
@@ -193,29 +170,173 @@
                 {{ item.score_field_calculated_value }}
               </td>
             </tr>
-          </tbody>
-        </table>
+          </ng-container>
+        </tbody>
+      </table>
 
-        <ng-template #noScoreData>
-          <p class="text-center text-gray-500 italic mt-4">
-            Loading scoring data...
-          </p>
-        </ng-template>
-      </div>
-      <div class="mt-8 text-center border-t border-gray-300 pt-6">
-        <h5
-          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto']"
+      <ng-template #noScoreData>
+        <p class="text-center text-gray-500 italic mt-4">
+          Loading scoring data...
+        </p>
+      </ng-template>
+    </div>
+
+    <div
+      *ngIf="applicantData && applicantData.Verification_Finalize_YN"
+      class="mb-6 mt-6 ml-4"
+    >
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-base font-semibold text-gray-800">Eligibility:</span>
+
+        <span
+          *ngIf="applicantData.Verification_Finalize_YN === 'Y'"
+          class="px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800"
         >
-          MARKS GIVEN BY COMMITTEE / MAX. MARKS
-        </h5>
-        <div
-          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
-        ></div>
-        <p class="text-3xl font-bold text-blue-800 mt-3">
-          {{ totalObtainedMarks | number : "1.2-2" }} /
-          {{ totalMaxMarks | number : "1.2-2" }}
+          Eligible
+        </span>
+
+        <span
+          *ngIf="applicantData.Verification_Finalize_YN === 'N'"
+          class="px-3 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800"
+        >
+          Not Eligible
+        </span>
+      </div>
+
+      <div *ngIf="applicantData.Verified_Remark">
+        <span class="text-base font-semibold text-gray-800">Remark:</span>
+
+        <p class="text-base text-gray-700 ml-2">
+          {{ applicantData.Verified_Remark }}
         </p>
       </div>
     </div>
+
+    <div class="mt-10 text-center border-t border-gray-300 pt-6">
+      <h5
+        class="text-xl font-bold text-gray-800 tracking-wide border-b-2 border-blue-600 inline-block pb-1"
+      >
+        MARKS GIVEN BY COMMITTEE / MAX. MARKS
+      </h5>
+
+      <p class="text-3xl font-extrabold text-blue-800 mt-4">
+        {{ totalObtainedMarks | number : "1.2-2" }} /
+
+        {{ totalMaxMarks | number : "1.2-2" }}
+      </p>
+    </div>
   </div>
 </div>
+
+<ng-template #recursiveSubHeadings let-subHeadings>
+  <ng-container *ngFor="let subItem of subHeadings">
+    <tr class="hover:bg-gray-100">
+      <td class="px-2 py-1 border border-gray-200">
+        {{ subItem?.score_field_title_name }}
+      </td>
+
+      <td class="px-2 py-1 border border-gray-200 w-32 text-center">
+        {{ subItem?.score_field_field_marks }}
+      </td>
+
+      <td
+        class="px-2 py-1 border border-gray-200 w-32 text-center font-medium text-blue-700"
+      >
+        {{ subItem?.score_field_calculated_value }}
+      </td>
+    </tr>
+
+    <!-- ✅ Nested SubHeadings Table -->
+    <tr *ngIf="subItem.subHeadings && subItem.subHeadings.length > 0">
+      <td colspan="3" class="p-0 border-l border-r border-b border-gray-200">
+        <table
+          class="w-[calc(100%-1rem)] ml-4 text-sm table-fixed border-gray-200 bg-gray-50 rounded-sm"
+        >
+          <tbody
+            *ngTemplateOutlet="
+              recursiveSubHeadings;
+              context: { $implicit: subItem.subHeadings }
+            "
+          ></tbody>
+        </table>
+      </td>
+    </tr>
+
+    <!-- ✅ Parameter Data Table -->
+    <tr *ngIf="subItem.parameterData && subItem.parameterData.rows.length > 0">
+      <td
+        colspan="3"
+        class="p-0 border-l border-r border-b border-gray-200 bg-white"
+      >
+        <table
+          class="w-[calc(100%-1rem)] ml-4 text-sm table-fixed border border-gray-200 rounded-sm"
+        >
+          <thead class="bg-gray-100">
+            <tr>
+              <ng-container
+                *ngFor="let def of subItem.parameterData.definitions"
+              >
+                <th
+                  class="px-2 py-1 font-semibold text-gray-600 text-center border-t border-gray-200 break-all"
+                >
+                  {{ def.score_field_parameter_name }}
+                </th>
+              </ng-container>
+
+              <th
+                *ngIf="subItem.parameterData.hasAnyClaimableRows"
+                class="px-2 py-1 font-semibold text-gray-600 text-center border-t border-gray-200"
+              >
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let rowData of subItem.parameterData.rows"
+              [ngClass]="rowData.rowClass"
+            >
+              <ng-container *ngFor="let cell of rowData.cells">
+                <td
+                  class="px-2 py-1 border-t border-gray-200 text-center font-medium text-blue-700 break-all"
+                >
+                  {{ cell.candidate_value }}
+                </td>
+              </ng-container>
+
+              <td
+                *ngIf="subItem.parameterData.hasAnyClaimableRows"
+                class="px-2 py-1 border-t border-gray-200 text-center align-middle"
+              >
+                <button
+                  *ngIf="rowData.isClaimApplied"
+                  class="px-3 py-1 bg-green-600 text-white text-xs rounded shadow cursor-not-allowed"
+                  disabled
+                >
+                  Applied
+                </button>
+
+                <button
+                  *ngIf="!rowData.isClaimApplied && rowData.showClaimButton"
+                  class="px-3 py-1 bg-blue-600 text-white text-xs rounded shadow hover:bg-blue-700"
+                  (click)="onApplyClaim(subItem, rowData)"
+                >
+                  Apply for Claim
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </ng-container>
+</ng-template>
+
+<app-claim-modal
+  *ngIf="isClaimModalVisible"
+  [itemData]="selectedItemForClaim"
+  [rowData]="selectedRowForClaim"
+  (submitClaim)="handleClaimSubmit($event)"
+  (closeModal)="handleClaimCancel()"
+></app-claim-modal>

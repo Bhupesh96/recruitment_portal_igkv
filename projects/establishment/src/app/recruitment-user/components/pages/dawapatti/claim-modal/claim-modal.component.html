@@ -1,0 +1,116 @@
+<!-- Background Overlay -->
+<div
+  class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+>
+  <!-- Modal Container -->
+  <div
+    class="bg-white rounded-md shadow-2xl w-full max-w-2xl overflow-hidden animate-fadeIn border border-gray-200"
+  >
+    <!-- Header -->
+    <div
+      class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-100 to-indigo-100"
+    >
+      <h3
+        class="text-xl font-semibold text-gray-800 font-['Inter'] tracking-tight"
+      >
+        Apply for Claim
+      </h3>
+      <button
+        (click)="onCancel()"
+        class="flex items-center justify-center text-gray-500 hover:text-white transition-all"
+        style="
+          width: 40px !important;
+          height: 40px !important;
+          font-size: 22px !important;
+          line-height: 1 !important;
+          border-radius: 50% !important;
+          background-color: transparent !important;
+          border: none !important;
+          cursor: pointer !important;
+          transition: all 0.3s ease !important;
+        "
+        onmouseover="this.style.backgroundColor='rgba(239,68,68,0.9)'; this.style.color='white';"
+        onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6B7280';"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 space-y-5 font-['Inter'] text-[15px]">
+      <!-- Item Info -->
+      <div
+        class="p-4 rounded-xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+      >
+        <span class="font-semibold text-gray-700">Applying For:</span>
+        <span class="text-blue-700 font-medium mt-1 sm:mt-0">
+          {{ itemData?.score_field_title_name }}
+        </span>
+      </div>
+
+      <!-- Remark Field -->
+      <div>
+        <label
+          for="remark"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Remark <span class="text-red-500">*</span>
+        </label>
+        <textarea
+          id="remark"
+          [(ngModel)]="remark"
+          rows="4"
+          placeholder="Please explain the reason for your claim..."
+          class="w-full resize-none rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-800 placeholder-gray-400"
+        ></textarea>
+      </div>
+
+      <!-- File Upload -->
+      <div>
+        <label for="file" class="block text-sm font-medium text-gray-700 mb-2">
+          Supporting Document <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="file"
+          id="file"
+          (change)="onFileChange($event)"
+          class="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer focus:outline-none file:cursor-pointer file:bg-blue-50 file:border-0 file:py-2 file:px-4 file:rounded-md file:text-blue-700 hover:file:bg-blue-100 transition"
+        />
+        <p class="text-xs text-gray-500 mt-1">PDF, JPG, PNG (Max 2MB)</p>
+        <p *ngIf="fileError" class="text-sm text-red-600 mt-1">
+          {{ fileError }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="px-6 py-4 border-t border-gray-600 flex justify-end gap-3 bg-gray-50"
+    >
+      <button
+        type="button"
+        (click)="onCancel()"
+        class="px-5 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition-all font-medium"
+        style="
+          border-radius: 9999px !important;
+          padding-inline: 1.5rem !important;
+        "
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="onSubmit()"
+        [disabled]="!remark || !selectedFile"
+        class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium transition-all shadow-sm"
+        style="
+          border-radius: 9999px !important;
+          padding-inline: 1.5rem !important;
+        "
+      >
+        Submit Claim
+      </button>
+    </div>
+  </div>
+</div>

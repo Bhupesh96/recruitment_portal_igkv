@@ -887,7 +887,7 @@ export class Step2Component implements OnInit {
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
       const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
       // If there's no registration number, we can't proceed.
-      if (!registrationNo || !a_rec_adv_main_id  || !a_rec_app_main_id) {
+      if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot submit.';
         this.alertService.alert(true, errorMsg);
         return reject(new Error(errorMsg));
