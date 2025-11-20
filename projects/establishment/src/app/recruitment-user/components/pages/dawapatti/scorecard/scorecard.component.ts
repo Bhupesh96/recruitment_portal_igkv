@@ -3,10 +3,10 @@ import {
   RecruitmentStateService,
   UserRecruitmentData,
 } from '../../recruitment-state.service';
-import { HttpService } from 'shared';
+import { HttpService, LoaderService } from 'shared';
 import { CommonModule } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser'; // Import DomSanitizer
 
 @Component({
@@ -29,7 +29,8 @@ export class ScorecardComponent implements OnInit {
   constructor(
     private recruitmentState: RecruitmentStateService,
     private HTTP: HttpService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private loader: LoaderService
   ) {}
 
   ngOnInit(): void {
@@ -52,6 +53,51 @@ export class ScorecardComponent implements OnInit {
     } else {
       console.error('❌ No registration number found in state.');
     }
+  }
+
+  // In scorecard.component.ts
+
+  async downloadPDF() {
+    const printElement = document.getElementById('scorecard-to-print');
+    if (!printElement) return;
+
+    // Convert the logo (if it exists) to base64 before capturing HTML
+    const logoImg = printElement.querySelector('img#logo') as HTMLImageElement;
+    if (logoImg && logoImg.src && !logoImg.src.startsWith('data:')) {
+      const base64 = await this.convertImageToBase64(logoImg.src);
+      logoImg.src = base64;
+    }
+
+    const htmlContent = printElement.outerHTML;
+    const payload = { html: htmlContent, orientation: 'portrait' };
+
+    this.loader.showLoader();
+    this.HTTP.postBlob(
+      '/file/post/htmltoPdf',
+      payload,
+      'scorecard.pdf',
+      'common'
+    )
+      .pipe(finalize(() => this.loader.hideLoader()))
+      .subscribe({
+        next: () => console.log('PDF download initiated.'),
+        error: (err) => console.error('Error generating PDF:', err),
+      });
+  }
+
+  // helper
+  private convertImageToBase64(url: string): Promise<string> {
+    return fetch(url)
+      .then((res) => res.blob())
+      .then(
+        (blob) =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          })
+      );
   }
 
   // --- Helper to get applicant's full name ---
@@ -198,9 +244,9 @@ export class ScorecardComponent implements OnInit {
       this.HTTP.getParam(
         '/master/get/getSubHeadingParameterByParentScoreField',
         {
+          m_rec_score_field: 'N',
           a_rec_adv_main_id: advertisementId,
           m_rec_score_field_id: id,
-          m_rec_score_field: 'N',
         },
         'recruitement'
       )

@@ -8,23 +8,63 @@
     </div>
   </div>
 
-  <div *ngIf="isLoggedIn" class="logout-container">
-    <button (click)="logout()" class="logout-button">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-        />
-      </svg>
-      <span>Logout</span>
+  <!-- Profile Section -->
+  <div *ngIf="isLoggedIn" class="profile-container">
+    <button (click)="toggleProfileMenu()" class="profile-button">
+      <div class="welcome-text">
+        <div class="name-line">
+          <span class="welcome-label">Welcome,</span>
+          <span class="welcome-name">{{ welcomeName }}</span>
+        </div>
+        <div *ngIf="welcomeNameHindi" class="welcome-text-hindi">
+          {{ welcomeNameHindi }}
+        </div>
+      </div>
+
+      <!-- Profile Image -->
+      <img
+        *ngIf="profileImageUrl"
+        [src]="profileImageUrl"
+        alt="Profile Photo"
+        class="profile-photo"
+        (error)="hideImageOnError($event)"
+      />
+
+      <!-- Default Icon -->
+      <div *ngIf="!profileImageUrl" class="profile-icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zM12 6a3 3 0 100 6 3 3 0 000-6zM5.808 17.14A7.716 7.716 0 0012 19.5a7.716 7.716 0 006.192-2.36l-1.18-1.18A5.702 5.702 0 0112 17.25a5.702 5.702 0 01-4.99-2.79l-1.202 1.201z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </div>
     </button>
+
+    <!-- Dropdown -->
+    <div *ngIf="isProfileMenuOpen" class="profile-menu">
+      <button (click)="logout()" class="menu-item">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+          />
+        </svg>
+        <span>Logout</span>
+      </button>
+    </div>
   </div>
 </div>

@@ -111,7 +111,7 @@ export class HomeComponent implements OnInit {
   ) {}
   handleLoginSuccess() {
     console.log('Login Successful, showing stepper');
-    this.router.navigate(['/stepper']);
+    this.router.navigate(['/recruitment']);
   }
   ngOnInit() {
     this.getAcademicSession();

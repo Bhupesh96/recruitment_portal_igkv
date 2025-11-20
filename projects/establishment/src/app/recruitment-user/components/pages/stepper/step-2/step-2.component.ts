@@ -63,13 +63,14 @@ interface Parameter {
   m_rec_score_field_parameter_new_id: number;
   a_rec_adv_post_detail_id: number;
   score_field_parameter_name: string;
-  control_type: 'T' | 'D' | 'DY' | 'A' | 'DV' | 'TV' | 'TM' | 'TO' | 'DP';
+  control_type: 'T' | 'D' | 'DY' | 'A' | 'DV' | 'TV' | 'TM' | 'TO' | 'DP' | 'DC';
   parameter_display_order: number;
   is_mandatory?: string;
   isDatatype: string;
   isCalculationColumn: string;
   isQuery_id: number;
   data_type_size: number;
+  m_parameter_master_id: number;
 }
 
 interface Note {
@@ -173,10 +174,7 @@ export class Step2Component implements OnInit {
   }
 
   sanitizeFileUrl(filePath: string): SafeUrl {
-    let fileName = filePath.split('/').pop() || '';
-    fileName = fileName.replace(/\.pdf\.pdf$/, '.pdf');
-    const registrationNo = this.userData?.registration_no;
-    const url = `http://192.168.1.57:3500/recruitment/${registrationNo}/${fileName}`;
+    const url = `http://192.168.1.57:3500/${filePath}`;
     return this.sanitizer.bypassSecurityTrustUrl(url);
   }
 
@@ -390,6 +388,41 @@ export class Step2Component implements OnInit {
 
       // (The rest of your existing logic in this loop remains the same)
       const formArray = this.form.get(`qualifications${key}`) as FormArray;
+      const percentageParam = params.find(
+        (p) => p.m_parameter_master_id === 17
+      );
+      const ogpaParam = params.find((p) => p.m_parameter_master_id === 18);
+
+      // 2. Only proceed if both exist in this subheading
+      if (percentageParam && ogpaParam) {
+        formArray.controls.forEach((control) => {
+          const group = control as FormGroup;
+          const percentageCtrl = group.get(
+            percentageParam.score_field_parameter_name
+          );
+          const ogpaCtrl = group.get(ogpaParam.score_field_parameter_name);
+
+          if (percentageCtrl && ogpaCtrl) {
+            // 3. Subscribe to Percentage Changes
+            percentageCtrl.valueChanges.subscribe((val) => {
+              const pctValue = parseFloat(val);
+
+              // Check if it is a valid number
+              if (!isNaN(pctValue)) {
+                // 4. Perform Calculation (Assuming OGPA = Percentage / 10)
+                // Adjust this formula if your university uses a different one (e.g., / 9.5)
+                const calculatedOgpa = (pctValue / 10).toFixed(2);
+
+                // 5. Set OGPA value (emitEvent: false prevents infinite loops)
+                ogpaCtrl.setValue(calculatedOgpa, { emitEvent: false });
+              } else {
+                // Clear OGPA if percentage is invalid/empty
+                ogpaCtrl.setValue('', { emitEvent: false });
+              }
+            });
+          }
+        });
+      }
       formArray.controls.forEach((control) => {
         const group = control as FormGroup;
         params.forEach((param) => {
@@ -430,7 +463,7 @@ export class Step2Component implements OnInit {
         validators.push(Validators.min(0));
       } else if (param.isDatatype === 'text' && param.control_type === 'T') {
         // ✅ FIX: Only apply to text inputs and allow more characters
-        validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+        Validators.pattern('^[a-zA-Z ().,:&-]*$');
       }
       // --- MODIFICATION END ---
 
@@ -465,7 +498,7 @@ export class Step2Component implements OnInit {
       }
 
       // ✅ UPDATED REGEX: To match the new pattern (allows letters, spaces, parentheses)
-      const isAllowedChar = /^[a-zA-Z ()]$/.test(event.key);
+      const isAllowedChar = /^[a-zA-Z ().,:&\-]$/.test(event.key);
 
       if (!isAllowedChar) {
         event.preventDefault();
@@ -509,7 +542,7 @@ export class Step2Component implements OnInit {
             param.control_type === 'T'
           ) {
             // ✅ FIX: Only apply to text inputs and allow more characters
-            validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+            Validators.pattern('^[a-zA-Z ().,:&-]*$');
           }
           // --- MODIFICATION END ---
 
@@ -527,7 +560,7 @@ export class Step2Component implements OnInit {
 
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
-      { a_rec_adv_main_id, m_rec_score_field_id, m_rec_score_field },
+      { m_rec_score_field, a_rec_adv_main_id, m_rec_score_field_id },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
 
@@ -837,7 +870,7 @@ export class Step2Component implements OnInit {
             a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
             score_field_parent_id: sub.score_field_parent_id,
             m_rec_score_field_id: sub.m_rec_score_field_id,
-            m_rec_score_field_method_id: 1,
+            m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
             score_field_value: percentage,
             score_field_actual_value: scoreResult.score_field_actual_value,
             score_field_calculated_value:
@@ -936,7 +969,7 @@ export class Step2Component implements OnInit {
         a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
         score_field_parent_id: 0,
         m_rec_score_field_id: this.heading?.m_rec_score_field_id,
-        m_rec_score_field_method_id: 1,
+        m_rec_score_field_method_id: this.heading?.m_rec_score_field_method_id,
         score_field_value: this.heading?.score_field_field_marks || 60,
         score_field_actual_value: parentCalculatedValue,
         score_field_calculated_value: Math.min(
@@ -1022,25 +1055,48 @@ export class Step2Component implements OnInit {
           const paramName = param.score_field_parameter_name;
           const value = rawValues[paramName];
 
-          // Check if the parameter is a file upload
-          if (param.control_type === 'A' || param.isDatatype === 'attachment') {
+          // ✅ START: DROPDOWN LOGIC (ID -> Name Conversion)
+          if (
+            (param.control_type === 'D' ||
+              param.control_type === 'DC' ||
+              param.control_type === 'DY') &&
+            param.isQuery_id
+          ) {
+            const options = this.dropdownData.get(param.isQuery_id);
+            // Find the option where data_id matches the form value (use == to handle string/number diffs)
+            const selectedOption = options?.find((opt) => opt.data_id == value);
+
+            if (selectedOption) {
+              // Emit the Name instead of the ID
+              processedQualification[paramName] = selectedOption.data_name;
+            } else {
+              // Fallback: if no match found (or value is empty), send original value
+              processedQualification[paramName] = value;
+            }
+          }
+          // ✅ END: DROPDOWN LOGIC
+
+          // FILE LOGIC
+          else if (
+            param.control_type === 'A' ||
+            param.isDatatype === 'attachment'
+          ) {
             if (value instanceof File) {
               // Case 1: A new file has been selected by the user.
-              // We emit the actual File object.
-              processedQualification[paramName] = value;
+              processedQualification[paramName] = value; // 'FILE_UPLOADED' or actual file object logic handled in step-9
             } else {
-              // Case 2: No new file was selected. Check for a pre-existing file from the server.
+              // Case 2: Check for a pre-existing file from the server.
               const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_0`;
               const existingFilePath = this.filePaths.get(fileKey);
               if (existingFilePath) {
-                // We emit the string path of the existing file.
                 processedQualification[paramName] = existingFilePath;
               } else {
                 processedQualification[paramName] = null; // No file exists
               }
             }
-          } else {
-            // It's not a file, so just use the standard form value.
+          }
+          // TEXT/NUMBER LOGIC
+          else {
             processedQualification[paramName] = value;
           }
         });
@@ -1072,7 +1128,6 @@ export class Step2Component implements OnInit {
       _isValid: this.form.valid,
       heading: this.heading,
       subheadings: subheadingsInfo,
-      // We no longer spread `form.getRawValue()` but use our clean structure instead.
       ...qualificationsData,
     };
 

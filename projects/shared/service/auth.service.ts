@@ -51,7 +51,13 @@ export class AuthService {
     const user_cookie = this.cookie.get('user');
     const cookie = this.cookie.get('session');
     if (user_cookie && cookie) {
-      return this.decryptCookie(user_cookie);
+      // Decrypt the data first
+      const decryptedData = this.decryptCookie(user_cookie);
+
+      // ✅ ADD THIS LINE to log the data to your browser console
+      console.log('--- DECRYPTED USER DATA ---', decryptedData);
+
+      return decryptedData;
     } else {
       this.logout();
     }

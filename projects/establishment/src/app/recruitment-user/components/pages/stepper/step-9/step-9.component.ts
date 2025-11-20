@@ -329,12 +329,55 @@ export class Step9Component implements OnInit, OnDestroy {
   }
 
   isFileValue(value: any): boolean {
+    // Check if it's a JavaScript File object (newly uploaded)
+    if (value instanceof File) {
+      return true;
+    }
+
+    // Check if it is an object that is not null (for the {} case in your JSON if it's not strictly a File instance yet)
+    // We only assume it's a file if it's an object and NOT an array, usually associated with specific keys
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // If it's an empty object in the JSON dump under an attachment key, treat it as valid
+      return true;
+    }
+
+    // Existing string check
     return (
       typeof value === 'string' &&
       (value.startsWith('recruitment/') || value === 'FILE_UPLOADED')
     );
   }
 
+  // 2. Update this function to check the Data Array, not just filePaths map
+  checkFilesForSubheading(sectionData: any, subheadKey: string): boolean {
+    if (!sectionData) {
+      return false;
+    }
+
+    // 1. Check the old way (filePaths map) - useful for data coming from DB
+    const cleanSubheadKey = subheadKey.replace('qualifications', '');
+    if (
+      sectionData['filePaths'] &&
+      Object.keys(sectionData['filePaths']).some((filePathKey) =>
+        filePathKey.startsWith(cleanSubheadKey)
+      )
+    ) {
+      return true;
+    }
+
+    // 2. NEW: Check the actual data array for 'Attachment' key (useful for new uploads)
+    const dataArray = sectionData[cleanSubheadKey];
+    if (Array.isArray(dataArray) && dataArray.length > 0) {
+      // Check if any item in the array has an "Attachment" property with a value
+      return dataArray.some(
+        (item) =>
+          (item['Attachment'] && this.isFileValue(item['Attachment'])) ||
+          (item['attachment'] && this.isFileValue(item['attachment']))
+      );
+    }
+
+    return false;
+  }
   formatValue(value: any): string {
     if (this.isFileValue(value)) {
       return 'File Uploaded';
@@ -424,16 +467,7 @@ export class Step9Component implements OnInit, OnDestroy {
     );
   }
 
-  checkFilesForSubheading(sectionData: any, subheadKey: string): boolean {
-    if (!sectionData || !sectionData['filePaths']) {
-      return false;
-    }
-    const cleanSubheadKey = subheadKey.replace('qualifications', '');
 
-    return Object.keys(sectionData['filePaths']).some((filePathKey) =>
-      filePathKey.startsWith(cleanSubheadKey)
-    );
-  }
   submit(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.form.invalid) {

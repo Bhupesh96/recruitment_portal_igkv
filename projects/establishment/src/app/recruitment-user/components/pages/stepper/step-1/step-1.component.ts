@@ -161,7 +161,7 @@ export class Step1Component implements OnChanges, OnInit {
         Validators.required,
       ],
       subject_id: [
-        { value: initialUserData?.subject_id || 0, disabled: true },
+        { value: initialUserData?.subject_id || null, disabled: true },
         this.showSubjectDropdown ? Validators.required : [], // Validator is also conditional
       ],
       Salutation_E: [null, Validators.required],
@@ -269,7 +269,7 @@ export class Step1Component implements OnChanges, OnInit {
         const userDataRes = responses[this.dropdownConfig.length + 1];
         const savedLanguagesRes = responses[this.dropdownConfig.length + 2];
 
-        // 6. Process the remaining data as before
+        // 6. Process Additional Info Questions
         let questions = additionalQuestionsRes?.body?.data?.questions || [];
         questions.forEach((question: any) => {
           question.options.forEach((option: any) => {
@@ -290,13 +290,28 @@ export class Step1Component implements OnChanges, OnInit {
           this.setupConditionalValidators(this.additionalQuestions);
         }
 
-        const userData = userDataRes?.body?.data?.[0];
+        // 7. Process User Data with Fallback
+        let userData = userDataRes?.body?.data?.[0];
+
+        // FIX: If API returns empty, try getting data from state service
+        if (!userData) {
+          console.warn(
+            'API User Data empty, using RecruitmentStateService fallback.'
+          );
+          userData = this.recruitmentState.getCurrentUserData();
+        }
+
         if (userData) {
-          this.patchUserData(userData);
+          // Handle Languages
           const savedLanguages = savedLanguagesRes?.body?.data || [];
           if (savedLanguages.length > 0) {
             this.patchUserLanguages(savedLanguages);
           }
+
+          // Handle Main Profile Data (Calls the updated function below)
+          this.patchUserData(userData);
+
+          // Handle Additional Info & Logic
           this.loadAndPatchAdditionalInfo(userData.registration_no).subscribe(
             () => {
               this.setupCustomLogicListeners();
@@ -305,6 +320,7 @@ export class Step1Component implements OnChanges, OnInit {
             }
           );
         } else {
+          // If absolutely no data found anywhere
           this.loader.hideLoader();
         }
       },
@@ -318,7 +334,6 @@ export class Step1Component implements OnChanges, OnInit {
       },
     });
   }
-
   /**
    * Sets up all reactive form `valueChanges` subscriptions to handle dynamic UI and data fetching.
    */
@@ -593,7 +608,7 @@ export class Step1Component implements OnChanges, OnInit {
   // --- Form & UI Event Handlers ---
 
   private patchUserData(data: any): void {
-    // File handling can stay at the top
+    // --- 1. Handle File Previews (Sync operations) ---
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
@@ -613,103 +628,113 @@ export class Step1Component implements OnChanges, OnInit {
       this.form.get('signature')?.setValidators([Validators.required]);
     }
     this.form.get('signature')?.updateValueAndValidity();
+
+    // --- 2. Prepare Dependent Data Requests ---
+    const requests: { [key: string]: Observable<any> } = {};
+
+    // Fetch Posts based on Advertisement ID
     if (data.a_rec_adv_main_id) {
-      this.fetchPostsByAdvertisement(data.a_rec_adv_main_id);
+      requests['posts'] = this.getPostByAdvertisement(data.a_rec_adv_main_id);
     }
+
+    // Fetch Subjects based on Post Code
     if (data.post_code) {
-      this.fetchSubjectsByPost(data.post_code);
+      requests['subjects'] = this.getSubjectsByPostCode(data.post_code);
     }
-    // Prepare district requests
-    const districtRequests: { [key: string]: Observable<any> } = {};
+
+    // Fetch Districts based on State IDs
     if (data.Permanent_State_Id) {
-      districtRequests['permanent'] = this.getDistrictsByState(
+      requests['permanentDist'] = this.getDistrictsByState(
         data.Permanent_State_Id
       );
     }
     if (data.Current_State_Id) {
-      districtRequests['current'] = this.getDistrictsByState(
-        data.Current_State_Id
-      );
+      requests['currentDist'] = this.getDistrictsByState(data.Current_State_Id);
     }
     if (data.Birth_State_Id) {
-      districtRequests['birth'] = this.getDistrictsByState(data.Birth_State_Id);
+      requests['birthDist'] = this.getDistrictsByState(data.Birth_State_Id);
     }
 
-    // Helper function to perform the patch operation
-    const patchTheForm = () => {
-      this.form.patchValue(
-        {
-          a_rec_app_main_id: data.a_rec_app_main_id,
-          post_code: data.post_code,
-          subject_id: data.subject_id || 0,
-          registration_no: data.registration_no,
-          a_rec_adv_main_id: data.a_rec_adv_main_id,
-          session_id: data.academic_session_id,
-          Salutation_E: data.Salutation_E,
-          Salutation_H: data.Salutation_E,
-          Applicant_First_Name_E: data.Applicant_First_Name_E,
-          Applicant_Middle_Name_E: data.Applicant_Middle_Name_E,
-          Applicant_Last_Name_E: data.Applicant_Last_Name_E,
-          Applicant_First_Name_H: data.Applicant_First_Name_H,
-          Applicant_Middle_Name_H: data.Applicant_Middle_Name_H,
-          Applicant_Last_Name_H: data.Applicant_Last_Name_H,
-          Applicant_Father_Name_E: data.Applicant_Father_Name_E,
-          Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
-          gender_id: data.gender_id,
-          DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
-          Mobile_No: String(data.mobile_no),
-          Email_Id: data.email_id,
-          Birth_Place: data.Birth_Place,
-          Birth_District_Id: data.Birth_District_Id,
-          Birth_State_Id: data.Birth_State_Id,
-          Birth_Country_Id: data.Birth_Country_Id,
-          Identification_Mark1: data.Identification_Mark1,
-          Identification_Mark2: data.Identification_Mark2,
-          religion_code: data.religion_code,
-          Permanent_Address1: data.Permanent_Address1,
-          Permanent_City: data.Permanent_City,
-          Permanent_District_Id: data.Permanent_District_Id,
-          Permanent_State_Id: data.Permanent_State_Id,
-          Permanent_Country_Id: data.Permanent_Country_Id,
-          Permanent_Pin_Code: data.Permanent_Pin_Code,
-          Current_Address1: data.Current_Address1,
-          Current_City: data.Current_City,
-          Current_District_Id: data.Current_District_Id,
-          Current_State_Id: data.Current_State_Id,
-          Current_Country_Id: data.Current_Country_Id,
-          Current_Pin_Code: data.Current_Pin_Code,
-        },
-        { emitEvent: false }
-      );
-      this.cdr.markForCheck(); // Trigger change detection
-    };
+    // --- 3. Fetch Dependent Lists then Patch Form ---
+    // Check if we have any requests to make
+    const hasRequests = Object.keys(requests).length > 0;
+    const loader$ = hasRequests ? forkJoin(requests) : of({});
 
-    // If we have districts to fetch...
-    if (Object.keys(districtRequests).length > 0) {
-      forkJoin(districtRequests).subscribe({
-        next: (responses: any) => {
-          // 1. Populate the district lists FIRST
-          if (responses.permanent) {
-            this.permanentDistrictList = responses.permanent?.body?.data || [];
-          }
-          if (responses.current) {
-            this.currentDistrictList = responses.current?.body?.data || [];
-          }
-          if (responses.birth) {
-            this.birthDistrictList = responses.birth?.body?.data || [];
-          }
-          // 2. NOW that the lists are full, patch the form
-          patchTheForm();
-        },
-        error: (err) => {
-          this.alert.alert(true, 'Error loading district data.');
-          patchTheForm(); // Still patch the rest of the form on error
-        },
-      });
-    } else {
-      // If no districts to fetch, patch immediately
-      patchTheForm();
-    }
+    loader$.subscribe({
+      next: (responses: any) => {
+        // A. Populate Lists
+        if (responses.posts) {
+          this.postList = responses.posts.body?.data || [];
+        }
+        if (responses.subjects) {
+          this.subjectList = responses.subjects.body?.data || [];
+        }
+        if (responses.permanentDist) {
+          this.permanentDistrictList = responses.permanentDist.body?.data || [];
+        }
+        if (responses.currentDist) {
+          this.currentDistrictList = responses.currentDist.body?.data || [];
+        }
+        if (responses.birthDist) {
+          this.birthDistrictList = responses.birthDist.body?.data || [];
+        }
+
+        // B. Patch Form Values (Now that lists are ready)
+        this.form.patchValue(
+          {
+            a_rec_app_main_id: data.a_rec_app_main_id,
+            post_code: data.post_code,
+            subject_id: data.subject_id || null,
+            registration_no: data.registration_no,
+            a_rec_adv_main_id: data.a_rec_adv_main_id,
+            session_id: data.academic_session_id,
+            Salutation_E: data.Salutation_E,
+            Salutation_H: data.Salutation_E,
+            Applicant_First_Name_E: data.Applicant_First_Name_E,
+            Applicant_Middle_Name_E: data.Applicant_Middle_Name_E,
+            Applicant_Last_Name_E: data.Applicant_Last_Name_E,
+            Applicant_First_Name_H: data.Applicant_First_Name_H,
+            Applicant_Middle_Name_H: data.Applicant_Middle_Name_H,
+            Applicant_Last_Name_H: data.Applicant_Last_Name_H,
+            Applicant_Father_Name_E: data.Applicant_Father_Name_E,
+            Applicant_Mother_Name_E: data.Applicant_Mother_Name_E,
+            gender_id: data.gender_id,
+            DOB: data.DOB ? this.formatDateToYYYYMMDD(data.DOB) : null,
+            Mobile_No: String(data.mobile_no),
+            Email_Id: data.email_id,
+            Birth_Place: data.Birth_Place,
+            Birth_District_Id: data.Birth_District_Id,
+            Birth_State_Id: data.Birth_State_Id,
+            Birth_Country_Id: data.Birth_Country_Id,
+            Identification_Mark1: data.Identification_Mark1,
+            Identification_Mark2: data.Identification_Mark2,
+            religion_code: data.religion_code,
+            Permanent_Address1: data.Permanent_Address1,
+            Permanent_City: data.Permanent_City,
+            Permanent_District_Id: data.Permanent_District_Id,
+            Permanent_State_Id: data.Permanent_State_Id,
+            Permanent_Country_Id: data.Permanent_Country_Id,
+            Permanent_Pin_Code: data.Permanent_Pin_Code,
+            Current_Address1: data.Current_Address1,
+            Current_City: data.Current_City,
+            Current_District_Id: data.Current_District_Id,
+            Current_State_Id: data.Current_State_Id,
+            Current_Country_Id: data.Current_Country_Id,
+            Current_Pin_Code: data.Current_Pin_Code,
+          },
+          { emitEvent: false }
+        );
+
+        // C. Trigger UI Update
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error loading dependent data in patchUserData', err);
+        this.alert.alert(true, 'Error loading profile details.');
+        // Even if dependent data fails, try to patch what we can
+        this.form.patchValue(data, { emitEvent: false });
+      },
+    });
   }
 
   private patchUserLanguages(langData: any[]): void {

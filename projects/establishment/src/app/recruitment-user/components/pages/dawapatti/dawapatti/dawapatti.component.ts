@@ -40,7 +40,7 @@ export class DawapattiComponent implements OnInit {
   public isClaimModalVisible: boolean = false;
   public selectedItemForClaim: any = null;
   public selectedRowForClaim: any = null;
-
+  public appliedClaimsList: any[] = [];
   private getVerifyStatusClass(status: string | null): string {
     switch (status) {
       case '1': // Verified
@@ -75,7 +75,36 @@ export class DawapattiComponent implements OnInit {
       console.error('❌ No registration number found in state.');
     }
   }
+  private extractAppliedClaims(nodes: any[]): any[] {
+    let claims: any[] = [];
+    if (!nodes || nodes.length === 0) {
+      return claims;
+    }
 
+    nodes.forEach((item) => {
+      // 1. Check the item's own parameter data (e.g., for Ph.D. or Research Paper entries)
+      if (item.parameterData && item.parameterData.rows.length > 0) {
+        const appliedRows = item.parameterData.rows.filter(
+          (row: any) => row.isClaimApplied
+        );
+
+        appliedRows.forEach((row: any) => {
+          claims.push({
+            // e.g., "Research Publications", "Ph.D.", etc.
+            itemName: item.score_field_title_name, // The specific row data (e.g., [University, Year, ...])
+            rowData: row, // The headers for that row (e.g., [University, Year, ...])
+            definitions: item.parameterData.definitions,
+          });
+        });
+      } // 2. Recurse into children (e.g., for "Academic Background" group)
+
+      if (item.subHeadings && item.subHeadings.length > 0) {
+        claims = claims.concat(this.extractAppliedClaims(item.subHeadings));
+      }
+    });
+
+    return claims;
+  }
   onApplyClaim(item: any, row: any): void {
     console.log('Opening claim for item:', item, 'and row:', row);
     this.selectedItemForClaim = item;
@@ -616,9 +645,9 @@ export class DawapattiComponent implements OnInit {
       this.HTTP.getParam(
         '/master/get/getSubHeadingParameterByParentScoreField',
         {
+          m_rec_score_field: 'N',
           a_rec_adv_main_id: advertisementId,
           m_rec_score_field_id: id,
-          m_rec_score_field: 'N',
         },
         'recruitement'
       ).pipe(
@@ -687,7 +716,15 @@ export class DawapattiComponent implements OnInit {
               console.log(
                 '✅ Final Merged Recursive Data:',
                 JSON.stringify(this.scoringTableData, null, 2)
+              ); // - - - 👇 ADD THIS SECTION - - - 👇 // Populate the list of already-applied claims
+
+              this.appliedClaimsList = this.extractAppliedClaims(
+                this.scoringTableData
               );
+              console.log(
+                '✅ Extracted Applied Claims:',
+                this.appliedClaimsList
+              ); // - - - 👆 END OF ADDED SECTION - - - 👆
             },
             error: (err) => {
               console.error('❌ Error fetching full scoring structure:', err);
@@ -712,11 +749,11 @@ export class DawapattiComponent implements OnInit {
     }
 
     items.forEach((item: any) => {
-      const itemKey = item.m_rec_score_field_id;
+      const itemKey = item.m_rec_score_field_id; // 1. Recurse first to get child scores calculated
 
       if (item.subHeadings && item.subHeadings.length > 0) {
         this.sumAndMergeScores(item.subHeadings, parentScoreMap, itemScoreMap);
-      }
+      } // 2. Sum scores from children *after* they've been calculated/capped
 
       let totalFromChildren = 0;
       if (item.subHeadings && item.subHeadings.length > 0) {
@@ -725,17 +762,20 @@ export class DawapattiComponent implements OnInit {
         });
       }
 
-      let finalScore: number;
+      let finalScore: number; // ✅ Get the max marks for *this* specific item
+      const maxMarks = item.score_field_field_marks || 0; // Case 1: Parent Heading (e.g., "Experience", "Academic Excellence") // The API returns the final, capped score for these.
 
       if (item.score_field_parent_id === 0 && parentScoreMap.has(itemKey)) {
-        finalScore = parentScoreMap.get(itemKey)!;
+        finalScore = parentScoreMap.get(itemKey)!; // Case 2: Child Item (e.g., "As Teacher...", "Ph.D.") // The API returns the *uncapped* sum for these. We must cap it.
       } else if (item.score_field_parent_id > 0 && itemScoreMap.has(itemKey)) {
-        finalScore = itemScoreMap.get(itemKey)!;
+        const uncappedScore = itemScoreMap.get(itemKey)!; // ✅ APPLY THE CAP
+        finalScore = Math.min(uncappedScore, maxMarks); // Case 3: Grouping Folder (e.g., "University Medal") // Its score is the sum of its children's (already capped) scores.
       } else {
-        finalScore =
+        const uncappedScore =
           item.subHeadings && item.subHeadings.length > 0
             ? totalFromChildren
-            : item.score_field_calculated_value;
+            : item.score_field_calculated_value || 0; // Fallback // ✅ APPLY THE CAP (Groups can also have max marks)
+        finalScore = Math.min(uncappedScore, maxMarks);
       }
 
       item.score_field_calculated_value = finalScore;
@@ -751,19 +791,25 @@ export class DawapattiComponent implements OnInit {
 
     flatScoreData.forEach((item: any) => {
       const key = item.m_rec_score_field_id;
-      const score = item.score_field_calculated_value || 0;
+      const score = item.score_field_calculated_value || 0; // ✅ Use the item_type to distinguish
 
-      if (item.score_field_parent_id === 0) {
-        parentScoreMap.set(key, (parentScoreMap.get(key) || 0) + score);
-      } else {
+      if (
+        item.item_type === 'Obtained Marks' &&
+        item.score_field_parent_id === 0
+      ) {
+        // This is a final, capped parent score (e.g., Experience = 8)
+        parentScoreMap.set(key, score);
+      } else if (item.item_type === 'Scoring by Committee') {
+        // This is an individual row score (e.g., 12.676 or 6.675)
+        // Sum them up to get the total *uncapped* score
         itemScoreMap.set(key, (itemScoreMap.get(key) || 0) + score);
       }
-    });
+    }); // This function will now correctly use the maps
 
     this.sumAndMergeScores(structure, parentScoreMap, itemScoreMap);
 
     this.totalMaxMarks = 0;
-    this.totalObtainedMarks = 0;
+    this.totalObtainedMarks = 0; // This part remains correct, as it sums the final parent scores
 
     structure.forEach((parent) => {
       if (parent.score_field_parent_id === 0) {
@@ -857,6 +903,9 @@ export class DawapattiComponent implements OnInit {
           if (event.rowData) {
             event.rowData.isClaimApplied = true;
           }
+          this.appliedClaimsList = this.extractAppliedClaims(
+            this.scoringTableData
+          );
         }
       },
       error: (err) => {

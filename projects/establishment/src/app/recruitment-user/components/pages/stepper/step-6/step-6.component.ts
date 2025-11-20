@@ -640,7 +640,7 @@ export class Step6Component implements OnInit {
     const m_rec_score_field_id = 34; // Main Heading ID
 
     this.HTTP.getData(
-      `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}&m_rec_score_field=N`,
+      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
       'recruitement'
     ).subscribe({
       next: (headingResponse: any) => {
@@ -866,7 +866,7 @@ export class Step6Component implements OnInit {
 
       // Use a regular expression to test if the key is allowed
       // This pattern allows letters, spaces, periods, and parentheses
-      const isAllowedChar = /^[a-zA-Z ()]*$/.test(event.key);
+      const isAllowedChar = /^[a-zA-Z ().,:&\-]$/.test(event.key);
 
       // If the key is not an allowed character, block the input
       if (!isAllowedChar) {
@@ -904,7 +904,7 @@ export class Step6Component implements OnInit {
       // ✅ ADD THIS CONDITION for text pattern validation
       if (param.control_type === 'T' && param.isDatatype === 'text') {
         // Use the same flexible pattern here
-        validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+        Validators.pattern('^[a-zA-Z ().,:&-]*$');
       }
 
       detailGroupData[param.normalizedKey] = new FormControl(
@@ -1191,7 +1191,6 @@ export class Step6Component implements OnInit {
       heading: {
         score_field_title_name: this.score_field_title_name,
         m_rec_score_field_id: 34,
-        a_rec_adv_post_detail_id: 254,
       },
       subheadings: subheadingsData,
     };
@@ -1476,7 +1475,7 @@ export class Step6Component implements OnInit {
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
-      m_rec_score_field_method_id: 3,
+      m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
       score_field_value: scoreResult.score_field_value,
       score_field_actual_value: scoreResult.score_field_actual_value,
       score_field_calculated_value: scoreResult.score_field_calculated_value,

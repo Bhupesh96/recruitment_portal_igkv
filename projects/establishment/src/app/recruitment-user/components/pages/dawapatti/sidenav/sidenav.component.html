@@ -1,24 +1,53 @@
-<!-- sidebar.component.html -->
 <nav
   [class.w-64]="isExpanded"
   [class.w-20]="!isExpanded"
   class="h-full relative flex flex-col border-r border-gray-200 shadow-[2px_0_6px_rgba(0,0,0,0.1)] overflow-visible bg-white transition-all duration-300"
 >
-  <!-- SVG Background -->
   <div
     class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 pointer-events-none bg-contain bg-no-repeat bg-center w-60 h-72 transition-opacity duration-300"
     style="background-image: url('/assets/form.svg')"
     [class.opacity-0]="!isExpanded"
   ></div>
 
-  <!-- Sidebar Links -->
   <ul
     class="relative flex-1 px-3 py-5 space-y-1 overflow-y-auto z-10 select-none"
   >
-    <!-- Score Card -->
     <li>
       <a
-        routerLink="/dawapatti-home/score-card"
+        routerLink="/recruitment/recruitment-form"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <span
+          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
+          [class.opacity-0]="!isExpanded"
+          [class.w-0]="!isExpanded"
+          [class.ml-0]="!isExpanded"
+          [class.ml-2]="isExpanded"
+        >
+          Recruitment Form
+        </span>
+      </a>
+    </li>
+
+    <li>
+      <a
+        routerLink="/recruitment/score-card"
         routerLinkActive="active-link"
         [routerLinkActiveOptions]="{ exact: true }"
         class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
@@ -48,10 +77,10 @@
         </span>
       </a>
     </li>
-    <!-- Dawapatti -->
+
     <li>
       <a
-        routerLink="/dawapatti-home/dawapatti"
+        routerLink="/recruitment/dawapatti"
         routerLinkActive="active-link"
         [routerLinkActiveOptions]="{ exact: true }"
         class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
@@ -67,7 +96,7 @@
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
-            d="M3 6h18M3 12h18M3 18h18"
+            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
           />
         </svg>
         <span
@@ -82,14 +111,12 @@
       </a>
     </li>
   </ul>
-  <!-- Curved Toggle Button seamlessly blended with sidebar -->
+
   <div class="absolute bottom-6 right-[-10px] z-30 flex items-center">
-    <!-- Curved wall extension -->
     <div
       class="w-8 h-14 rounded-l-full border border-gray-200 border-r-0"
     ></div>
 
-    <!-- Integrated toggle button -->
     <button
       (click)="toggleSidebar()"
       class="flex items-center justify-center w-12 h-12 ml-[-10px] rounded-full bg-blue-600 text-white shadow-[6px_0_12px_rgba(0,0,0,0.15)] hover:shadow-[8px_0_14px_rgba(0,0,0,0.2)] hover:bg-blue-700 transition-all duration-300 border-4"

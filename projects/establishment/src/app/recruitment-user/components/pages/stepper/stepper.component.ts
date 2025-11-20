@@ -10,8 +10,7 @@ import { Step4Component } from './step-4/step-4.component';
 import { Step5Component } from './step-5/step-5.component';
 import { Step6Component } from './step-6/step-6.component';
 import { Step9Component } from './step-9/step-9.component';
-import { HeaderComponent } from '../../header/header.component';
-import { FooterComponent } from '../../footer/footer.component';
+
 import { PdfDownloadComponent } from '../pdf-download/pdf-download.component';
 import { AlertService } from 'shared';
 
@@ -22,8 +21,7 @@ import { AlertService } from 'shared';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    HeaderComponent,
-    FooterComponent,
+
     Step1Component,
     Step2Component,
     Step3Component,

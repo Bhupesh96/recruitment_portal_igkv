@@ -39,7 +39,9 @@
             maxlength="10"
             oninput="this.value = this.value.replace(/[^0-9]/g, '')"
             class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+            [disabled]="otpSent || isVerified"
           />
+
           <div
             *ngIf="
               (mobileField.invalid &&
@@ -96,7 +98,9 @@
             required
             email
             class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+            [disabled]="otpSent || isVerified"
           />
+
           <div
             *ngIf="
               (emailField.invalid &&

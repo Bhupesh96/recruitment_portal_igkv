@@ -18,19 +18,20 @@ const routes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'signup', component: SignupComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'stepper', component: StepperComponent },
+
   { path: 'pdf-preview', component: PdfPreviewComponent },
   { path: 'pdf-download', component: PdfDownloadComponent },
   { path: 'screening', component: ScreeningComponent },
 
   // ✅ Dawapatti layout with nested routes
   {
-    path: 'dawapatti-home',
+    path: 'recruitment',
     component: DawapattiHomeComponent,
     children: [
-      { path: '', redirectTo: 'dawapatti', pathMatch: 'full' },
+      { path: '', redirectTo: 'recruitment-form', pathMatch: 'full' },
       { path: 'dawapatti', component: DawapattiComponent },
       { path: 'score-card', component: ScorecardComponent },
+      { path: 'recruitment-form', component: StepperComponent },
     ],
   },
 

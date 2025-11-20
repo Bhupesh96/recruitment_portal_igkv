@@ -640,7 +640,7 @@ export class Step4Component implements OnInit {
     const m_rec_score_field_id = 18; // Main Heading ID
 
     this.HTTP.getData(
-      `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}&m_rec_score_field=N`,
+      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
       'recruitement'
     ).subscribe({
       next: (headingResponse: any) => {
@@ -866,7 +866,7 @@ export class Step4Component implements OnInit {
 
       // Use a regular expression to test if the key is allowed
       // This pattern allows letters, spaces, periods, and parentheses
-      const isAllowedChar = /^[a-zA-Z ()]*$/.test(event.key);
+      const isAllowedChar = /^[a-zA-Z ().,:&\-]$/.test(event.key);
 
       // If the key is not an allowed character, block the input
       if (!isAllowedChar) {
@@ -904,7 +904,7 @@ export class Step4Component implements OnInit {
       // ✅ ADD THIS CONDITION for text pattern validation
       if (param.control_type === 'T' && param.isDatatype === 'text') {
         // Use the same flexible pattern here
-        validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+        Validators.pattern('^[a-zA-Z ().,:&-]*$');
       }
 
       detailGroupData[param.normalizedKey] = new FormControl(
@@ -1159,14 +1159,88 @@ export class Step4Component implements OnInit {
   }
 
   // Helper method to prepare form data for emission (optional, to avoid duplication)
+  // Helper method to prepare form data for emission
   private getFormData(): any {
-    // Get the full raw value of the form, including the _rowIndex
     const formValue = this.form.getRawValue();
 
-    // ✅ Create a new 'details' array that excludes the '_rowIndex' from each object
-    const detailsWithoutRowIndex = formValue.details.map((detail: any) => {
-      const { _rowIndex, ...rest } = detail; // Use destructuring to separate _rowIndex
-      return rest; // Return only the remaining properties
+    // Process details to convert IDs to Names and handle Files
+    const processedDetails = formValue.details.map((detail: any) => {
+      // Destructure to isolate metadata like rowIndex and type
+      const { _rowIndex, type, ...rest } = detail;
+
+      // Start the processed object with the type
+      const processedRow: any = { type };
+
+      // 1. Find the configuration for this specific row type
+      const typeValue = type; // This is the m_rec_score_field_id of the ITEM
+      const subHeading = this.subHeadings.find((sub) =>
+        sub.items.some(
+          (item: any) => item.m_rec_score_field_id.toString() === typeValue
+        )
+      );
+
+      if (subHeading) {
+        // Get parameters defined for this SubHeading
+        const parameters = this.getParametersForSubHeading(
+          subHeading.m_rec_score_field_id
+        );
+
+        // 2. Iterate over the form values in this row
+        Object.keys(rest).forEach((key) => {
+          const value = rest[key];
+          // Find the parameter definition that matches this form control name (normalizedKey)
+          const param = parameters.find((p: any) => p.normalizedKey === key);
+
+          if (param) {
+            // ✅ START: DROPDOWN LOGIC (ID -> Name Conversion)
+            if (
+              ['D', 'DC', 'DY'].includes(param.control_type) &&
+              param.isQuery_id
+            ) {
+              const options = this.dropdownData.get(param.isQuery_id);
+              // Find option where data_id matches value (use == for string/number comparison)
+              const selectedOption = options?.find(
+                (opt) => opt.data_id == value
+              );
+
+              if (selectedOption) {
+                processedRow[key] = selectedOption.data_name;
+              } else {
+                processedRow[key] = value; // Fallback
+              }
+            }
+            // ✅ END: DROPDOWN LOGIC
+
+            // FILE LOGIC (Consistent with Step 2)
+            else if (param.control_type === 'A') {
+              if (value instanceof File) {
+                processedRow[key] = value;
+              } else {
+                // Reconstruct key to check existing file path
+                const paramKey = `${subHeading.m_rec_score_field_id}_${typeValue}_${param.m_rec_score_field_parameter_new_id}_${_rowIndex}`;
+                const existingFilePath = this.filePaths.get(paramKey);
+                if (existingFilePath) {
+                  processedRow[key] = existingFilePath;
+                } else {
+                  processedRow[key] = null;
+                }
+              }
+            }
+            // STANDARD TEXT/NUMBER
+            else {
+              processedRow[key] = value;
+            }
+          } else {
+            // If it's not a mapped parameter (e.g., hidden ID fields), keep as is
+            processedRow[key] = value;
+          }
+        });
+      } else {
+        // If structure not found, return original values
+        Object.assign(processedRow, rest);
+      }
+
+      return processedRow;
     });
 
     const subheadingsData = this.subHeadings.reduce((acc, sub) => {
@@ -1183,15 +1257,13 @@ export class Step4Component implements OnInit {
       return acc;
     }, {} as { [key: string]: any });
 
-    // Construct the final object for emission
     return {
-      ...formValue, // Spread the original to get other form data
-      details: detailsWithoutRowIndex, // Overwrite the 'details' property with our cleaned version
+      ...formValue,
+      details: processedDetails, // Use the processed array
       _isValid: this.form.valid,
       heading: {
         score_field_title_name: this.score_field_title_name,
-        m_rec_score_field_id: 18,
-        a_rec_adv_post_detail_id: 254,
+        m_rec_score_field_id: 8,
       },
       subheadings: subheadingsData,
     };
@@ -1266,7 +1338,7 @@ export class Step4Component implements OnInit {
           a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
           score_field_parent_id: subHeadingId,
           m_rec_score_field_id: scoreFieldId,
-          m_rec_score_field_method_id: 3,
+          m_rec_score_field_method_id: subHeading.m_rec_score_field_method_id,
           score_field_value: totalCount,
           score_field_actual_value: scoreResult.score_field_actual_value,
           score_field_calculated_value:
@@ -1476,7 +1548,7 @@ export class Step4Component implements OnInit {
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
-      m_rec_score_field_method_id: 3,
+      m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
       score_field_value: scoreResult.score_field_value,
       score_field_actual_value: scoreResult.score_field_actual_value,
       score_field_calculated_value: scoreResult.score_field_calculated_value,

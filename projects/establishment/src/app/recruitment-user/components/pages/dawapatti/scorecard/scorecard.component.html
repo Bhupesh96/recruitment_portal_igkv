@@ -1,21 +1,54 @@
-<div class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center">
+<div
+  id="scorecard-to-print"
+  class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center"
+>
   <div class="w-full bg-white rounded-sm border border-gray-300 p-5 md:p-6">
+    <!-- Header Section (PDF Version) -->
     <div
-      class="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-4 md:gap-6"
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 14px;
+        width: 100%;
+        margin-bottom: 6px;
+      "
     >
       <img
+        id="logo"
         src="/assets/logo.png"
         alt="IGKV Logo"
-        class="h-8 w-auto md:w-20 md:h-20 object-contain"
+        style="
+          width: 65px;
+          height: 65px;
+          object-fit: contain;
+          flex-shrink: 0;
+          margin: 0;
+        "
       />
-      <div>
+      <div style="display: flex; flex-direction: column; align-items: center">
         <h3
-          class="text-lg md:text-xl font-bold text-gray-900 leading-0 tracking-wide font-['Roboto']"
+          style="
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+            line-height: 1.25;
+            font-family: 'Roboto', Arial, sans-serif;
+          "
         >
           Indira Gandhi Krishi Vishwavidyalaya, Raipur (C.G.) - 492012
         </h3>
         <h5
-          class="text-lg md:text-2xl font-semibold mt-1 font-['Noto_Sans_Devanagari']"
+          style="
+            font-size: 15px;
+            font-weight: 600;
+            margin: 2px 0 0;
+            font-family: 'Noto Sans Devanagari', sans-serif;
+            color: #111827;
+            text-align: center;
+          "
         >
           इंदिरा गांधी कृषि विश्वविद्यालय, रायपुर (छ.ग.) - ४९२०१२
         </h5>
@@ -25,54 +58,91 @@
     <div class="text-gray-700 text-base leading-relaxed font-light py-2">
       <div
         *ngIf="applicantData; else noApplicantData"
-        class="border border-gray-900 overflow-hidden flex flex-col md:flex-row items-stretch"
+        style="
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          border: 1px solid #111;
+          overflow: hidden;
+          page-break-inside: avoid;
+          width: 100%;
+        "
       >
+        <!-- Left: Applicant Details -->
         <div
-          class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-0 p-2 text-[12px] text-left leading-[1] [&>p]:m-0 [&>p]:p-0 [&>p]:py-[1px]"
+          style="
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            font-size: 12px;
+            line-height: 1.2;
+            padding: 4px 6px;
+            border-right: 1px solid #111;
+            box-sizing: border-box;
+          "
         >
-          <p>
-            <span class="font-semibold">Registration No.:</span>
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Registration No.:</strong>
             {{ applicantData.registration_no }}
           </p>
-          <p>
-            <span class="font-semibold">Registration Date:</span> 28-10-2023
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Registration Date:</strong> 28-10-2023
           </p>
-          <p>
-            <span class="font-semibold">Applicant Full Name:</span>
-            {{ fullNameE }}
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Applicant Full Name:</strong> {{ fullNameE }}
           </p>
-          <p>
-            <span class="font-semibold">Date of Birth:</span>
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Date of Birth:</strong>
             {{ applicantData.DOB | date : "dd-MM-yyyy" }}
           </p>
-          <p>
-            <span class="font-semibold">Advertisement No.:</span>
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Advertisement No.:</strong>
             {{ applicantData.advertisment_no }}
           </p>
-          <p>
-            <span class="font-semibold">Father’s Name:</span>
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Father’s Name:</strong>
             {{ applicantData.Applicant_Father_Name_E }}
           </p>
-          <p *ngIf="applicantData.subject_id">
-            <span class="font-semibold">Subject:</span>
-            {{ subjectName }}
+          <p *ngIf="applicantData.subject_id" style="margin: 0; padding: 1px 0">
+            <strong>Subject:</strong> {{ subjectName }}
           </p>
-          <p>
-            <span class="font-semibold">Category:</span> {{ applicantCategory }}
+          <p style="margin: 0; padding: 1px 0">
+            <strong>Category:</strong> {{ applicantCategory }}
           </p>
         </div>
 
+        <!-- Right: Photo Section -->
         <div
-          class="flex justify-center items-center border-t md:border-t-0 md:border-l border-gray-900 bg-gray-50 p-3"
+          style="
+            width: 92px;
+            min-width: 92px;
+            background: #f9fafb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 1px solid #111;
+            border-right: 1px solid #111;
+            padding: 4px;
+            box-sizing: border-box;
+          "
         >
           <img
             *ngIf="applicantData.candidate_photo"
             [src]="getFileUrl(applicantData.candidate_photo)"
             alt="Applicant Photo"
-            class="w-28 h-32 object-cover rounded-sm border border-gray-300"
+            style="
+              width: 82px;
+              height: 102px;
+              object-fit: cover;
+              border: 1px solid #444;
+              border-radius: 2px;
+              background: white;
+              box-sizing: border-box;
+            "
           />
         </div>
       </div>
+
       <ng-template #noApplicantData>
         <p class="text-center text-gray-500 italic py-4">
           Loading applicant data...
@@ -93,7 +163,7 @@
       <div class="mt-4 overflow-x-auto">
         <table
           *ngIf="scoringTableData.length > 0; else noScoreData"
-          class="w-full min-w-full border border-gray-300 text-left text-md"
+          class="w-full min-w-full border border-gray-300 text-left text-sm"
         >
           <thead class="bg-gray-100 border-b border-gray-300">
             <tr>
@@ -137,7 +207,7 @@
 
                 <table
                   *ngIf="item.subHeadings.length > 0"
-                  class="w-full mt-2 text-md border border-gray-300"
+                  class="w-full mt-2 text-sm border border-gray-300"
                 >
                   <thead class="bg-gray-100">
                     <tr class="text-left">
@@ -212,13 +282,13 @@
           >
           <span
             *ngIf="applicantData.Verification_Finalize_YN === 'Y'"
-            class="px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800"
+            class="px-3 py-0.5 rounded-full text-xm font-medium bg-green-100 text-green-800"
           >
             Eligible
           </span>
           <span
             *ngIf="applicantData.Verification_Finalize_YN === 'N'"
-            class="px-3 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800"
+            class="px-3 py-0.5 rounded-full text-xm font-medium bg-red-100 text-red-800"
           >
             Not Eligible
           </span>
@@ -248,3 +318,63 @@
     </div>
   </div>
 </div>
+<button
+  (click)="downloadPDF()"
+  style="
+    position: fixed;
+    bottom: 45px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #192440;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 9999px;
+    padding: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 9999;
+    transition: all 0.3s ease;
+  "
+  onmouseover="this.style.padding='12px 20px'; this.children[1].style.maxWidth='120px'; this.children[1].style.opacity='1';"
+  onmouseout="this.style.padding='12px'; this.children[1].style.maxWidth='0px'; this.children[1].style.opacity='0';"
+>
+  <!-- Download Icon -->
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke-width="2"
+    stroke="currentColor"
+    style="
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    "
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
+    />
+  </svg>
+
+  <!-- Expanding Text -->
+  <span
+    style="
+      max-width: 0;
+      opacity: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    "
+  >
+    Download PDF
+  </span>
+</button>

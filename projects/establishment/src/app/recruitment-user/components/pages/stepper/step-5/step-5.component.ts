@@ -173,7 +173,7 @@ export class Step5Component implements OnInit {
         registration_no,
         a_rec_app_main_id,
         score_field_parent_id: this.heading.m_rec_score_field_id,
-        Application_Step_Flag_CES: 'C', 
+        Application_Step_Flag_CES: 'C',
       },
       'recruitement'
     );
@@ -406,7 +406,7 @@ export class Step5Component implements OnInit {
 
       // ✅ ADD THIS CONDITION for text pattern validation
       if (param.control_type === 'T' && param.isDatatype === 'text') {
-        validators.push(Validators.pattern('^[a-zA-Z ()]*$'));
+        Validators.pattern('^[a-zA-Z ().,:&-]*$');
       }
 
       const isDropdownOrFile = ['A', 'DE', 'DY', 'DP', 'DC'].includes(
@@ -501,7 +501,7 @@ export class Step5Component implements OnInit {
 
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
-      { a_rec_adv_main_id, m_rec_score_field_id, m_rec_score_field: 'N' },
+      { m_rec_score_field: 'N', a_rec_adv_main_id, m_rec_score_field_id },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
 
@@ -654,8 +654,7 @@ export class Step5Component implements OnInit {
     return this.filePaths.get(`${key}_${paramId}_${index}`) || null;
   }
   sanitizeFileUrl(filePath: string): SafeUrl {
-    const fileName = filePath.split('\\').pop()?.split('/').pop() || '';
-    const url = `http://192.168.1.57:3500/recruitment/24000001/${fileName}`;
+    const url = `http://192.168.1.57:3500/${filePath}`;
     return this.sanitizer.bypassSecurityTrustUrl(url);
   }
   getFileName(filePath: string): string {
@@ -811,7 +810,7 @@ export class Step5Component implements OnInit {
           a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
           score_field_parent_id: sub.score_field_parent_id,
           m_rec_score_field_id: sub.m_rec_score_field_id,
-          m_rec_score_field_method_id: 2,
+          m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
           score_field_value: currentExperience,
           score_field_actual_value: currentExperience,
           score_field_calculated_value: currentExperience,
@@ -920,7 +919,7 @@ export class Step5Component implements OnInit {
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
-      m_rec_score_field_method_id: 2,
+      m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
       score_field_value: this.heading.score_field_field_marks,
       score_field_actual_value: totalCalculatedExperience,
       score_field_calculated_value: Math.min(
