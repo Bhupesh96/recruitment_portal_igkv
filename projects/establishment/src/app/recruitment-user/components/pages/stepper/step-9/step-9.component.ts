@@ -46,6 +46,7 @@ export class Step9Component implements OnInit, OnDestroy {
 
   personalInfoExcludeKeys = new Set([
     'a_rec_adv_main_id',
+    'a_rec_app_main_id',
     'post_code',
     'session_id',
     'subject_id',
@@ -466,7 +467,6 @@ export class Step9Component implements OnInit, OnDestroy {
       this.detailBelongsToSubheading(detail, subhead.items)
     );
   }
-
 
   submit(): Promise<void> {
     return new Promise((resolve, reject) => {

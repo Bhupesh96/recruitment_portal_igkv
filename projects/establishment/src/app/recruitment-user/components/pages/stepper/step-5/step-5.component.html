@@ -60,7 +60,7 @@
           *ngFor="let subheading of subheadings; let i = index"
           class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
         >
-          <h6
+     <h6
             class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-medium text-blue-600 flex items-center gap-2 mb-4"
           >
             <svg
@@ -79,6 +79,13 @@
             <span class="break-words">{{
               subheading.score_field_title_name
             }}</span>
+            
+            <span
+              *ngIf="subheading.score_field_is_mandatory === '1'"
+              class="text-red-600 font-bold"
+            >
+              *
+            </span>
           </h6>
 
           <div [formArrayName]="getUniqueKey(subheading, i)" class="mt-4">

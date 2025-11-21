@@ -57,6 +57,7 @@ interface Subheading {
   score_field_display_no: number;
   score_field_field_marks: number;
   score_field_field_weightage: number;
+  score_field_is_mandatory: string;
 }
 interface Parameter {
   m_rec_score_field_id: number;
@@ -70,6 +71,7 @@ interface Parameter {
   isCalculationColumn: 'Y' | 'N';
   isQuery_id: number;
   data_type_size: number;
+  m_parameter_master_id: number;
 }
 interface Note {
   message: string;
@@ -124,6 +126,29 @@ export class Step5Component implements OnInit {
       this.getParameterValuesAndPatch();
     });
   } // No changes to buildFormControls, getKeyForSaved, getUniqueKey
+
+  private dateRangeValidator(fromKey: string, toKey: string): ValidatorFn {
+    return (group: AbstractControl): { [key: string]: any } | null => {
+      const fromControl = group.get(fromKey);
+      const toControl = group.get(toKey);
+
+      if (!fromControl || !toControl) return null;
+
+      const fromDate = fromControl.value;
+      const toDate = toControl.value;
+
+      if (fromDate && toDate) {
+        const start = new Date(fromDate);
+        const end = new Date(toDate);
+
+        // Check if From is strictly greater than To
+        if (start > end) {
+          return { dateRangeInvalid: true }; // Sets error on the Group
+        }
+      }
+      return null;
+    };
+  }
   private getDropdownData(queryId: number): Observable<any[]> {
     if (!queryId || queryId === 0) {
       return of([]); // Return an empty observable if no valid query ID
@@ -394,9 +419,14 @@ export class Step5Component implements OnInit {
       sub.m_rec_score_field_id,
       sub.a_rec_adv_post_detail_id
     );
+
     group.addControl('a_rec_app_score_field_detail_id', this.fb.control(''));
     group.addControl('calculated_experience', this.fb.control(0));
     group.addControl('is_deleted', this.fb.control(false));
+
+    // Variables to hold field names
+    let fromParamName: string | null = null;
+    let toParamName: string | null = null;
 
     params.forEach((param) => {
       const validators: ValidatorFn[] =
@@ -404,29 +434,60 @@ export class Step5Component implements OnInit {
           ? [Validators.required]
           : [];
 
-      // ✅ ADD THIS CONDITION for text pattern validation
       if (param.control_type === 'T' && param.isDatatype === 'text') {
         Validators.pattern('^[a-zA-Z ().,:&-]*$');
       }
 
+      // ✅ Identify Date Fields
+      if (param.m_parameter_master_id === 26)
+        fromParamName = param.score_field_parameter_name;
+      if (param.m_parameter_master_id === 27)
+        toParamName = param.score_field_parameter_name;
+
       const isDropdownOrFile = ['A', 'DE', 'DY', 'DP', 'DC'].includes(
-        // Added 'DC' for completeness
         param.control_type
       );
       group.addControl(
         param.score_field_parameter_name,
         this.fb.control(isDropdownOrFile ? null : '', validators)
       );
+
       group.addControl(
         `param_${param.m_rec_score_field_parameter_new_id}_id`,
         this.fb.control('')
       );
     });
 
+    // ✅ Apply Validator if both fields exist
+    if (fromParamName && toParamName) {
+      group.addValidators(this.dateRangeValidator(fromParamName, toParamName));
+    }
+
+    // ✅ Immediate Feedback Logic
     group.valueChanges.subscribe(() => {
-      this.checkMandatorySubheadingsAndParameters();
-      this.recalculateExperience(group, sub);
+      // 1. Check validity
+      if (group.hasError('dateRangeInvalid')) {
+        // Only show alert if the user has actually interacted with the fields to avoid spam on load
+        if (group.dirty || group.touched) {
+          // Using a debounce or flag here is good practice, but simple alert works:
+          this.alertService.alert(
+            true,
+            "Period 'To' cannot be earlier than Period 'From'."
+          );
+
+          // Reset the calculated experience immediately so they see it's invalid
+          group.patchValue({ calculated_experience: 0 }, { emitEvent: false });
+
+          // Optional: Reset the 'To' date to force them to pick again
+          // group.get(toParamName!)?.setValue(null, { emitEvent: false });
+        }
+      } else {
+        // 2. If valid, recalculate
+        this.checkMandatorySubheadingsAndParameters();
+        this.recalculateExperience(group, sub);
+      }
     });
+
     return group;
   }
   private recalculateExperience(
@@ -587,65 +648,93 @@ export class Step5Component implements OnInit {
   private checkMandatorySubheadingsAndParameters(): void {
     let firstMissedParameter = '';
     let firstMissedSubheading = '';
+    // New variable to track if a mandatory section is completely empty
+    let missingMandatorySection = '';
 
     subheadingLoop: for (const sub of this.subheadings) {
       const key = this.getUniqueKey(sub, this.subheadings.indexOf(sub));
       const formArray = this.form.get(key) as FormArray;
       if (!formArray) continue;
 
+      let hasAtLeastOneValidRow = false;
+
       for (const [groupIndex, group] of formArray.controls.entries()) {
         const formGroup = group as FormGroup;
+
+        // Skip rows marked for deletion
         if (formGroup.get('is_deleted')?.value) {
           continue;
         }
-        // Skip empty "add new" rows unless it's the only row
-        const hasAnyValue = Object.values(formGroup.value).some((v) => !!v);
-        if (!hasAnyValue && formArray.length > 1) continue;
 
-        const params = this.getParameters(
-          sub.m_rec_score_field_id,
-          sub.a_rec_adv_post_detail_id
+        // Check if the row has any actual data entered
+        const rawValues = formGroup.getRawValue();
+        // We exclude technical fields like 'is_deleted' or IDs to check if user typed something
+        const hasUserEnteredData = Object.keys(rawValues).some(
+          (k) =>
+            k !== 'is_deleted' &&
+            k !== 'a_rec_app_score_field_detail_id' &&
+            !k.startsWith('param_') &&
+            k !== 'calculated_experience' &&
+            !!rawValues[k]
         );
 
-        for (const param of params) {
-          if (param.is_mandatory === 'Y') {
-            const control = formGroup.get(param.score_field_parameter_name);
-            let isControlValid = control?.value; // Check for text, date, dropdown values etc.
+        if (hasUserEnteredData) {
+          hasAtLeastOneValidRow = true;
 
-            // --- THIS IS THE KEY LOGIC FOR FILE VALIDATION ---
-            if (param.control_type === 'A') {
-              const existingFilePath = this.getFilePath(
-                key,
-                param.m_rec_score_field_parameter_new_id,
-                groupIndex // Use the actual index in the loop
-              );
-              // A file is valid if a NEW file is selected (control.value) OR an old one already exists (existingFilePath)
-              isControlValid = control?.value || existingFilePath;
-            }
-            // --- END OF KEY LOGIC ---
+          // --- Parameter Level Validation (Only check valid rows) ---
+          const params = this.getParameters(
+            sub.m_rec_score_field_id,
+            sub.a_rec_adv_post_detail_id
+          );
 
-            if (!isControlValid) {
-              firstMissedParameter = param.score_field_parameter_name;
-              firstMissedSubheading = sub.score_field_title_name;
-              break subheadingLoop; // Exit all loops once the first error is found
+          for (const param of params) {
+            if (param.is_mandatory === 'Y') {
+              const control = formGroup.get(param.score_field_parameter_name);
+              let isControlValid = control?.value;
+
+              if (param.control_type === 'A') {
+                const existingFilePath = this.getFilePath(
+                  key,
+                  param.m_rec_score_field_parameter_new_id,
+                  groupIndex
+                );
+                isControlValid = control?.value || existingFilePath;
+              }
+
+              if (!isControlValid) {
+                firstMissedParameter = param.score_field_parameter_name;
+                firstMissedSubheading = sub.score_field_title_name;
+                break subheadingLoop;
+              }
             }
           }
         }
       }
+
+      // ✅ CHECK: If subheading is mandatory, but no valid rows exist
+      if (sub.score_field_is_mandatory === '1' && !hasAtLeastOneValidRow) {
+        missingMandatorySection = sub.score_field_title_name;
+        break subheadingLoop;
+      }
     }
 
-    const allMandatoryValid = !firstMissedParameter;
+    const allMandatoryValid = !firstMissedParameter && !missingMandatorySection;
+
     this.form
       .get('mandatorySubheadingsSelected')
       ?.setValue(allMandatoryValid, { emitEvent: false });
+
+    // Construct the error message based on what failed
+    let errorMessage = '';
+    if (missingMandatorySection) {
+      errorMessage = `At least one entry is required for "${missingMandatorySection}"`;
+    } else if (firstMissedParameter) {
+      errorMessage = `${firstMissedParameter} under ${firstMissedSubheading} is missing`;
+    }
+
     this.form
       .get('firstMissedMandatory')
-      ?.setValue(
-        firstMissedParameter
-          ? `${firstMissedParameter} under ${firstMissedSubheading} is missing`
-          : '',
-        { emitEvent: false }
-      );
+      ?.setValue(errorMessage, { emitEvent: false });
   }
   getQualifications(key: string): FormArray {
     return this.form.get(key) as FormArray;
@@ -743,6 +832,26 @@ export class Step5Component implements OnInit {
         `${firstMissed}. Please provide the required information.`
       );
       return Promise.reject(new Error('Mandatory field missing.')); // REJECT here
+    }
+    let hasDateError = false;
+    this.subheadings.forEach((sub, index) => {
+      const key = this.getUniqueKey(sub, index);
+      const formArray = this.form.get(key) as FormArray;
+      // Check every row in the form array
+      if (
+        formArray.controls.some((group) => group.hasError('dateRangeInvalid'))
+      ) {
+        hasDateError = true;
+      }
+    });
+
+    if (hasDateError) {
+      this.alertService.alert(
+        true,
+        'Invalid Date Range detected in Experience details. Please correct the dates before saving.'
+      );
+      // Stop execution immediately
+      return Promise.reject(new Error('Invalid Date Range'));
     }
     if (this.form.invalid) {
       this.alertService.alert(
@@ -988,8 +1097,75 @@ export class Step5Component implements OnInit {
   } // ❌ REMOVED: The old saveRecords method is no longer needed.
 
   private emitFormData(): void {
-    // ... (This method remains unchanged)
-    const subheadingsData = this.subheadings.reduce((acc, sub, index) => {
+    // 1. Prepare a container for the processed rows
+    const processedSubheadingData: { [key: string]: any[] } = {};
+
+    // 2. Iterate through each subheading to process its rows
+    this.subheadings.forEach((sub, index) => {
+      const key = this.getUniqueKey(sub, index);
+      const formArray = this.form.get(key) as FormArray;
+
+      if (formArray) {
+        const rawRows = formArray.getRawValue(); // Get all values (including disabled)
+
+        const processedRows = rawRows.map((row: any, rowIndex: number) => {
+          // Create a copy of the row data
+          const processedRow: any = { ...row };
+
+          // Get the parameter configuration for this subheading
+          const params = this.getParameters(
+            sub.m_rec_score_field_id,
+            sub.a_rec_adv_post_detail_id
+          );
+
+          params.forEach((param) => {
+            const paramName = param.score_field_parameter_name;
+            const value = row[paramName];
+
+            // ✅ A. DROPDOWN LOGIC (ID -> Name Conversion)
+            // Check if control type is a dropdown variant and has a query ID
+            if (
+              ['DE', 'DY', 'DP', 'DC', 'DT'].includes(param.control_type) &&
+              param.isQuery_id
+            ) {
+              const options = this.dropdownData.get(param.isQuery_id);
+              // Find the option where data_id matches the form value
+              // Use == to handle string vs number differences
+              const selectedOption = options?.find(
+                (opt) => opt.data_id == value
+              );
+
+              if (selectedOption) {
+                processedRow[paramName] = selectedOption.data_name;
+              } else {
+                processedRow[paramName] = value; // Fallback to ID if name not found
+              }
+            }
+            // ✅ B. FILE LOGIC (Ensure path is string, not File object or null)
+            else if (param.control_type === 'A') {
+              if (value instanceof File) {
+                // New file upload - keep the File object for Step 9 to detect
+                processedRow[paramName] = value;
+              } else {
+                // Existing file - fetch path from filePaths map using precise index
+                const fileKey = `${key}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
+                const existingPath = this.filePaths.get(fileKey);
+                processedRow[paramName] = existingPath || null;
+              }
+            }
+            // C. Standard Text/Date fields remain as they are in {...row}
+          });
+
+          return processedRow;
+        });
+
+        // Store the processed rows under the subheading key
+        processedSubheadingData[key] = processedRows;
+      }
+    });
+
+    // 3. Prepare Subheading Metadata (for Preview headers)
+    const subheadingsInfo = this.subheadings.reduce((acc, sub, index) => {
       const key = this.getUniqueKey(sub, index);
       acc[key] = {
         m_rec_score_field_id: sub.m_rec_score_field_id,
@@ -998,8 +1174,11 @@ export class Step5Component implements OnInit {
       };
       return acc;
     }, {} as { [key: string]: any });
+
+    // 4. Construct the Final Object
     const emitData = {
-      ...this.form.value,
+      ...this.form.value, // Start with base form values (flags, etc.)
+      ...processedSubheadingData, // Overwrite raw arrays with processed arrays (ID->Name)
       _isValid: this.form.valid,
       heading: this.heading
         ? {
@@ -1008,7 +1187,9 @@ export class Step5Component implements OnInit {
             a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
           }
         : null,
-      subheadings: subheadingsData,
+      subheadings: subheadingsInfo,
+      // Optional: Pass filePaths if strictly needed by other components,
+      // though processedRow logic above should handle Step 9 requirements.
       filePaths: Array.from(this.filePaths.entries()).reduce(
         (obj, [key, value]) => {
           obj[key] = value;
@@ -1017,6 +1198,7 @@ export class Step5Component implements OnInit {
         {} as { [key: string]: string }
       ),
     };
+
     console.log(
       '📤 Step5 form emitting data:',
       JSON.stringify(emitData, null, 2)
