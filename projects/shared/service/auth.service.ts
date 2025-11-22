@@ -55,7 +55,7 @@ export class AuthService {
       const decryptedData = this.decryptCookie(user_cookie);
 
       // ✅ ADD THIS LINE to log the data to your browser console
-      console.log('--- DECRYPTED USER DATA ---', decryptedData);
+      // console.log('--- DECRYPTED USER DATA ---', decryptedData);
 
       return decryptedData;
     } else {

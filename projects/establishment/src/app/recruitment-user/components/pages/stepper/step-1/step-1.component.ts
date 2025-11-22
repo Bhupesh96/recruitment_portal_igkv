@@ -1929,7 +1929,73 @@ export class Step1Component implements OnChanges, OnInit {
             false,
             'All candidate details saved successfully!'
           );
+          const responseRoot = res.body?.data;
+          const data = responseRoot?.data || {}; // Access the nested 'data' object
 
+          console.log(
+            '✅ Backend Response Data:',
+            JSON.stringify(data, null, 2)
+          );
+
+          // 1. Prepare the object to update the Global State Service
+          // Map backend keys (left) to Service keys (right)
+          const serviceUpdatePayload: any = {};
+
+          // ID
+          if (data.a_rec_app_main_id) {
+            serviceUpdatePayload.a_rec_app_main_id = data.a_rec_app_main_id;
+          }
+
+          // Names
+          if (data.first_name_E) {
+            serviceUpdatePayload.Applicant_First_Name_E = data.first_name_E;
+          }
+          if (data.first_name_H) {
+            serviceUpdatePayload.Applicant_First_Name_H = data.first_name_H;
+          }
+
+          // Photo (Save the path)
+          if (data.candidate_photo) {
+            serviceUpdatePayload.candidate_photo = data.candidate_photo;
+          }
+
+          // 2. Update the Service (One call updates everything)
+          if (Object.keys(serviceUpdatePayload).length > 0) {
+            console.log('🔄 Updating Service with:', serviceUpdatePayload);
+            this.recruitmentState.updateUserData(serviceUpdatePayload);
+          }
+
+          // 3. Update Local Form Controls (Visual Feedback)
+          if (serviceUpdatePayload.a_rec_app_main_id) {
+            this.form
+              .get('a_rec_app_main_id')
+              ?.setValue(serviceUpdatePayload.a_rec_app_main_id);
+          }
+          if (serviceUpdatePayload.Applicant_First_Name_E) {
+            this.form
+              .get('Applicant_First_Name_E')
+              ?.setValue(serviceUpdatePayload.Applicant_First_Name_E, {
+                emitEvent: false,
+              });
+          }
+          if (serviceUpdatePayload.Applicant_First_Name_H) {
+            this.form
+              .get('Applicant_First_Name_H')
+              ?.setValue(serviceUpdatePayload.Applicant_First_Name_H, {
+                emitEvent: false,
+              });
+          }
+
+          // 4. Special Handling for Photo Visuals
+          if (data.candidate_photo) {
+            this.filePaths.set('photo', data.candidate_photo);
+            this.photoPreview = this.getFileUrl(data.candidate_photo);
+            this.form
+              .get('photo')
+              ?.setValue(data.candidate_photo, { emitEvent: false });
+            this.form.get('photo')?.clearValidators();
+            this.form.get('photo')?.updateValueAndValidity();
+          }
           // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
           // additional info to update our local state (`savedAdditionalInfo`).
           // This ensures the next save operation works correctly.

@@ -1130,7 +1130,8 @@ export class Step6Component implements OnInit {
   async submit(): Promise<void> {
     this.form.markAllAsTouched();
     this.checkMandatorySubheadingsAndParameters();
-
+    const freshUserData = this.recruitmentState.getCurrentUserData();
+    this.userData = freshUserData;
     // Emit the latest form data and validity state
     const formData = this.getFormData();
     this.formData.emit(formData);

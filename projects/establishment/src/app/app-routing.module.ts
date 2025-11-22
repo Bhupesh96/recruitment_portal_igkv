@@ -7,7 +7,6 @@ import { LoginComponent } from './recruitment-user/components/pages/registration
 import { StepperComponent } from './recruitment-user/components/pages/stepper/stepper.component';
 import { PdfPreviewComponent } from './recruitment-user/components/pages/pdf-preview/pdf-preview.component';
 import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-download/pdf-download.component';
-import { ScreeningComponent } from './recruitment-user/components/pages/screening/screening/screening.component';
 import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti/dawapatti.component';
 import { DawapattiHomeComponent } from './recruitment-user/components/pages/dawapatti/dawapatti-home/dawapatti-home.component';
 import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
@@ -21,7 +20,7 @@ const routes: Routes = [
 
   { path: 'pdf-preview', component: PdfPreviewComponent },
   { path: 'pdf-download', component: PdfDownloadComponent },
-  { path: 'screening', component: ScreeningComponent },
+
 
   // ✅ Dawapatti layout with nested routes
   {

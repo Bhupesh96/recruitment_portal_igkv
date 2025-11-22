@@ -14,13 +14,14 @@ import { environment } from 'environment';
 import CryptoJS from 'crypto-js';
 import { AlertService } from 'shared';
 import { EncryptionService } from 'shared';
+import { OnChanges, SimpleChanges } from '@angular/core';
 @Component({
   selector: 'app-signup',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './signup.component.html',
 })
-export class SignupComponent implements OnInit {
+export class SignupComponent implements OnInit, OnChanges {
   @Input() academicSessionId: number | null = null;
   @Input() advertisementId: string = '';
   @Input() postCode: number | null = null;
@@ -65,6 +66,9 @@ export class SignupComponent implements OnInit {
   signupError = '';
   signupSuccess = '';
   showSuccessAlert = false;
+  categoryList: any[] = [];
+  selectedCategory: number | null = null;
+
   constructor(
     private http: HttpService,
     private alertService: AlertService,
@@ -73,6 +77,16 @@ export class SignupComponent implements OnInit {
 
   ngOnInit() {
     this.getCaptcha();
+    this.getCategoryList();
+  }
+  ngOnChanges(changes: SimpleChanges): void {
+    if (
+      changes['advertisementId'] ||
+      changes['postCode'] ||
+      changes['subjectId']
+    ) {
+      this.getCategoryList();
+    }
   }
 
   getCaptcha() {
@@ -82,6 +96,31 @@ export class SignupComponent implements OnInit {
         this.generatedCaptcha = res.body.result.captcha;
       }
     });
+  }
+  getCategoryList() {
+    if (!this.advertisementId || !this.postCode || this.subjectId === null) {
+      return;
+    }
+
+    const params = {
+      subject_category: true,
+      a_rec_adv_main_id: this.advertisementId,
+      post_code: this.postCode,
+      subject_id: this.subjectId ?? 0,
+    };
+
+    this.http
+      .getParam('/publicapi/get/getAdvCategoryList', params, 'recruitement')
+      .subscribe({
+        next: (res: any) => {
+          if (!res.body.error) {
+            this.categoryList = res.body.data;
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching categories', err);
+        },
+      });
   }
 
   validateMobileAndEmail(): boolean {
@@ -226,6 +265,10 @@ export class SignupComponent implements OnInit {
   onSignup() {
     this.signupError = '';
     this.signupSuccess = '';
+    if (!this.selectedCategory) {
+      this.alertService.alert(true, 'Please select a category.');
+      return;
+    }
 
     // --- All your existing validation logic remains here ---
     if (this.subjectsAvailable && this.subjectId === null) {
@@ -275,6 +318,7 @@ export class SignupComponent implements OnInit {
       a_rec_adv_main_id: this.advertisementId,
       post_code: this.postCode,
       subject_id: this.subjectId,
+      category_id: this.selectedCategory,
     };
 
     // ✅ 2. Call your backend API

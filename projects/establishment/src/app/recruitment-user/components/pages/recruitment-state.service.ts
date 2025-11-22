@@ -88,7 +88,31 @@ export class RecruitmentStateService {
   public setScreeningCandidate(data: UserRecruitmentData | null): void {
     this._screeningCandidateData.next(data);
   }
+  public updateUserData(newData: Partial<UserRecruitmentData>): void {
+    const currentData = this._userData.getValue();
 
+    if (currentData) {
+      // 1. Merge existing data with the new data (e.g., adding the new ID)
+      const updatedData = { ...currentData, ...newData };
+
+      // 2. Update the BehaviorSubject so all subscribers get the new ID immediately
+      this._userData.next(updatedData);
+
+      // 3. IMPORTANT: Update the AuthService or LocalStorage so the ID persists on Page Refresh (F5)
+      // Assuming your AuthService reads from 'currentUser' in localStorage:
+      const storedUser = localStorage.getItem('currentUser'); // Check your specific key
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        const mergedUser = { ...parsedUser, ...newData };
+        localStorage.setItem('currentUser', JSON.stringify(mergedUser));
+
+        // If your AuthService has a subject, update it here too if possible
+        // this.authService.currentUser = mergedUser;
+      }
+
+      console.log('🔄 Recruitment State Updated:', updatedData);
+    }
+  }
   public getScreeningCandidateData(): UserRecruitmentData | null {
     const data = this._screeningCandidateData.getValue();
     console.log(

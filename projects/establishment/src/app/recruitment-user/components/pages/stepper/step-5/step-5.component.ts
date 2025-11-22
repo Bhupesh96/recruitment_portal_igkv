@@ -860,7 +860,8 @@ export class Step5Component implements OnInit {
       );
       return;
     }
-
+    const freshUserData = this.recruitmentState.getCurrentUserData();
+    this.userData = freshUserData;
     // --- Configuration ---
     const registrationNo = this.userData?.registration_no;
     const a_rec_app_main_id = this.userData?.a_rec_app_main_id;

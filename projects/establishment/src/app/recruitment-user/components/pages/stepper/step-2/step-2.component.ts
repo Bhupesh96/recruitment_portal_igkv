@@ -814,6 +814,8 @@ export class Step2Component implements OnInit {
     this.loader.showLoader();
     // Wrap the entire API logic in a new Promise
     return new Promise((resolve, reject) => {
+      const freshUserData = this.recruitmentState.getCurrentUserData();
+      this.userData = freshUserData;
       const registrationNo = this.userData?.registration_no;
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
       const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
@@ -821,6 +823,7 @@ export class Step2Component implements OnInit {
       if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
         const errorMsg = 'User identification is missing. Cannot submit.';
         this.alertService.alert(true, errorMsg);
+        this.loader.hideLoader();
         return reject(new Error(errorMsg));
       }
       const formData = new FormData();
