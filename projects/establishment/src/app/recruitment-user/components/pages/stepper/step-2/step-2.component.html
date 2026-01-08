@@ -79,6 +79,7 @@
           <div class="flex items-center gap-2 mb-4">
             <input
               type="checkbox"
+              appInputTooltip
               [formControlName]="
                 'is' + getUniqueKey(subheading, i) + 'Selected'
               "
@@ -146,10 +147,12 @@
                   <!-- Hidden fields -->
                   <input
                     type="hidden"
+                    appInputTooltip
                     formControlName="a_rec_app_score_field_detail_id"
                   />
                   <input
                     type="hidden"
+                    appInputTooltip
                     [formControlName]="
                       'param_' +
                       param.m_rec_score_field_parameter_new_id +
@@ -253,6 +256,7 @@
                     <ng-container [ngSwitch]="param.control_type">
                       <textarea
                         *ngSwitchCase="'TR'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
@@ -263,6 +267,7 @@
                       <!-- Text/Number Input -->
                       <input
                         *ngSwitchCase="'T'"
+                        appInputTooltip
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "
@@ -280,6 +285,7 @@
                       <!-- Dropdown -->
                       <select
                         *ngSwitchCase="'DC'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
@@ -298,6 +304,7 @@
                       </select>
                       <select
                         *ngSwitchCase="'D'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -318,6 +325,7 @@
                       <!-- Year Dropdown -->
                       <select
                         *ngSwitchCase="'DY'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -414,6 +422,7 @@
                       <!-- Default Input -->
                       <input
                         *ngSwitchDefault
+                        appInputTooltip
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "

@@ -725,6 +725,14 @@ export class Step1Component implements OnChanges, OnInit {
           { emitEvent: false }
         );
 
+        // ✅ MANUALLY CALCULATE AGE
+        // Because emitEvent is false, the valueChanges listener won't fire.
+        // We must trigger this manually so the Age field populates.
+        const dobValue = this.form.get('DOB')?.value;
+        if (dobValue) {
+          this.calculateAge(dobValue);
+        }
+
         // C. Trigger UI Update
         this.cdr.markForCheck();
       },
@@ -733,6 +741,12 @@ export class Step1Component implements OnChanges, OnInit {
         this.alert.alert(true, 'Error loading profile details.');
         // Even if dependent data fails, try to patch what we can
         this.form.patchValue(data, { emitEvent: false });
+
+        // ✅ ALSO CALCULATE AGE IN ERROR HANDLER
+        const dobValue = this.form.get('DOB')?.value;
+        if (dobValue) {
+          this.calculateAge(dobValue);
+        }
       },
     });
   }

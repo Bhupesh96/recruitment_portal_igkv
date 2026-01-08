@@ -8,7 +8,7 @@
     "start_academic": "ng serve --host 0.0.0.0 --port 4310 --project Academic",
     "start_admission": "ng serve --host 0.0.0.0 --port 4320 --project admission",
     "start_recruitment": "ng serve --host 0.0.0.0 --port 4330 --project recruitment",
-    "start_establishmet": "ng serve --host 0.0.0.0 --port 4340 --project establishment",
+    "start_establishmet": "ng serve --host 0.0.0.0 --port 4390 --project establishment",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"

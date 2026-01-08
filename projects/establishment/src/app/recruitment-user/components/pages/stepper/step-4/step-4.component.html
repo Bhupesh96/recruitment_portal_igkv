@@ -86,6 +86,7 @@
                   </label>
                   <select
                     class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                    appInputTooltip
                     [ngClass]="{
                       'bg-blue-50 text-gray-400 cursor-not-allowed': !isEditing,
                       'bg-white': isEditing
@@ -190,6 +191,7 @@
                   <td class="px-4 py-2.5 text-base">
                     <input
                       type="text"
+                      appInputTooltip
                       class="w-full border border-gray-200 rounded-md px-2 py-1 text-base bg-blue-50 text-gray-600 cursor-not-allowed"
                       [value]="getCheckboxName(detailForm)"
                       readonly
@@ -254,6 +256,7 @@
                       </ng-container>
                       <textarea
                         *ngSwitchCase="'TR'"
+                        appInputTooltip
                         [formControlName]="param.normalizedKey"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
@@ -264,6 +267,7 @@
                       <!-- Dropdown -->
                       <select
                         *ngSwitchCase="'DC'"
+                        appInputTooltip
                         [formControlName]="param.normalizedKey"
                         class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
@@ -282,6 +286,7 @@
                       </select>
                       <select
                         *ngSwitchCase="'D'"
+                        appInputTooltip
                         [formControlName]="param.normalizedKey"
                         class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
@@ -300,6 +305,7 @@
                       </select>
                       <select
                         *ngSwitchCase="'DY'"
+                        appInputTooltip
                         class="w-full border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                         [formControlName]="param.normalizedKey"
                       >
@@ -319,6 +325,7 @@
 
                       <input
                         *ngSwitchDefault
+                        appInputTooltip
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "

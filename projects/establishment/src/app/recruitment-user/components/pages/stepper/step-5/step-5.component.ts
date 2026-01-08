@@ -27,6 +27,7 @@ import {
   RecruitmentStateService,
   UserRecruitmentData,
 } from '../../recruitment-state.service';
+import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 // Interfaces (no changes)
 interface Heading {
   a_rec_adv_main_id: number;
@@ -84,7 +85,7 @@ interface ApiResponse<T> {
 @Component({
   selector: 'app-step-5',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, SharedModule,InputTooltipDirective],
   templateUrl: './step-5.component.html',
   styleUrls: ['./step-5.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -562,7 +563,11 @@ export class Step5Component implements OnInit {
 
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
-      { m_rec_score_field: 'N', a_rec_adv_main_id, m_rec_score_field_id },
+      {
+        m_rec_score_field: 'N',
+        adv_main_id: a_rec_adv_main_id,
+        m_rec_score_field_id,
+      },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
 

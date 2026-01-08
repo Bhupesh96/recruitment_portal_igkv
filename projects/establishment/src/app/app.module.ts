@@ -14,7 +14,7 @@ import { DotLoaderComponent } from '../../../shared/component/dot-loader/dot-loa
 import { HeaderComponent } from './recruitment-user/components/header/header.component';
 import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti/dawapatti.component';
 import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
-
+import { InputTooltipDirective } from './directives/input-tooltip.directive';
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,7 +31,7 @@ import { ScorecardComponent } from './recruitment-user/components/pages/dawapatt
     DotLoaderComponent,
     HeaderComponent,
     DawapattiComponent,
-    ScorecardComponent
+    ScorecardComponent,
   ],
   providers: [],
   bootstrap: [AppComponent],

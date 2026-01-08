@@ -1,73 +1,73 @@
-<div class="w-full max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
+<div
+  class="w-full max-w-md mx-auto p-8 bg-white rounded-2xl shadow-[0_4px_30px_rgba(0,0,0,0.06)] border border-gray-100"
+>
   <!-- Title -->
-  <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Log In</h2>
+  <h2 class="text-3xl font-bold text-gray-900 mb-2 text-center tracking-tight">
+    Log In
+  </h2>
+  <p class="text-center text-gray-500 text-sm mb-6">
+    Access your recruitment dashboard
+  </p>
 
-  <!-- Login Form -->
-  <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-5">
+  <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-6">
     <!-- Registration Number -->
-    <div class="relative">
-      <label class="block text-sm font-medium text-gray-700 mb-1">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">
         Registration Number
       </label>
+
       <div class="relative">
+        <!-- Left icon -->
+        <span
+          class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-600"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 14c4.418 0 8-2.239 8-5s-3.582-5-8-5-8 2.239-8 5 3.582 5 8 5z"
+            />
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M5 17c1.5-2 4.5-3 7-3s5.5 1 7 3"
+            />
+          </svg>
+        </span>
+
         <input
           type="text"
           formControlName="user_id"
           placeholder="Enter your registration number"
-          class="w-full border border-gray-300 rounded-md px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full border border-gray-300 rounded-lg pl-12 pr-4 h-12 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
         />
-        <!-- User Icon -->
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M5.121 17.804A9 9 0 1118.88 6.196 9 9 0 015.121 17.804z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
-        </span>
       </div>
     </div>
 
     <!-- Password -->
-    <div class="relative">
-      <label class="block text-sm font-medium text-gray-700 mb-1">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">
         Password
       </label>
+
       <div class="relative">
-        <input
-          [type]="showPassword ? 'text' : 'password'"
-          formControlName="password"
-          placeholder="Enter your password"
-          class="w-full border border-gray-300 rounded-md px-10 py-2 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <!-- Lock Icon -->
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+        <!-- Left icon -->
+        <span
+          class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-600"
+        >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
             class="w-5 h-5"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
             stroke-width="2"
+            viewBox="0 0 24 24"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 11c0-1.105-.895-2-2-2s-2 .895-2 2v1h4v-1z"
-            />
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -75,20 +75,27 @@
             />
           </svg>
         </span>
+
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password"
+          placeholder="Enter your password"
+          class="w-full border border-gray-300 rounded-lg pl-12 pr-12 h-12 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+        />
+
         <!-- Eye Toggle -->
         <button
           type="button"
           (click)="togglePasswordVisibility()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-gray-400 hover:text-gray-600"
         >
           <svg
             *ngIf="!showPassword"
-            xmlns="http://www.w3.org/2000/svg"
             class="w-5 h-5"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
             stroke-width="2"
+            viewBox="0 0 24 24"
           >
             <path
               stroke-linecap="round"
@@ -101,19 +108,19 @@
               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
             />
           </svg>
+
           <svg
             *ngIf="showPassword"
-            xmlns="http://www.w3.org/2000/svg"
             class="w-5 h-5"
             fill="none"
-            viewBox="0 0 24 24"
             stroke="currentColor"
             stroke-width="2"
+            viewBox="0 0 24 24"
           >
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.982 9.982 0 011.566-2.742M6.81 6.792A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.963 9.963 0 01-4.058 5.319M3 3l18 18"
+              d="M3 3l18 18M6.81 6.792A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.963 9.963 0 01-4.058 5.319"
             />
           </svg>
         </button>
@@ -122,67 +129,61 @@
 
     <!-- Captcha Section -->
     <div
-      class="flex items-center gap-3 pt-2 bg-gray-50 pl-2 pb-2 rounded-md border border-gray-200"
+      class="bg-gray-50 p-3 rounded-lg border border-gray-200 grid grid-cols-12 gap-3 items-center"
     >
+      <!-- Captcha Image -->
       <div
         #captchaContainer
-        class="w-32 h-10 flex items-center justify-center bg-gray-100 rounded-md border border-gray-300"
+        class="col-span-4 h-12 flex items-center justify-center bg-white rounded border border-gray-300 overflow-hidden"
+      ></div>
+
+      <!-- Captcha Input -->
+      <input
+        type="text"
+        formControlName="captcha"
+        placeholder="Enter Captcha"
+        class="col-span-6 h-12 border border-gray-300 rounded-lg px-3 text-sm bg-gray-100 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+      />
+
+      <!-- Refresh Button -->
+      <button
+        type="button"
+        (click)="getCaptcha()"
+        class="col-span-2 h-12 flex items-center justify-center rounded-lg bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-500 text-gray-600 hover:text-blue-600 transition"
       >
-        <!-- Captcha SVG injected -->
-      </div>
-      <div class="flex-grow flex items-center gap-2">
-        <input
-          type="text"
-          formControlName="captcha"
-          placeholder="Enter Captcha"
-          class="w-full border border-gray-300 px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100"
-        />
-        <button
-          type="button"
-          (click)="getCaptcha()"
-          class="text-gray-500 hover:text-blue-600 p-2"
-          title="Refresh Captcha"
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14"
-            />
-          </svg>
-        </button>
-      </div>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14"
+          />
+        </svg>
+      </button>
     </div>
 
-    <!-- Error Message -->
-    <div
-      *ngIf="loginError"
-      class="text-sm text-red-600 text-center font-medium pt-1"
-    >
+    <!-- Error -->
+    <p *ngIf="loginError" class="text-sm text-red-600 text-center font-medium">
       {{ loginError }}
-    </div>
+    </p>
 
     <!-- Submit Button -->
     <button
       type="submit"
       [disabled]="loginForm.invalid"
-      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold h-12 rounded-lg transition disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
-      <!-- Login Icon -->
       <svg
-        xmlns="http://www.w3.org/2000/svg"
         class="w-5 h-5"
         fill="none"
-        viewBox="0 0 24 24"
         stroke="currentColor"
         stroke-width="2"
+        viewBox="0 0 24 24"
       >
         <path
           stroke-linecap="round"
@@ -193,7 +194,4 @@
       Log In
     </button>
   </form>
-
-  <!-- Bottom Section -->
-
 </div>

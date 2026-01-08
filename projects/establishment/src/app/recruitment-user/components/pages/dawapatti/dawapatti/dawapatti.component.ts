@@ -27,7 +27,9 @@ export class DawapattiComponent implements OnInit {
   totalObtainedMarks: number = 0;
   candidateAppMainId: number | null = null;
 
-  private dropdownData = new Map<number, any[]>();
+  private dropdownData = new Map<string, any[]>();
+  private hasSRecord: boolean = false;
+
   private dropdownControlTypes = new Set([
     'D',
     'DC',
@@ -41,6 +43,7 @@ export class DawapattiComponent implements OnInit {
   public selectedItemForClaim: any = null;
   public selectedRowForClaim: any = null;
   public appliedClaimsList: any[] = [];
+
   private getVerifyStatusClass(status: string | null): string {
     switch (status) {
       case '1': // Verified
@@ -112,7 +115,11 @@ export class DawapattiComponent implements OnInit {
     this.isClaimModalVisible = true;
   }
 
-  public getDropdownName(queryId: number, valueId: any): string {
+  public getDropdownName(
+    queryId: number,
+    valueId: any,
+    rootParentId: number = 0
+  ): string {
     if (
       !queryId ||
       queryId === 0 ||
@@ -122,9 +129,15 @@ export class DawapattiComponent implements OnInit {
       return valueId;
     }
 
-    const options = this.dropdownData.get(queryId);
+    // 🌟 Construct Key: If 259, append the parent ID. Otherwise, use simple query ID.
+    let cacheKey = queryId.toString();
+    if (queryId === 259 && rootParentId > 0) {
+      cacheKey = `${queryId}_${rootParentId}`;
+    }
+
+    const options = this.dropdownData.get(cacheKey);
     if (!options) {
-      console.warn(`[getDropdownName] No cache data for queryId: ${queryId}`);
+      // console.warn(`[getDropdownName] No cache data for key: ${cacheKey}`);
       return valueId;
     }
 
@@ -254,7 +267,8 @@ export class DawapattiComponent implements OnInit {
 
   private processParameterValues(
     definitions: any[],
-    values: any[]
+    values: any[],
+    rootParentId: number // 🌟 ADDED: 3rd Argument to match the call in resolveNode
   ): {
     parameterData: {
       definitions: any[];
@@ -267,15 +281,15 @@ export class DawapattiComponent implements OnInit {
       (def) => def.control_type !== 'A'
     );
 
-    // Find the 'm_rec_score_field_parameter_new_id' for the verification status (ID 68)
+    const statusMasterId = this.hasSRecord ? 3 : 68;
+
     const verifyStatusDef = definitions.find(
-      (d) => d.m_parameter_master_id === 68
+      (d) => d.m_parameter_master_id === statusMasterId
     );
     const verifyStatusParamId = verifyStatusDef
       ? verifyStatusDef.m_rec_score_field_parameter_new_id
       : null;
 
-    // Group the flat value list by row index
     const rowsMap = new Map<number, any[]>();
     values.forEach((val: any) => {
       const rowIndex = val.parameter_row_index;
@@ -285,12 +299,10 @@ export class DawapattiComponent implements OnInit {
       rowsMap.get(rowIndex)!.push(val);
     });
 
-    // This will now hold objects
     const dataRows: any[] = [];
     let totalItemScore = 0;
     let hasAnyClaim = false;
 
-    // Sort by row index (e.g., 1, 2, 3...)
     const sortedRowIndices = Array.from(rowsMap.keys()).sort((a, b) => a - b);
 
     sortedRowIndices.forEach((rowIndex) => {
@@ -300,7 +312,6 @@ export class DawapattiComponent implements OnInit {
         totalItemScore += rowValues[0].score_field_calculated_value || 0;
       }
 
-      // Create a lookup map *for this row*
       const valueMap = new Map<number, { value: string; score: number }>();
       rowValues.forEach((val: any) =>
         valueMap.set(val.m_rec_score_field_parameter_new_id, {
@@ -309,43 +320,47 @@ export class DawapattiComponent implements OnInit {
         })
       );
 
-      // Find the status value for this specific row
       const verifyStatusValue = verifyStatusParamId
         ? valueMap.get(verifyStatusParamId)?.value ?? null
         : null;
 
-      // Get the full record for the verification status parameter
       const verifyStatusRecord = verifyStatusParamId
         ? rowValues.find(
             (r) => r.m_rec_score_field_parameter_new_id === verifyStatusParamId
           )
         : null;
 
-      // 🌟 1. GET THE ROW INDEX 🌟
       const paramRowIndex = verifyStatusRecord
         ? verifyStatusRecord.parameter_row_index
-        : null; // Get the row index from the same record
+        : null;
 
-      // Get the corresponding CSS class for the row
       const rowClass = this.getVerifyStatusClass(verifyStatusValue);
 
-      // Check if this row should show the claim button
       const showClaim = verifyStatusValue === '2' || verifyStatusValue === '8';
       if (showClaim) {
-        hasAnyClaim = true; // Set the flag for the whole table
+        hasAnyClaim = true;
       }
 
-      // Map definitions to values *for this row*
       const rowData = filteredDefinitions.map((def: any) => {
         const mappedData = valueMap.get(def.m_rec_score_field_parameter_new_id);
         const originalValue = mappedData ? mappedData.value : null;
 
         let displayValue = originalValue;
-        if (
-          this.dropdownControlTypes.has(def.control_type) &&
-          def.isQuery_id > 0
-        ) {
-          displayValue = this.getDropdownName(def.isQuery_id, originalValue);
+
+        // Check for standard dropdown types OR specific master IDs (68, 4)
+        const isStandardDropdown = this.dropdownControlTypes.has(
+          def.control_type
+        );
+        const isSpecialDropdown =
+          def.m_parameter_master_id === 68 || def.m_parameter_master_id === 4;
+
+        if ((isStandardDropdown || isSpecialDropdown) && def.isQuery_id > 0) {
+          // 🌟 UPDATED: Pass rootParentId to get the correct list for this section
+          displayValue = this.getDropdownName(
+            def.isQuery_id,
+            originalValue,
+            rootParentId
+          );
         }
 
         return {
@@ -354,13 +369,12 @@ export class DawapattiComponent implements OnInit {
         };
       });
 
-      // Push the new object structure with claim button flag
       dataRows.push({
         cells: rowData,
         rowClass: rowClass,
         showClaimButton: showClaim,
-        isClaimApplied: false, // ADD THIS DEFAULT STATE
-        parameterRowIndex: paramRowIndex, // 2. ADD IT TO THE ROW OBJECT
+        isClaimApplied: false,
+        parameterRowIndex: paramRowIndex,
       });
     });
 
@@ -373,8 +387,7 @@ export class DawapattiComponent implements OnInit {
       totalScore: totalItemScore,
     };
   }
-
-  private resolveNode(item: any): Observable<any> {
+  private resolveNode(item: any, rootParentId: number): Observable<any> {
     const childrenRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingByParentScoreField',
       {
@@ -390,12 +403,19 @@ export class DawapattiComponent implements OnInit {
 
     const definitionsRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
-      {
-        a_rec_adv_main_id: item.a_rec_adv_main_id,
-        m_rec_score_field_id: item.m_rec_score_field_id,
-        score_field_parent_code: item.score_field_parent_id,
-        m_parameter_master2: 'Y',
-      },
+      this.hasSRecord
+        ? {
+            a_rec_adv_main_id: item.a_rec_adv_main_id,
+            m_rec_score_field_id: item.m_rec_score_field_id,
+            score_field_parent_code: item.score_field_parent_id,
+            m_parameter_master3: 'Y', // Fetch S definitions (Verify Status/Remark)
+          }
+        : {
+            a_rec_adv_main_id: item.a_rec_adv_main_id,
+            m_rec_score_field_id: item.m_rec_score_field_id,
+            score_field_parent_code: item.score_field_parent_id,
+            m_parameter_master2: 'Y', // Fetch E definitions
+          },
       'recruitement'
     ).pipe(
       map((res) => res?.body?.data || []),
@@ -408,34 +428,61 @@ export class DawapattiComponent implements OnInit {
     }).pipe(
       switchMap(({ children, definitions }) => {
         const dropdownFetches = definitions
-          .filter(
-            (def: any) =>
-              this.dropdownControlTypes.has(def.control_type) &&
+          .filter((def: any) => {
+            const isStandardDropdown = this.dropdownControlTypes.has(
+              def.control_type
+            );
+            // Check for specific IDs that need dropdowns (e.g. Verify Status/Remark)
+            const isSpecialDropdown =
+              def.m_parameter_master_id === 68 ||
+              def.m_parameter_master_id === 4;
+
+            // 1. Determine Cache Key
+            let cacheKey = def.isQuery_id.toString();
+            // If it's the Remark dropdown (259), make the key specific to the Parent Section
+            if (def.isQuery_id === 259 && rootParentId > 0) {
+              cacheKey = `${def.isQuery_id}_${rootParentId}`;
+            }
+
+            // 2. Check if we already have this specific data cached
+            return (
+              (isStandardDropdown || isSpecialDropdown) &&
               def.isQuery_id > 0 &&
-              !this.dropdownData.has(def.isQuery_id)
-          )
-          .map((def: any) =>
-            this.HTTP.getParam(
+              !this.dropdownData.has(cacheKey)
+            );
+          })
+          .map((def: any) => {
+            // 3. Prepare API Params
+            const params: any = { query_id: def.isQuery_id };
+            let cacheKey = def.isQuery_id.toString();
+
+            // 4. Inject Parent ID for Query 259
+            if (def.isQuery_id === 259 && rootParentId > 0) {
+              params['Score_Field_Parent_Id'] = rootParentId;
+              cacheKey = `${def.isQuery_id}_${rootParentId}`;
+            }
+
+            return this.HTTP.getParam(
               '/master/get/getDataByQueryId',
-              { query_id: def.isQuery_id },
+              params,
               'recruitement'
             ).pipe(
               map((res) => ({
-                queryId: def.isQuery_id,
+                cacheKey: cacheKey, // Return the key so we know where to store it
                 data: res?.body?.data || [],
               })),
-              catchError(() => of({ queryId: def.isQuery_id, data: [] }))
-            )
-          );
+              catchError(() => of({ cacheKey: cacheKey, data: [] }))
+            );
+          });
 
         const definitionsAndDropdowns$ =
           dropdownFetches.length > 0
-            ? // 🌟 THE FIX IS HERE 🌟
-              forkJoin<any[]>(dropdownFetches).pipe(
+            ? forkJoin<any[]>(dropdownFetches).pipe(
                 map((dropdownResults: any[]) => {
                   dropdownResults.forEach((result: any) => {
-                    if (!this.dropdownData.has(result.queryId)) {
-                      this.dropdownData.set(result.queryId, result.data);
+                    // 5. Store using the composite key
+                    if (!this.dropdownData.has(result.cacheKey)) {
+                      this.dropdownData.set(result.cacheKey, result.data);
                     }
                   });
                   return { children, definitions };
@@ -446,7 +493,10 @@ export class DawapattiComponent implements OnInit {
         return definitionsAndDropdowns$;
       }),
       switchMap(({ children, definitions }) => {
-        // --- Case A: "University Medal" group
+        // Define the flag based on record existence
+        const stepFlag = this.hasSRecord ? 'S' : 'E';
+
+        // --- Case A: "University Medal" group (Mixed children and values)
         if (children.length > 0 && definitions.length > 0) {
           const childValueRequests = children.map((child: any) => {
             return this.HTTP.getParam(
@@ -456,18 +506,22 @@ export class DawapattiComponent implements OnInit {
                 a_rec_app_main_id: this.candidateAppMainId,
                 score_field_parent_id: child.score_field_parent_id,
                 m_rec_score_field_id: child.m_rec_score_field_id,
-                Application_Step_Flag_CES: 'E',
+                Application_Step_Flag_CES: stepFlag,
               },
               'recruitement'
             ).pipe(
               map((res) => res?.body?.data || []),
               catchError(() => of([])),
-              // 🌟 CHANGED TO switchMap
               switchMap((values) => {
+                // Pass rootParentId to process values for correct dropdown lookup
                 const { parameterData, totalScore } =
-                  this.processParameterValues(definitions, values);
+                  this.processParameterValues(
+                    definitions,
+                    values,
+                    rootParentId
+                  );
 
-                // 🌟 START: Check for existing claims
+                // Start Claim Check Logic
                 const claimableRows = parameterData.rows.filter(
                   (r: any) => r.showClaimButton
                 );
@@ -507,7 +561,6 @@ export class DawapattiComponent implements OnInit {
                         result.row.isClaimApplied = true;
                       }
                     });
-
                     return {
                       ...child,
                       subHeadings: [],
@@ -516,7 +569,7 @@ export class DawapattiComponent implements OnInit {
                     };
                   })
                 );
-                // 🌟 END: Check for existing claims
+                // End Claim Check Logic
               })
             );
           });
@@ -531,7 +584,7 @@ export class DawapattiComponent implements OnInit {
           );
         }
 
-        // --- Case B: "Ph.D" leaf
+        // --- Case B: "Ph.D" leaf (Direct values)
         if (children.length === 0 && definitions.length > 0) {
           return this.HTTP.getParam(
             '/candidate/get/getParameterValues',
@@ -540,20 +593,21 @@ export class DawapattiComponent implements OnInit {
               a_rec_app_main_id: this.candidateAppMainId,
               score_field_parent_id: item.score_field_parent_id,
               m_rec_score_field_id: item.m_rec_score_field_id,
-              Application_Step_Flag_CES: 'E',
+              Application_Step_Flag_CES: stepFlag,
             },
             'recruitement'
           ).pipe(
             map((res) => res?.body?.data || []),
             catchError(() => of([])),
-            // 🌟 CHANGED TO switchMap
             switchMap((values) => {
+              // Pass rootParentId to process values
               const { parameterData, totalScore } = this.processParameterValues(
                 definitions,
-                values
+                values,
+                rootParentId
               );
 
-              // 🌟 START: Check for existing claims
+              // Start Claim Check Logic
               const claimableRows = parameterData.rows.filter(
                 (r: any) => r.showClaimButton
               );
@@ -593,7 +647,6 @@ export class DawapattiComponent implements OnInit {
                       result.row.isClaimApplied = true;
                     }
                   });
-
                   return {
                     ...item,
                     subHeadings: [],
@@ -602,15 +655,15 @@ export class DawapattiComponent implements OnInit {
                   };
                 })
               );
-              // 🌟 END: Check for existing claims
+              // End Claim Check Logic
             })
           );
         }
 
-        // --- Case C: "Group" folder
+        // --- Case C: "Group" folder (Recursive children)
         if (children.length > 0 && definitions.length === 0) {
-          const childRequests = children.map((child: any) =>
-            this.resolveNode(child)
+          const childRequests = children.map(
+            (child: any) => this.resolveNode(child, rootParentId) // Pass rootParentId recursively
           );
           return forkJoin(childRequests).pipe(
             map((resolvedChildren) => ({
@@ -622,7 +675,7 @@ export class DawapattiComponent implements OnInit {
           );
         }
 
-        // --- Case D: "JRF/SRF" leaf
+        // --- Case D: Empty leaf
         return of({
           ...item,
           subHeadings: [],
@@ -632,7 +685,6 @@ export class DawapattiComponent implements OnInit {
       })
     );
   }
-
   private getScoringDetailsAndMergeScores(
     advertisementId: number,
     registrationNo: number,
@@ -641,6 +693,7 @@ export class DawapattiComponent implements OnInit {
   ): void {
     const scoreFieldIds = [1, 8, 34, 18, 32];
 
+    // 1. Prepare Parent Requests (Top Level Headings)
     const parentRequests = scoreFieldIds.map((id) =>
       this.HTTP.getParam(
         '/master/get/getSubHeadingParameterByParentScoreField',
@@ -659,84 +712,116 @@ export class DawapattiComponent implements OnInit {
       )
     );
 
+    // 2. Prepare Score Data Request (Determines S vs E and sets the global Flag)
     const scoreDataRequest = this.HTTP.getParam(
       '/candidate/get/getCandidateReportCard',
       {
-        Flag_CES: 'E',
+        Flag_CES: 'S', // Try S first
         registration_no: registrationNo,
         app_main_id: candidateAppMainId,
       },
       'recruitement'
     ).pipe(
-      catchError((err) => {
-        console.error('❌ Error fetching scoring report card:', err);
-        return of(null);
+      catchError(() => of(null)),
+      switchMap((res: any) => {
+        const data = res?.body?.data;
+        if (data && data.length > 0) {
+          console.log(
+            '✅ Found S Record. Switching to m_parameter_master3 mode.'
+          );
+          this.hasSRecord = true; // ✅ Flag set TRUE
+          return of(res);
+        }
+
+        // ❗ No S data → call E
+        console.log('⚠️ No S Record. Using E mode.');
+        this.hasSRecord = false; // ✅ Flag set FALSE
+        return this.HTTP.getParam(
+          '/candidate/get/getCandidateReportCard',
+          {
+            Flag_CES: 'E',
+            registration_no: registrationNo,
+            app_main_id: candidateAppMainId,
+          },
+          'recruitement'
+        ).pipe(catchError(() => of(null)));
       })
     );
 
-    forkJoin(parentRequests).subscribe({
-      next: (parentData) => {
-        const validParentData = parentData.filter(Boolean);
-        if (validParentData.length === 0) {
-          this.scoringTableData = [];
-          return;
-        }
-
-        const fullStructureRequests = validParentData.map((parentItem) => {
-          if (!parentItem.a_rec_adv_post_detail_id) {
-            return of({
-              ...parentItem,
-              subHeadings: [],
-              score_field_calculated_value: 0,
-            });
+    // 3. EXECUTE: First fetch ScoreData (to set flag), THEN fetch Structure
+    forkJoin({
+      scoreResponse: scoreDataRequest,
+      parentData: forkJoin(parentRequests),
+    })
+      .pipe(
+        // 4. The switchMap waits for step 2 to finish.
+        // Now `this.hasSRecord` is guaranteed to be correct before resolveNode is called.
+        switchMap(({ scoreResponse, parentData }) => {
+          const validParentData = parentData.filter(Boolean);
+          if (validParentData.length === 0) {
+            this.scoringTableData = [];
+            return of({ structure: [], scoreResponse });
           }
-          return this.resolveNode(parentItem).pipe(
-            catchError((err) => {
-              console.error(
-                `❌ Error resolving node for parent ${parentItem.m_rec_score_field_id}`,
-                err
-              );
+
+          const fullStructureRequests = validParentData.map((parentItem) => {
+            if (!parentItem.a_rec_adv_post_detail_id) {
               return of({
                 ...parentItem,
                 subHeadings: [],
                 score_field_calculated_value: 0,
               });
-            })
+            }
+
+            // 🌟 PASS THE PARENT ID (e.g., 1, 8, 34)
+            // parentItem.m_rec_score_field_id is the loop variable ID (1, 8, etc.)
+            return this.resolveNode(
+              parentItem,
+              parentItem.m_rec_score_field_id
+            ).pipe(
+              catchError((err) => {
+                console.error(
+                  `❌ Error resolving node for parent ${parentItem.m_rec_score_field_id}`,
+                  err
+                );
+                return of({
+                  ...parentItem,
+                  subHeadings: [],
+                  score_field_calculated_value: 0,
+                });
+              })
+            );
+          });
+          return forkJoin(fullStructureRequests).pipe(
+            map((structure) => ({ structure, scoreResponse }))
           );
-        });
+        })
+      )
+      .subscribe({
+        next: ({ structure, scoreResponse }) => {
+          const flatScoreData = scoreResponse?.body?.data || [];
 
-        forkJoin([forkJoin(fullStructureRequests), scoreDataRequest]).subscribe(
-          {
-            next: ([structure, scoreDataResponse]) => {
-              const flatScoreData = scoreDataResponse?.body?.data || [];
-              this.scoringTableData = this.mergeScoresIntoStructure(
-                structure,
-                flatScoreData
-              );
-              console.log(
-                '✅ Final Merged Recursive Data:',
-                JSON.stringify(this.scoringTableData, null, 2)
-              ); // - - - 👇 ADD THIS SECTION - - - 👇 // Populate the list of already-applied claims
+          this.scoringTableData = this.mergeScoresIntoStructure(
+            structure,
+            flatScoreData
+          );
 
-              this.appliedClaimsList = this.extractAppliedClaims(
-                this.scoringTableData
-              );
-              console.log(
-                '✅ Extracted Applied Claims:',
-                this.appliedClaimsList
-              ); // - - - 👆 END OF ADDED SECTION - - - 👆
-            },
-            error: (err) => {
-              console.error('❌ Error fetching full scoring structure:', err);
-            },
-          }
-        );
-      },
-      error: (err) => {
-        console.error('❌ Error fetching parent scoring details:', err);
-        this.scoringTableData = [];
-      },
-    });
+          console.log(
+            '✅ Final Merged Recursive Data:',
+            JSON.stringify(this.scoringTableData, null, 2)
+          );
+
+          // Populate the list of already-applied claims
+          this.appliedClaimsList = this.extractAppliedClaims(
+            this.scoringTableData
+          );
+
+          console.log('✅ Extracted Applied Claims:', this.appliedClaimsList);
+        },
+        error: (err) => {
+          console.error('❌ Error fetching full scoring structure:', err);
+          this.scoringTableData = [];
+        },
+      });
   }
 
   private sumAndMergeScores(
@@ -875,7 +960,7 @@ export class DawapattiComponent implements OnInit {
       itemData.m_rec_score_field_id.toString()
     );
     formData.append('parameter_row_index', paramRowIndex.toString());
-
+    formData.append('dawapatti_applied_after_ES', this.hasSRecord ? 'S' : 'E');
     // 4. Call your new HTTP service
     this.HTTP.postForm(
       '/candidate/postFile/saveCandidateDawapatti',
@@ -889,7 +974,7 @@ export class DawapattiComponent implements OnInit {
           // 🌟 USE ALERT SERVICE 🌟
           this.alertService.alert(
             true,
-            `There was an error submitting your claim: ${res.body.error}`
+            `There was an error submitting your claim`
           );
           this.isClaimModalVisible = false; // Still close the modal
         } else {

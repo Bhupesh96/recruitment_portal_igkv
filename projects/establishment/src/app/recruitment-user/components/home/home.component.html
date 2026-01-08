@@ -78,7 +78,7 @@
           Connect with top jobs and apply seamlessly through our recruitment
           portal
         </p>
-        <div class="mt-4 sm:mt-6 sm:hidden">
+        <div class="mt-4 sm:mt-6" *ngIf="isMobileView && !showLogin">
           <button
             (click)="showLogin = true"
             class="px-4 py-1.5 sm:px-6 sm:py-2 text-sm bg-white text-blue-800 font-semibold rounded-md shadow hover:bg-gray-100 transition"
@@ -182,11 +182,7 @@
             <div
               *ngFor="let post of filteredPosts; let i = index"
               class="bg-white rounded-xl shadow-md sm:shadow-lg border border-gray-200 overflow-hidden transition-all duration-300 animate-fadeIn"
-              [ngClass]="
-                post.expanded
-                  ? 'scale-105 shadow-xl z-10'
-                  : 'lg:hover:scale-105 lg:hover:shadow-xl'
-              "
+              [ngClass]="post.expanded ? 'shadow-lg z-10' : 'hover:shadow-lg'"
               [style.animationDelay]="i * 100 + 'ms'"
             >
               <button
@@ -367,17 +363,26 @@
 
         <div class="lg:col-span-2 mt-6 lg:mt-8 xl:mt-10">
           <div
-            class="bg-white border border-gray-200 rounded-lg shadow-md sm:shadow-lg p-3 sm:p-4 lg:p-8 xl:p-10 2xl:p-12 min-w-[280px] sticky top-20 sm:top-24"
+            class="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-200 p-8 lg:p-10 sticky top-24 w-full max-w-full transition-all duration-300"
           >
+            <!-- Header -->
             <h2
-              class="text-base sm:text-lg lg:text-xl xl:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4 lg:mb-6"
+              class="text-xl lg:text-2xl font-bold text-gray-900 mb-1 text-center"
             >
               Already have an account?
             </h2>
+
+            <p class="text-gray-500 text-sm text-center mb-6">
+              Log in to continue your application
+            </p>
+
+            <!-- Login Component -->
             <app-login
               (signupClicked)="showSignupForm()"
               (loginSuccess)="handleLoginSuccess()"
             ></app-login>
+
+            <!-- Optional Stepper -->
             <app-stepper *ngIf="isLoggedIn"></app-stepper>
           </div>
         </div>

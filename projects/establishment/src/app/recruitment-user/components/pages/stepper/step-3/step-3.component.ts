@@ -27,6 +27,7 @@ import {
   RecruitmentStateService,
   UserRecruitmentData,
 } from '../../recruitment-state.service';
+import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 interface DetailFormGroup {
   type: FormControl<string | null>;
   _rowIndex: FormControl<number | null>; // Explicitly define _rowIndex
@@ -80,7 +81,7 @@ interface Parameter {
 @Component({
   selector: 'app-step-3',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, HttpClientModule, InputTooltipDirective],
   templateUrl: './step-3.component.html',
   styleUrls: ['./step-3.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -640,7 +641,7 @@ export class Step3Component implements OnInit {
     const m_rec_score_field_id = 8; // Main Heading ID
 
     this.HTTP.getData(
-      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
+      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
       'recruitement'
     ).subscribe({
       next: (headingResponse: any) => {

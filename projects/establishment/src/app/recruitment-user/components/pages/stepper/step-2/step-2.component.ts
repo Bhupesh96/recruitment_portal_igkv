@@ -25,6 +25,7 @@ import {
   RecruitmentStateService,
   UserRecruitmentData,
 } from '../../recruitment-state.service';
+import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 interface Heading {
   a_rec_adv_main_id: number;
   a_rec_adv_post_detail_id: number;
@@ -63,7 +64,17 @@ interface Parameter {
   m_rec_score_field_parameter_new_id: number;
   a_rec_adv_post_detail_id: number;
   score_field_parameter_name: string;
-  control_type: 'T' | 'D' | 'DY' | 'A' | 'DV' | 'TV' | 'TM' | 'TO' | 'DP' | 'DC';
+  control_type:
+    | 'T'
+    | 'D'
+    | 'DY'
+    | 'A'
+    | 'DV'
+    | 'TV'
+    | 'TM'
+    | 'TO'
+    | 'DP'
+    | 'DC';
   parameter_display_order: number;
   is_mandatory?: string;
   isDatatype: string;
@@ -85,7 +96,7 @@ interface ApiResponse<T> {
 @Component({
   selector: 'app-step-2',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, SharedModule, InputTooltipDirective],
   templateUrl: './step-2.component.html',
   styleUrls: ['./step-2.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -560,7 +571,11 @@ export class Step2Component implements OnInit {
 
     const headingRequest = this.HTTP.getParam(
       '/master/get/getSubHeadingParameterByParentScoreField',
-      { m_rec_score_field, a_rec_adv_main_id, m_rec_score_field_id },
+      {
+        m_rec_score_field,
+        adv_main_id: a_rec_adv_main_id,
+        m_rec_score_field_id,
+      },
       'recruitement'
     ) as Observable<HttpResponse<ApiResponse<Heading>>>;
 

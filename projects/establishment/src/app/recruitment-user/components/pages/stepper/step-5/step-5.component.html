@@ -60,7 +60,7 @@
           *ngFor="let subheading of subheadings; let i = index"
           class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
         >
-     <h6
+          <h6
             class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-medium text-blue-600 flex items-center gap-2 mb-4"
           >
             <svg
@@ -79,7 +79,7 @@
             <span class="break-words">{{
               subheading.score_field_title_name
             }}</span>
-            
+
             <span
               *ngIf="subheading.score_field_is_mandatory === '1'"
               class="text-red-600 font-bold"
@@ -103,9 +103,14 @@
               >
                 <input
                   type="hidden"
+                  appInputTooltip
                   formControlName="a_rec_app_score_field_detail_id"
                 />
-                <input type="hidden" formControlName="is_deleted" />
+                <input
+                  type="hidden"
+                  appInputTooltip
+                  formControlName="is_deleted"
+                />
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div
@@ -118,6 +123,7 @@
                   >
                     <input
                       type="hidden"
+                      appInputTooltip
                       [formControlName]="
                         'param_' +
                         param.m_rec_score_field_parameter_new_id +
@@ -139,6 +145,7 @@
                     <ng-container [ngSwitch]="param.control_type">
                       <textarea
                         *ngSwitchCase="'TR'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
@@ -149,12 +156,14 @@
 
                       <input
                         *ngSwitchCase="'DT'"
+                        appInputTooltip
                         type="date"
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
                       <select
                         *ngSwitchCase="'DC'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
                       >
@@ -173,6 +182,7 @@
                       </select>
                       <select
                         *ngSwitchCase="'DP'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -191,6 +201,7 @@
 
                       <select
                         *ngSwitchCase="'DY'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -209,6 +220,7 @@
 
                       <select
                         *ngSwitchCase="'DE'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -226,6 +238,7 @@
                       </select>
                       <select
                         *ngSwitchCase="'D'"
+                        appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
@@ -313,6 +326,7 @@
 
                       <input
                         *ngSwitchDefault
+                        appInputTooltip
                         [type]="
                           param.isDatatype === 'number' ? 'number' : 'text'
                         "

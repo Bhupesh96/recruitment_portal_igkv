@@ -6,7 +6,7 @@ import {
 import { HttpService, LoaderService } from 'shared';
 import { CommonModule } from '@angular/common';
 import { forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser'; // Import DomSanitizer
 
 @Component({
@@ -256,16 +256,29 @@ export class ScorecardComponent implements OnInit {
     const scoreDataRequest = this.HTTP.getParam(
       '/candidate/get/getCandidateReportCard',
       {
-        Flag_CES: 'E',
+        Flag_CES: 'S', // Try S first
         registration_no: registrationNo,
-        app_main_id: candidateAppMainId, // ✅ --- THIS IS THE FIX ---
-        // Use the 'C' ID (12) as requested.
+        app_main_id: candidateAppMainId,
       },
       'recruitement'
     ).pipe(
-      catchError((err) => {
-        console.error('❌ Error fetching scoring report card:', err);
-        return of(null); // Return null on error
+      catchError(() => of(null)), // ignore error
+      switchMap((res: any) => {
+        const data = res?.body?.data;
+        if (data && data.length > 0) {
+          return of(res); // ✔ S found → return S
+        }
+
+        // ❗ No S data → call E
+        return this.HTTP.getParam(
+          '/candidate/get/getCandidateReportCard',
+          {
+            Flag_CES: 'E',
+            registration_no: registrationNo,
+            app_main_id: candidateAppMainId,
+          },
+          'recruitement'
+        ).pipe(catchError(() => of(null)));
       })
     );
 
@@ -364,7 +377,7 @@ export class ScorecardComponent implements OnInit {
       }
       // Rule 2: If parent_id > 0, it's a sub-item score.
       else if (item.score_field_parent_id > 0) {
-        // We sum scores in case one item appears multiple times (like Experience)
+        // We sum scores in case one item appears multiple times
         const key = item.m_rec_score_field_id;
         const currentScore = subItemScoreMap.get(key) || 0;
         subItemScoreMap.set(
@@ -376,50 +389,56 @@ export class ScorecardComponent implements OnInit {
 
     // 2. Loop through the structure and merge the scores
     structure.forEach((parent) => {
-      // Merge parent total score (e.g., m_id: 1, 18, 32)
+      // --- A. Handle Parent Scores ---
+      let parentRawScore = 0;
       if (parentScoreMap.has(parent.m_rec_score_field_id)) {
-        parent.score_field_calculated_value = parentScoreMap.get(
-          parent.m_rec_score_field_id
-        );
+        parentRawScore = parentScoreMap.get(parent.m_rec_score_field_id)!;
       }
 
-      // Merge sub-heading scores
-      parent.subHeadings.forEach((subItem: any) => {
-        // The subItem is the *structural* element (e.g., m_id: 19)
-        const subItemKey = subItem.m_rec_score_field_id;
+      // ✅ LOGIC UPDATE: Cap Parent Score (Score cannot exceed Max Marks)
+      const parentMaxMarks = parent.score_field_field_marks || 0;
+      parent.score_field_calculated_value = Math.min(
+        parentRawScore,
+        parentMaxMarks
+      );
 
-        // Case 1: Direct match (e.g., Edu. Qual, Experience)
+      // --- B. Handle Sub-heading Scores ---
+      parent.subHeadings.forEach((subItem: any) => {
+        const subItemKey = subItem.m_rec_score_field_id;
+        let subItemRawScore = 0;
+
+        // Case 1: Direct match
         if (subItemScoreMap.has(subItemKey)) {
-          subItem.score_field_calculated_value =
-            subItemScoreMap.get(subItemKey);
+          subItemRawScore = subItemScoreMap.get(subItemKey)!;
         }
-        // Case 2: Indirect match (e.g., Publications)
+        // Case 2: Indirect match (Recursive children sum)
         else {
-          let totalScore = 0;
           for (const scoreItem of flatScoreData) {
             if (scoreItem.score_field_parent_id === subItemKey) {
-              totalScore += scoreItem.score_field_calculated_value;
+              subItemRawScore += scoreItem.score_field_calculated_value;
             }
           }
-          subItem.score_field_calculated_value = totalScore;
         }
+
+        // ✅ LOGIC UPDATE: Cap Sub-Item Score
+        const subItemMaxMarks = subItem.score_field_field_marks || 0;
+        subItem.score_field_calculated_value = Math.min(
+          subItemRawScore,
+          subItemMaxMarks
+        );
       });
     });
 
-    // ✅ --- NEW LOGIC: CALCULATE TOTALS ---
-    // Reset totals
+    // 3. Calculate Totals based on the *Capped* values
     this.totalMaxMarks = 0;
     this.totalObtainedMarks = 0;
 
-    // Loop through the final structure and sum the main parent sections
     structure.forEach((parent) => {
-      // We only sum the main sections (parent_id = 0)
       if (parent.score_field_parent_id === 0) {
         this.totalMaxMarks += parent.score_field_field_marks || 0;
         this.totalObtainedMarks += parent.score_field_calculated_value || 0;
       }
     });
-    // --- END NEW LOGIC ---
 
     return structure;
   }
