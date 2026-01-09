@@ -223,6 +223,12 @@ export class Step7Component implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       const file = input.files[0];
+      if (file.type !== 'application/pdf') {
+        this.alertService.alert(true, 'Only PDF files are allowed.');
+        input.value = '';
+        this.attachmentsArray.at(index).patchValue({ document: null });
+        return;
+      }
       this.attachmentsArray.at(index).patchValue({ document: file });
 
       const meta = this.attachmentMeta[index];

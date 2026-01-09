@@ -73,11 +73,12 @@
         </label>
         <input
           type="file"
+          accept="application/pdf"
           id="file"
           (change)="onFileChange($event)"
           class="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer focus:outline-none file:cursor-pointer file:bg-blue-50 file:border-0 file:py-2 file:px-4 file:rounded-md file:text-blue-700 hover:file:bg-blue-100 transition"
         />
-        <p class="text-xs text-gray-500 mt-1">PDF, JPG, PNG (Max 2MB)</p>
+        <p class="text-xs text-gray-500 mt-1">PDF</p>
         <p *ngIf="fileError" class="text-sm text-red-600 mt-1">
           {{ fileError }}
         </p>

@@ -865,7 +865,15 @@ export class Step1Component implements OnChanges, OnInit {
 
     if (input.files?.length && control) {
       const file = input.files[0];
+      if (file.type !== 'application/pdf') {
+        this.alert.alert(true, 'Only PDF files are allowed for this document.');
 
+        // Reset the input and control
+        input.value = '';
+        control.setValue(null);
+        control.markAsTouched();
+        return;
+      }
       // Validate file size if a max size is specified in the API response
       if (maxSizeKB) {
         const maxSizeInBytes = maxSizeKB * 1024;

@@ -85,7 +85,12 @@ interface ApiResponse<T> {
 @Component({
   selector: 'app-step-5',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule,InputTooltipDirective],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    SharedModule,
+    InputTooltipDirective,
+  ],
   templateUrl: './step-5.component.html',
   styleUrls: ['./step-5.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -763,9 +768,17 @@ export class Step5Component implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
       let file: File | null = input.files[0]; // Use 'let' to allow modification
+
       const formArray = this.form.get(arrayName) as FormArray;
       const control = formArray.at(index).get(fieldName);
+      if (file.type !== 'application/pdf') {
+        this.alertService.alert(true, 'Only PDF files are allowed.');
 
+        // Reset the input and control
+        input.value = '';
+        control?.setValue(null);
+        return; // Stop execution
+      }
       // --- START: INSERTED VALIDATION LOGIC ---
       // Find the parameter configuration to get the size limit
       const param = this.parameters.find(

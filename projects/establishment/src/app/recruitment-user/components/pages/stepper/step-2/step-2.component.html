@@ -182,6 +182,7 @@
                     <!-- File Upload for isDatatype 'attachment' -->
                     <input
                       type="file"
+                      accept="application/pdf"
                       (change)="
                         onFileChange(
                           $event,
@@ -345,6 +346,7 @@
                       <ng-container *ngSwitchCase="'A'">
                         <input
                           type="file"
+                          accept="application/pdf"
                           (change)="
                             onFileChange(
                               $event,

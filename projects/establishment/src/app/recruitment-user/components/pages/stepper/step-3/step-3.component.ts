@@ -81,7 +81,13 @@ interface Parameter {
 @Component({
   selector: 'app-step-3',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, HttpClientModule, InputTooltipDirective],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    HttpClientModule,
+    InputTooltipDirective,
+  ],
   templateUrl: './step-3.component.html',
   styleUrls: ['./step-3.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1030,6 +1036,14 @@ export class Step3Component implements OnInit {
     }
 
     let file: File | null = input.files[0];
+    if (file.type !== 'application/pdf') {
+      this.alertService.alert(true, 'Only PDF files are allowed.');
+
+      // Reset the input and control
+      input.value = '';
+      detailForm.patchValue({ [controlName]: null }, { emitEvent: false });
+      return; // Stop execution
+    }
     const detailType = detailForm.get('type')?.value;
     const rowIndex = detailForm.get('_rowIndex')?.value; // <-- Get stable index
     let param: any = null;

@@ -96,7 +96,12 @@ interface ApiResponse<T> {
 @Component({
   selector: 'app-step-2',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule, InputTooltipDirective],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    SharedModule,
+    InputTooltipDirective,
+  ],
   templateUrl: './step-2.component.html',
   styleUrls: ['./step-2.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -206,7 +211,14 @@ export class Step2Component implements OnInit {
       let file: File | null = input.files[0]; // Use 'let' to allow modification
       const formArray = this.form.get(arrayName) as FormArray;
       const group = formArray.at(index) as FormGroup;
+      if (file.type !== 'application/pdf') {
+        this.alertService.alert(true, 'Only PDF files are allowed.');
 
+        // Reset the input and control
+        input.value = '';
+        group.get(fieldName)?.setValue(null);
+        return; // Stop execution
+      }
       // --- START: INSERTED VALIDATION LOGIC ---
       const param = this.parameters.find(
         (p) => p.score_field_parameter_name === fieldName
