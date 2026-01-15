@@ -19,23 +19,28 @@ export class AuthService {
     private alertService: AlertService
   ) {}
 
-  logout() {
-    this.http
-      .getData('/scoreCardEntry/logout', 'recruitement')
-      .subscribe(() => {
-        this.cookie.deleteAll('/');
+logout() {
+  this.http
+    .getData('/scoreCardEntry/logout', 'recruitement')
+    .subscribe(() => {
+      this.cookie.delete('session', '/');
+      this.cookie.delete('user', '/');
+      this.cookie.deleteAll('/');
 
-        this.alertService
-          .alert(false, 'You have been logged out successfully!', 1500)
-          .then(() => {
-            window.open(moduleMapping.loginModule, '_self');
-          });
-      });
-  }
-  isLoggedIn(): boolean {
-    const cookie = this.cookie.get('session');
-    return !!cookie;
-  }
+      this.alertService
+        .alert(false, 'You have been logged out successfully!', 1500)
+        .then(() => {
+          window.open(moduleMapping.loginModule, '_self');
+        });
+    });
+}
+
+isLoggedIn(): boolean {
+  const session = this.cookie.get('session');
+  const user = this.cookie.get('user');
+
+  return !!session && !!user;
+}
 
   decryptCookie(cookie: string) {
     try {
@@ -47,21 +52,16 @@ export class AuthService {
     }
   }
 
-  get currentUser() {
-    const user_cookie = this.cookie.get('user');
-    const cookie = this.cookie.get('session');
-    if (user_cookie && cookie) {
-      // Decrypt the data first
-      const decryptedData = this.decryptCookie(user_cookie);
+get currentUser() {
+  const user_cookie = this.cookie.get('user');
+  const cookie = this.cookie.get('session');
 
-      // ✅ ADD THIS LINE to log the data to your browser console
-      // console.log('--- DECRYPTED USER DATA ---', decryptedData);
-
-      return decryptedData;
-    } else {
-      this.logout();
-    }
+  if (user_cookie && cookie) {
+    return this.decryptCookie(user_cookie);
   }
+  return null;   // ✅ SAFE
+}
+
 
   resetPassword(credentials: any): Observable<any> {
     return this.http.postData(
