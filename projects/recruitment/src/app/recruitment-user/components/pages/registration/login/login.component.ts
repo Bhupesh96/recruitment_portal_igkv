@@ -110,6 +110,7 @@ export class LoginComponent implements OnInit {
       .postData('/scoreCardEntry/login/', payload, 'recruitement')
       .subscribe({
         next: (response: any) => {
+         console.log('Login response:', JSON.stringify(response));
           if (response.body && !response.body.error) {
             this.alertService.alert(false, 'Login successful!', 2000);
             this.loginSuccess.emit();

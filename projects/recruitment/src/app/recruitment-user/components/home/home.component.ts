@@ -102,7 +102,7 @@ export class HomeComponent implements OnInit {
     this.showSignup = true;
   }
 
-  // private apiBaseUrl = 'http://192.168.1.36:3500/recruitementApi/commonRoutes';
+
   private apiBaseUrl = '';
   constructor(
     private HTTP: HttpService,

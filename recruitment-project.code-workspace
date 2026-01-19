@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../recruitment_front_admin"
+		},
+		{
+			"path": "../recruitment_back"
+		}
+	]
+}

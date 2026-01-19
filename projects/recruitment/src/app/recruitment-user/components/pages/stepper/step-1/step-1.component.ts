@@ -1640,7 +1640,14 @@ export class Step1Component implements OnChanges, OnInit {
         this.filePaths.get('signature') || formValue.signature || null,
     };
 
-    const additionalInfoDetails: { question: string; answer: any }[] = [];
+    const additionalInfoDetails: {
+      question: string;
+      answer: any;
+      question_id?: number;
+      option_id?: number;
+      condition_id?: number;
+    }[] = [];
+
     if (this.additionalQuestions && this.additionalQuestions.length > 0) {
       this.additionalQuestions.forEach((question) => {
         const questionControlName = `question_${question.question_id}`;
@@ -1655,6 +1662,8 @@ export class Step1Component implements OnChanges, OnInit {
             additionalInfoDetails.push({
               question: question.question_label,
               answer: selectedOption.option_label,
+              question_id: question.question_id,
+              option_id: selectedOption.option_id,
             });
 
             if (selectedOption.has_condition === 'Y') {
@@ -1676,6 +1685,9 @@ export class Step1Component implements OnChanges, OnInit {
                   additionalInfoDetails.push({
                     question: condition.dependent_field_label,
                     answer: answerValue,
+                    question_id: question.question_id,
+                    option_id: selectedOption.option_id,
+                    condition_id: condition.condition_id,
                   });
                 }
               });
