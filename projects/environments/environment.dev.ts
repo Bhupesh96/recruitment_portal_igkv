@@ -11,7 +11,8 @@ export const environment = {
   PASSWORD_SECRET_KEY: "08t16e502526fesanfjh8nasd2",
   CAPTCHA_SECRET_KEY: '03f26e402586fkisanf2395fsg9632faa8da4c98a35f1b20d6b033c50',
   sharedSecret: 'tg:D/|oP$:s2I[-8-Pc:|8/U7+?!r]g#',
-  publicKey: "BLaV0kn22SFt30rA1H6lEX6dgTOzToFY3bVfCXzGwM0gg2CFEjILyLp4qoL8H_hNFaJhOYndp4vquNH6zYy5r2M"
+  publicKey: "BLaV0kn22SFt30rA1H6lEX6dgTOzToFY3bVfCXzGwM0gg2CFEjILyLp4qoL8H_hNFaJhOYndp4vquNH6zYy5r2M",
+  recruitmentFileBaseUrl: 'http://192.168.1.157:3500'
 };
 
 export const reportConfig = {
@@ -34,6 +35,7 @@ export const moduleMapping: any = {
   homeModule: `${host}:4200/common`,
   loginModule: `${host}:4390/home`,
   recruitementModule: `${host}:4340`,
+  recruitmentCandidateModule: `${host}:4390`,
   academicModule: `${host}:4310`,
   admissionModule: `${host}:4320`,
   establishmentModule: `${host}:4330`,
@@ -47,3 +49,4 @@ export const apiPort: any = {
   academicApi: `${host}:3003/academicApi`,
   recruitementApi: `${host}:3500/recruitementApi`,
 };
+

@@ -601,7 +601,7 @@
         }
       }
     },
-    "recruitment": {
+    "recruitmentCandidate": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -633,16 +633,16 @@
           "skipTests": true
         }
       },
-      "root": "projects/recruitment",
-      "sourceRoot": "projects/recruitment/src",
+      "root": "projects/recruitmentCandidate",
+      "sourceRoot": "projects/recruitmentCandidate/src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/recruitment",
-            "index": "projects/recruitment/src/index.html",
-            "browser": "projects/recruitment/src/main.ts",
+            "outputPath": "dist/recruitmentCandidate",
+            "index": "projects/recruitmentCandidate/src/index.html",
+            "browser": "projects/recruitmentCandidate/src/main.ts",
             "polyfills": ["zone.js"],
             "stylePreprocessorOptions": {
               "sass": {
@@ -654,12 +654,12 @@
                 ]
               }
             },
-            "tsConfig": "projects/recruitment/tsconfig.app.json",
+            "tsConfig": "projects/recruitmentCandidate/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "projects/recruitment/public"
+                "input": "projects/recruitmentCandidate/public"
               },
               {
                 "glob": "**/*",
@@ -671,7 +671,7 @@
               "./node_modules/bootstrap/scss/bootstrap.scss",
               "projects/shared/assets/style.bundle.css",
               "projects/shared/assets/modified.scss",
-              "projects/recruitment/src/styles.scss"
+              "projects/recruitmentCandidate/src/styles.scss"
             ],
             "scripts": [
               "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
@@ -682,13 +682,19 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1MB",
+                  "maximumError": "5MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "200kB",
+                  "maximumError": "500kB"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "projects/environments/environment.dev.ts",
+                  "with": "projects/environments/environment.prod.ts"
                 }
               ],
               "outputHashing": "all"
@@ -705,10 +711,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "recruitment:build:production"
+              "buildTarget": "recruitmentCandidate:build:production"
             },
             "development": {
-              "buildTarget": "recruitment:build:development"
+              "buildTarget": "recruitmentCandidate:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -720,12 +726,12 @@
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "projects/recruitment/tsconfig.spec.json",
+            "tsConfig": "projects/recruitmentCandidate/tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "projects/recruitment/public"
+                "input": "projects/recruitmentCandidate/public"
               },
               {
                 "glob": "**/*",
@@ -737,7 +743,7 @@
               "./node_modules/bootstrap/scss/bootstrap.scss",
               "projects/shared/assets/style.bundle.css",
               "projects/shared/assets/modified.scss",
-              "projects/recruitment/src/styles.scss"
+              "projects/recruitmentCandidate/src/styles.scss"
             ],
             "scripts": [
               "./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
@@ -1046,36 +1052,36 @@
         }
       }
     },
-    "recruitment-admin": {
+    "recruitmentCandidate-admin": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss"
         }
       },
-      "root": "projects/recruitment-admin",
-      "sourceRoot": "projects/recruitment-admin/src",
+      "root": "projects/recruitmentCandidate-admin",
+      "sourceRoot": "projects/recruitmentCandidate-admin/src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/recruitment-admin",
-            "index": "projects/recruitment-admin/src/index.html",
-            "browser": "projects/recruitment-admin/src/main.ts",
+            "outputPath": "dist/recruitmentCandidate-admin",
+            "index": "projects/recruitmentCandidate-admin/src/index.html",
+            "browser": "projects/recruitmentCandidate-admin/src/main.ts",
             "polyfills": [
               "zone.js"
             ],
-            "tsConfig": "projects/recruitment-admin/tsconfig.app.json",
+            "tsConfig": "projects/recruitmentCandidate-admin/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "projects/recruitment-admin/public"
+                "input": "projects/recruitmentCandidate-admin/public"
               }
             ],
             "styles": [
-              "projects/recruitment-admin/src/styles.scss"
+              "projects/recruitmentCandidate-admin/src/styles.scss"
             ],
             "scripts": []
           },
@@ -1107,10 +1113,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "recruitment-admin:build:production"
+              "buildTarget": "recruitmentCandidate-admin:build:production"
             },
             "development": {
-              "buildTarget": "recruitment-admin:build:development"
+              "buildTarget": "recruitmentCandidate-admin:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -1125,16 +1131,16 @@
               "zone.js",
               "zone.js/testing"
             ],
-            "tsConfig": "projects/recruitment-admin/tsconfig.spec.json",
+            "tsConfig": "projects/recruitmentCandidate-admin/tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "projects/recruitment-admin/public"
+                "input": "projects/recruitmentCandidate-admin/public"
               }
             ],
             "styles": [
-              "projects/recruitment-admin/src/styles.scss"
+              "projects/recruitmentCandidate-admin/src/styles.scss"
             ],
             "scripts": []
           }

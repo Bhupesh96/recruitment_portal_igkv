@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import CryptoJS from 'crypto-js';
 import { CookieService } from 'ngx-cookie-service';
 import { moduleMapping } from 'environment';
-import { Observable, take } from 'rxjs';
+import { finalize, Observable, take } from 'rxjs';
 import { HttpService } from './http.service';
 import { Router } from '@angular/router';
 import { EncryptionService } from './encryption.service';
@@ -20,21 +20,35 @@ export class AuthService {
   ) {}
 
 logout() {
+  // Attempt to tell server to logout, but clear client cookies regardless
   this.http
     .getData('/scoreCardEntry/logout', 'recruitement')
-    .subscribe(() => {
-      this.cookie.delete('session', '/');
-      this.cookie.delete('user', '/');
-      this.cookie.deleteAll('/');
-
-      this.alertService
-        .alert(false, 'You have been logged out successfully!', 1500)
-        .then(() => {
-          window.open(moduleMapping.loginModule, '_self');
-        });
+    .pipe(
+      // finalize runs whether the API succeeds OR fails (401)
+      finalize(() => {
+        this.clearLocalSession();
+      })
+    )
+    .subscribe({
+      next: () => console.log('Server logout successful'),
+      error: (err) => console.log('Server logout failed (likely already expired)', err)
     });
 }
+private clearLocalSession() {
+  this.cookie.delete('session', '/');
+  this.cookie.delete('user', '/');
+  this.cookie.delete('designation_id', '/');
+  this.cookie.delete('module_id', '/');
+  this.cookie.deleteAll('/'); // Nuclear option
 
+  this.alertService
+    .alert(false, 'Session Expired. Please login again.', 1500)
+    .then(() => {
+      // Use router to navigate to avoid full page reload if possible, 
+      // or standard window.open if you need to switch modules
+       window.open(moduleMapping.loginModule, '_self');
+    });
+}
 isLoggedIn(): boolean {
   const session = this.cookie.get('session');
   const user = this.cookie.get('user');
@@ -51,17 +65,32 @@ isLoggedIn(): boolean {
       console.log(e);
     }
   }
-
 get currentUser() {
+  console.log("Current user function called")
   const user_cookie = this.cookie.get('user');
-  const cookie = this.cookie.get('session');
+  const session_cookie = this.cookie.get('session');
 
-  if (user_cookie && cookie) {
-    return this.decryptCookie(user_cookie);
+  console.group('🔍 AuthService Cookie Debug');
+  console.log('1. Raw User Cookie String:', user_cookie);
+  console.log('2. Raw Session Cookie String:', session_cookie);
+
+  if (user_cookie && session_cookie) {
+    try {
+      const decrypted = this.decryptCookie(user_cookie);
+      console.log('3. ✅ Decrypted User Object:', decrypted);
+      console.groupEnd();
+      return decrypted;
+    } catch (err) {
+      console.error('❌ Decryption Failed:', err);
+      console.groupEnd();
+      return null;
+    }
+  } else {
+    console.warn('⚠️ No cookies found!');
+    console.groupEnd();
   }
-  return null;   // ✅ SAFE
+  return null;
 }
-
 
   resetPassword(credentials: any): Observable<any> {
     return this.http.postData(
