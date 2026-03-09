@@ -135,7 +135,7 @@
 
 /* SMART RULE: This removes the top border of the VERY FIRST child inside a
    bordered section, which prevents the double border effect. */
-.bordered-section > *:first-child {
+.bordered-section>*:first-child {
   border-top: none;
 }
 
@@ -273,6 +273,7 @@
   border-bottom: 1px solid black;
   width: 80px;
 }
+
 .underline-fill-md {
   display: inline-block;
   border-bottom: 1px solid black;
@@ -293,48 +294,7 @@
   }
 
   .section {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
   }
 }
 
-@media print {
-  body,
-  html {
-    margin: 0;
-    padding: 0;
-  }
-
-  @page {
-    size: A4;
-    margin: 0;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  .a4-container,
-  .a4-container * {
-    visibility: visible;
-  }
-
-  .a4-container {
-    width: 100%;
-    min-height: initial;
-    border: none;
-    box-sizing: border-box;
-    padding: 10pt;
-  }
-
-  thead {
-    display: table-header-group;
-  }
-
-  tr {
-    page-break-inside: avoid;
-  }
-
-  .section {
-    page-break-inside: avoid;
-  }
-}

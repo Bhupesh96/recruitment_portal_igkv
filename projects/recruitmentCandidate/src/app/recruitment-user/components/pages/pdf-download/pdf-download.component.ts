@@ -7,7 +7,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { SharedDataService } from '../shared-data.service';
-import { Subscription } from 'rxjs';
+import { Subscription, take } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpService, LoaderService } from 'shared';
 import {
@@ -180,23 +180,28 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       </body>
     </html>
   `;
+
     const apiUrl = '/file/post/htmltoPdf';
-    const payload = { html: fullHtmlPayload };
-    this.httpService.postBlob(apiUrl, payload, null, 'common').subscribe({
-      next: (res) => {
-        const a = document.createElement('a');
-        a.download = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
-        // Ensure body is not null before creating object URL
-        if (res.body) {
-          a.href = window.URL.createObjectURL(res.body);
-          a.click();
-        }
-        this.loader.hideLoader();
-      },
-      error: (err) => {
-        console.error('❌ PDF Generation Failed:', err);
-        this.loader.hideLoader();
-      },
+    const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false };
+    let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
+    // this.httpService.postBlob(apiUrl, payload, fileName, 'common').subscribe({
+    //   next: (res) => {
+    //     const a = document.createElement('a');
+    //     // Ensure body is not null before creating object URL
+    //     if (res.body) {
+    //       a.href = window.URL.createObjectURL(res.body);
+    //       a.click();
+    //     }
+    //     this.loader.hideLoader();
+    //   },
+    //   error: (err) => {
+    //     console.error('❌ PDF Generation Failed:', err);
+    //     this.loader.hideLoader();
+    //   },
+    // });
+    this.httpService.postBlob(apiUrl, payload, fileName, "common").pipe(take(1)).subscribe(() => {
+      console.log("PDF Generated");
+      this.loader.hideLoader();
     });
   }
 
