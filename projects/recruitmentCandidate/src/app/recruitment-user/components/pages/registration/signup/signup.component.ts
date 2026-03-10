@@ -7,14 +7,15 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { HttpService } from 'shared';
-import { environment } from 'environment';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {HttpService} from 'shared';
+import {environment} from 'environment';
 import CryptoJS from 'crypto-js';
-import { AlertService } from 'shared';
-import { EncryptionService } from 'shared';
-import { OnChanges, SimpleChanges } from '@angular/core';
+import {AlertService} from 'shared';
+import {EncryptionService} from 'shared';
+import {OnChanges, SimpleChanges} from '@angular/core';
+
 @Component({
   selector: 'app-signup',
   standalone: true,
@@ -28,15 +29,12 @@ export class SignupComponent implements OnInit, OnChanges {
   @Input() subjectId: number | null = null;
   @Input() subjectsAvailable: boolean = false;
   @Output() loginClicked = new EventEmitter<void>();
-  @ViewChild('captchaContainer', { static: false }) dataContainer!: ElementRef;
+  @ViewChild('captchaContainer', {static: false}) dataContainer!: ElementRef;
   public captchaKey: any = environment.CAPTCHA_SECRET_KEY;
   public passwordKey: any = environment.PASSWORD_SECRET_KEY;
   public generatedCaptcha: any = '';
   user: any;
   pass: any;
-  onLoginClick() {
-    this.loginClicked.emit();
-  }
   mobile = '';
   email = '';
   password = '';
@@ -49,15 +47,12 @@ export class SignupComponent implements OnInit, OnChanges {
   enteredOtpMobile = '';
   enteredOtpEmail = '';
   isVerified = false;
-
   otpSent = false;
   resendCooldown = 0;
   cooldownInterval: any;
-
   passwordValidationMessage = '';
   showConfirmPassword = false;
   confirmPasswordMessage = '';
-
   // Validation and status flags
   mobileError = '';
   emailError = '';
@@ -68,17 +63,37 @@ export class SignupComponent implements OnInit, OnChanges {
   showSuccessAlert = false;
   categoryList: any[] = [];
   selectedCategory: number | null = null;
+  passwordErrors = {
+    capital: false,
+    lowercase: false,
+    number: false,
+    special: false,
+    length: false,
+  };
+  isPasswordStrong = false;
 
   constructor(
     private http: HttpService,
     private alertService: AlertService,
     private encryptionService: EncryptionService
-  ) {}
+  ) {
+  }
+
+  get buttonLabel(): string {
+    if (!this.otpSent) return 'Send OTP';
+    if (!this.isVerified) return 'Verify';
+    return 'Register';
+  }
+
+  onLoginClick() {
+    this.loginClicked.emit();
+  }
 
   ngOnInit() {
     this.getCaptcha();
     this.getCategoryList();
   }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (
       changes['advertisementId'] ||
@@ -97,6 +112,7 @@ export class SignupComponent implements OnInit, OnChanges {
       }
     });
   }
+
   getCategoryList() {
     if (!this.advertisementId || !this.postCode || this.subjectId === null) {
       return;
@@ -191,16 +207,6 @@ export class SignupComponent implements OnInit, OnChanges {
     return regex.test(this.password);
   }
 
-  passwordErrors = {
-    capital: false,
-    lowercase: false,
-    number: false,
-    special: false,
-    length: false,
-  };
-
-  isPasswordStrong = false;
-
   validatePassword(): void {
     const pwd = this.password;
     const errors = [];
@@ -254,12 +260,6 @@ export class SignupComponent implements OnInit, OnChanges {
     } else {
       this.onSignup();
     }
-  }
-
-  get buttonLabel(): string {
-    if (!this.otpSent) return 'Send OTP';
-    if (!this.isVerified) return 'Verify';
-    return 'Register';
   }
 
   onSignup() {
@@ -338,11 +338,16 @@ export class SignupComponent implements OnInit, OnChanges {
             );
             return;
           }
-
+          const registrationNo = res?.body?.data?.registration_no;
           // Success handling
           this.signupSuccess = 'Registration successful';
           this.showSuccessAlert = true;
-          this.alertService.alert(false, 'Registration successful');
+          this.alertService.alert(
+            false,
+            `Registration successful!
+            Your Registration Number: ${registrationNo}
+            Please save this number for login.`
+          );
         },
         error: (err) => {
           console.error(err);

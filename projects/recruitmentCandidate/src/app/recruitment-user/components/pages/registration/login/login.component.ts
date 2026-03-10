@@ -6,7 +6,7 @@ import {
   ViewChild,
   ElementRef,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {CommonModule} from '@angular/common';
 import {
   FormBuilder,
   FormGroup,
@@ -14,12 +14,12 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { HttpService, AlertService, AuthService } from 'shared';
-import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { environment } from 'environment';
+import {HttpService, AlertService, AuthService} from 'shared';
+import {Router} from '@angular/router';
+import {HttpErrorResponse} from '@angular/common/http';
+import {environment} from 'environment';
 import CryptoJS from 'crypto-js';
-import { SweetAlertResult } from 'sweetalert2';
+import {SweetAlertResult} from 'sweetalert2';
 
 @Component({
   selector: 'app-login',
@@ -31,7 +31,7 @@ export class LoginComponent implements OnInit {
   @Output() loginSuccess = new EventEmitter<void>();
   @Output() signupClicked = new EventEmitter<void>();
 
-  @ViewChild('captchaContainer', { static: false }) dataContainer!: ElementRef;
+  @ViewChild('captchaContainer', {static: false}) dataContainer!: ElementRef;
   public captchaKey: any = environment.CAPTCHA_SECRET_KEY;
   public passwordKey: any = environment.PASSWORD_SECRET_KEY;
   public generatedCaptcha: any = '';
@@ -46,7 +46,8 @@ export class LoginComponent implements OnInit {
     private alertService: AlertService,
     private router: Router,
     private fb: FormBuilder
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     this.createForm();
@@ -92,7 +93,7 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.value.captcha !== txtCaptcha) {
       this.alertService.alert(true, 'Incorrect captcha. Please try again.');
       this.getCaptcha();
-      this.loginForm.patchValue({ captcha: '' });
+      this.loginForm.patchValue({captcha: ''});
       return;
     }
 
@@ -110,7 +111,7 @@ export class LoginComponent implements OnInit {
       .postData('/scoreCardEntry/login/', payload, 'recruitement')
       .subscribe({
         next: (response: any) => {
-         console.log('Login response:', JSON.stringify(response));
+          console.log('Login response:', JSON.stringify(response));
           if (response.body && !response.body.error) {
             this.alertService.alert(false, 'Login successful!', 2000);
             this.loginSuccess.emit();
@@ -120,45 +121,10 @@ export class LoginComponent implements OnInit {
         },
         error: (err: HttpErrorResponse) => {
           this.handleLoginError(err.error?.error);
-          this.loginForm.patchValue({ password: '' });
+          this.loginForm.patchValue({password: ''});
           this.getCaptcha();
         },
       });
-  }
-
-  private handleLoginError(error: any) {
-    if (error?.code) {
-      switch (error.code) {
-        case 'sc012':
-          this.alertService
-            .confirmAlert(
-              'Already Logged In',
-              'This user is already logged in elsewhere. Do you want to log out all other sessions?',
-              'warning'
-            )
-            .then((result: SweetAlertResult) => {
-              if (result.isConfirmed) {
-                this.logoutAllUserByUserId(this.loginForm.value.user_id);
-              }
-            });
-          break;
-        case 'sc002':
-          this.loginError = 'Invalid Registration No. or Password.';
-          this.alertService.alert(true, this.loginError);
-          break;
-        case 'sc001':
-          this.loginError = 'Invalid Registration No.';
-          this.alertService.alert(true, this.loginError);
-          break;
-        default:
-          this.loginError = error.message || 'An unknown login error occurred.';
-          this.alertService.alert(true, this.loginError);
-          break;
-      }
-    } else {
-      this.loginError = 'An unknown error occurred. Please try again.';
-      this.alertService.alert(true, this.loginError);
-    }
   }
 
   logoutAllUserByUserId(userId: string) {
@@ -192,5 +158,59 @@ export class LoginComponent implements OnInit {
 
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
+  }
+
+  private handleLoginError(error: any) {
+    if (error?.code) {
+      switch (error.code) {
+        case 'sc012':
+          this.alertService
+            .confirmAlert(
+              'Already Logged In',
+              'This user is already logged in elsewhere. Do you want to log out all other sessions?',
+              'warning'
+            )
+            .then((result: SweetAlertResult) => {
+              if (result.isConfirmed) {
+                this.logoutAllUserByUserId(this.loginForm.value.user_id);
+              }
+            });
+          break;
+
+        case 'sc002':
+          this.loginError = 'Invalid Registration No. or Password.';
+          this.alertService.alert(true, this.loginError);
+
+          // reset password + captcha
+          this.loginForm.patchValue({password: '', captcha: ''});
+          this.getCaptcha();
+          break;
+
+        case 'sc001':
+          this.loginError = 'Invalid Registration No.';
+          this.alertService.alert(true, this.loginError);
+
+          // reset captcha
+          this.loginForm.patchValue({captcha: ''});
+          this.getCaptcha();
+          break;
+
+        default:
+          this.loginError = error.message || 'An unknown login error occurred.';
+          this.alertService.alert(true, this.loginError);
+
+          // reset captcha
+          this.loginForm.patchValue({captcha: ''});
+          this.getCaptcha();
+          break;
+      }
+    } else {
+      this.loginError = 'An unknown error occurred. Please try again.';
+      this.alertService.alert(true, this.loginError);
+
+      // reset captcha
+      this.loginForm.patchValue({captcha: ''});
+      this.getCaptcha();
+    }
   }
 }
