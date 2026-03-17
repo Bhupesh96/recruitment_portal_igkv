@@ -342,12 +342,14 @@ export class SignupComponent implements OnInit, OnChanges {
           // Success handling
           this.signupSuccess = 'Registration successful';
           this.showSuccessAlert = true;
-          this.alertService.alert(
-            false,
-            `Registration successful!
-            Your Registration Number: ${registrationNo}
-            Please save this number for login.`
-          );
+          // this.alertService.alert(
+          //   false,
+          //   `Registration successful!
+          //   Your Registration Number: ${registrationNo}
+          //   Please save this number for login.`
+          // );
+          this.alertService.alertMessage(   `Registration successful!
+            Your Registration Number: ${registrationNo}`, 'Please save this number for login.', 'success');
         },
         error: (err) => {
           console.error(err);
