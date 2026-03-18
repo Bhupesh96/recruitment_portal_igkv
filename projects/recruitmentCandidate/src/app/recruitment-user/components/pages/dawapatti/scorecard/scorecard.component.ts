@@ -70,7 +70,7 @@ export class ScorecardComponent implements OnInit {
     }
 
     const htmlContent = printElement.outerHTML;
-    const payload = { html: htmlContent, orientation: 'portrait' };
+    const payload = { html: htmlContent, orientation: 'portrait',university_id: 2 };
 
     this.loader.showLoader();
     this.HTTP.postBlob(

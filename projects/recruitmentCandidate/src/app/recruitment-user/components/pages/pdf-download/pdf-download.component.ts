@@ -182,7 +182,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   `;
 
     const apiUrl = '/file/post/htmltoPdf';
-    const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false };
+    const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false, university_id : 2 };
     let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
     // this.httpService.postBlob(apiUrl, payload, fileName, 'common').subscribe({
     //   next: (res) => {
