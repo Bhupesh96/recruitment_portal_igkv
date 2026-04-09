@@ -18,6 +18,8 @@ import { Router } from '@angular/router';
 interface Advertisement {
   a_rec_adv_main_id: number;
   advertisment_no: string;
+  advertisement_order_copy?: string;
+  score_card_order_copy?: string;
 }
 
 interface Post {
@@ -27,7 +29,7 @@ interface Post {
   a_rec_adv_post_detail_id: number; // Add this ID from your post API response
   subjects: any[]; // To hold the list of subjects for this post
   selectedSubjectId: number | null; // To store the ID of the selected subject
-  activeTab: 'login' | 'signup' | 'news' | 'complaint';
+  activeTab: 'login' | 'signup' | 'notification' | 'complaint';
   expanded: boolean;
 }
 
@@ -53,19 +55,20 @@ export class HomeComponent implements OnInit {
   selectedAd: string = '';
   ads: Advertisement[] = [];
   allPosts: Post[] = [];
-
+  selectedAdDetails: Advertisement | null = null;
+  backendBaseUrl = 'http://192.168.1.57:3500';
   sessions: any[] = []; // { academic_session_id, academic_session_name }
-  tabs: Array<'login' | 'signup' | 'news' | 'complaint'> = [
+  tabs: Array<'login' | 'signup' | 'notification' | 'complaint'> = [
     'login',
     'signup',
-    'news',
+    'notification',
     'complaint',
   ];
 
   // ✅ Used for tabs inside each post (excluding login)
-  tabsWithoutLogin: Array<'signup' | 'news' | 'complaint'> = [
+  tabsWithoutLogin: Array<'signup' | 'notification' | 'complaint'> = [
     'signup',
-    'news',
+    'notification',
     'complaint',
   ];
   isMobileView = false;
@@ -115,9 +118,9 @@ export class HomeComponent implements OnInit {
   }
   ngOnInit() {
     if (this.authService.isLoggedIn()) {
-     
-      this.router.navigate(['/recruitment']); 
-      return; 
+
+      this.router.navigate(['/recruitment']);
+      return;
     }
     this.getAcademicSession();
     this.getApplicant();
@@ -133,7 +136,7 @@ export class HomeComponent implements OnInit {
       'recruitementApi'
     ).subscribe((result: any): void => {
       this.sessions = result.body.data;
-    
+
     });
   }
 
@@ -148,7 +151,7 @@ export class HomeComponent implements OnInit {
       'recruitement'
     ).subscribe((result: any): void => {
       this.ads = result.body.data;
-    
+
     });
   }
 
@@ -156,7 +159,7 @@ export class HomeComponent implements OnInit {
     const params = {
       registration_no: 24000001,
     };
-   
+
     // this.HTTP.getParam(
     //   '/master/get/getApplicant/',
     //   params,
@@ -218,7 +221,7 @@ export class HomeComponent implements OnInit {
           a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id, // <-- Map the new ID
           subjects: [], // Initialize as an empty array
           selectedSubjectId: null, // Initialize as null
-          activeTab: 'signup' as 'login' | 'signup' | 'news' | 'complaint',
+          activeTab: 'signup' as 'login' | 'signup' | 'notification' | 'complaint',
           expanded: false,
         }));
         this.allPosts.forEach((post) => {
@@ -282,7 +285,7 @@ export class HomeComponent implements OnInit {
     return this.selectedAd ? this.allPosts : [];
   }
 
-  setActiveTab(post: Post, tab: 'login' | 'signup' | 'news' | 'complaint') {
+  setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') {
     post.activeTab = tab;
   }
 
@@ -312,6 +315,32 @@ export class HomeComponent implements OnInit {
     if (this.selectedAd) {
       this.allPosts = [];
       this.fetchPostsByAdvertisement(this.selectedAd);
+
+      // Find the ad the user just selected from the dropdown list
+      this.selectedAdDetails = this.ads.find(ad => ad.a_rec_adv_main_id === +this.selectedAd) || null;
     }
+  }
+  getFileUrl(filePath: string | undefined): string {
+    if (!filePath) return '';
+
+    // Convert backslashes to forward slashes: "..\__Files\..." -> "../__Files/..."
+    let normalizedPath = filePath.replace(/\\/g, '/');
+
+    // Remove the leading ".." so it becomes an absolute path: "/__Files/..."
+    normalizedPath = normalizedPath.replace(/^\.\.\//, '/');
+
+    return `${this.backendBaseUrl}${normalizedPath}`;
+  }
+  isValidFile(filePath: any): boolean {
+    if (!filePath) return false; // Catches null, undefined, false, ""
+
+    // Convert to lowercase string and trim spaces to catch "null" strings
+    const strPath = String(filePath).trim().toLowerCase();
+
+    if (strPath === '' || strPath === 'null' || strPath === 'undefined') {
+      return false;
+    }
+
+    return true;
   }
 }

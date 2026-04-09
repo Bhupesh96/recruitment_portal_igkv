@@ -279,7 +279,7 @@
                         />
                       </svg>
                       <svg
-                        *ngSwitchCase="'news'"
+                        *ngSwitchCase="'notification'"
                         class="h-3 w-3 sm:h-4 sm:w-4 lg:h-4 lg:w-4"
                         fill="none"
                         stroke="currentColor"
@@ -328,15 +328,48 @@
                         (loginClicked)="switchToLogin()"
                       ></app-signup>
                     </div>
-                    <div *ngSwitchCase="'news'">
-                      <p
-                        class="text-xs sm:text-sm lg:text-base leading-relaxed"
-                      >
-                        Stay updated with the latest news about
-                        <strong>{{ post.post_name }}</strong
-                        >.
+
+                    <div *ngSwitchCase="'notification'">
+                      <p class="text-xs sm:text-sm lg:text-base leading-relaxed mb-4">
+                        Stay updated with the latest notifications and documents for
+                        <strong>{{ post.post_name }}</strong>.
                       </p>
+
+                      <div *ngIf="selectedAdDetails">
+                        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+
+                          <a *ngIf="isValidFile(selectedAdDetails.advertisement_order_copy)"
+                             [href]="getFileUrl(selectedAdDetails.advertisement_order_copy)"
+                             target="_blank"
+                             class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-900 transition-colors text-sm font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            View Advertisement
+                          </a>
+
+                          <a *ngIf="isValidFile(selectedAdDetails.score_card_order_copy)"
+                             [href]="getFileUrl(selectedAdDetails.score_card_order_copy)"
+                             target="_blank"
+                             class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 hover:text-green-900 transition-colors text-sm font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            View Score Card
+                          </a>
+
+                        </div>
+
+                        <div *ngIf="!isValidFile(selectedAdDetails.advertisement_order_copy) && !isValidFile(selectedAdDetails.score_card_order_copy)"
+                             class="flex items-center gap-2 text-gray-500 text-sm mt-4 italic bg-gray-50 p-3 rounded border border-gray-100">
+                          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          No documents are currently attached to this advertisement.
+                        </div>
+                      </div>
                     </div>
+
                     <div *ngSwitchCase="'complaint'">
                       <p
                         class="text-xs sm:text-sm lg:text-base leading-relaxed"
@@ -365,7 +398,6 @@
           <div
             class="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-200 p-8 lg:p-10 sticky top-24 w-full max-w-full transition-all duration-300"
           >
-            <!-- Header -->
             <h2
               class="text-xl lg:text-2xl font-bold text-gray-900 mb-1 text-center"
             >
@@ -376,13 +408,11 @@
               Log in to continue your application
             </p>
 
-            <!-- Login Component -->
             <app-login
               (signupClicked)="showSignupForm()"
               (loginSuccess)="handleLoginSuccess()"
             ></app-login>
 
-            <!-- Optional Stepper -->
             <app-stepper *ngIf="isLoggedIn"></app-stepper>
           </div>
         </div>
@@ -601,7 +631,7 @@
                       />
                     </svg>
                     <svg
-                      *ngSwitchCase="'news'"
+                      *ngSwitchCase="'notification'"
                       class="h-3 w-3 sm:h-4 sm:w-4"
                       fill="none"
                       stroke="currentColor"
@@ -646,18 +676,52 @@
                       [subjectId]="getSubjectIdForPost(post)"
                     ></app-signup>
                   </div>
-                  <div *ngSwitchCase="'news'">
-                    <p class="text-xs sm:text-sm md:text-sm leading-relaxed">
-                      Stay updated with the latest news about
-                      <strong>{{ post.post_name }}</strong
-                      >.
+
+                  <div *ngSwitchCase="'notification'">
+                    <p class="text-xs sm:text-sm md:text-sm leading-relaxed mb-4">
+                      Stay updated with the latest notifications and documents for
+                      <strong>{{ post.post_name }}</strong>.
                     </p>
+
+                    <div *ngIf="selectedAdDetails">
+                      <div class="flex flex-col sm:flex-row gap-3 mt-4">
+
+                        <a *ngIf="isValidFile(selectedAdDetails.advertisement_order_copy)"
+                           [href]="getFileUrl(selectedAdDetails.advertisement_order_copy)"
+                           target="_blank"
+                           class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-900 transition-colors text-sm font-medium">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                          View Advertisement
+                        </a>
+
+                        <a *ngIf="isValidFile(selectedAdDetails.score_card_order_copy)"
+                           [href]="getFileUrl(selectedAdDetails.score_card_order_copy)"
+                           target="_blank"
+                           class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 hover:text-green-900 transition-colors text-sm font-medium">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                          View Score Card
+                        </a>
+
+                      </div>
+
+                      <div *ngIf="!isValidFile(selectedAdDetails.advertisement_order_copy) && !isValidFile(selectedAdDetails.score_card_order_copy)"
+                           class="flex items-center gap-2 text-gray-500 text-sm mt-4 italic bg-gray-50 p-3 rounded border border-gray-100">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        No documents are currently attached to this advertisement.
+                      </div>
+                    </div>
                   </div>
+
                   <div *ngSwitchCase="'complaint'">
                     <p class="text-xs sm:text-sm md:text-sm leading-relaxed">
                       Submit feedback or a complaint for
-                      <strong>{{ post.post_name }}</strong
-                      >.
+                      <strong>{{ post.post_name }}</strong>.
                     </p>
                   </div>
                 </ng-container>
