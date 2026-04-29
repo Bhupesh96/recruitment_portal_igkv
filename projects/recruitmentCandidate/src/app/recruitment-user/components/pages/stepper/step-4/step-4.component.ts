@@ -645,7 +645,7 @@ export class Step4Component implements OnInit {
 
   loadFormStructure() {
     const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-    const m_rec_score_field_id = 18; // Main Heading ID
+    const m_rec_score_field_id = 3096; // Main Heading ID
 
     this.HTTP.getData(
       `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,

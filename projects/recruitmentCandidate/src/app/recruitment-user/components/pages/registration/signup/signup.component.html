@@ -3,7 +3,7 @@
     <!-- Form Section -->
     <div class="w-full lg:w-1/2 p-4 md:p-8 lg:p-12">
       <h2
-        class="text-3xl font-bold text-gray-800 mb-8 text-center md:text-left"
+        class="text-3xl sm:text-4xl font-bold text-gray-800 mb-8 text-center md:text-left"
       >
         Sign Up
       </h2>
@@ -11,11 +11,11 @@
         <!-- Mobile Number -->
         <div>
           <label
-            class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+            class="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-blue-600"
+              class="h-6 w-6 text-blue-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -38,7 +38,7 @@
             pattern="^[6-9][0-9]{9}$"
             maxlength="10"
             oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-            class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+            class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
             [disabled]="otpSent || isVerified"
           />
 
@@ -48,7 +48,7 @@
                 (mobileField.dirty || mobileField.touched)) ||
               mobileError
             "
-            class="text-xs text-red-600 mt-1"
+            class="text-base sm:text-lg text-red-600 mt-1"
           >
             <div
               *ngIf="
@@ -72,11 +72,11 @@
         <!-- Email Input -->
         <div>
           <label
-            class="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+            class="text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-blue-600"
+              class="h-6 w-6 text-blue-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -97,7 +97,7 @@
             #emailField="ngModel"
             required
             email
-            class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+            class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
             [disabled]="otpSent || isVerified"
           />
 
@@ -107,7 +107,7 @@
                 (emailField.dirty || emailField.touched)) ||
               emailError
             "
-            class="text-xs text-red-600 mt-1"
+            class="text-base sm:text-lg text-red-600 mt-1"
           >
             <div
               *ngIf="emailField.errors?.['required'] || emailError === 'Email is required'"
@@ -123,14 +123,14 @@
         </div>
         <!-- Category Dropdown -->
         <div class="mt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1">
+          <label class="block text-base sm:text-lg font-medium text-gray-700 mb-2">
             Category
           </label>
 
           <select
             [(ngModel)]="selectedCategory"
             name="category"
-            class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+            class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
             [disabled]="otpSent || isVerified"
             required
           >
@@ -154,7 +154,7 @@
             <!-- Captcha SVG -->
             <div
               #captchaContainer
-              class="flex-shrink-0 w-40 h-12 flex items-center justify-center border border-gray-300 bg-white rounded"
+              class="flex-shrink-0 w-48 h-14 flex items-center justify-center border border-gray-300 bg-white rounded"
             ></div>
 
             <!-- Input + Refresh -->
@@ -165,19 +165,19 @@
                 [(ngModel)]="userAnswer"
                 name="captcha"
                 placeholder="Enter Captcha"
-                class="w-32 border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded transition"
+                class="w-40 border border-gray-300 px-3 py-2 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded transition"
               />
 
               <!-- Refresh Button -->
               <button
                 type="button"
                 (click)="getCaptcha()"
-                class="text-gray-500 hover:text-blue-600 transition"
+                class="text-gray-500 hover:text-blue-600 transition p-1"
                 title="Refresh Captcha"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
+                  class="h-6 w-6"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -197,7 +197,7 @@
         <!-- OTP Success Message -->
         <div
           *ngIf="otpSuccess && !isVerified"
-          class="text-xs text-green-600 mt-1"
+          class="text-base sm:text-lg text-green-600 mt-1"
         >
           {{ otpSuccess }}
         </div>
@@ -207,7 +207,7 @@
           <div class="flex gap-4 mt-4">
             <div class="flex-1">
               <label
-                class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+                class="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
               >
                 Mobile OTP
               </label>
@@ -221,14 +221,14 @@
                 pattern="\d{6}"
                 maxlength="6"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                class="w-full border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               />
               <div
                 *ngIf="
                   otpMobileField.invalid &&
                   (otpMobileField.dirty || otpMobileField.touched)
                 "
-                class="text-xs text-red-600 mt-1"
+                class="text-base sm:text-lg text-red-600 mt-1"
               >
                 <div *ngIf="otpMobileField.errors?.['required']">
                   OTP is required.
@@ -240,7 +240,7 @@
             </div>
             <div class="flex-1">
               <label
-                class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+                class="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
               >
                 Email OTP
               </label>
@@ -254,14 +254,14 @@
                 pattern="\d{6}"
                 maxlength="6"
                 oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-                class="w-full border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               />
               <div
                 *ngIf="
                   otpEmailField.invalid &&
                   (otpEmailField.dirty || otpEmailField.touched)
                 "
-                class="text-xs text-red-600 mt-1"
+                class="text-base sm:text-lg text-red-600 mt-1"
               >
                 <div *ngIf="otpEmailField.errors?.['required']">
                   OTP is required.
@@ -272,7 +272,7 @@
               </div>
             </div>
           </div>
-          <div *ngIf="otpError" class="text-xs text-red-600 mt-1">
+          <div *ngIf="otpError" class="text-base sm:text-lg text-red-600 mt-1">
             {{ otpError }}
           </div>
 
@@ -282,7 +282,7 @@
               type="button"
               (click)="sendOtp()"
               [disabled]="resendCooldown > 0"
-              class="text-sm text-blue-600 hover:underline disabled:text-gray-400"
+              class="text-base sm:text-lg text-blue-600 hover:underline disabled:text-gray-400"
             >
               Resend OTP
               {{ resendCooldown > 0 ? "(" + resendCooldown + "s)" : "" }}
@@ -294,11 +294,11 @@
         <div *ngIf="isVerified">
           <div class="mt-4">
             <label
-              class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+              class="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-blue-600"
+                class="h-6 w-6 text-blue-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -318,11 +318,11 @@
               (ngModelChange)="validatePassword()"
               name="password"
               autocomplete="new-password"
-              class="w-full border border-gray-300 px-4 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+              class="w-full border border-gray-300 px-4 py-3 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               required
             />
             <div
-              class="mt-2 text-sm font-medium"
+              class="mt-2 text-base sm:text-lg font-medium"
               [ngClass]="{
                 'text-green-600': isPasswordStrong,
                 'text-red-600': !isPasswordStrong
@@ -333,11 +333,11 @@
           </div>
           <div class="mt-4">
             <label
-              class="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"
+              class="block text-base sm:text-lg font-medium text-gray-700 mb-2 flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-blue-600"
+                class="h-6 w-6 text-blue-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -359,13 +359,13 @@
                 (ngModelChange)="checkPasswordMatch()"
                 name="confirmPassword"
                 autocomplete="new-password"
-                class="w-full border border-gray-300 px-4 py-2 pr-10 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
+                class="w-full border border-gray-300 px-4 py-3 pr-12 text-base sm:text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
               />
 
               <button
                 type="button"
                 (click)="showConfirmPassword = !showConfirmPassword"
-                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-blue-600"
+                class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500 hover:text-blue-600"
                 aria-label="Toggle password visibility"
               >
                 <svg
@@ -375,7 +375,7 @@
                   viewBox="0 0 24 24"
                   stroke-width="1.5"
                   stroke="currentColor"
-                  class="w-5 h-5"
+                  class="w-6 h-6"
                 >
                   <path
                     stroke-linecap="round"
@@ -396,7 +396,7 @@
                   viewBox="0 0 24 24"
                   stroke-width="1.5"
                   stroke="currentColor"
-                  class="w-5 h-5"
+                  class="w-6 h-6"
                 >
                   <path
                     stroke-linecap="round"
@@ -408,7 +408,7 @@
             </div>
 
             <div
-              class="mt-2 text-sm font-medium"
+              class="mt-2 text-base sm:text-lg font-medium"
               [ngClass]="{
                 'text-green-600': confirmPasswordMessage === 'Passwords match',
                 'text-red-600':
@@ -421,12 +421,12 @@
         </div>
 
         <!-- Signup Success Message -->
-        <div *ngIf="signupSuccess" class="text-xs text-green-600 mt-1">
+        <div *ngIf="signupSuccess" class="text-base sm:text-lg text-green-600 mt-1">
           {{ signupSuccess }}
         </div>
 
         <!-- Signup Error Message -->
-        <div *ngIf="signupError" class="text-xs text-red-600 mt-1">
+        <div *ngIf="signupError" class="text-base sm:text-lg text-red-600 mt-1">
           {{ signupError }}
         </div>
 
@@ -434,12 +434,12 @@
         <button
           type="button"
           (click)="handleAction()"
-          class="w-full bg-blue-600 text-white py-3 font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 transition duration-300 mt-4"
+          class="w-full bg-blue-600 text-white py-4 font-semibold text-base sm:text-lg rounded flex items-center justify-center gap-2 hover:bg-blue-700 transition duration-300 mt-4 h-14"
         >
           {{ buttonLabel }}
         </button>
 
-        <div class="text-center text-sm text-gray-600 mt-4 sm:hidden">
+        <div class="text-center text-base sm:text-lg text-gray-600 mt-4 sm:hidden">
           Already have an account?
           <a
             (click)="onLoginClick()"

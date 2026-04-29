@@ -34,7 +34,7 @@
             form.get('mandatorySubheadingsSelected')?.invalid &&
             form.get('mandatorySubheadingsSelected')?.touched
           "
-          class="text-red-600 text-xs mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
+          class="text-red-600 text-md mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
         >
           <div *ngIf="form.get('firstMissedMandatory')?.value">
             <strong>Mandatory Field Required:</strong>
@@ -210,7 +210,7 @@
                         [href]="sanitizeFileUrl(filePath)"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-xs !text-green-600 hover:underline flex items-center"
+                        class="text-md !text-green-600 hover:underline flex items-center"
                       >
                         <svg
                           class="h-4 w-4 mr-1"
@@ -232,7 +232,7 @@
                     <!-- Show newly selected file -->
                     <div
                       *ngIf="group.get(param.score_field_parameter_name)?.value"
-                      class="mt-2 text-xs text-gray-600 flex items-center"
+                      class="mt-2 text-md text-gray-600 flex items-center"
                     >
                       <svg
                         class="h-4 w-4 mr-1"
@@ -375,7 +375,7 @@
                             [href]="sanitizeFileUrl(filePath)"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-xs !text-green-600 hover:underline flex items-center"
+                            class="text-md !text-green-600 hover:underline flex items-center"
                           >
                             <svg
                               class="h-4 w-4 mr-1"
@@ -399,7 +399,7 @@
                           *ngIf="
                             group.get(param.score_field_parameter_name)?.value
                           "
-                          class="mt-2 text-xs text-gray-600 flex items-center"
+                          class="mt-2 text-md text-gray-600 flex items-center"
                         >
                           <svg
                             class="h-4 w-4 mr-1"
@@ -447,7 +447,7 @@
                       group.get(param.score_field_parameter_name)?.touched &&
                       group.get(param.score_field_parameter_name)?.invalid
                     "
-                    class="text-red-600 text-xs mt-1"
+                    class="text-red-600 text-md mt-1"
                   >
                     <div
                       *ngIf="
@@ -476,7 +476,7 @@
                         .get(param.score_field_parameter_name)
                         ?.hasError('min')
                     "
-                    class="text-red-600 text-xs mt-1"
+                    class="text-red-600 text-md mt-1"
                   >
                     Value cannot be negative.
                   </div>

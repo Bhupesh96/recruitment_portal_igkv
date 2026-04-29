@@ -1,10 +1,10 @@
 <form [formGroup]="form" class="w-full font-['Source Sans Pro',sans-serif]">
-  <div class="space-y-8 text-base text-gray-700">
+  <div class="space-y-8 text-base sm:text-lg text-gray-700">
     <!-- Applicant Name Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -18,10 +18,10 @@
         </svg>
         Applicant name
       </h6>
-      <div class="grid md:grid-cols-4 gap-4">
+      <div class="grid md:grid-cols-4 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Salutation (English)<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Salutation (English)<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Salutation_E"
@@ -29,7 +29,7 @@
               form.get('Salutation_E')?.invalid &&
               form.get('Salutation_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
             <option [ngValue]="null" selected>Select Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
@@ -41,14 +41,14 @@
               form.get('Salutation_E')?.invalid &&
               form.get('Salutation_E')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Salutation is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >First Name<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >First Name<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Applicant_First_Name_E"
@@ -57,7 +57,7 @@
               form.get('Applicant_First_Name_E')?.invalid &&
               form.get('Applicant_First_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="First name"
           />
           <div
@@ -65,39 +65,39 @@
               form.get('Applicant_First_Name_E')?.invalid &&
               form.get('Applicant_First_Name_E')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             First name is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Middle Name</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Middle Name</label
           >
           <input
             formControlName="Applicant_Middle_Name_E"
             (input)="onCharacterInput($event)"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Middle name"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Last Name</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Last Name</label
           >
           <input
             formControlName="Applicant_Last_Name_E"
             (input)="onCharacterInput($event)"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Last name"
           />
         </div>
       </div>
 
-      <div class="grid md:grid-cols-4 gap-4 mt-4">
+      <div class="grid md:grid-cols-4 gap-4 sm:gap-6 mt-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Salutation (Hindi)<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Salutation (Hindi)<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Salutation_H"
@@ -105,7 +105,7 @@
               form.get('Salutation_H')?.invalid &&
               form.get('Salutation_H')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           >
             <option [ngValue]="null" selected>Salutation</option>
             <option *ngFor="let sal of salutations" [value]="sal.data_id">
@@ -117,14 +117,14 @@
               form.get('Salutation_H')?.invalid &&
               form.get('Salutation_H')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Salutation is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >First Name (Hindi)<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >First Name (Hindi)<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Applicant_First_Name_H"
@@ -132,7 +132,7 @@
               form.get('Applicant_First_Name_H')?.invalid &&
               form.get('Applicant_First_Name_H')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="First name (Hindi)"
           />
           <div
@@ -140,28 +140,28 @@
               form.get('Applicant_First_Name_H')?.invalid &&
               form.get('Applicant_First_Name_H')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             First name is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Middle Name (Hindi)</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Middle Name (Hindi)</label
           >
           <input
             formControlName="Applicant_Middle_Name_H"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Middle name (Hindi)"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Last Name (Hindi)</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Last Name (Hindi)</label
           >
           <input
             formControlName="Applicant_Last_Name_H"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Last name (Hindi)"
           />
         </div>
@@ -169,10 +169,10 @@
     </div>
 
     <!-- Basic Details Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -186,14 +186,14 @@
         </svg>
         Basic Details
       </h6>
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Advertisement<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Advertisement<span class="text-red-500">*</span></label
           >
           <select
             formControlName="a_rec_adv_main_id"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option
               *ngFor="let adv of advertisementList"
@@ -207,18 +207,18 @@
               form.get('a_rec_adv_main_id')?.invalid &&
               form.get('a_rec_adv_main_id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Advertisement is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Post<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Post<span class="text-red-500">*</span></label
           >
           <select
             formControlName="post_code"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option *ngFor="let post of postList" [value]="post.post_code">
               {{ post.post_name }} - ({{ post.post_status_name }})
@@ -228,18 +228,18 @@
             *ngIf="
               form.get('post_code')?.invalid && form.get('post_code')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Post is required
           </div>
         </div>
         <div *ngIf="showSubjectDropdown">
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Subject</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Subject</label
           >
           <select
             formControlName="subject_id"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed"
           >
             <option value="" disabled selected>Select Subject</option>
             <option
@@ -251,42 +251,42 @@
           </select>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium">
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium">
             Gender<span class="text-red-500">*</span>
           </label>
-          <div class="flex gap-4">
-            <label class="flex items-center">
+          <div class="flex gap-6 mt-3">
+            <label class="flex items-center text-base sm:text-lg cursor-pointer">
               <input
                 type="radio"
                 value="M"
                 formControlName="gender_id"
-                class="mr-1 text-gray-600 focus:ring-gray-600"
+                class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
               />
               Male
             </label>
-            <label class="flex items-center">
+            <label class="flex items-center text-base sm:text-lg cursor-pointer">
               <input
                 type="radio"
                 value="F"
                 formControlName="gender_id"
-                class="mr-1 text-gray-600 focus:ring-gray-600"
+                class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
               />
               Female
             </label>
-            <label class="flex items-center">
+            <label class="flex items-center text-base sm:text-lg cursor-pointer">
               <input
                 type="radio"
                 value="T"
                 formControlName="gender_id"
-                class="mr-1 text-gray-600 focus:ring-gray-600"
+                class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
               />
               Third Gender
             </label>
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Date of Birth<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Date of Birth<span class="text-red-500">*</span></label
           >
           <input
             type="date"
@@ -295,11 +295,11 @@
             [class.border-red-500]="
               form.get('DOB')?.invalid && form.get('DOB')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
           />
           <div
             *ngIf="form.get('DOB')?.invalid && form.get('DOB')?.touched"
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             <span *ngIf="form.get('DOB')?.hasError('required')">
               Date of birth is required
@@ -311,19 +311,19 @@
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Age</label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Age</label
           >
           <input
             type="text"
             formControlName="age"
             readonly
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none focus:ring-0"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none focus:ring-0"
           />
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Father's name<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Father's name<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Applicant_Father_Name_E"
@@ -332,7 +332,7 @@
               form.get('Applicant_Father_Name_E')?.invalid &&
               form.get('Applicant_Father_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Father's name"
           />
           <div
@@ -340,14 +340,14 @@
               form.get('Applicant_Father_Name_E')?.invalid &&
               form.get('Applicant_Father_Name_E')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Father's name is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Mother's name<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Mother's name<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Applicant_Mother_Name_E"
@@ -356,7 +356,7 @@
               form.get('Applicant_Mother_Name_E')?.invalid &&
               form.get('Applicant_Mother_Name_E')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Mother's name"
           />
           <div
@@ -364,18 +364,18 @@
               form.get('Applicant_Mother_Name_E')?.invalid &&
               form.get('Applicant_Mother_Name_E')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Mother's name is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium">
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium">
             Religion<span class="text-red-500">*</span>
           </label>
           <select
             formControlName="religion_code"
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select Religion</option>
 
@@ -392,14 +392,14 @@
               form.get('religion_code')?.invalid &&
               form.get('religion_code')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Religion is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Identification Mark 1<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Identification Mark 1<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Identification_Mark1"
@@ -408,7 +408,7 @@
               form.get('Identification_Mark1')?.invalid &&
               form.get('Identification_Mark1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Identification Mark 1"
           />
           <div
@@ -416,14 +416,14 @@
               form.get('Identification_Mark1')?.invalid &&
               form.get('Identification_Mark1')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Identification mark is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Identification Mark 2<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Identification Mark 2<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Identification_Mark2"
@@ -432,7 +432,7 @@
               form.get('Identification_Mark2')?.invalid &&
               form.get('Identification_Mark2')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Identification Mark 2"
           />
           <div
@@ -440,7 +440,7 @@
               form.get('Identification_Mark2')?.invalid &&
               form.get('Identification_Mark2')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Identification mark is required
           </div>
@@ -449,10 +449,10 @@
     </div>
 
     <!-- Additional Information Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -467,22 +467,22 @@
         Additional Information
       </h6>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6 text-base">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-8 text-base sm:text-lg">
         <ng-container *ngFor="let question of additionalQuestions">
           <ng-container *ngIf="question.question_id === 2">
             <div
               *ngIf="form.get('question_3')?.value"
-              class="flex flex-col space-y-1"
+              class="flex flex-col space-y-2"
             >
               <div>
-                <label class="block text-gray-600 text-base font-medium">
+                <label class="block text-gray-700 text-base sm:text-lg font-medium">
                   {{ question.question_label
                   }}<span class="text-red-500">*</span>
                 </label>
-                <div class="flex items-center gap-4 flex-wrap pt-1">
+                <div class="flex items-center gap-6 flex-wrap pt-2">
                   <label
                     *ngFor="let option of filteredCategoryOptions"
-                    class="flex items-center"
+                    class="flex items-center cursor-pointer"
                   >
                     <input
                       type="radio"
@@ -498,7 +498,7 @@
                           option.option_value
                         )
                       "
-                      class="mr-1 text-gray-600 focus:ring-gray-600"
+                      class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
                     />
                     {{ option.option_label }}
                   </label>
@@ -508,7 +508,7 @@
                     form.get('question_' + question.question_id)?.invalid &&
                     form.get('question_' + question.question_id)?.touched
                   "
-                  class="text-red-500 text-xs mt-1"
+                  class="text-red-500 text-base mt-1.5"
                 >
                   This field is required
                 </div>
@@ -521,14 +521,14 @@
                   *ngFor="
                     let condition of getSelectedOption(question)?.conditions
                   "
-                  class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
+                  class="flex flex-col space-y-2 pt-4 mt-3 ml-4 pl-4 border-l-4 border-gray-200"
                 >
-                  <label class="block text-gray-500 text-base font-semibold">
+                  <label class="block text-gray-600 text-base sm:text-lg font-semibold">
                     {{ condition.dependent_field_label }}
                     <span
                       *ngIf="condition.condition_required === 'Y'"
                       class="text-red-500"
-                      >*</span
+                    >*</span
                     >
                   </label>
 
@@ -544,7 +544,7 @@
                             condition.data_type_size
                           )
                         "
-                        class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100"
+                        class="mt-2 block w-full text-base sm:text-lg text-gray-500 file:mr-4 file:py-3 file:px-5 file:border-0 file:text-base sm:file:text-lg file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100 cursor-pointer"
                       />
                       <div
                         *ngIf="
@@ -552,15 +552,15 @@
                             'condition_' + condition.condition_id
                           ) as filePath
                         "
-                        class="mt-2 flex items-center gap-4"
+                        class="mt-3 flex items-center gap-4"
                       >
                         <a
                           [href]="getFileUrl(filePath)"
                           target="_blank"
-                          class="text-xs !text-green-600 hover:underline flex items-center"
+                          class="text-base sm:text-lg !text-green-600 hover:underline flex items-center font-medium"
                         >
                           <svg
-                            class="h-4 w-4 mr-1"
+                            class="h-5 w-5 mr-2"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -584,7 +584,7 @@
                         ?.invalid &&
                       form.get('condition_' + condition.condition_id)?.touched
                     "
-                    class="text-red-500 text-xs mt-1"
+                    class="text-red-500 text-base mt-1.5"
                   >
                     {{ condition.dependent_field_label }} is required
                   </div>
@@ -594,20 +594,20 @@
           </ng-container>
 
           <ng-container *ngIf="question.question_id !== 2">
-            <div class="flex flex-col space-y-1">
+            <div class="flex flex-col space-y-2">
               <div>
-                <label class="block text-gray-600 text-base font-medium">
+                <label class="block text-gray-700 text-base sm:text-lg font-medium">
                   {{ question.question_label
                   }}<span
-                    *ngIf="question.is_required === 'Y'"
-                    class="text-red-500"
-                    >*</span
-                  >
+                  *ngIf="question.is_required === 'Y'"
+                  class="text-red-500"
+                >*</span
+                >
                 </label>
-                <div class="flex items-center gap-4 flex-wrap pt-1">
+                <div class="flex items-center gap-6 flex-wrap pt-2">
                   <label
                     *ngFor="let option of question.options"
-                    class="flex items-center"
+                    class="flex items-center cursor-pointer"
                   >
                     <input
                       type="radio"
@@ -623,7 +623,7 @@
                           option.option_value
                         )
                       "
-                      class="mr-1 text-gray-600 focus:ring-gray-600"
+                      class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
                     />
                     {{ option.option_label }}
                   </label>
@@ -633,7 +633,7 @@
                     form.get('question_' + question.question_id)?.invalid &&
                     form.get('question_' + question.question_id)?.touched
                   "
-                  class="text-red-500 text-xs mt-1"
+                  class="text-red-500 text-base mt-1.5"
                 >
                   This field is required
                 </div>
@@ -646,14 +646,14 @@
                   *ngFor="
                     let condition of getSelectedOption(question)?.conditions
                   "
-                  class="flex flex-col space-y-1 pt-3 mt-2 ml-4 pl-4 border-l-2 border-gray-200"
+                  class="flex flex-col space-y-2 pt-4 mt-3 ml-4 pl-4 border-l-4 border-gray-200"
                 >
-                  <label class="block text-gray-500 text-base font-semibold">
+                  <label class="block text-gray-600 text-base sm:text-lg font-semibold">
                     {{ condition.dependent_field_label }}
                     <span
                       *ngIf="condition.condition_required === 'Y'"
                       class="text-red-500"
-                      >*</span
+                    >*</span
                     >
                   </label>
 
@@ -666,7 +666,7 @@
                         condition.condition_id === 1 &&
                           onMarriageDateChange($event)
                       "
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                      class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                     />
 
                     <ng-container *ngSwitchCase="'file'">
@@ -680,7 +680,7 @@
                             condition.data_type_size
                           )
                         "
-                        class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100"
+                        class="mt-2 block w-full text-base sm:text-lg text-gray-500 file:mr-4 file:py-3 file:px-5 file:border-0 file:text-base sm:file:text-lg file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100 cursor-pointer"
                       />
                       <div
                         *ngIf="
@@ -688,15 +688,15 @@
                             'condition_' + condition.condition_id
                           ) as filePath
                         "
-                        class="mt-2 flex items-center gap-4"
+                        class="mt-3 flex items-center gap-4"
                       >
                         <a
                           [href]="getFileUrl(filePath)"
                           target="_blank"
-                          class="text-xs !text-green-600 hover:underline flex items-center"
+                          class="text-base sm:text-lg !text-green-600 hover:underline flex items-center font-medium"
                         >
                           <svg
-                            class="h-4 w-4 mr-1"
+                            class="h-5 w-5 mr-2"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -714,26 +714,26 @@
                     </ng-container>
 
                     <ng-container *ngSwitchCase="'radio'">
-                      <div class="flex items-center gap-4 flex-wrap pt-1">
-                        <label class="flex items-center">
+                      <div class="flex items-center gap-6 flex-wrap pt-2">
+                        <label class="flex items-center cursor-pointer">
                           <input
                             type="radio"
                             [formControlName]="
                               'condition_' + condition.condition_id
                             "
                             value="Y"
-                            class="mr-1 text-gray-600 focus:ring-gray-600"
+                            class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
                           />
                           Yes
                         </label>
-                        <label class="flex items-center">
+                        <label class="flex items-center cursor-pointer">
                           <input
                             type="radio"
                             [formControlName]="
                               'condition_' + condition.condition_id
                             "
                             value="N"
-                            class="mr-1 text-gray-600 focus:ring-gray-600"
+                            class="mr-2 w-5 h-5 text-blue-600 focus:ring-blue-600"
                           />
                           No
                         </label>
@@ -745,7 +745,7 @@
                         [formControlName]="
                           'condition_' + condition.condition_id
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       >
                         <option [ngValue]="null">Select Disability Type</option>
                         <option
@@ -761,7 +761,7 @@
                       *ngSwitchDefault
                       [type]="condition.condition_data_type"
                       [formControlName]="'condition_' + condition.condition_id"
-                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                      class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                     />
                   </ng-container>
 
@@ -771,7 +771,7 @@
                         ?.invalid &&
                       form.get('condition_' + condition.condition_id)?.touched
                     "
-                    class="text-red-500 text-xs mt-1"
+                    class="text-red-500 text-base mt-1.5"
                   >
                     <ng-container
                       *ngIf="
@@ -790,25 +790,7 @@
                       "
                     >
                       Date cannot be after
-                      {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                      }}.
+                      {{ form.get('condition_' + condition.condition_id)?.errors?.['invalidMarriageDateMax'].max }}.
                     </ng-container>
                   </div>
                 </div>
@@ -819,10 +801,10 @@
       </div>
     </div>
     <!-- Permanent Address Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -842,10 +824,10 @@
         </svg>
         Permanent Address
       </h6>
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Address<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Address<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Permanent_Address1"
@@ -854,7 +836,7 @@
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Address"
           />
           <div
@@ -862,14 +844,14 @@
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Address is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >City<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >City<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Permanent_City"
@@ -878,7 +860,7 @@
               form.get('Permanent_City')?.invalid &&
               form.get('Permanent_City')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="City"
           />
           <div
@@ -886,14 +868,14 @@
               form.get('Permanent_City')?.invalid &&
               form.get('Permanent_City')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             City is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Country<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Country<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Permanent_Country_Id"
@@ -901,7 +883,7 @@
               form.get('Permanent_Country_Id')?.invalid &&
               form.get('Permanent_Country_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" disabled>Select Country</option>
             <option
@@ -916,14 +898,14 @@
               form.get('Permanent_Country_Id')?.invalid &&
               form.get('Permanent_Country_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Country is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >State<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >State<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Permanent_State_Id"
@@ -931,7 +913,7 @@
               form.get('Permanent_State_Id')?.invalid &&
               form.get('Permanent_State_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
@@ -943,14 +925,14 @@
               form.get('Permanent_State_Id')?.invalid &&
               form.get('Permanent_State_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             State is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >District<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >District<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Permanent_District_Id"
@@ -958,7 +940,7 @@
               form.get('Permanent_District_Id')?.invalid &&
               form.get('Permanent_District_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
@@ -973,14 +955,14 @@
               form.get('Permanent_District_Id')?.invalid &&
               form.get('Permanent_District_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             District is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Pincode<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Pincode<span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -992,7 +974,7 @@
               form.get('Permanent_Pin_Code')?.invalid &&
               form.get('Permanent_Pin_Code')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Pincode"
           />
           <div
@@ -1000,24 +982,24 @@
               form.get('Permanent_Pin_Code')?.invalid &&
               form.get('Permanent_Pin_Code')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Pincode is required
           </div>
           <div
             *ngIf="form.get('Permanent_Pin_Code')?.hasError('pattern')"
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Pincode must be exactly 6 digits.
           </div>
         </div>
       </div>
-      <div class="mt-4">
-        <label class="flex items-center">
+      <div class="mt-6">
+        <label class="flex items-center text-base sm:text-lg font-medium cursor-pointer">
           <input
             type="checkbox"
             formControlName="presentSame"
-            class="mr-2 text-gray-600 focus:ring-gray-600"
+            class="mr-3 w-5 h-5 text-blue-600 focus:ring-blue-600 rounded"
           />
           Present address is same as permanent
         </label>
@@ -1025,10 +1007,10 @@
 
       <!-- Present Address Section -->
       <h6
-        class="text-base font-medium text-gray-600 flex items-center gap-2 mt-6"
+        class="text-lg sm:text-xl font-semibold text-gray-700 flex items-center gap-2 mt-8 mb-4 border-t pt-8"
       >
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-gray-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1048,10 +1030,10 @@
         </svg>
         Present Address
       </h6>
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Address<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Address<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Current_Address1"
@@ -1060,7 +1042,7 @@
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Address"
           />
           <div
@@ -1068,14 +1050,14 @@
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Address is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >City<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >City<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Current_City"
@@ -1084,7 +1066,7 @@
               form.get('Current_City')?.invalid &&
               form.get('Current_City')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="City"
           />
           <div
@@ -1092,14 +1074,14 @@
               form.get('Current_City')?.invalid &&
               form.get('Current_City')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             City is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Country<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Country<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Current_Country_Id"
@@ -1107,7 +1089,7 @@
               form.get('Current_Country_Id')?.invalid &&
               form.get('Current_Country_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" disabled>Select Country</option>
             <option
@@ -1122,14 +1104,14 @@
               form.get('Current_Country_Id')?.invalid &&
               form.get('Current_Country_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Country is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >State<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >State<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Current_State_Id"
@@ -1137,7 +1119,7 @@
               form.get('Current_State_Id')?.invalid &&
               form.get('Current_State_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
@@ -1149,13 +1131,13 @@
               form.get('Current_State_Id')?.invalid &&
               form.get('Current_State_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             State is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium">
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium">
             District<span class="text-red-500">*</span>
           </label>
 
@@ -1165,7 +1147,7 @@
               form.get('Current_District_Id')?.invalid &&
               form.get('Current_District_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select District</option>
             <option
@@ -1181,14 +1163,14 @@
               form.get('Current_District_Id')?.invalid &&
               form.get('Current_District_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             District is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Pincode<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Pincode<span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -1200,7 +1182,7 @@
               form.get('Current_Pin_Code')?.invalid &&
               form.get('Current_Pin_Code')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Pincode"
           />
           <div
@@ -1208,13 +1190,13 @@
               form.get('Current_Pin_Code')?.invalid &&
               form.get('Current_Pin_Code')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Pincode is required
           </div>
           <div
             *ngIf="form.get('Permanent_Pin_Code')?.hasError('pattern')"
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Pincode must be exactly 6 digits.
           </div>
@@ -1223,10 +1205,10 @@
     </div>
 
     <!-- Contact Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1240,10 +1222,10 @@
         </svg>
         Contact
       </h6>
-      <div class="grid md:grid-cols-2 gap-4">
+      <div class="grid md:grid-cols-2 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Email Address<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Email Address<span class="text-red-500">*</span></label
           >
           <input
             type="email"
@@ -1251,26 +1233,26 @@
             [class.border-red-500]="
               form.get('Email_Id')?.invalid && form.get('Email_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Email Address"
           />
           <div
             *ngIf="
               form.get('Email_Id')?.invalid && form.get('Email_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             <span *ngIf="form.get('Email_Id')?.errors?.['required']"
-              >Email is required</span
+            >Email is required</span
             >
             <span *ngIf="form.get('Email_Id')?.errors?.['email']"
-              >Please enter a valid email address</span
+            >Please enter a valid email address</span
             >
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Mobile Number<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Mobile Number<span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -1281,14 +1263,14 @@
             [class.border-red-500]="
               form.get('Mobile_No')?.invalid && form.get('Mobile_No')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-gray-100 cursor-not-allowed text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Mobile Number"
           />
           <div
             *ngIf="
               form.get('Mobile_No')?.invalid && form.get('Mobile_No')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             <div *ngIf="form.get('Mobile_No')?.hasError('required')">
               Mobile number is required.
@@ -1302,10 +1284,10 @@
     </div>
 
     <!-- Place of Birth Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1325,10 +1307,10 @@
         </svg>
         Place of Birth
       </h6>
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Village / City / Block<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Village / City / Block<span class="text-red-500">*</span></label
           >
           <input
             formControlName="Birth_Place"
@@ -1337,7 +1319,7 @@
               form.get('Birth_Place')?.invalid &&
               form.get('Birth_Place')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
             placeholder="Village / City / Block"
           />
           <div
@@ -1345,14 +1327,14 @@
               form.get('Birth_Place')?.invalid &&
               form.get('Birth_Place')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Birth place is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >Country<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >Country<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Birth_Country_Id"
@@ -1360,7 +1342,7 @@
               form.get('Birth_Country_Id')?.invalid &&
               form.get('Birth_Country_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null">Select Country</option>
             <option
@@ -1375,14 +1357,14 @@
               form.get('Birth_Country_Id')?.invalid &&
               form.get('Birth_Country_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Country is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >State<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >State<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Birth_State_Id"
@@ -1390,7 +1372,7 @@
               form.get('Birth_State_Id')?.invalid &&
               form.get('Birth_State_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" selected>Select State</option>
             <option *ngFor="let state of stateList" [value]="state.data_id">
@@ -1402,14 +1384,14 @@
               form.get('Birth_State_Id')?.invalid &&
               form.get('Birth_State_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             State is required
           </div>
         </div>
         <div>
-          <label class="block mb-1 text-gray-600 text-base font-medium"
-            >District<span class="text-red-500">*</span></label
+          <label class="block mb-2 text-gray-700 text-base sm:text-lg font-medium"
+          >District<span class="text-red-500">*</span></label
           >
           <select
             formControlName="Birth_District_Id"
@@ -1417,7 +1399,7 @@
               form.get('Birth_District_Id')?.invalid &&
               form.get('Birth_District_Id')?.touched
             "
-            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-white"
+            class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white"
           >
             <option [ngValue]="null" disabled selected>Select District</option>
             <option
@@ -1432,7 +1414,7 @@
               form.get('Birth_District_Id')?.invalid &&
               form.get('Birth_District_Id')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             District is required
           </div>
@@ -1441,10 +1423,10 @@
     </div>
 
     <!-- Photo & Signature Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1459,34 +1441,34 @@
         Applicant Photo & Signature
       </h6>
 
-      <div class="grid md:grid-cols-2 gap-6">
+      <div class="grid md:grid-cols-2 gap-8">
         <div>
-          <label class="block text-base font-medium text-gray-700"
-            >Upload Photo<span class="text-red-500">*</span></label
+          <label class="block text-base sm:text-lg font-medium text-gray-700"
+          >Upload Photo<span class="text-red-500">*</span></label
           >
           <input
             id="photoInput"
             type="file"
             (change)="onPhotoSelected($event)"
             accept="image/*"
-            class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100"
+            class="mt-2 block w-full text-base sm:text-lg text-gray-500 file:mr-4 file:py-3 file:px-5 file:border-0 file:text-base sm:file:text-lg file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100 cursor-pointer"
           />
           <div
             *ngIf="form.get('photo')?.invalid && form.get('photo')?.touched"
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Photo is required
           </div>
-          <div *ngIf="photoPreview" class="mt-2 flex items-center gap-4">
+          <div *ngIf="photoPreview" class="mt-4 flex items-center gap-6">
             <img
               [src]="photoPreview"
               alt="Photo Preview"
-              class="w-24 h-24 object-cover border rounded shadow"
+              class="w-32 h-32 object-cover border rounded shadow-md"
             />
             <button
               type="button"
               (click)="clearPhoto()"
-              class="text-red-600 hover:underline text-base"
+              class="text-red-600 hover:underline text-base sm:text-lg font-medium"
             >
               Remove
             </button>
@@ -1494,34 +1476,34 @@
         </div>
 
         <div>
-          <label class="block text-base font-medium text-gray-700"
-            >Upload Signature<span class="text-red-500">*</span></label
+          <label class="block text-base sm:text-lg font-medium text-gray-700"
+          >Upload Signature<span class="text-red-500">*</span></label
           >
           <input
             id="signatureInput"
             type="file"
             (change)="onSignatureSelected($event)"
             accept="image/*"
-            class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100"
+            class="mt-2 block w-full text-base sm:text-lg text-gray-500 file:mr-4 file:py-3 file:px-5 file:border-0 file:text-base sm:file:text-lg file:font-semibold file:bg-blue-50 file:text-gray-700 hover:file:bg-blue-100 cursor-pointer"
           />
           <div
             *ngIf="
               form.get('signature')?.invalid && form.get('signature')?.touched
             "
-            class="text-red-500 text-xs mt-1"
+            class="text-red-500 text-base mt-1.5"
           >
             Signature is required
           </div>
-          <div *ngIf="signaturePreview" class="mt-2 flex items-center gap-4">
+          <div *ngIf="signaturePreview" class="mt-4 flex items-center gap-6">
             <img
               [src]="signaturePreview"
               alt="Signature Preview"
-              class="w-40 h-16 object-contain border rounded shadow"
+              class="w-48 h-20 object-contain border rounded shadow-md"
             />
             <button
               type="button"
               (click)="clearSignature()"
-              class="text-red-600 hover:underline text-base"
+              class="text-red-600 hover:underline text-base sm:text-lg font-medium"
             >
               Remove
             </button>
@@ -1531,10 +1513,10 @@
     </div>
 
     <!-- Language Details Section -->
-    <div class="space-y-4 border border-gray-300 rounded-lg p-6">
-      <h6 class="text-base font-medium text-blue-600 flex items-center gap-2">
+    <div class="space-y-4 border border-gray-300 rounded-lg p-6 sm:p-8">
+      <h6 class="text-lg sm:text-xl font-semibold text-blue-600 flex items-center gap-2 mb-4">
         <svg
-          class="h-5 w-5 text-blue-600"
+          class="h-6 w-6 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1551,138 +1533,139 @@
 
       <div
         formArrayName="languages"
-        class="overflow-x-auto rounded-md ring-1 ring-gray-200"
+        class="overflow-x-auto rounded-md ring-1 ring-gray-200 mt-2"
       >
-        <table class="min-w-full text-base text-left">
-          <thead class="bg-blue-100 text-gray-700 uppercase text-xs">
-            <tr>
-              <th class="px-4 py-2 border border-gray-300 text-center w-12">
-                S.No
-              </th>
-              <th class="px-4 py-2 border border-gray-300">
-                Language Type<span class="text-red-500">*</span>
-              </th>
-              <th class="px-4 py-2 border border-gray-300">
-                Language<span class="text-red-500">*</span>
-              </th>
-              <th class="px-4 py-2 border border-gray-300">
-                Language Skill<span class="text-red-500">*</span>
-              </th>
-              <th class="px-4 py-2 border border-gray-300 text-center w-16">
-                Action
-              </th>
-            </tr>
+        <table class="min-w-full text-base sm:text-lg text-left">
+          <thead class="bg-blue-100 text-gray-800 uppercase text-base font-semibold">
+          <tr>
+            <th class="px-4 py-3 border border-gray-300 text-center w-16">
+              S.No
+            </th>
+            <th class="px-4 py-3 border border-gray-300">
+              Language Type<span class="text-red-500">*</span>
+            </th>
+            <th class="px-4 py-3 border border-gray-300">
+              Language<span class="text-red-500">*</span>
+            </th>
+            <th class="px-4 py-3 border border-gray-300">
+              Language Skill<span class="text-red-500">*</span>
+            </th>
+            <th class="px-4 py-3 border border-gray-300 text-center w-24">
+              Action
+            </th>
+          </tr>
           </thead>
           <tbody>
-            <tr
-              *ngFor="let lang of languagesArray.controls; let i = index"
-              [formGroupName]="i"
-              class="bg-white hover:bg-blue-50"
-            >
-              <td class="px-4 py-2 border border-gray-300 text-center">
-                {{ i + 1 }}
-              </td>
-              <td class="px-4 py-2 border border-gray-300">
-                <select
-                  formControlName="m_rec_language_type_id"
-                  [class.border-red-500]="
+          <tr
+            *ngFor="let lang of languagesArray.controls; let i = index"
+            [formGroupName]="i"
+            class="bg-white hover:bg-blue-50 transition"
+          >
+            <td class="px-4 py-3 border border-gray-300 text-center font-medium">
+              {{ i + 1 }}
+            </td>
+            <td class="px-4 py-3 border border-gray-300">
+              <select
+                formControlName="m_rec_language_type_id"
+                [class.border-red-500]="
                     lang.get('m_rec_language_type_id')?.invalid &&
                     lang.get('m_rec_language_type_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              >
+                <option value="">Select Type</option>
+                <option
+                  *ngFor="let type of languageTypes"
+                  [ngValue]="type.data_id"
                 >
-                  <option value="">Select Type</option>
-                  <option
-                    *ngFor="let type of languageTypes"
-                    [ngValue]="type.data_id"
-                  >
-                    {{ type.data_name }}
-                  </option>
-                </select>
-                <div
-                  *ngIf="
+                  {{ type.data_name }}
+                </option>
+              </select>
+              <div
+                *ngIf="
                     lang.get('m_rec_language_type_id')?.invalid &&
                     lang.get('m_rec_language_type_id')?.touched
                   "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  Language type is required
-                </div>
-              </td>
-              <td class="px-4 py-2 border border-gray-300">
-                <select
-                  formControlName="m_rec_language_id"
-                  [class.border-red-500]="
+                class="text-red-500 text-base mt-1.5"
+              >
+                Language type is required
+              </div>
+            </td>
+            <td class="px-4 py-3 border border-gray-300">
+              <select
+                formControlName="m_rec_language_id"
+                [class.border-red-500]="
                     lang.get('m_rec_language_id')?.invalid &&
                     lang.get('m_rec_language_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              >
+                <option value="">Select Language</option>
+                <option
+                  *ngFor="let lang of languages"
+                  [ngValue]="lang.data_id"
                 >
-                  <option value="">Select Language</option>
-                  <option
-                    *ngFor="let lang of languages"
-                    [ngValue]="lang.data_id"
-                  >
-                    {{ lang.data_name }}
-                  </option>
-                </select>
-                <div
-                  *ngIf="
+                  {{ lang.data_name }}
+                </option>
+              </select>
+              <div
+                *ngIf="
                     lang.get('m_rec_language_id')?.invalid &&
                     lang.get('m_rec_language_id')?.touched
                   "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  Language is required
-                </div>
-              </td>
-              <td class="px-4 py-2 border border-gray-300">
-                <select
-                  formControlName="m_rec_language_skill_id"
-                  [class.border-red-500]="
+                class="text-red-500 text-base mt-1.5"
+              >
+                Language is required
+              </div>
+            </td>
+            <td class="px-4 py-3 border border-gray-300">
+              <select
+                formControlName="m_rec_language_skill_id"
+                [class.border-red-500]="
                     lang.get('m_rec_language_skill_id')?.invalid &&
                     lang.get('m_rec_language_skill_id')?.touched
                   "
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                class="w-full border border-gray-300 rounded-md px-4 py-3 text-base sm:text-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+              >
+                <option value="">Select Skill</option>
+                <option
+                  *ngFor="let skill of languageSkills"
+                  [ngValue]="skill.data_id"
                 >
-                  <option value="">Select Skill</option>
-                  <option
-                    *ngFor="let skill of languageSkills"
-                    [ngValue]="skill.data_id"
-                  >
-                    {{ skill.data_name }}
-                  </option>
-                </select>
-                <div
-                  *ngIf="
+                  {{ skill.data_name }}
+                </option>
+              </select>
+              <div
+                *ngIf="
                     lang.get('m_rec_language_skill_id')?.invalid &&
                     lang.get('m_rec_language_skill_id')?.touched
                   "
-                  class="text-red-500 text-xs mt-1"
-                >
-                  Language skill is required
-                </div>
-              </td>
-              <td class="px-4 py-2 border border-gray-300 text-center">
-                <button
-                  type="button"
-                  (click)="removeLanguage(i)"
-                  [disabled]="languagesArray.length === 1"
-                  class="text-red-600 hover:text-red-800 text-base font-semibold"
-                >
-                  ✖
-                </button>
-              </td>
-            </tr>
+                class="text-red-500 text-base mt-1.5"
+              >
+                Language skill is required
+              </div>
+            </td>
+            <td class="px-4 py-3 border border-gray-300 text-center">
+              <button
+                type="button"
+                (click)="removeLanguage(i)"
+                [disabled]="languagesArray.length === 1"
+                class="text-red-600 hover:text-red-800 text-lg sm:text-xl font-bold px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Remove Language"
+              >
+                ✖
+              </button>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="pt-2 text-right">
+      <div class="pt-4 text-right">
         <button
           type="button"
           (click)="addLanguage()"
-          class="inline-block px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-base font-medium"
+          class="inline-block px-5 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-base sm:text-lg font-medium shadow-sm transition"
         >
           + Add Language
         </button>
