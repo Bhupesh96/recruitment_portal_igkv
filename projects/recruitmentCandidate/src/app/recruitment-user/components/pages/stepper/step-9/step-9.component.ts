@@ -118,10 +118,16 @@ export class Step9Component implements OnInit, OnDestroy {
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService
   ) {
-    this.form = this.fb.group({
-      declaration: [false, Validators.requiredTrue],
-    });
     this.userData = this.recruitmentState.getCurrentUserData();
+
+    const isAlreadyDeclared = this.userData?.['Is_Final_Decl_YN'] === 'Y';
+
+    this.form = this.fb.group({
+      declaration: [
+        { value: isAlreadyDeclared, disabled: isAlreadyDeclared },
+        Validators.requiredTrue
+      ],
+    });
   }
 
   ngOnInit(): void {

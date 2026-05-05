@@ -150,7 +150,10 @@ export class Step6Component implements OnInit {
       this.cdr.detectChanges();
     });
   }
-
+  emitFormData(): void {
+    const formData = this.getFormData();
+    this.formData.emit(formData);
+  }
   public getExistingRowCount(item: any): number {
     if (!item || !this.detailsArray) {
       return 0;
@@ -633,12 +636,14 @@ export class Step6Component implements OnInit {
         this.checkMandatorySubheadingsAndParameters();
         this.loader.hideLoader();
         this.cdr.markForCheck();
+        this.emitFormData();
       },
       error: (err) => {
         console.error('❌ Error fetching parameter values:', err);
         this.alertService.alert(true, 'Failed to load existing data.');
         this.loader.hideLoader();
         this.cdr.markForCheck();
+        this.emitFormData();
       },
     });
   }
@@ -1148,6 +1153,7 @@ export class Step6Component implements OnInit {
     this.checkMandatorySubheadingsAndParameters();
     const freshUserData = this.recruitmentState.getCurrentUserData();
     this.userData = freshUserData;
+    this.emitFormData();
     // Emit the latest form data and validity state
     const formData = this.getFormData();
     this.formData.emit(formData);

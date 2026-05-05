@@ -317,11 +317,13 @@ export class Step1Component implements OnChanges, OnInit {
               this.setupCustomLogicListeners();
               this.loadAdvertisementDetails();
               this.loader.hideLoader();
+              this.emitFormData();
             }
           );
         } else {
           // If absolutely no data found anywhere
           this.loader.hideLoader();
+          this.emitFormData();
         }
       },
       error: (err: any) => {
@@ -735,6 +737,7 @@ export class Step1Component implements OnChanges, OnInit {
 
         // C. Trigger UI Update
         this.cdr.markForCheck();
+        this.emitFormData();
       },
       error: (err) => {
         console.error('Error loading dependent data in patchUserData', err);
@@ -747,6 +750,7 @@ export class Step1Component implements OnChanges, OnInit {
         if (dobValue) {
           this.calculateAge(dobValue);
         }
+        this.emitFormData();
       },
     });
   }

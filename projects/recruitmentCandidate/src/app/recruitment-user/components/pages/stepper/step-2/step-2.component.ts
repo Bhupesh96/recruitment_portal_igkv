@@ -795,6 +795,7 @@ export class Step2Component implements OnInit {
         this.checkMandatorySubheadingsAndParameters();
         this.loader.hideLoader();
         this.cdr.markForCheck();
+        this.emitFormData();
       },
       error: (err) => {
         this.errorMessage = 'Failed to load saved data: ' + err.message;
