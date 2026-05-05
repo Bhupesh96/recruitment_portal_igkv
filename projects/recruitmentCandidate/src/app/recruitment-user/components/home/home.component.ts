@@ -135,23 +135,74 @@ export class HomeComponent implements OnInit {
       {},
       'recruitementApi'
     ).subscribe((result: any): void => {
-      this.sessions = result.body.data;
+      this.sessions = result.body.data || [];
 
+      // ✅ START SEARCHING FOR A SESSION WITH ADS
+      if (this.sessions.length > 0) {
+        this.findFirstSessionWithAds(0);
+      }
     });
   }
+// ✅ NEW METHOD: Recursively checks sessions until it finds one with advertisements
+  findFirstSessionWithAds(index: number) {
+    // Base Case: We checked all sessions and NONE of them have ads
+    if (index >= this.sessions.length) {
+      if (this.sessions.length > 0) {
+        // Fallback: Just select the first session and show the empty state
+        this.selectedSession = this.sessions[0].academic_session_id.toString();
+        this.onSessionChange();
+      }
+      return;
+    }
 
-  getAdvertisement(academic_session_id: number) {
-    const params = {
-      academic_session_id: academic_session_id,
-    };
-    console.log('Testing', academic_session_id);
+    const sessionId = this.sessions[index].academic_session_id;
+    const params = { academic_session_id: sessionId };
+
     this.HTTP.getParam(
       '/publicapi/get/getLatestAdvertisementForLogin/',
       params,
       'recruitement'
     ).subscribe((result: any): void => {
-      this.ads = result.body.data;
+      const fetchedAds = result.body.data || [];
 
+      if (fetchedAds.length > 0) {
+        // SUCCESS! We found a session with ads.
+
+        // 1. Set the Session
+        this.selectedSession = sessionId.toString();
+        this.selectedSessionId = sessionId;
+
+        // 2. Set the Advertisements
+        this.ads = fetchedAds;
+
+        // 3. Auto-select the first Advertisement
+        this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
+
+        // 4. Trigger the post fetching & expanding
+        this.onAdChange();
+      } else {
+        // FAILURE: No ads in this session. Check the NEXT session (index + 1)
+        this.findFirstSessionWithAds(index + 1);
+      }
+    });
+  }
+  getAdvertisement(academic_session_id: number) {
+    const params = {
+      academic_session_id: academic_session_id,
+    };
+
+    this.HTTP.getParam(
+      '/publicapi/get/getLatestAdvertisementForLogin/',
+      params,
+      'recruitement'
+    ).subscribe((result: any): void => {
+      this.ads = result.body.data || [];
+
+      // If user MANUALLY selects a session, auto-select its first ad
+      if (this.ads.length > 0) {
+        this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
+        this.onAdChange();
+      }
     });
   }
 
@@ -195,41 +246,37 @@ export class HomeComponent implements OnInit {
   // }
 
   fetchPostsByAdvertisement(adId: string) {
-    // Parameters are now a plain object, which is cleaner.
-    // NOTE: I've assumed the parameter key is 'a_rec_adv_main_id'.
-    // Please verify this with your backend API. It was 'mapScoreId' in the old code.
     const params = {
       a_rec_adv_main_id: adId,
     };
 
-    // Changed to use the custom HTTP service for consistency.
-    // The endpoint is assumed to follow the same '/master/get/...' pattern.
     this.HTTP.getParam(
       '/publicapi/get/getPostByAdvertimentForLogin/',
       params,
       'recruitement'
     ).subscribe({
       next: (result: any) => {
-        // Access the data from result.body.data, matching the service's response structure.
-        const postsList = result.body.data || []; // Default to empty array if data is null
+        const postsList = result.body.data || [];
 
-        // The original mapping logic to add UI-specific properties is preserved.
-        this.allPosts = postsList.map((post: any) => ({
+        // ✅ MAP WITH INDEX TO AUTO-EXPAND FIRST ITEM
+        this.allPosts = postsList.map((post: any, index: number) => ({
           post_code: post.post_code,
           post_name: post.post_name,
           post_status_name: post.post_status_name,
-          a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id, // <-- Map the new ID
-          subjects: [], // Initialize as an empty array
-          selectedSubjectId: null, // Initialize as null
+          a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
+          subjects: [],
+          selectedSubjectId: null,
           activeTab: 'signup' as 'login' | 'signup' | 'notification' | 'complaint',
-          expanded: false,
+          // ✅ If index is 0, expanded is true. Otherwise, false.
+          expanded: index === 0,
         }));
+
         this.allPosts.forEach((post) => {
           if (post.a_rec_adv_post_detail_id) {
             this.fetchSubjectsForPost(post);
           }
         });
-        // Added for easier debugging, similar to your other methods.
+
         console.log(
           '🟢 JSON Posts List:',
           JSON.stringify(this.allPosts, null, 2)
@@ -237,7 +284,7 @@ export class HomeComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error fetching posts:', error);
-        this.allPosts = []; // Clear posts on error
+        this.allPosts = [];
       },
     });
   }
