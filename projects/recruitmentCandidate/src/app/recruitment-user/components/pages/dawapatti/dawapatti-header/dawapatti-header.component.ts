@@ -116,12 +116,8 @@ export class DawapattiHeaderComponent implements OnInit, OnDestroy {
       .then((result: any) => {
         if (result.isConfirmed) {
           this.isProfileMenuOpen = false;
+          // Just call the service. Do not add another .then(alert) here.
           this.authService.logout();
-          this.alertService.alert(
-            false,
-            'You have been logged out successfully!',
-            2000
-          );
         }
       });
   }

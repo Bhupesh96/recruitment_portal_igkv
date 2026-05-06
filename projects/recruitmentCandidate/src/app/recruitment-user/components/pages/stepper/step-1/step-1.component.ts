@@ -1702,7 +1702,29 @@ export class Step1Component implements OnChanges, OnInit {
     }
 
     emitData['additionalInfoDetails'] = additionalInfoDetails;
+    const categoryValue = formValue['question_2'];
+    let realCategoryId = 1; // Default to 1 (UR)
 
+    if (categoryValue) {
+      // Clean up the string just in case there are trailing spaces (like "EWS " in your XML)
+      const cleanCategoryValue = typeof categoryValue === 'string' ? categoryValue.trim() : categoryValue;
+
+      // Map the string value to the actual m_recruitment_category IDs
+      const categoryMap: { [key: string]: number } = {
+        'UR': 1,
+        'OBC': 2,
+        'SC': 3,
+        'ST': 4,
+        'EWS': 5
+      };
+
+      if (categoryMap[cleanCategoryValue]) {
+        realCategoryId = categoryMap[cleanCategoryValue];
+      }
+    }
+
+    // Attach the REAL category ID to the emitted data!
+    emitData['candidate_category_id'] = realCategoryId;
     this.formData.emit(emitData);
   }
 

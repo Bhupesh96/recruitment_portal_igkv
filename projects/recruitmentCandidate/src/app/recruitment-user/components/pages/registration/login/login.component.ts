@@ -131,19 +131,22 @@ export class LoginComponent implements OnInit {
     this.httpService.getData(`/logoutAllUserByUserId/${userId}`).subscribe({
       next: (res: any) => {
         if (res.body && !res.body.error) {
+          // Notify the user briefly, then automatically trigger the login process again
           this.alertService.alert(
             false,
-            'All other sessions have been logged out. Please try logging in again.',
-            5000
+            'Other sessions cleared. Logging you in automatically...',
+            2000
           );
-          this.loginError = 'Please log in again.';
-          this.loginForm.reset();
-          this.getCaptcha();
+
+          // Trigger login automatically
+          this.onLogin();
         } else {
           this.alertService.alert(
             true,
             'Could not log out other sessions. Please try again later.'
           );
+          this.loginForm.patchValue({ password: '', captcha: '' });
+          this.getCaptcha();
         }
       },
       error: (err) => {
@@ -152,6 +155,8 @@ export class LoginComponent implements OnInit {
           true,
           'An error occurred while trying to log out other sessions.'
         );
+        this.loginForm.patchValue({ password: '', captcha: '' });
+        this.getCaptcha();
       },
     });
   }
@@ -167,12 +172,17 @@ export class LoginComponent implements OnInit {
           this.alertService
             .confirmAlert(
               'Already Logged In',
-              'This user is already logged in elsewhere. Do you want to log out all other sessions?',
+              'This user is already logged in elsewhere. Do you want to log out all other sessions and log in here?',
               'warning'
             )
             .then((result: SweetAlertResult) => {
               if (result.isConfirmed) {
+                // User clicked OK -> Log them out of other devices and auto-login
                 this.logoutAllUserByUserId(this.loginForm.value.user_id);
+              } else {
+                // User clicked Cancel -> Clear sensitive data so they can try again later
+                this.loginForm.patchValue({ password: '', captcha: '' });
+                this.getCaptcha();
               }
             });
           break;

@@ -1,68 +1,18 @@
 <div
   id="scorecard-to-print"
-  class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center"
+  class="min-h-[calc(100vh-64px-64px)] flex flex-col items-center font-['Source_Sans_Pro',sans-serif]"
 >
-  <div class="w-full bg-white rounded-sm border border-gray-300 p-5 md:p-6">
-    <!-- Header Section (PDF Version) -->
-<!--    <div-->
-<!--      style="-->
-<!--        display: flex;-->
-<!--        align-items: center;-->
-<!--        justify-content: center;-->
-<!--        text-align: center;-->
-<!--        gap: 14px;-->
-<!--        width: 100%;-->
-<!--        margin-bottom: 6px;-->
-<!--      "-->
-<!--    >-->
-<!--      <img-->
-<!--        id="logo"-->
-<!--        src="igkv_logo.png"-->
-<!--        alt="University Logo"-->
-<!--        style="-->
-<!--          width: 65px;-->
-<!--          height: 65px;-->
-<!--          object-fit: contain;-->
-<!--          flex-shrink: 0;-->
-<!--          margin: 0;-->
-<!--        "-->
-<!--      />-->
-<!--      <div style="display: flex; flex-direction: column; align-items: center">-->
-<!--        <h3-->
-<!--          style="-->
-<!--            font-size: 16px;-->
-<!--            font-weight: 700;-->
-<!--            color: #111827;-->
-<!--            margin: 0;-->
-<!--            line-height: 1.25;-->
-<!--            font-family: 'Roboto', Arial, sans-serif;-->
-<!--          "-->
-<!--        >-->
-<!--          Mahatma Gandhi Udyanikee Evam Vanikee Vishwavidyalaya-->
-<!--        </h3>-->
-<!--        <h5-->
-<!--          style="-->
-<!--            font-size: 15px;-->
-<!--            font-weight: 600;-->
-<!--            margin: 2px 0 0;-->
-<!--            font-family: 'Noto Sans Devanagari', sans-serif;-->
-<!--            color: #111827;-->
-<!--            text-align: center;-->
-<!--          "-->
-<!--        >-->
-<!--          महत्मा गांधी उद्यानिकी एवं वानिकी विश्वविद्यालय-->
-<!--        </h5>-->
-<!--      </div>-->
-<!--    </div>-->
+  <div class="w-full bg-white rounded-sm border border-gray-400 p-5 md:p-8">
 
-    <div class="text-gray-700 text-base leading-relaxed font-light py-2">
+    <div class="text-gray-900 text-base leading-relaxed py-2">
+      <!-- Applicant Info Header Box -->
       <div
         *ngIf="applicantData; else noApplicantData"
         style="
           display: flex;
           flex-direction: row;
           align-items: stretch;
-          border: 1px solid #111;
+          border: 1.5px solid #111;
           overflow: hidden;
           page-break-inside: avoid;
           width: 100%;
@@ -74,55 +24,54 @@
             flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            font-size: 12px;
-            line-height: 1.2;
-            padding: 4px 6px;
-            border-right: 1px solid #111;
+            font-size: 13.5px;
+            line-height: 1.5;
+            padding: 8px 12px;
+            border-right: 1.5px solid #111;
             box-sizing: border-box;
           "
         >
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Registration No.:</strong>
-            {{ applicantData.registration_no }}
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Registration No.:</strong>
+            <span style="font-weight: 600;">{{ applicantData.registration_no }}</span>
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Registration Date:</strong> 28-10-2023
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Registration Date:</strong> 28-10-2023
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Applicant Full Name:</strong> {{ fullNameE }}
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Applicant Full Name:</strong>
+            <span style="font-weight: 700; text-transform: uppercase;">{{ fullNameE }}</span>
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Date of Birth:</strong>
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Date of Birth:</strong>
             {{ applicantData.DOB | date : "dd-MM-yyyy" }}
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Advertisement No.:</strong>
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Advertisement No.:</strong>
             {{ applicantData.advertisment_no }}
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Father’s Name:</strong>
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Father’s Name:</strong>
             {{ applicantData.Applicant_Father_Name_E }}
           </p>
-          <p *ngIf="applicantData.subject_id" style="margin: 0; padding: 1px 0">
-            <strong>Subject:</strong> {{ subjectName }}
+          <p *ngIf="applicantData.subject_id" style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Subject:</strong> {{ subjectName }}
           </p>
-          <p style="margin: 0; padding: 1px 0">
-            <strong>Category:</strong> {{ applicantCategory }}
+          <p style="margin: 0; padding: 2px 0">
+            <strong style="color: #374151;">Category:</strong> {{ applicantCategory }}
           </p>
         </div>
 
         <!-- Right: Photo Section -->
         <div
           style="
-            width: 92px;
-            min-width: 92px;
-            background: #f9fafb;
+            width: 110px;
+            min-width: 110px;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-left: 1px solid #111;
-            border-right: 1px solid #111;
-            padding: 4px;
+            padding: 6px;
             box-sizing: border-box;
           "
         >
@@ -131,193 +80,146 @@
             [src]="getFileUrl(applicantData.candidate_photo)"
             alt="Applicant Photo"
             style="
-              width: 82px;
-              height: 102px;
+              width: 95px;
+              height: 120px;
               object-fit: cover;
-              border: 1px solid #444;
+              border: 1px solid #111;
               border-radius: 2px;
               background: white;
-              box-sizing: border-box;
             "
           />
         </div>
       </div>
 
       <ng-template #noApplicantData>
-        <p class="text-center text-gray-500 italic py-4">
+        <p class="text-center text-gray-600 font-medium italic py-6">
           Loading applicant data...
         </p>
       </ng-template>
 
-      <div class="mt-6 border-t border-gray-300 pt-3">
+      <!-- Section Title -->
+      <div class="mt-8 border-t border-gray-300 pt-4">
         <h5
-          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto'] text-center"
+          class="text-xl font-bold text-gray-900 tracking-tight text-center uppercase"
         >
-          Candidate Scoring
+          Candidate Scoring Details
         </h5>
-        <div
-          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
-        ></div>
+        <div class="w-32 h-[3px] bg-blue-800 rounded-full mx-auto mt-1.5"></div>
       </div>
 
-      <div class="mt-4 overflow-x-auto">
+      <!-- Scoring Table -->
+      <div class="mt-6 overflow-x-auto">
         <table
           *ngIf="scoringTableData.length > 0; else noScoreData"
-          class="w-full min-w-full border border-gray-300 text-left text-sm"
+          class="w-full min-w-full border-collapse border border-gray-400 text-left text-base"
         >
-          <thead class="bg-gray-100 border-b border-gray-300">
-            <tr>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-16"
-              >
-                Sno.
-              </th>
-              <th scope="col" class="px-4 py-2 font-semibold text-gray-700">
-                Details
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
-              >
-                Max Marks
-              </th>
-              <th
-                scope="col"
-                class="px-4 py-2 font-semibold text-gray-700 w-32 text-center"
-              >
-                Obtained Marks
-              </th>
-            </tr>
+          <thead class="bg-gray-100 border-b-2 border-gray-400">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-bold text-gray-900 w-16 border-r border-gray-400">Sno.</th>
+            <th scope="col" class="px-4 py-3 font-bold text-gray-900 border-r border-gray-400">Description of Criteria</th>
+            <th scope="col" class="px-4 py-3 font-bold text-gray-900 w-32 text-center border-r border-gray-400">Max Marks</th>
+            <th scope="col" class="px-4 py-3 font-bold text-blue-900 w-32 text-center">Marks Obtained</th>
+          </tr>
           </thead>
 
-          <tbody>
-            <tr
-              *ngFor="let item of scoringTableData; let i = index"
-              class="border-b border-gray-300"
-            >
-              <td class="px-4 py-2 text-gray-700 font-semibold align-top">
-                {{ i + 1 }}.
-              </td>
+          <tbody class="divide-y divide-gray-300">
+          <tr
+            *ngFor="let item of scoringTableData; let i = index"
+            class="border-b border-gray-300"
+          >
+            <td class="px-4 py-3 text-gray-900 font-semibold align-top text-center border-r border-gray-300">
+              {{ i + 1 }}.
+            </td>
 
-              <td class="px-4 py-2 text-gray-700 align-top">
-                <span class="font-semibold">{{
-                  item?.score_field_title_name
-                }}</span>
+            <td class="px-4 py-3 text-gray-900 align-top border-r border-gray-300">
+              <span class="font-bold text-gray-900 block mb-2">{{ item?.score_field_title_name }}</span>
 
-                <table
-                  *ngIf="item.subHeadings.length > 0"
-                  class="w-full mt-2 text-sm border border-gray-300"
-                >
-                  <thead class="bg-gray-100">
-                    <tr class="text-left">
-                      <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600"
-                      >
-                        Sub-Item
-                      </th>
-                      <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
-                      >
-                        Max Marks
-                      </th>
-                      <th
-                        class="px-2 py-1 border-b border-gray-300 font-semibold text-gray-600 w-32 text-center"
-                      >
-                        Scoring by Committee
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      *ngFor="let subItem of item.subHeadings"
-                      class="hover:bg-gray-50"
-                    >
-                      <td class="px-2 py-1 border border-gray-200">
-                        {{ subItem?.score_field_title_name }}
-                      </td>
-                      <td
-                        class="px-2 py-1 border border-gray-200 w-32 text-center"
-                      >
-                        {{ subItem?.score_field_field_marks }}
-                      </td>
-                      <td
-                        class="px-2 py-1 border border-gray-200 w-32 text-center font-medium text-blue-700"
-                      >
-                        {{ subItem?.score_field_calculated_value | number : "1.3-3" }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </td>
-
-              <td
-                class="px-4 py-2 text-gray-700 font-semibold align-top text-center"
+              <!-- Nested Table -->
+              <table
+                *ngIf="item.subHeadings.length > 0"
+                class="w-full mt-3 text-sm border border-gray-300"
               >
-                {{ item?.score_field_field_marks }}
-              </td>
+                <thead class="bg-gray-50">
+                <tr class="text-left">
+                  <th class="px-3 py-2 border-b border-gray-300 font-bold text-gray-700">Sub-Item</th>
+                  <th class="px-3 py-2 border-b border-gray-300 font-bold text-gray-700 w-24 text-center">Max</th>
+                  <th class="px-3 py-2 border-b border-gray-300 font-bold text-blue-800 w-32 text-center">Committee Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let subItem of item.subHeadings" class="hover:bg-blue-50/30">
+                  <td class="px-3 py-2 border-b border-gray-200 text-gray-800">{{ subItem?.score_field_title_name }}</td>
+                  <td class="px-3 py-2 border-b border-gray-200 w-24 text-center font-medium">{{ subItem?.score_field_field_marks }}</td>
+                  <td class="px-3 py-2 border-b border-gray-200 w-32 text-center font-bold text-blue-800 bg-blue-50/50">
+                    {{ subItem?.score_field_calculated_value | number : "1.3-3" }}
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </td>
 
-              <td
-                class="px-4 py-2 text-blue-800 font-bold align-top text-center"
-              >
-                {{ item.score_field_calculated_value | number : "1.3-3" }}
-              </td>
-            </tr>
+            <td class="px-4 py-3 text-gray-900 font-bold align-top text-center border-r border-gray-300 bg-gray-50/30">
+              {{ item?.score_field_field_marks }}
+            </td>
+
+            <td class="px-4 py-3 text-blue-900 font-black align-top text-center text-lg bg-blue-50/20">
+              {{ item.score_field_calculated_value | number : "1.3-3" }}
+            </td>
+          </tr>
           </tbody>
         </table>
 
         <ng-template #noScoreData>
-          <p class="text-center text-gray-500 italic mt-4">
-            Loading scoring data...
+          <p class="text-center text-gray-600 font-medium italic mt-6">
+            Scoring data is currently unavailable.
           </p>
         </ng-template>
       </div>
+
+      <!-- Eligibility Section -->
       <div
         *ngIf="applicantData && applicantData.Verification_Finalize_YN"
-        class="mb-6 mt-3 ml-4"
+        class="mb-6 mt-6 p-4 bg-gray-50 border border-gray-300 rounded-md"
       >
-        <div class="flex items-center gap-2">
-          <span class="text-base font-semibold text-gray-800"
-            >Eligibility:</span
-          >
+        <div class="flex items-center gap-3">
+          <span class="text-lg font-bold text-gray-900">Eligibility Status:</span>
           <span
             *ngIf="applicantData.Verification_Finalize_YN === 'Y'"
-            class="px-3 py-0.5 rounded-full text-xm font-medium bg-green-100 text-green-800"
+            class="px-4 py-1 rounded-full text-base font-bold bg-green-700 text-white shadow-sm"
           >
-            Eligible
+            ✓ ELIGIBLE
           </span>
           <span
             *ngIf="applicantData.Verification_Finalize_YN === 'N'"
-            class="px-3 py-0.5 rounded-full text-xm font-medium bg-red-100 text-red-800"
+            class="px-4 py-1 rounded-full text-base font-bold bg-red-700 text-white shadow-sm"
           >
-            Not Eligible
+            ✕ NOT ELIGIBLE
           </span>
         </div>
 
-        <div *ngIf="applicantData.Verified_Remark" class="mt-2">
-          <span class="text-base font-semibold text-gray-800">Remark:</span>
-          <p class="text-base text-gray-700 ml-2">
-            {{ applicantData.Verified_Remark }}
+        <div *ngIf="applicantData.Verified_Remark" class="mt-4 border-l-4 border-blue-800 pl-4 py-1">
+          <span class="text-sm font-bold text-gray-500 uppercase tracking-widest">Remarks</span>
+          <p class="text-base text-gray-900 font-medium mt-1">
+            "{{ applicantData.Verified_Remark }}"
           </p>
         </div>
       </div>
-      <div class="mt-8 text-center border-t border-gray-300 pt-6">
-        <h5
-          class="text-lg font-semibold text-gray-800 tracking-wide font-['Roboto']"
-        >
-          MARKS GIVEN BY COMMITTEE / MAX. MARKS
+
+      <!-- Grand Total -->
+      <div class="mt-10 text-center border-t-2 border-gray-400 pt-8 pb-4">
+        <h5 class="text-base font-bold text-gray-500 uppercase tracking-widest">
+          Final Cumulative Score
         </h5>
-        <div
-          class="w-24 h-[2px] bg-gradient-to-r from-blue-500 to-blue-700 rounded-full mx-auto mt-1"
-        ></div>
-        <p class="text-3xl font-bold text-blue-800 mt-3">
-          {{ totalObtainedMarks | number : "1.2-2" }} /
-          {{ totalMaxMarks | number : "1.2-2" }}
+        <p class="text-4xl font-black text-blue-900 mt-2">
+          {{ totalObtainedMarks | number : "1.2-2" }} / {{ totalMaxMarks | number : "1.2-2" }}
         </p>
+        <div class="w-48 h-[4px] bg-blue-900 rounded-full mx-auto mt-3"></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Sticky Download Button (Design kept, but styles strengthened) -->
 <button
   (click)="downloadPDF()"
   style="
@@ -327,45 +229,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    background-color: #192440;
+    gap: 10px;
+    background-color: #1e3a8a;
     color: #ffffff;
-    font-weight: 600;
-    font-size: 14px;
+    font-weight: 700;
+    font-size: 15px;
     border: none;
     border-radius: 9999px;
-    padding: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    padding: 14px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     overflow: hidden;
     z-index: 9999;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   "
-  onmouseover="this.style.padding='12px 20px'; this.children[1].style.maxWidth='120px'; this.children[1].style.opacity='1';"
-  onmouseout="this.style.padding='12px'; this.children[1].style.maxWidth='0px'; this.children[1].style.opacity='0';"
+  onmouseover="this.style.padding='14px 24px'; this.children[1].style.maxWidth='130px'; this.children[1].style.opacity='1'; this.style.backgroundColor='#1e40af';"
+  onmouseout="this.style.padding='14px'; this.children[1].style.maxWidth='0px'; this.children[1].style.opacity='0'; this.style.backgroundColor='#1e3a8a';"
 >
-  <!-- Download Icon -->
   <svg
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
     viewBox="0 0 24 24"
-    stroke-width="2"
+    stroke-width="2.5"
     stroke="currentColor"
-    style="
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      transition: transform 0.3s ease;
-    "
+    style="width: 22px; height: 22px; flex-shrink: 0;"
   >
-    <path
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
-    />
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
   </svg>
-
-  <!-- Expanding Text -->
   <span
     style="
       max-width: 0;
@@ -373,6 +263,8 @@
       white-space: nowrap;
       overflow: hidden;
       transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     "
   >
     Download PDF

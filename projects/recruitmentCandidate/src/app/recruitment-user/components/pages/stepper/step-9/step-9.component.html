@@ -78,13 +78,14 @@
           </svg>
           Personal Information
         </h4>
-       <div class="grid md:grid-cols-3 gap-6 text-md border-t border-gray-300 py-4">
+        <div class="grid md:grid-cols-3 gap-6 text-md border-t border-gray-300 py-4">
 
           <ng-container *ngFor="let item of getProcessedPersonalInfo()">
 
             <div [ngClass]="item.key.includes('Address') ? 'md:col-span-3' : 'md:col-span-1'">
 
-              <p class="text-md font-semibold text-gray-500 uppercase tracking-widest mb-1">
+              <!-- ✅ UPDATED: text-gray-500 to text-gray-600 for better contrast -->
+              <p class="text-md font-semibold text-gray-600 uppercase tracking-widest mb-1">
                 {{ item.key }}
               </p>
 
@@ -129,8 +130,9 @@
               *ngFor="let item of formData[1]['additionalInfoDetails']"
             >
               <div>
+                <!-- ✅ UPDATED: text-gray-500 to text-gray-600 -->
                 <p
-                  class="text-md font-semibold text-gray-500 uppercase tracking-widest mb-1"
+                  class="text-md font-semibold text-gray-600 uppercase tracking-widest mb-1"
                 >
                   {{ item.question }}
                 </p>
@@ -180,39 +182,39 @@
           <div class="overflow-x-auto ring-1 ring-gray-200">
             <table class="min-w-full text-md border border-gray-300">
               <thead class="bg-blue-100 text-gray-700 uppercase text-base">
-                <tr>
-                  <th
-                    class="px-4 py-2 border border-gray-300 font-semibold text-left"
-                  >
-                    Language
-                  </th>
-                  <th
-                    class="px-4 py-2 border border-gray-300 font-semibold text-left"
-                  >
-                    Type
-                  </th>
-                  <th
-                    class="px-4 py-2 border border-gray-300 font-semibold text-left"
-                  >
-                    Skill
-                  </th>
-                </tr>
+              <tr>
+                <th
+                  class="px-4 py-2 border border-gray-300 font-semibold text-left"
+                >
+                  Language
+                </th>
+                <th
+                  class="px-4 py-2 border border-gray-300 font-semibold text-left"
+                >
+                  Type
+                </th>
+                <th
+                  class="px-4 py-2 border border-gray-300 font-semibold text-left"
+                >
+                  Skill
+                </th>
+              </tr>
               </thead>
               <tbody>
-                <tr
-                  *ngFor="let lang of formData[1]['languages']"
-                  class="bg-white hover:bg-blue-50 transition-colors duration-200"
-                >
-                  <td class="px-4 py-2 border border-gray-300">
-                    {{ lang.language_name }}
-                  </td>
-                  <td class="px-4 py-2 border border-gray-300">
-                    {{ lang.language_type | titlecase }}
-                  </td>
-                  <td class="px-4 py-2 border border-gray-300">
-                    {{ lang.language_skill }}
-                  </td>
-                </tr>
+              <tr
+                *ngFor="let lang of formData[1]['languages']"
+                class="bg-white hover:bg-blue-50 transition-colors duration-200"
+              >
+                <td class="px-4 py-2 border border-gray-300">
+                  {{ lang.language_name }}
+                </td>
+                <td class="px-4 py-2 border border-gray-300">
+                  {{ lang.language_type | titlecase }}
+                </td>
+                <td class="px-4 py-2 border border-gray-300">
+                  {{ lang.language_skill }}
+                </td>
+              </tr>
               </tbody>
             </table>
           </div>
@@ -297,10 +299,10 @@
               </svg>
             </ng-container>
             <span>{{
-              (formData[i]["heading"] &&
-                formData[i]["heading"]["score_field_title_name"]) ||
+                (formData[i]["heading"] &&
+                  formData[i]["heading"]["score_field_title_name"]) ||
                 steps[i - 1]
-            }}</span>
+              }}</span>
           </h4>
 
           <div class="border-t border-gray-300 pt-4">
@@ -319,7 +321,7 @@
                         {{
                           formData[i]["subheadings"][key][
                             "score_field_title_name"
-                          ]
+                            ]
                         }}
                       </h6>
 
@@ -330,41 +332,41 @@
                           <thead
                             class="bg-blue-700 text-white uppercase text-base"
                           >
-                            <tr>
-                              <th
-                                *ngFor="
+                          <tr>
+                            <th
+                              *ngFor="
                                   let headerKey of getDisplayableKeys(
                                     formData[i][key][0]
                                   )
                                 "
-                                class="px-4 py-2 text-left font-semibold"
-                              >
-                                {{ formatKey(headerKey) }}
-                              </th>
-                            </tr>
+                              class="px-4 py-2 text-left font-semibold"
+                            >
+                              {{ formatKey(headerKey) }}
+                            </th>
+                          </tr>
                           </thead>
 
                           <tbody>
-                            <tr
-                              *ngFor="let item of formData[i][key]"
-                              class="bg-white hover:bg-blue-50 transition-colors duration-200"
+                          <tr
+                            *ngFor="let item of formData[i][key]"
+                            class="bg-white hover:bg-blue-50 transition-colors duration-200"
+                          >
+                            <td
+                              *ngFor="let dataKey of getDisplayableKeys(item)"
+                              class="px-4 py-2 border border-gray-300"
                             >
-                              <td
-                                *ngFor="let dataKey of getDisplayableKeys(item)"
-                                class="px-4 py-2 border border-gray-300"
-                              >
                                 <span
                                   *ngIf="isFileValue(item[dataKey])"
                                   class="inline-block bg-blue-100 text-blue-800 text-base font-semibold px-3 py-1 rounded-full"
-                                  >✓ File Uploaded</span
+                                >✓ File Uploaded</span
                                 >
-                                <ng-container
-                                  *ngIf="!isFileValue(item[dataKey])"
-                                >
-                                  {{ formatValue(item[dataKey]) }}
-                                </ng-container>
-                              </td>
-                            </tr>
+                              <ng-container
+                                *ngIf="!isFileValue(item[dataKey])"
+                              >
+                                {{ formatValue(item[dataKey]) }}
+                              </ng-container>
+                            </td>
+                          </tr>
                           </tbody>
                         </table>
                       </div>
@@ -387,7 +389,7 @@
                         {{
                           formData[i]["subheadings"][key][
                             "score_field_title_name"
-                          ]
+                            ]
                         }}
                       </h6>
                       <div class="overflow-x-auto ring-1 ring-gray-200">
@@ -398,33 +400,33 @@
                             <thead
                               class="bg-blue-700 text-white uppercase text-md"
                             >
-                              <tr>
-                                <th
-                                  *ngFor="
+                            <tr>
+                              <th
+                                *ngFor="
                                     let headerKey of getDisplayableKeys(
                                       formData[i][key][0]
                                     )
                                   "
-                                  class="px-4 py-2 text-left font-semibold"
-                                >
-                                  {{ formatKey(headerKey) }}
-                                </th>
-                              </tr>
+                                class="px-4 py-2 text-left font-semibold"
+                              >
+                                {{ formatKey(headerKey) }}
+                              </th>
+                            </tr>
                             </thead>
 
                             <tbody>
-                              <tr
-                                *ngFor="let item of formData[i][key]"
-                                class="bg-white hover:bg-blue-50 transition-colors duration-200"
-                              >
-                                <td
-                                  *ngFor="
+                            <tr
+                              *ngFor="let item of formData[i][key]"
+                              class="bg-white hover:bg-blue-50 transition-colors duration-200"
+                            >
+                              <td
+                                *ngFor="
                                     let dataKey of getDisplayableKeys(item)
                                   "
-                                  class="px-4 py-2 border border-gray-300"
-                                >
-                                  <ng-container
-                                    *ngIf="
+                                class="px-4 py-2 border border-gray-300"
+                              >
+                                <ng-container
+                                  *ngIf="
                                       dataKey
                                         .toLowerCase()
                                         .includes('attachment') ||
@@ -433,7 +435,7 @@
                                           .includes('document');
                                       else regularData
                                     "
-                                  >
+                                >
                                     <span
                                       *ngIf="
                                         checkFilesForSubheading(
@@ -445,24 +447,24 @@
                                     >
                                       ✓ File Uploaded
                                     </span>
-                                    <span
-                                      *ngIf="
+                                  <span
+                                    *ngIf="
                                         !checkFilesForSubheading(
                                           formData[i],
                                           key
                                         ) && !isFileValue(item[dataKey])
                                       "
-                                      class="text-gray-400 italic"
-                                    >
+                                    class="text-gray-400 italic"
+                                  >
                                       —
                                     </span>
-                                  </ng-container>
+                                </ng-container>
 
-                                  <ng-template #regularData>
-                                    {{ formatValue(item[dataKey]) }}
-                                  </ng-template>
-                                </td>
-                              </tr>
+                                <ng-template #regularData>
+                                  {{ formatValue(item[dataKey]) }}
+                                </ng-template>
+                              </td>
+                            </tr>
                             </tbody>
                           </table>
                         </div>
@@ -520,73 +522,74 @@
           >
             <!-- Header -->
             <thead class="bg-blue-700 text-white uppercase text-md">
-              <tr>
-                <th
-                  *ngFor="
+            <tr>
+              <th
+                *ngFor="
                     let headerKey of getHeadersForSubheading(
                       stepIndex,
                       subheadKey
                     )
                   "
-                  class="px-4 py-2 text-left font-semibold"
-                >
-                  {{ formatKey(headerKey) }}
-                </th>
-              </tr>
+                class="px-4 py-2 text-left font-semibold"
+              >
+                {{ formatKey(headerKey) }}
+              </th>
+            </tr>
             </thead>
 
             <!-- Body -->
             <tbody>
-              <ng-container
-                *ngFor="let detail of formData[stepIndex]['details']"
-              >
-                <tr
-                  *ngIf="
+            <ng-container
+              *ngFor="let detail of formData[stepIndex]['details']"
+            >
+              <tr
+                *ngIf="
                     detailBelongsToSubheading(
                       detail,
                       formData[stepIndex]['subheadings'][subheadKey]['items']
                     )
                   "
-                  class="bg-white hover:bg-blue-50 transition-colors duration-200"
+                class="bg-white hover:bg-blue-50 transition-colors duration-200"
+              >
+                <td
+                  *ngFor="let dataKey of getDisplayableKeys(detail)"
+                  class="px-4 py-2 border border-gray-300"
                 >
-                  <td
-                    *ngFor="let dataKey of getDisplayableKeys(detail)"
-                    class="px-4 py-2 border border-gray-300"
-                  >
-                    <ng-container *ngIf="dataKey === 'type'; else standardCell">
-                      {{ getDetailItemName(stepIndex, detail[dataKey]) }}
-                    </ng-container>
-                    <ng-template #standardCell>
+                  <ng-container *ngIf="dataKey === 'type'; else standardCell">
+                    {{ getDetailItemName(stepIndex, detail[dataKey]) }}
+                  </ng-container>
+                  <ng-template #standardCell>
                       <span
                         *ngIf="isFileValue(detail[dataKey])"
                         class="inline-block bg-blue-100 text-blue-800 text-base font-semibold px-3 py-1 rounded-full"
-                        >✓ File Uploaded</span
+                      >✓ File Uploaded</span
                       >
-                      <ng-container *ngIf="!isFileValue(detail[dataKey])">
-                        {{ formatValue(detail[dataKey]) }}
-                      </ng-container>
-                    </ng-template>
-                  </td>
-                </tr>
-              </ng-container>
+                    <ng-container *ngIf="!isFileValue(detail[dataKey])">
+                      {{ formatValue(detail[dataKey]) }}
+                    </ng-container>
+                  </ng-template>
+                </td>
+              </tr>
+            </ng-container>
             </tbody>
           </ng-container>
 
           <!-- No Data -->
           <ng-template #noDataTable>
             <thead class="bg-blue-700 text-white uppercase text-md">
-              <tr>
-                <th class="px-4 py-2 text-left font-semibold">Information</th>
-              </tr>
+            <tr>
+              <th class="px-4 py-2 text-left font-semibold">Information</th>
+            </tr>
             </thead>
             <tbody>
-              <tr class="bg-white">
-                <td
-                  class="px-4 py-4 text-gray-500 italic border border-gray-300"
-                >
-                  — No data provided for this section.
-                </td>
-              </tr>
+            <tr class="bg-white">
+              <!-- ✅ UPDATED: text-gray-500 to text-gray-600 -->
+              <td
+                class="px-4 py-4 text-gray-600 italic border border-gray-300"
+              >
+                — No data provided for this section.
+              </td>
+            </tr>
             </tbody>
           </ng-template>
         </table>
@@ -630,7 +633,7 @@
           [innerHTML]="declarationText"
         ></label>
       </div>
-      
+
 
       <div
         *ngIf="
@@ -651,15 +654,11 @@
     </div>
   </div>
 
-  <div class="text-end mt-6" *ngIf="feeStatus.transaction_status !== 'S'">
-    <button type="button" class="btn btn-primary"  (click)="onPayClicked()">Pay</button>
+  <div class="text-end mt-6" *ngIf="isFinalDeclared && feeStatus?.transaction_status !== 'S'">
+    <button type="button" class="btn btn-primary" (click)="onPayClicked()">Pay</button>
   </div>
-
-   <div class="text-end mt-6" *ngIf="feeStatus.transaction_status === 'S'">
-    <button type="button" class="btn btn-primary" >Download</button>
+  <div class="text-end mt-6" *ngIf="isFinalDeclared && feeStatus?.transaction_status === 'S'">
+    <button type="button" class="btn btn-primary" (click)="onDownloadClicked()">Download</button>
   </div>
-
 
 </form>
-
-

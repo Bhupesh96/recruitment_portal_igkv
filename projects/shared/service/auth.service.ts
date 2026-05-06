@@ -19,36 +19,33 @@ export class AuthService {
     private alertService: AlertService
   ) {}
 
-logout() {
-  // Attempt to tell server to logout, but clear client cookies regardless
-  this.http
-    .getData('/scoreCardEntry/logout', 'recruitement')
-    .pipe(
-      // finalize runs whether the API succeeds OR fails (401)
-      finalize(() => {
-        this.clearLocalSession();
-      })
-    )
-    .subscribe({
-      next: () => console.log('Server logout successful'),
-      error: (err) => console.log('Server logout failed (likely already expired)', err)
-    });
-}
-private clearLocalSession() {
-  this.cookie.delete('session', '/');
-  this.cookie.delete('user', '/');
-  this.cookie.delete('designation_id', '/');
-  this.cookie.delete('module_id', '/');
-  this.cookie.deleteAll('/'); // Nuclear option
+// projects/shared/src/lib/services/auth.service.ts
 
-  this.alertService
-    .alert(false, 'Session Expired. Please login again.', 1500)
-    .then(() => {
-      // Use router to navigate to avoid full page reload if possible, 
-      // or standard window.open if you need to switch modules
-       window.open(moduleMapping.loginModule, '_self');
-    });
-}
+  logout() {
+    this.http
+      .getData('/scoreCardEntry/logout', 'recruitement')
+      .pipe(
+        finalize(() => {
+          // We pass 'false' to indicate this is a intentional logout, not an accidental expiry
+          this.clearLocalSession(true);
+        })
+      )
+      .subscribe();
+  }
+
+  private clearLocalSession(isManualLogout: boolean = false) {
+    this.cookie.deleteAll('/');
+
+    const message = isManualLogout
+      ? 'Logged out successfully.'
+      : 'Session Expired. Please login again.';
+
+    this.alertService
+      .alert(false, message, 1500)
+      .then(() => {
+        window.open(moduleMapping.loginModule, '_self');
+      });
+  }
 isLoggedIn(): boolean {
   const session = this.cookie.get('session');
   const user = this.cookie.get('user');

@@ -5,7 +5,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { Subscription } from 'rxjs';
 
 import { SharedDataService } from '../shared-data.service';
-import { AlertService } from 'shared';
+import {AlertService, HttpService} from 'shared';
 import {RecruitmentStateService, UserRecruitmentData} from '../recruitment-state.service';
 
 import { Step1Component } from './step-1/step-1.component';
@@ -76,19 +76,48 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   // State management flags
   isFinalDeclared = false;
   private userSub!: Subscription;
-
+  private dbCheckDone = false;
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
-    private recruitmentStateService: RecruitmentStateService
+    private recruitmentStateService: RecruitmentStateService,
+    private http: HttpService
   ) {}
 
   ngOnInit(): void {
-    // Listen to user data on initialization
-    this.userSub = this.recruitmentStateService.userData$.subscribe((user: UserRecruitmentData | null) => {
-      if (user && user['Is_Final_Decl_YN'] === 'Y') {
-        this.isFinalDeclared = true;
-        this.currentStep = this.steps.length; // Jump directly to the final Preview step
+
+    this.userSub = this.recruitmentStateService.userData$.subscribe((user: any) => {
+      if (user) {
+        // If local state ALREADY says declared, just lock it.
+        if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
+          this.isFinalDeclared = true;
+          this.currentStep = this.steps.length; // Jump directly to the final Preview step
+        }
+        // If local state says 'N' (like after a refresh), but we haven't checked the DB yet:
+        else if (user.registration_no && !this.dbCheckDone) {
+          this.dbCheckDone = true; // Mark as done so we don't spam the API
+          this.verifyLockStatusFromDB(user.registration_no); // Ask the DB!
+        }
+      }
+    });
+  }
+
+  // 3. Update this method to accept the registrationNo as an argument
+  verifyLockStatusFromDB(registrationNo: string | number) {
+    this.http.getParam('/master/get/getApplicant', {
+      registration_no: registrationNo,
+      Application_Step_Flag_CES: 'C'
+    }, 'recruitement').subscribe({
+      next: (res: any) => {
+        const freshUser = res?.body?.data?.[0];
+
+        // If the DB says it's declared, force the global state to update!
+        if (freshUser && (freshUser.Is_Final_Decl_YN === 'Y' || freshUser.is_final_decl_yn === 'Y')) {
+
+          // Updating the state will automatically trigger the subscription in ngOnInit,
+          // which will lock the stepper and hide the navigation.
+          this.recruitmentStateService.updateUserData({ Is_Final_Decl_YN: 'Y' });
+        }
       }
     });
   }
@@ -176,10 +205,19 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   onFinalSubmitSuccess() {
-    console.log('Final submit success. Preparing to print...');
+    console.log('Final submit success.');
+    this.isFinalDeclared = true;
+  }
+  triggerManualDownload() {
+    console.log('Manual download triggered.');
     if (this.pdfDownloadComponent) {
       this.pdfDownloadComponent.formData = this.formData;
-      this.printTriggered = true; // Triggers ngAfterViewChecked
+
+      // Use setTimeout to give Angular's change detection a split second
+      // to pass the formData into the PDF component before triggering the print
+      setTimeout(() => {
+        this.pdfDownloadComponent.downloadAsPdf();
+      }, 100);
     } else {
       console.error('PDF component not found!');
     }

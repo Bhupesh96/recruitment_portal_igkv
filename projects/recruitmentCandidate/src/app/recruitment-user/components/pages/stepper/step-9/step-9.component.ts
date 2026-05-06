@@ -33,7 +33,7 @@ import { environment } from 'environment';
 export class Step9Component implements OnInit, OnDestroy {
   @Output() goToStep = new EventEmitter<number>();
   @Output() finalSubmitSuccess = new EventEmitter<void>();
-
+  @Output() downloadPdf = new EventEmitter<void>();
   formData: { [key: number]: { [key: string]: any } } = {};
   steps: string[] = [
     'Personal Info',
@@ -111,6 +111,7 @@ export class Step9Component implements OnInit, OnDestroy {
   paymentData:any = {};
   feeStatus:any = {};
   receipt_student_data_source_id!:number;
+  isFinalDeclared: boolean = false;
   private userData: UserRecruitmentData | null = null;
   constructor(
     private sharedDataService: SharedDataService,
@@ -121,32 +122,38 @@ export class Step9Component implements OnInit, OnDestroy {
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService,
   ) {
-    this.userData = this.recruitmentState.getCurrentUserData();
-
-    const isAlreadyDeclared = this.userData?.['Is_Final_Decl_YN'] === 'Y';
-
+    // We will dynamically lock this in ngOnInit
     this.form = this.fb.group({
-      declaration: [
-        { value: isAlreadyDeclared, disabled: isAlreadyDeclared },
-        Validators.requiredTrue
-      ],
+      declaration: [false, Validators.requiredTrue],
     });
   }
-
   ngOnInit(): void {
+    // 1. Watch user data to forcefully disable the checkbox
+    this.recruitmentState.userData$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user: any) => {
+        if (user && (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y')) {
+          this.isFinalDeclared = true;
+          this.form.get('declaration')?.setValue(true, { emitEvent: false });
+          this.form.get('declaration')?.disable({ emitEvent: false });
+        }
+      });
+
+    // 2. Form Data subscription
     this.sharedDataService.formData$
       .pipe(takeUntil(this.destroy$))
       .subscribe((data: { [key: number]: any }) => {
         if (data && Object.keys(data).length > 0) {
           this.formData = data;
           this.loadDeclaration();
+          this.getTransactionAmountDetails();
         }
       });
-      this.getTransactionAmountDetails();
-      this.getFeeStatus();
   }
+
+
   loadDeclaration(): void {
-    const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+    const a_rec_adv_main_id = this.formData[1]?.['a_rec_adv_main_id'] || this.userData?.a_rec_adv_main_id;
     if (!a_rec_adv_main_id) {
       this.declarationText =
         'Could not load declaration: Advertisement ID missing.';
@@ -182,7 +189,7 @@ export class Step9Component implements OnInit, OnDestroy {
     return `${day}/${month}/${year}`;
   }
 
-  // ✨✨✨ MODIFIED SECTION: Added logic to format Gender ✨✨✨
+
   getProcessedPersonalInfo(): { key: string; value: string }[] {
     const info = this.formData[1];
     if (!info) return [];
@@ -319,7 +326,9 @@ export class Step9Component implements OnInit, OnDestroy {
     if (!key) return false;
     return /^\d+_\d+_\d+$/.test(key);
   }
-
+  onDownloadClicked() {
+    this.downloadPdf.emit();
+  }
   detailBelongsToSubheading(detail: any, items: any[]): boolean {
     if (!detail || !Array.isArray(items)) {
       return false;
@@ -527,12 +536,22 @@ export class Step9Component implements OnInit, OnDestroy {
               this.form.enable();
               reject(new Error(res.body.error.message));
             } else {
+
+              // Update global state so the app knows it is locked
+              this.recruitmentState.updateUserData({ Is_Final_Decl_YN: 'Y' });
+
+              // ✅ 3. Flip the local flag to true to reveal the buttons immediately
+              this.isFinalDeclared = true;
+
               await this.alertService.alert(
                 false,
                 'Application Submitted Successfully!'
               );
               this.finalSubmitSuccess.emit();
               resolve();
+              if (this.feeStatus?.transaction_status !== 'S') {
+                this.onPayClicked();
+              }
             }
           },
           error: (err) => {
@@ -551,22 +570,21 @@ export class Step9Component implements OnInit, OnDestroy {
 
 
   getTransactionAmountDetails() {
+    // Safety check just in case this runs a millisecond too early
+    if (!this.formData[1]) return;
+
     const params = {
-      purpose_id : 19,
-     advertisement_id : 1,
-     category_code :1
+      purpose_id: 19,
+      advertisement_id: this.formData[1]["a_rec_adv_main_id"], // <-- Make this dynamic!
+      category_code: this.formData[1]["candidate_category_id"]
     };
-    this.http.getParam(
-      '/fee/get/getTransactionAmountDetails/',
-      params,
-      'academic'
-    ).subscribe((result: any) => {
-      // console.log('payment data',result);
-      this.paymentData = !result.body.error ? result.body.data[0] : [];
-      console.log('this is paymentdata',this.paymentData);
-      
-      this.getFeeStatus();
-    });
+    console.log("Amount params: ", JSON.stringify(params, null,2));
+
+    this.http.getParam('/fee/get/getTransactionAmountDetails/', params, 'academic')
+      .subscribe((result: any) => {
+        this.paymentData = !result.body.error ? result.body.data[0] : [];
+        this.getFeeStatus();
+      });
   }
 
 
@@ -592,39 +610,52 @@ export class Step9Component implements OnInit, OnDestroy {
     }
   }
 
-    private payloadForPay() {
+  private payloadForPay() {
+    // Safely fallback to empty objects if data isn't loaded yet
+    const info = this.formData[1] || {};
+    const payData = this.paymentData || {};
+
     const payee_detail = {
-      advertisement_id:1,
+      // ✅ Use dynamic IDs instead of hardcoded '1'
+      advertisement_id: info["a_rec_adv_main_id"],
       purpose_id: 19,
       fee_purpose_name: 'Recruitment Application Fee',
-      payee_id:this.formData[1]["registration_no"],
-      payee_name: this.formData[1]["Applicant_First_Name_E"],
-      category:1,
-      
-      email: 'name@gmail.com',
-      mobile: '7845896512',
+      payee_id: info["registration_no"],
+      payee_name: info["Applicant_First_Name_E"],
+      category: info["candidate_category_id"], // Dynamic category!
 
-      paymentgatewayid:5,
-      receipt_student_data_source_id:this.paymentData.receipt_student_data_source_id,
-      applied_session:25,
+      // ✅ Use the applicant's real email and mobile
+      email: info["Email_Id"],
+      mobile: info["Mobile_No"],
 
-      // fee details
-      fee_id: this.paymentData?.fee_id,
-      fee_type_id: this.paymentData?.fee_type_id,
-      amount: this.paymentData?.fee_amount,
-      fee_status: this.paymentData?.fee_status,
-      total: this.paymentData?.fee_amount,
-      no_of_subject:1
+      paymentgatewayid: 5,
+      // ✅ Safe optional chaining to prevent JavaScript crashes
+      receipt_student_data_source_id: payData?.receipt_student_data_source_id,
+      applied_session: info["session_id"],
+
+      // ✅ Safe fee details
+      fee_id: payData?.fee_id,
+      fee_type_id: payData?.fee_type_id,
+      amount: payData?.fee_amount,
+      fee_status: payData?.fee_status,
+      total: payData?.fee_amount,
+      no_of_subject: 1
     };
-
 
     return { payee_detail };
   }
 
   makePayment() {
     const payload = this.payloadForPay();
+
+    // NEW: Validate that payment data actually exists before trying to pay
+    if (!payload.payee_detail.amount || !payload.payee_detail.receipt_student_data_source_id) {
+      this.alertService.alert(true, 'Payment amount could not be loaded. Please refresh the page and try again.');
+      return;
+    }
+
     console.log('🟢 Sending Payment Payload:', payload);
-    this.receipt_student_data_source_id = payload.payee_detail.receipt_student_data_source_id
+    this.receipt_student_data_source_id = payload.payee_detail.receipt_student_data_source_id;
 
     this.alertService.showLoading('Processing Payment', 'Please wait...');
 
@@ -641,12 +672,13 @@ export class Step9Component implements OnInit, OnDestroy {
         if (data?.order_id && data?.key && data?.amount) {
           this.openRazorpayCheckout(data);
         } else {
-          this.alertService.alert(true, 'Payment could not be initiated');
+          this.alertService.alert(true, 'Payment gateway could not be initiated.');
         }
       },
       error: (err) => {
         this.alertService.closeAlert();
         this.alertService.alert(true, 'Server not reachable or failed.');
+        console.error('Payment API Error:', err);
       },
     });
   }
@@ -661,7 +693,7 @@ export class Step9Component implements OnInit, OnDestroy {
       image: 'projects/shared/assets/other/logo.png', // optional
       order_id: data.order_id, // from backend
       handler: (response: any) => {
-        console.log('✅ Razorpay Payment Success:', response);
+
         this.verifyPayment(response, data);
       },
       prefill: {
@@ -721,8 +753,11 @@ export class Step9Component implements OnInit, OnDestroy {
       razorpay_payment_id: paymentResponse?.razorpay_payment_id,
       razorpay_signature: paymentResponse?.razorpay_signature,
       refNo: data?.receipt,
-      receipt_student_data_source_id:this.receipt_student_data_source_id
+      receipt_student_data_source_id: this.receipt_student_data_source_id
     };
+
+
+    this.loader.showLoader();
 
     this.http.postData(
       '/fee/post/razorPayPaymentVerification',
@@ -730,25 +765,31 @@ export class Step9Component implements OnInit, OnDestroy {
       'academic'
     ).subscribe({
       next: (res: any) => {
+
+        this.loader.hideLoader();
+
         console.log('🔍 Full verify response:', res);
 
-        const data = res?.body?.data || res?.data || res;
+        // Renamed 'data' to 'responseData' to avoid shadowing the method parameter
+        const responseData = res?.body?.data || res?.data || res;
 
-        if (data?.success) {
+        if (responseData?.success) {
           this.alertService.alert(
             false,
-            data.message || 'Payment Verified Successfully!'
+            responseData.message || 'Payment Verified Successfully!'
           );
-
           this.getFeeStatus();
         } else {
           this.alertService.alert(
             true,
-            data?.message || 'Could not verify payment.'
+            responseData?.message || 'Could not verify payment.'
           );
         }
       },
       error: (err) => {
+
+        this.loader.hideLoader();
+
         console.error('❌ Verification Error:', err);
         this.alertService.alert(true, 'Server not reachable for verification.');
       },
@@ -756,22 +797,17 @@ export class Step9Component implements OnInit, OnDestroy {
   }
 
   getFeeStatus() {
-    
-    
+    // Safety check
+    if (!this.formData[1]) return;
+
     const params = {
       payee_id: this.formData[1]["registration_no"],
-      advertisement_id:1
+      advertisement_id: this.formData[1]["a_rec_adv_main_id"] // <-- Make this dynamic!
     };
 
-    console.log(params,'this is params');
-    this.http.getParam(
-      '/fee/get/getFeeStatus/',
-      params,
-      'academic'
-    ).subscribe((result: any) => {
-      this.feeStatus = !result.body.error ? result.body.data[0] : [];
-      console.warn('fee status',this.feeStatus);
-      
-    });
+    this.http.getParam('/fee/get/getFeeStatus/', params, 'academic')
+      .subscribe((result: any) => {
+        this.feeStatus = !result.body.error ? result.body.data[0] : [];
+      });
   }
 }

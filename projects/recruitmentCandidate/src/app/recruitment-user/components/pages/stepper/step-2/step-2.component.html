@@ -19,9 +19,9 @@
         <!-- Notes Section -->
         <div
           *ngIf="notes.length"
-          class="p-4 bg-blue-50 border border-gray-200 rounded-md"
+          class="p-4 bg-blue-50 border border-blue-200 rounded-md"
         >
-          <ul class="list-disc list-inside space-y-2">
+          <ul class="list-disc list-inside space-y-2 text-blue-800">
             <li *ngFor="let note of notes">
               <strong>NOTE:</strong> {{ note.message }}
             </li>
@@ -34,7 +34,7 @@
             form.get('mandatorySubheadingsSelected')?.invalid &&
             form.get('mandatorySubheadingsSelected')?.touched
           "
-          class="text-red-600 text-md mt-1 p-2 bg-red-50 border border-red-200 rounded-md"
+          class="text-red-600 text-sm mt-1 p-3 bg-red-50 border border-red-200 rounded-md"
         >
           <div *ngIf="form.get('firstMissedMandatory')?.value">
             <strong>Mandatory Field Required:</strong>
@@ -44,10 +44,10 @@
 
         <!-- Heading -->
         <h5
-          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-medium text-gray-600 flex items-center gap-2"
+          class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-semibold text-gray-800 flex items-center gap-2"
         >
           <svg
-            class="h-5 w-5 text-blue-600"
+            class="h-5 w-5 text-blue-700"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -67,7 +67,7 @@
           </svg>
           {{
             heading?.score_field_title_name ||
-              "Educational Qualification Detail"
+            "Educational Qualification Detail"
           }}
         </h5>
 
@@ -83,13 +83,13 @@
               [formControlName]="
                 'is' + getUniqueKey(subheading, i) + 'Selected'
               "
-              class="mr-2 text-gray-600 focus:ring-gray-600"
+              class="mr-2 text-blue-600 focus:ring-blue-600"
             />
             <h6
-              class="bg-blue-100 border border-gray-200 rounded-md px-3 py-2 text-base font-medium text-gray-600 flex items-center gap-2"
+              class="bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-base font-semibold text-gray-800 flex items-center gap-2"
             >
               <svg
-                class="h-5 w-5 text-blue-600"
+                class="h-5 w-5 text-blue-700"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -105,7 +105,7 @@
               <span
                 *ngIf="subheading.score_field_is_mandatory === '1'"
                 class="text-red-600"
-                >*</span
+              >*</span
               >
             </h6>
           </div>
@@ -160,7 +160,7 @@
                     "
                   />
 
-                  <label class="block text-base font-medium text-gray-600">
+                  <label class="block text-base font-semibold text-gray-700">
                     {{ param.score_field_parameter_name }}
                     <span
                       *ngIf="
@@ -169,7 +169,7 @@
                         )?.value && param.is_mandatory === 'Y'
                       "
                       class="text-red-600"
-                      >*</span
+                    >*</span
                     >
                   </label>
 
@@ -191,8 +191,7 @@
                           param.score_field_parameter_name
                         )
                       "
-                      accept="application/pdf,image/*"
-                      class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      class="mt-1 block w-full text-base text-gray-600 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                     />
 
                     <!-- Show existing file -->
@@ -210,7 +209,7 @@
                         [href]="sanitizeFileUrl(filePath)"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-md !text-green-600 hover:underline flex items-center"
+                        class="text-sm !text-green-700 hover:underline flex items-center mt-2 font-medium"
                       >
                         <svg
                           class="h-4 w-4 mr-1"
@@ -232,7 +231,7 @@
                     <!-- Show newly selected file -->
                     <div
                       *ngIf="group.get(param.score_field_parameter_name)?.value"
-                      class="mt-2 text-md text-gray-600 flex items-center"
+                      class="mt-2 text-sm text-gray-700 flex items-center font-medium"
                     >
                       <svg
                         class="h-4 w-4 mr-1"
@@ -263,7 +262,7 @@
                           'Enter ' + param.score_field_parameter_name
                         "
                         rows="3"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       ></textarea>
                       <!-- Text/Number Input -->
                       <input
@@ -281,14 +280,14 @@
                           param.isDatatype === 'text' ? '^[a-zA-Z ]*$' : null
                         "
                         (keydown)="allowAlphabetsOnly($event, param)"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       />
                       <!-- Dropdown -->
                       <select
                         *ngSwitchCase="'DC'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full min-w-[150px] border border-gray-200 rounded-md px-2 py-1 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
+                        class="w-full min-w-[150px] border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -307,7 +306,7 @@
                         *ngSwitchCase="'D'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       >
                         <option value="">
                           Select {{ param.score_field_parameter_name }}
@@ -328,7 +327,7 @@
                         *ngSwitchCase="'DY'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       >
                         <option value="">Select Year</option>
 
@@ -355,8 +354,7 @@
                               param.score_field_parameter_name
                             )
                           "
-                          accept="application/pdf,image/*"
-                          class="mt-1 block w-full text-base text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          class="mt-1 block w-full text-base text-gray-600 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                         />
 
                         <!-- Show existing file -->
@@ -375,7 +373,7 @@
                             [href]="sanitizeFileUrl(filePath)"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="text-md !text-green-600 hover:underline flex items-center"
+                            class="text-sm !text-green-700 hover:underline flex items-center mt-2 font-medium"
                           >
                             <svg
                               class="h-4 w-4 mr-1"
@@ -399,7 +397,7 @@
                           *ngIf="
                             group.get(param.score_field_parameter_name)?.value
                           "
-                          class="mt-2 text-md text-gray-600 flex items-center"
+                          class="mt-2 text-sm text-gray-700 flex items-center font-medium"
                         >
                           <svg
                             class="h-4 w-4 mr-1"
@@ -430,11 +428,10 @@
                         "
                         [min]="param.isDatatype === 'number' ? 0 : null"
                         [formControlName]="param.score_field_parameter_name"
-                        [formControlName]="param.score_field_parameter_name"
                         [placeholder]="
                           'Enter ' + param.score_field_parameter_name
                         "
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"
                       />
                     </ng-container>
                   </ng-template>
@@ -447,7 +444,7 @@
                       group.get(param.score_field_parameter_name)?.touched &&
                       group.get(param.score_field_parameter_name)?.invalid
                     "
-                    class="text-red-600 text-md mt-1"
+                    class="text-red-600 text-sm mt-1.5"
                   >
                     <div
                       *ngIf="
@@ -476,7 +473,7 @@
                         .get(param.score_field_parameter_name)
                         ?.hasError('min')
                     "
-                    class="text-red-600 text-md mt-1"
+                    class="text-red-600 text-sm mt-1.5"
                   >
                     Value cannot be negative.
                   </div>
