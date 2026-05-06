@@ -630,6 +630,8 @@
           [innerHTML]="declarationText"
         ></label>
       </div>
+      
+
       <div
         *ngIf="
           form.get('declaration')?.invalid && form.get('declaration')?.touched
@@ -648,4 +650,16 @@
       </p>
     </div>
   </div>
+
+  <div class="text-end mt-6" *ngIf="feeStatus.transaction_status !== 'S'">
+    <button type="button" class="btn btn-primary"  (click)="onPayClicked()">Pay</button>
+  </div>
+
+   <div class="text-end mt-6" *ngIf="feeStatus.transaction_status === 'S'">
+    <button type="button" class="btn btn-primary" >Download</button>
+  </div>
+
+
 </form>
+
+

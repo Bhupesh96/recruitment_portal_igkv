@@ -75,6 +75,33 @@ export class AlertService {
     })
   }
 
+   confirmAlert_custom(
+    title: any,
+    html: any,
+    icon: any,
+    options?: {
+      showCancel?: boolean;
+      confirmText?: string;
+      cancelText?: string;
+    }
+  ): any {
+
+    return Swal.fire({
+      title: `<b>${title}</b>`,
+      text: html,
+      icon: icon,
+
+      showConfirmButton: true,
+      showCancelButton: options?.showCancel ?? true,
+
+      confirmButtonText: options?.confirmText ?? 'Yes',
+      cancelButtonText: options?.cancelText ?? 'No',
+
+      allowOutsideClick: false,   // ✅ prevents click outside close
+      backdrop: true,
+    });
+  }
+
   remarkAlert(title: any): any {
     return Swal.fire({
       title: `<b>${title}</b>`,
@@ -97,5 +124,23 @@ export class AlertService {
       },
       allowOutsideClick: () => !Swal.isLoading()
     })
+  }
+
+    showLoading(title: string = 'Please wait...', text: string = 'Processing your request...'): void {
+    Swal.fire({
+      title: `<b>${title}</b>`,
+      text: text,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+  }
+
+  //  NEW: Closes any active SweetAlert (useful for stopping the loader)
+  closeAlert(): void {
+    Swal.close();
   }
 }

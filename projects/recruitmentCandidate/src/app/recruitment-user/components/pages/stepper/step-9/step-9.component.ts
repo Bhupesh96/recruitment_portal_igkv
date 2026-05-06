@@ -108,6 +108,9 @@ export class Step9Component implements OnInit, OnDestroy {
   form: FormGroup;
   isSubmitted = false;
   declarationText: SafeHtml = '';
+  paymentData:any = {};
+  feeStatus:any = {};
+  receipt_student_data_source_id!:number;
   private userData: UserRecruitmentData | null = null;
   constructor(
     private sharedDataService: SharedDataService,
@@ -116,7 +119,7 @@ export class Step9Component implements OnInit, OnDestroy {
     private http: HttpService,
     private sanitizer: DomSanitizer,
     private loader: LoaderService,
-    private recruitmentState: RecruitmentStateService
+    private recruitmentState: RecruitmentStateService,
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
 
@@ -139,6 +142,8 @@ export class Step9Component implements OnInit, OnDestroy {
           this.loadDeclaration();
         }
       });
+      this.getTransactionAmountDetails();
+      this.getFeeStatus();
   }
   loadDeclaration(): void {
     const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
@@ -541,6 +546,232 @@ export class Step9Component implements OnInit, OnDestroy {
             reject(err);
           },
         });
+    });
+  }
+
+
+  getTransactionAmountDetails() {
+    const params = {
+      purpose_id : 19,
+     advertisement_id : 1,
+     category_code :1
+    };
+    this.http.getParam(
+      '/fee/get/getTransactionAmountDetails/',
+      params,
+      'academic'
+    ).subscribe((result: any) => {
+      // console.log('payment data',result);
+      this.paymentData = !result.body.error ? result.body.data[0] : [];
+      console.log('this is paymentdata',this.paymentData);
+      
+      this.getFeeStatus();
+    });
+  }
+
+
+  async onPayClicked() {
+
+    const result = await this.alertService.confirmAlert_custom(
+      'Proceed to Payment?',
+      'Do you want to continue with the payment?',
+      'question',
+      {
+        confirmText: 'Yes, Pay Now',
+        cancelText: 'No, Cancel'
+      }
+    );
+
+    if (result.isConfirmed) {
+      try {
+        this.makePayment();
+
+      } catch (error) {
+        this.alertService.alert(true, 'Transfer failed');
+      }
+    }
+  }
+
+    private payloadForPay() {
+    const payee_detail = {
+      advertisement_id:1,
+      purpose_id: 19,
+      fee_purpose_name: 'Recruitment Application Fee',
+      payee_id:this.formData[1]["registration_no"],
+      payee_name: this.formData[1]["Applicant_First_Name_E"],
+      category:1,
+      
+      email: 'name@gmail.com',
+      mobile: '7845896512',
+
+      paymentgatewayid:5,
+      receipt_student_data_source_id:this.paymentData.receipt_student_data_source_id,
+      applied_session:25,
+
+      // fee details
+      fee_id: this.paymentData?.fee_id,
+      fee_type_id: this.paymentData?.fee_type_id,
+      amount: this.paymentData?.fee_amount,
+      fee_status: this.paymentData?.fee_status,
+      total: this.paymentData?.fee_amount,
+      no_of_subject:1
+    };
+
+
+    return { payee_detail };
+  }
+
+  makePayment() {
+    const payload = this.payloadForPay();
+    console.log('🟢 Sending Payment Payload:', payload);
+    this.receipt_student_data_source_id = payload.payee_detail.receipt_student_data_source_id
+
+    this.alertService.showLoading('Processing Payment', 'Please wait...');
+
+    this.http.postData(
+      '/fee/post/saveTransactionPayeeDetail',
+      payload,
+      'academic'
+    ).subscribe({
+      next: (res: any) => {
+        this.alertService.closeAlert();
+
+        const data = res?.body?.data?.payment;
+
+        if (data?.order_id && data?.key && data?.amount) {
+          this.openRazorpayCheckout(data);
+        } else {
+          this.alertService.alert(true, 'Payment could not be initiated');
+        }
+      },
+      error: (err) => {
+        this.alertService.closeAlert();
+        this.alertService.alert(true, 'Server not reachable or failed.');
+      },
+    });
+  }
+
+  private openRazorpayCheckout(data: any) {
+    const options: any = {
+      key: data?.key, // Razorpay key_id
+      amount: data?.amount, // in paise
+      currency: 'INR',
+      name: 'Mahatma Gandhi Udyanikee Evam Vanikee Vishwavidyalaya',
+      description: data?.fee_purpose_name,
+      image: 'projects/shared/assets/other/logo.png', // optional
+      order_id: data.order_id, // from backend
+      handler: (response: any) => {
+        console.log('✅ Razorpay Payment Success:', response);
+        this.verifyPayment(response, data);
+      },
+      prefill: {
+        name: data?.name,
+        email: data?.email,
+        contact: data?.contact,
+      },
+      notes: {
+        purpose: data?.purpose,
+        refNo: data?.receipt,
+      },
+      theme: {
+        color: '#198754', // your green theme color
+      },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+
+    rzp.on('payment.failed', (response: any) => {
+      console.error('❌ Payment Failed:', response.error);
+
+
+      this.alertService.alert(
+        true,
+        response.error.description || 'Transaction failed.'
+      );
+
+      const failurePayload = {
+        order_id: response.error?.metadata?.order_id,
+        payment_id: response.error?.metadata?.payment_id,
+        reason: response.error?.reason,
+        description: response.error?.description,
+        code: response.error?.code,
+        step: response.error?.step,
+        source: response.error?.source,
+        refNo: data?.receipt,
+      };
+
+
+      this.http.postData(
+        '/fee/post/razorpayPaymentFailed',
+        failurePayload,
+        'academic'
+      ).subscribe({
+        next: (res: any) => console.log('📝 Payment failure logged:', res),
+        error: (err) => console.error('⚠️ Failed to log payment failure:', err),
+      });
+    });
+
+    rzp.open();
+  }
+
+
+  private verifyPayment(paymentResponse: any, data: any) {
+    const payload = {
+      razorpay_order_id: paymentResponse?.razorpay_order_id,
+      razorpay_payment_id: paymentResponse?.razorpay_payment_id,
+      razorpay_signature: paymentResponse?.razorpay_signature,
+      refNo: data?.receipt,
+      receipt_student_data_source_id:this.receipt_student_data_source_id
+    };
+
+    this.http.postData(
+      '/fee/post/razorPayPaymentVerification',
+      payload,
+      'academic'
+    ).subscribe({
+      next: (res: any) => {
+        console.log('🔍 Full verify response:', res);
+
+        const data = res?.body?.data || res?.data || res;
+
+        if (data?.success) {
+          this.alertService.alert(
+            false,
+            data.message || 'Payment Verified Successfully!'
+          );
+
+          this.getFeeStatus();
+        } else {
+          this.alertService.alert(
+            true,
+            data?.message || 'Could not verify payment.'
+          );
+        }
+      },
+      error: (err) => {
+        console.error('❌ Verification Error:', err);
+        this.alertService.alert(true, 'Server not reachable for verification.');
+      },
+    });
+  }
+
+  getFeeStatus() {
+    
+    
+    const params = {
+      payee_id: this.formData[1]["registration_no"],
+      advertisement_id:1
+    };
+
+    console.log(params,'this is params');
+    this.http.getParam(
+      '/fee/get/getFeeStatus/',
+      params,
+      'academic'
+    ).subscribe((result: any) => {
+      this.feeStatus = !result.body.error ? result.body.data[0] : [];
+      console.warn('fee status',this.feeStatus);
+      
     });
   }
 }
