@@ -8,12 +8,8 @@ import { HeaderComponent } from '../header/header.component';
 import { FooterComponent } from '../footer/footer.component';
 import { LoginComponent } from '../pages/registration/login/login.component';
 import { StepperComponent } from '../pages/stepper/stepper.component';
-import { HttpService, AuthService} from 'shared';
+import { HttpService, AuthService } from 'shared';
 import { Router } from '@angular/router';
-// interface Session {
-//   academic_session_id: number;
-//   academic_session_name: string;
-// }
 
 interface Advertisement {
   a_rec_adv_main_id: number;
@@ -26,9 +22,9 @@ interface Post {
   post_code: number;
   post_name: string;
   post_status_name: string;
-  a_rec_adv_post_detail_id: number; // Add this ID from your post API response
-  subjects: any[]; // To hold the list of subjects for this post
-  selectedSubjectId: number | null; // To store the ID of the selected subject
+  a_rec_adv_post_detail_id: number;
+  subjects: any[];
+  selectedSubjectId: number | null;
   activeTab: 'login' | 'signup' | 'notification' | 'complaint';
   expanded: boolean;
 }
@@ -49,7 +45,6 @@ interface Post {
   templateUrl: './home.component.html',
 })
 export class HomeComponent implements OnInit {
-  // sessions: Session[] = [];
   selectedSession: string = '';
   selectedSessionId: number | null = null;
   selectedAd: string = '';
@@ -57,24 +52,48 @@ export class HomeComponent implements OnInit {
   allPosts: Post[] = [];
   selectedAdDetails: Advertisement | null = null;
   backendBaseUrl = 'http://192.168.1.57:3500';
-  sessions: any[] = []; // { academic_session_id, academic_session_name }
-  tabs: Array<'login' | 'signup' | 'notification' | 'complaint'> = [
-    'login',
-    'signup',
-    'notification',
-    'complaint',
-  ];
+  sessions: any[] = [];
 
-  // ✅ Used for tabs inside each post (excluding login)
   tabsWithoutLogin: Array<'signup' | 'notification' | 'complaint'> = [
     'signup',
     'notification',
     'complaint',
   ];
-  isMobileView = false;
 
+  // ✅ New Object to track the active status and message for each tab
+  linkStatuses: any = {
+    signup: { active: false, message: 'Registration is currently closed.' },
+    notification: { active: false, message: 'Notifications are currently unavailable.' },
+    complaint: { active: false, message: 'Online Complaint is currently closed.' }
+  };
+
+  isMobileView = false;
   showLogin: boolean = false;
   showSignup: boolean = true;
+  isLoggedIn = false;
+
+  constructor(
+    private HTTP: HttpService,
+    private router: Router,
+    private authService: AuthService
+  ) {}
+
+  ngOnInit() {
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/recruitment']);
+      return;
+    }
+    this.getAcademicSession();
+    this.checkViewport();
+    window.addEventListener('resize', this.checkViewport.bind(this));
+  }
+
+  // Formatting Helper for Messages
+  formatDateTime(d: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
   showLoginForm() {
     this.showLogin = true;
     this.showSignup = false;
@@ -83,72 +102,30 @@ export class HomeComponent implements OnInit {
     this.showLogin = false;
     this.showSignup = true;
   }
-
-  isLoggedIn = false;
-
-  currentStep: 'selection' | 'signup' | 'login' = 'selection';
-  goToSignup() {
-    this.currentStep = 'signup';
-  }
-
-  goToLogin() {
-    this.currentStep = 'login';
-  }
-
   switchToLogin() {
     this.showLogin = true;
     this.showSignup = false;
   }
-
   showSelectionView() {
     this.showLogin = false;
     this.showSignup = true;
   }
-
-
-  private apiBaseUrl = '';
-  constructor(
-    private HTTP: HttpService,
-    private router: Router,
-    private authService: AuthService
-  ) {}
   handleLoginSuccess() {
-    console.log('Login Successful, showing stepper');
     this.router.navigate(['/recruitment']);
-  }
-  ngOnInit() {
-    if (this.authService.isLoggedIn()) {
-
-      this.router.navigate(['/recruitment']);
-      return;
-    }
-    this.getAcademicSession();
-    this.getApplicant();
-    this.checkViewport();
-    window.addEventListener('resize', this.checkViewport.bind(this));
-    // this.fetchSessions();
   }
 
   getAcademicSession() {
-    this.HTTP.getParam(
-      '/publicapi/get/getAcademicSessionForLogin/',
-      {},
-      'recruitementApi'
-    ).subscribe((result: any): void => {
+    this.HTTP.getParam('/publicapi/get/getAcademicSessionForLogin/', {}, 'recruitementApi').subscribe((result: any): void => {
       this.sessions = result.body.data || [];
-
-      // ✅ START SEARCHING FOR A SESSION WITH ADS
       if (this.sessions.length > 0) {
         this.findFirstSessionWithAds(0);
       }
     });
   }
-// ✅ NEW METHOD: Recursively checks sessions until it finds one with advertisements
+
   findFirstSessionWithAds(index: number) {
-    // Base Case: We checked all sessions and NONE of them have ads
     if (index >= this.sessions.length) {
       if (this.sessions.length > 0) {
-        // Fallback: Just select the first session and show the empty state
         this.selectedSession = this.sessions[0].academic_session_id.toString();
         this.onSessionChange();
       }
@@ -156,49 +133,23 @@ export class HomeComponent implements OnInit {
     }
 
     const sessionId = this.sessions[index].academic_session_id;
-    const params = { academic_session_id: sessionId };
-
-    this.HTTP.getParam(
-      '/publicapi/get/getLatestAdvertisementForLogin/',
-      params,
-      'recruitement'
-    ).subscribe((result: any): void => {
+    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', { academic_session_id: sessionId }, 'recruitement').subscribe((result: any): void => {
       const fetchedAds = result.body.data || [];
-
       if (fetchedAds.length > 0) {
-        // SUCCESS! We found a session with ads.
-
-        // 1. Set the Session
         this.selectedSession = sessionId.toString();
         this.selectedSessionId = sessionId;
-
-        // 2. Set the Advertisements
         this.ads = fetchedAds;
-
-        // 3. Auto-select the first Advertisement
         this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
-
-        // 4. Trigger the post fetching & expanding
         this.onAdChange();
       } else {
-        // FAILURE: No ads in this session. Check the NEXT session (index + 1)
         this.findFirstSessionWithAds(index + 1);
       }
     });
   }
+
   getAdvertisement(academic_session_id: number) {
-    const params = {
-      academic_session_id: academic_session_id,
-    };
-
-    this.HTTP.getParam(
-      '/publicapi/get/getLatestAdvertisementForLogin/',
-      params,
-      'recruitement'
-    ).subscribe((result: any): void => {
+    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', { academic_session_id }, 'recruitement').subscribe((result: any): void => {
       this.ads = result.body.data || [];
-
-      // If user MANUALLY selects a session, auto-select its first ad
       if (this.ads.length > 0) {
         this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
         this.onAdChange();
@@ -206,59 +157,98 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  getApplicant() {
-    const params = {
-      registration_no: 24000001,
-    };
-
-    // this.HTTP.getParam(
-    //   '/master/get/getApplicant/',
-    //   params,
-    //   'recruitement'
-    // ).subscribe((result: any): void => {
-    //   const applicantList = result.body.data;
-    //   console.log(
-    //     '🟢 JSON Applicant List:',
-    //     JSON.stringify(applicantList, null, 2)
-    //   );
-    // });
-  }
-
   checkViewport() {
-    this.isMobileView = window.innerWidth < 1024; // lg breakpoint
+    this.isMobileView = window.innerWidth < 1024;
   }
 
-  // fetchAdvertisements(sessionId: number) {
-  //   const params = new HttpParams().set('sessionId', sessionId.toString());
-  //   this.http
-  //     .get<{ Response: { List: Advertisement[] } }>(
-  //       `${this.apiBaseUrl}/getLatestAdvertisement`,
-  //       { params }
-  //     )
-  //     .subscribe({
-  //       next: (response) => {
-  //         this.ads = response.Response.List;
-  //       },
-  //       error: (error) => {
-  //         console.error('Error fetching advertisements:', error);
-  //       },
-  //     });
-  // }
+  onSessionChange() {
+    this.selectedAd = '';
+    this.allPosts = [];
+    this.ads = [];
+    this.selectedSessionId = this.selectedSession ? +this.selectedSession : null;
+
+    if (this.selectedSessionId) {
+      this.getAdvertisement(this.selectedSessionId);
+    }
+  }
+
+  onAdChange() {
+    if (this.selectedAd && this.selectedSessionId) {
+      this.allPosts = [];
+      this.selectedAdDetails = this.ads.find(ad => ad.a_rec_adv_main_id === +this.selectedAd) || null;
+
+      // Fetch Statuses first, then load the posts
+      this.fetchLinkManagementAndPosts(this.selectedAd, this.selectedSessionId);
+    }
+  }
+
+  // ✅ New method to build tab statuses
+  fetchLinkManagementAndPosts(advId: string, sessionId: number) {
+    const linkUrl = `/publicApi/get/getRecruitmentLinkManagementListPublic?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
+
+    this.HTTP.getData(linkUrl, 'recruitement').subscribe({
+      next: (res: any) => {
+        // Reset defaults
+        this.linkStatuses = {
+          signup: { active: false, message: 'Registration configuration not found.' },
+          notification: { active: false, message: 'Notifications configuration not found.' },
+          complaint: { active: false, message: 'Online Complaint configuration not found.' }
+        };
+
+        if (res?.body?.data) {
+          const now = new Date();
+
+          res.body.data.forEach((link: any) => {
+            const name = link.linkname?.trim().toLowerCase();
+            let key = '';
+
+            // Map the API string to our HTML keys
+            if (name === 'signup') key = 'signup';
+            else if (name === 'notification') key = 'notification';
+            else if (name === 'online complain' || name === 'online complaint') key = 'complaint';
+
+            if (key) {
+              const startDate = new Date(link.startDate.replace(' ', 'T'));
+              const endDate = new Date(link.endDate.replace(' ', 'T'));
+
+              if (link.Live_YN !== 'Y') {
+                this.linkStatuses[key].active = false;
+                this.linkStatuses[key].message = `${link.linkname} is currently disabled.`;
+              } else if (now < startDate) {
+                this.linkStatuses[key].active = false;
+                this.linkStatuses[key].message = `${link.linkname} will open on ${this.formatDateTime(startDate)}.`;
+              } else if (now > endDate) {
+                this.linkStatuses[key].active = false;
+                this.linkStatuses[key].message = `${link.linkname} ended on ${this.formatDateTime(endDate)}.`;
+              } else {
+                this.linkStatuses[key].active = true;
+                this.linkStatuses[key].message = '';
+              }
+            }
+          });
+        }
+
+        // Now fetch posts
+        this.fetchPostsByAdvertisement(advId);
+      },
+      error: (err) => {
+        console.error('Error fetching link management', err);
+        this.fetchPostsByAdvertisement(advId);
+      }
+    });
+  }
 
   fetchPostsByAdvertisement(adId: string) {
-    const params = {
-      a_rec_adv_main_id: adId,
-    };
-
-    this.HTTP.getParam(
-      '/publicapi/get/getPostByAdvertimentForLogin/',
-      params,
-      'recruitement'
-    ).subscribe({
+    this.HTTP.getParam('/publicapi/get/getPostByAdvertimentForLogin/', { a_rec_adv_main_id: adId }, 'recruitement').subscribe({
       next: (result: any) => {
         const postsList = result.body.data || [];
 
-        // ✅ MAP WITH INDEX TO AUTO-EXPAND FIRST ITEM
+        // Default to the first tab that is actually active, or fallback to signup
+        let defaultTab: 'signup' | 'notification' | 'complaint' = 'signup';
+        if (this.linkStatuses['signup'].active) defaultTab = 'signup';
+        else if (this.linkStatuses['notification'].active) defaultTab = 'notification';
+        else if (this.linkStatuses['complaint'].active) defaultTab = 'complaint';
+
         this.allPosts = postsList.map((post: any, index: number) => ({
           post_code: post.post_code,
           post_name: post.post_name,
@@ -266,8 +256,7 @@ export class HomeComponent implements OnInit {
           a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
           subjects: [],
           selectedSubjectId: null,
-          activeTab: 'signup' as 'login' | 'signup' | 'notification' | 'complaint',
-          // ✅ If index is 0, expanded is true. Otherwise, false.
+          activeTab: defaultTab,
           expanded: index === 0,
         }));
 
@@ -276,11 +265,6 @@ export class HomeComponent implements OnInit {
             this.fetchSubjectsForPost(post);
           }
         });
-
-        console.log(
-          '🟢 JSON Posts List:',
-          JSON.stringify(this.allPosts, null, 2)
-        );
       },
       error: (error) => {
         console.error('Error fetching posts:', error);
@@ -288,106 +272,38 @@ export class HomeComponent implements OnInit {
       },
     });
   }
-  fetchSubjectsForPost(post: Post) {
-    const params = {
-      a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
-    };
 
-    this.HTTP.getParam(
-      '/publicapi/get/getSubjectsByPostDetailIdForLogin',
-      params,
-      'recruitement' // <-- FIX: Changed the service key
-    ).subscribe({
+  fetchSubjectsForPost(post: Post) {
+    this.HTTP.getParam('/publicapi/get/getSubjectsByPostDetailIdForLogin', { a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id }, 'recruitement').subscribe({
       next: (result: any) => {
-        if (result.body && result.body.data) {
-          post.subjects = result.body.data;
-          console.log(
-            `✅ Subjects loaded for post ${post.post_code}:`,
-            JSON.stringify(post.subjects, null, 2)
-          );
-        }
+        if (result.body && result.body.data) post.subjects = result.body.data;
       },
-      error: (err) => {
-        // This will now show you any errors with the API call
-        console.error(
-          `❌ Error fetching subjects for post ${post.post_code}:`,
-          err
-        );
-      },
+      error: (err) => console.error(`Error fetching subjects for post ${post.post_code}:`, err),
     });
   }
 
   getSubjectIdForPost(post: Post): number | null {
-    if (post.subjects && post.subjects.length > 0) {
-      return post.selectedSubjectId;
-    }
-
+    if (post.subjects && post.subjects.length > 0) return post.selectedSubjectId;
     return 0;
   }
-  get filteredAds(): Advertisement[] {
-    return this.ads;
-  }
 
-  get filteredPosts(): Post[] {
-    return this.selectedAd ? this.allPosts : [];
-  }
+  get filteredAds(): Advertisement[] { return this.ads; }
+  get filteredPosts(): Post[] { return this.selectedAd ? this.allPosts : []; }
 
-  setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') {
-    post.activeTab = tab;
-  }
+  setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') { post.activeTab = tab; }
+  togglePost(post: Post) { post.expanded = !post.expanded; }
 
-  togglePost(post: Post) {
-    post.expanded = !post.expanded;
-  }
-
-  onSessionChange() {
-    this.selectedAd = '';
-    this.allPosts = [];
-    this.ads = [];
-
-    // ✅ FIX: Assign the value to the class property `this.selectedSessionId`
-    this.selectedSessionId = this.selectedSession
-      ? +this.selectedSession
-      : null;
-
-    console.log('Session ID set to: ', this.selectedSessionId);
-
-    if (this.selectedSessionId) {
-      // Pass the updated class property to the function
-      this.getAdvertisement(this.selectedSessionId);
-    }
-  }
-
-  onAdChange() {
-    if (this.selectedAd) {
-      this.allPosts = [];
-      this.fetchPostsByAdvertisement(this.selectedAd);
-
-      // Find the ad the user just selected from the dropdown list
-      this.selectedAdDetails = this.ads.find(ad => ad.a_rec_adv_main_id === +this.selectedAd) || null;
-    }
-  }
   getFileUrl(filePath: string | undefined): string {
     if (!filePath) return '';
-
-    // Convert backslashes to forward slashes: "..\__Files\..." -> "../__Files/..."
     let normalizedPath = filePath.replace(/\\/g, '/');
-
-    // Remove the leading ".." so it becomes an absolute path: "/__Files/..."
     normalizedPath = normalizedPath.replace(/^\.\.\//, '/');
-
     return `${this.backendBaseUrl}${normalizedPath}`;
   }
+
   isValidFile(filePath: any): boolean {
-    if (!filePath) return false; // Catches null, undefined, false, ""
-
-    // Convert to lowercase string and trim spaces to catch "null" strings
+    if (!filePath) return false;
     const strPath = String(filePath).trim().toLowerCase();
-
-    if (strPath === '' || strPath === 'null' || strPath === 'undefined') {
-      return false;
-    }
-
+    if (strPath === '' || strPath === 'null' || strPath === 'undefined') return false;
     return true;
   }
 }

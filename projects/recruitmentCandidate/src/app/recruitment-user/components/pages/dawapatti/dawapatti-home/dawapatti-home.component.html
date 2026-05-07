@@ -4,17 +4,31 @@
   <app-dawapatti-header></app-dawapatti-header>
 
   <div class="flex flex-1 overflow-hidden">
-    <!-- Sidebar -->
-    <app-sidenav></app-sidenav>
+
+    <!-- ✅ Sidebar: Listen for the (viewChanged) event -->
+    <app-sidenav (viewChanged)="activeView = $event"></app-sidenav>
 
     <!-- Main Content Wrapper -->
-    <main
-      class="flex-1 bg-gray-200 p-6 overflow-y-auto"
-    >
+    <main class="flex-1 bg-gray-200 p-6 overflow-y-auto">
       <div class="min-h-full">
-        <router-outlet></router-outlet>
+
+        <!-- ✅ Replace router-outlet with Dynamic Switch -->
+        <ng-container [ngSwitch]="activeView">
+
+          <!-- Render the form if activeView is 'recruitment-form' -->
+          <app-stepper *ngSwitchCase="'recruitment-form'"></app-stepper>
+
+          <!-- Render Score Card if activeView is 'score-card' -->
+
+          <app-scorecard *ngSwitchCase="'score-card'"></app-scorecard>
+          <!-- Render Dawapatti if activeView is 'dawapatti' -->
+          <app-dawapatti *ngSwitchCase="'dawapatti'"></app-dawapatti>
+
+        </ng-container>
+
       </div>
     </main>
+
   </div>
 
   <!-- Footer -->

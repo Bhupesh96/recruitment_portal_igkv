@@ -15,7 +15,7 @@ const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' }, // 👈 Default route
 
   { path: 'home', component: HomeComponent },
-  { path: 'signup', component: SignupComponent },
+
   { path: 'login', component: LoginComponent },
 
   { path: 'pdf-preview', component: PdfPreviewComponent },
@@ -28,8 +28,7 @@ const routes: Routes = [
     component: DawapattiHomeComponent,
     children: [
       { path: '', redirectTo: 'recruitment-form', pathMatch: 'full' },
-      { path: 'dawapatti', component: DawapattiComponent },
-      { path: 'score-card', component: ScorecardComponent },
+
       { path: 'recruitment-form', component: StepperComponent },
     ],
   },

@@ -9,150 +9,63 @@
     [class.opacity-0]="!isExpanded"
   ></div>
 
-  <ul
-    class="relative flex-1 px-3 py-5 space-y-1 overflow-y-auto z-10 select-none"
-  >
+  <ul class="relative flex-1 px-3 py-5 space-y-1 overflow-y-auto z-10 select-none">
+
+    <!-- Recruitment Form -->
     <li>
       <a
-        routerLink="/recruitment/recruitment-form"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
+        (click)="changeView('recruitment-form')"
+        [class.active-link]="currentView === 'recruitment-form'"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 cursor-pointer no-underline"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-          stroke="currentColor"
-            class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span
-          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
-          [class.opacity-0]="!isExpanded"
-          [class.w-0]="!isExpanded"
-          [class.ml-0]="!isExpanded"
-          [class.ml-2]="isExpanded"
-        >
+        <span class="whitespace-nowrap transition-all duration-200 overflow-hidden" [class.opacity-0]="!isExpanded" [class.w-0]="!isExpanded" [class.ml-0]="!isExpanded" [class.ml-2]="isExpanded">
           Recruitment Form
         </span>
       </a>
     </li>
 
-    <li>
+    <!-- Score Card -->
+    <li *ngIf="showScoreCard">
       <a
-        routerLink="/recruitment/score-card"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
+        (click)="changeView('score-card')"
+        [class.active-link]="currentView === 'score-card'"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 cursor-pointer no-underline"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-          stroke="currentColor"
-          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 12l2 2 4-4m-4-6H9a2 2 0 00-2 2v1H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V6a2 2 0 00-2-2h-1z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m-4-6H9a2 2 0 00-2 2v1H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V6a2 2 0 00-2-2h-1z" />
         </svg>
-        <span
-          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
-          [class.opacity-0]="!isExpanded"
-          [class.w-0]="!isExpanded"
-          [class.ml-0]="!isExpanded"
-          [class.ml-2]="isExpanded"
-        >
+        <span class="whitespace-nowrap transition-all duration-200 overflow-hidden" [class.opacity-0]="!isExpanded" [class.w-0]="!isExpanded" [class.ml-0]="!isExpanded" [class.ml-2]="isExpanded">
           Score Card
         </span>
       </a>
     </li>
 
-    <li>
+    <!-- Dawapatti -->
+    <li *ngIf="showDawapatti">
       <a
-        routerLink="/recruitment/dawapatti"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: true }"
-        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 no-underline"
+        (click)="changeView('dawapatti')"
+        [class.active-link]="currentView === 'dawapatti'"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 cursor-pointer no-underline"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-          stroke="currentColor"
-          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700 group-[.active-link]:text-white">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
-        <span
-          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
-          [class.opacity-0]="!isExpanded"
-          [class.w-0]="!isExpanded"
-          [class.ml-0]="!isExpanded"
-          [class.ml-2]="isExpanded"
-        >
+        <span class="whitespace-nowrap transition-all duration-200 overflow-hidden" [class.opacity-0]="!isExpanded" [class.w-0]="!isExpanded" [class.ml-0]="!isExpanded" [class.ml-2]="isExpanded">
           Dawapatti
         </span>
       </a>
     </li>
   </ul>
 
+  <!-- Bottom Toggle Button (Unchanged) -->
   <div class="absolute bottom-6 right-[-10px] z-30 flex items-center">
-    <div
-      class="w-8 h-14 rounded-l-full border border-gray-200 border-r-0"
-    ></div>
-
-    <button
-      (click)="toggleSidebar()"
-      class="flex items-center justify-center w-12 h-12 ml-[-10px] rounded-full bg-blue-600 text-white shadow-[6px_0_12px_rgba(0,0,0,0.15)] hover:shadow-[8px_0_14px_rgba(0,0,0,0.2)] hover:bg-blue-700 transition-all duration-300 border-4"
-      title="{{ isExpanded ? 'Collapse sidebar' : 'Expand sidebar' }}"
-    >
-      <svg
-        *ngIf="isExpanded; else expandIcon"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="2.5"
-        stroke="currentColor"
-        class="w-6 h-6"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M15 19l-7-7 7-7"
-        />
-      </svg>
-      <ng-template #expandIcon>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2.5"
-          stroke="currentColor"
-          class="w-6 h-6"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </ng-template>
+    <div class="w-8 h-14 rounded-l-full border border-gray-200 border-r-0"></div>
+    <button (click)="toggleSidebar()" class="flex items-center justify-center w-12 h-12 ml-[-10px] rounded-full bg-blue-600 text-white shadow-[6px_0_12px_rgba(0,0,0,0.15)] hover:shadow-[8px_0_14px_rgba(0,0,0,0.2)] hover:bg-blue-700 transition-all duration-300 border-4">
+      <svg *ngIf="isExpanded; else expandIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      <ng-template #expandIcon><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></ng-template>
     </button>
   </div>
 </nav>

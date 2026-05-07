@@ -109,13 +109,14 @@
     <!-- Submit Button (Unified Blue-700) -->
     <button
       type="submit"
-      [disabled]="loginForm.invalid"
+      [disabled]="loginForm.invalid || isLoggingIn"
       class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold text-base h-12 rounded-lg shadow-sm transition-all disabled:bg-blue-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
     >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <svg *ngIf="!isLoggingIn" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
       </svg>
-      Log In
+      <span *ngIf="isLoggingIn" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+      {{ isLoggingIn ? 'Verifying...' : 'Log In' }}
     </button>
   </form>
 </div>
