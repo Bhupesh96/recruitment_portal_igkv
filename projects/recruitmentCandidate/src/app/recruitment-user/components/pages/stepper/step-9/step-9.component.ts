@@ -1,28 +1,14 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  EventEmitter,
-  OnDestroy,
-  OnInit,
-  Output,
-} from '@angular/core';
-import {
-  FormsModule,
-  FormBuilder,
-  FormGroup,
-  Validators,
-  ReactiveFormsModule,
-} from '@angular/forms';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, Input } from '@angular/core';
+import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { SharedDataService } from '../../shared-data.service';
 import { AlertService, HttpService, LoaderService } from 'shared';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import {
-  RecruitmentStateService,
-  UserRecruitmentData,
-} from '../../recruitment-state.service';
+import { RecruitmentStateService, UserRecruitmentData } from '../../recruitment-state.service';
 import { environment } from 'environment';
+
 @Component({
   selector: 'app-step-9',
   standalone: true,
@@ -34,73 +20,35 @@ export class Step9Component implements OnInit, OnDestroy {
   @Output() goToStep = new EventEmitter<number>();
   @Output() finalSubmitSuccess = new EventEmitter<void>();
   @Output() downloadPdf = new EventEmitter<void>();
+  @Input() activeSteps: any[] = [];
   formData: { [key: number]: { [key: string]: any } } = {};
-  steps: string[] = [
-    'Personal Info',
-    'Education',
-    'Academics',
-    'Publications',
-    'Experience',
-    'Performance',
-    'Submission',
-  ];
+
+  // ✅ Fallback dictionary mapping Component IDs to titles
+  stepNames: { [key: number]: string } = {
+    1: 'Personal Info',
+    2: 'Education',
+    3: 'Academics',
+    4: 'Publications',
+    5: 'Experience',
+    6: 'Performance'
+  };
 
   personalInfoExcludeKeys = new Set([
-    'a_rec_adv_main_id',
-    'a_rec_app_main_id',
-    'post_code',
-    'session_id',
-    'subject_id',
-    'Salutation_E',
-    'Salutation_H',
-    'photo',
-    'signature',
-    '_isValid',
-    'candidate_photo',
-    'candidate_signature',
-    'presentSame',
-    'registration_no',
-    'religion_code',
-    'gender_id',
-    'advertisment_name',
-    'post_name',
-    'Subject_Name_E', // Added these three
-    'Salutation_E_Name',
-    'Salutation_H_Name',
-    'Applicant_First_Name_E',
-    'Applicant_Middle_Name_E',
-    'Applicant_Last_Name_E',
-    'Applicant_First_Name_H',
-    'Applicant_Middle_Name_H',
-    'Applicant_Last_Name_H',
-    'Applicant_Father_Name_E',
-    'Applicant_Mother_Name_E',
-    'DOB',
-    'age',
-    'Birth_Place',
-    'Birth_Country_Id',
-    'Birth_State_Id',
-    'Birth_District_Id',
-    'Birth_Country_Name',
-    'Birth_State_Name',
-    'Birth_District_Name',
-    'Permanent_Address1',
-    'Permanent_City',
-    'Permanent_Pin_Code',
-    'Permanent_Country_Id',
-    'Permanent_State_Id',
-    'Permanent_District_Id',
-    'Permanent_Country_Name',
-    'Permanent_State_Name',
-    'Permanent_District_Name',
-    'Current_Address1',
-    'Current_City',
-    'Current_Pin_Code',
-    'Current_Country_Id',
-    'Current_State_Id',
-    'Current_District_Id',
-    'Current_Country_Name',
-    'Current_State_Name',
+    'a_rec_adv_main_id', 'a_rec_app_main_id', 'post_code', 'session_id', 'subject_id',
+    'Salutation_E', 'Salutation_H', 'photo', 'signature', '_isValid',
+    'candidate_photo', 'candidate_signature', 'presentSame', 'registration_no',
+    'religion_code', 'gender_id', 'advertisment_name', 'post_name',
+    'Subject_Name_E', 'Salutation_E_Name', 'Salutation_H_Name',
+    'Applicant_First_Name_E', 'Applicant_Middle_Name_E', 'Applicant_Last_Name_E',
+    'Applicant_First_Name_H', 'Applicant_Middle_Name_H', 'Applicant_Last_Name_H',
+    'Applicant_Father_Name_E', 'Applicant_Mother_Name_E', 'DOB', 'age',
+    'Birth_Place', 'Birth_Country_Id', 'Birth_State_Id', 'Birth_District_Id',
+    'Birth_Country_Name', 'Birth_State_Name', 'Birth_District_Name',
+    'Permanent_Address1', 'Permanent_City', 'Permanent_Pin_Code', 'Permanent_Country_Id',
+    'Permanent_State_Id', 'Permanent_District_Id', 'Permanent_Country_Name',
+    'Permanent_State_Name', 'Permanent_District_Name', 'Current_Address1',
+    'Current_City', 'Current_Pin_Code', 'Current_Country_Id', 'Current_State_Id',
+    'Current_District_Id', 'Current_Country_Name', 'Current_State_Name',
     'Current_District_Name',
   ]);
 
@@ -108,11 +56,12 @@ export class Step9Component implements OnInit, OnDestroy {
   form: FormGroup;
   isSubmitted = false;
   declarationText: SafeHtml = '';
-  paymentData:any = {};
-  feeStatus:any = {};
-  receipt_student_data_source_id!:number;
+  paymentData: any = {};
+  feeStatus: any = {};
+  receipt_student_data_source_id!: number;
   isFinalDeclared: boolean = false;
-  private userData: UserRecruitmentData | null = null;
+  userData: any = null;
+
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
@@ -122,24 +71,26 @@ export class Step9Component implements OnInit, OnDestroy {
     private loader: LoaderService,
     private recruitmentState: RecruitmentStateService,
   ) {
-    // We will dynamically lock this in ngOnInit
     this.form = this.fb.group({
       declaration: [false, Validators.requiredTrue],
     });
   }
+
   ngOnInit(): void {
-    // 1. Watch user data to forcefully disable the checkbox
     this.recruitmentState.userData$
       .pipe(takeUntil(this.destroy$))
       .subscribe((user: any) => {
-        if (user && (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y')) {
-          this.isFinalDeclared = true;
-          this.form.get('declaration')?.setValue(true, { emitEvent: false });
-          this.form.get('declaration')?.disable({ emitEvent: false });
+        if (user) {
+          this.userData = user; // ✅ Assign the user data here
+
+          if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
+            this.isFinalDeclared = true;
+            this.form.get('declaration')?.setValue(true, { emitEvent: false });
+            this.form.get('declaration')?.disable({ emitEvent: false });
+          }
         }
       });
 
-    // 2. Form Data subscription
     this.sharedDataService.formData$
       .pipe(takeUntil(this.destroy$))
       .subscribe((data: { [key: number]: any }) => {
@@ -151,12 +102,37 @@ export class Step9Component implements OnInit, OnDestroy {
       });
   }
 
+  get activeSectionIds(): number[] {
+    // 1. If the parent Stepper passed the allowed steps, strictly enforce them!
+    if (this.activeSteps && this.activeSteps.length > 0) {
+      return this.activeSteps
+        .map(step => step.compId)
+        .filter(id => id >= 2 && id <= 6 && this.formData[id]); // Only keep valid middle steps
+    }
+
+    // 2. Fallback (Checks if the step actually has keys, not just an empty object)
+    return [2, 3, 4, 5, 6].filter(id => {
+      const data = this.formData[id];
+      if (!data) return false;
+
+      // Ensure it has actual form fields filled out
+      const keys = Object.keys(data).filter(k => k !== '_isValid');
+      return keys.length > 0;
+    });
+  }
+
+  //  Safely resolves the section title based on API heading or fallback
+  getStepName(compId: number): string {
+    if (this.formData[compId]?.['heading']?.['score_field_title_name']) {
+      return this.formData[compId]['heading']['score_field_title_name'];
+    }
+    return this.stepNames[compId] || 'Section Details';
+  }
 
   loadDeclaration(): void {
     const a_rec_adv_main_id = this.formData[1]?.['a_rec_adv_main_id'] || this.userData?.a_rec_adv_main_id;
     if (!a_rec_adv_main_id) {
-      this.declarationText =
-        'Could not load declaration: Advertisement ID missing.';
+      this.declarationText = 'Could not load declaration: Advertisement ID missing.';
       return;
     }
     const apiUrl = `/master/get/getLatestAdvertisement?a_rec_adv_main_id=${a_rec_adv_main_id}`;
@@ -176,6 +152,7 @@ export class Step9Component implements OnInit, OnDestroy {
       },
     });
   }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -189,121 +166,70 @@ export class Step9Component implements OnInit, OnDestroy {
     return `${day}/${month}/${year}`;
   }
 
-
   getProcessedPersonalInfo(): { key: string; value: string }[] {
     const info = this.formData[1];
     if (!info) return [];
 
     const processedData: { key: string; value: string }[] = [];
 
-    // 1. Combine Name Fields
     const fullNameE = [
       info['Salutation_E_Name'],
       info['Applicant_First_Name_E'],
       info['Applicant_Middle_Name_E'],
       info['Applicant_Last_Name_E'],
-    ]
-      .filter(Boolean)
-      .join(' ');
-    processedData.push({
-      key: 'Applicant Full Name (English)',
-      value: fullNameE,
-    });
+    ].filter(Boolean).join(' ');
+
+    processedData.push({ key: 'Applicant Full Name (English)', value: fullNameE });
 
     const fullNameH = [
       info['Salutation_H_Name'],
       info['Applicant_First_Name_H'],
       info['Applicant_Middle_Name_H'],
       info['Applicant_Last_Name_H'],
-    ]
-      .filter(Boolean)
-      .join(' ');
-    processedData.push({
-      key: 'Applicant Full Name (Hindi)',
-      value: fullNameH,
-    });
+    ].filter(Boolean).join(' ');
 
-    // 2. Add other important fields in a logical order
-    processedData.push({
-      key: "Father's Name",
-      value: this.formatValue(info['Applicant_Father_Name_E']),
-    });
-    processedData.push({
-      key: "Mother's Name",
-      value: this.formatValue(info['Applicant_Mother_Name_E']),
-    });
+    processedData.push({ key: 'Applicant Full Name (Hindi)', value: fullNameH });
 
-    // Handle Gender translation
+    processedData.push({ key: "Father's Name", value: this.formatValue(info['Applicant_Father_Name_E']) });
+    processedData.push({ key: "Mother's Name", value: this.formatValue(info['Applicant_Mother_Name_E']) });
+
     let genderDisplay = '—';
     switch (info['gender_id']) {
-      case 'M':
-        genderDisplay = 'Male';
-        break;
-      case 'F':
-        genderDisplay = 'Female';
-        break;
-      case 'T':
-        genderDisplay = 'Third Gender';
-        break;
+      case 'M': genderDisplay = 'Male'; break;
+      case 'F': genderDisplay = 'Female'; break;
+      case 'T': genderDisplay = 'Third Gender'; break;
     }
     processedData.push({ key: 'Gender', value: genderDisplay });
 
-    processedData.push({
-      key: 'Date of Birth',
-      value: this.formatDateDDMMYYYY(info['DOB']),
-    });
-    processedData.push({
-      key: `Age as on ${new Date().toLocaleDateString('en-IN')}`,
-      value: this.formatValue(info['age']),
-    });
+    processedData.push({ key: 'Date of Birth', value: this.formatDateDDMMYYYY(info['DOB']) });
+    processedData.push({ key: `Age as on ${new Date().toLocaleDateString('en-IN')}`, value: this.formatValue(info['age']) });
 
-    // 3. Combine Birth Place
     const birthPlace = [
-      info['Birth_Place'],
-      info['Birth_District_Name'],
-      info['Birth_State_Name'],
-      info['Birth_Country_Name'],
-    ]
-      .filter(Boolean)
-      .join(', ');
+      info['Birth_Place'], info['Birth_District_Name'],
+      info['Birth_State_Name'], info['Birth_Country_Name'],
+    ].filter(Boolean).join(', ');
+
     processedData.push({ key: 'Birth Place', value: birthPlace });
 
-    // 4. Combine Permanent Address
-    const permanentAddress =
-      [
-        info['Permanent_Address1'],
-        info['Permanent_City'],
-        info['Permanent_District_Name'],
-        info['Permanent_State_Name'],
-        info['Permanent_Country_Name'],
-      ]
-        .filter(Boolean)
-        .join(', ') +
-      (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
+    const permanentAddress = [
+      info['Permanent_Address1'], info['Permanent_City'],
+      info['Permanent_District_Name'], info['Permanent_State_Name'],
+      info['Permanent_Country_Name'],
+    ].filter(Boolean).join(', ') + (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
+
     processedData.push({ key: 'Permanent Address', value: permanentAddress });
 
-    // ✨✨✨ MODIFIED SECTION: Now shows the full address ✨✨✨
-    // 5. Combine Current Address
     if (info['presentSame']) {
-      // If same, use the permanent address value we already built
       processedData.push({ key: 'Current Address', value: permanentAddress });
     } else {
-      // If different, build the current address string
-      const currentAddress =
-        [
-          info['Current_Address1'],
-          info['Current_City'],
-          info['Current_District_Name'],
-          info['Current_State_Name'],
-          info['Current_Country_Name'],
-        ]
-          .filter(Boolean)
-          .join(', ') +
-        (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
+      const currentAddress = [
+        info['Current_Address1'], info['Current_City'],
+        info['Current_District_Name'], info['Current_State_Name'],
+        info['Current_Country_Name'],
+      ].filter(Boolean).join(', ') + (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
       processedData.push({ key: 'Current Address', value: currentAddress });
     }
 
-    // 6. Iterate over remaining keys that are not in the exclusion list
     for (const key of this.getFormDataKeys(info)) {
       if (
         !this.personalInfoExcludeKeys.has(key) &&
@@ -322,20 +248,19 @@ export class Step9Component implements OnInit, OnDestroy {
 
     return processedData;
   }
+
   isExperienceKey(key: string): boolean {
     if (!key) return false;
     return /^\d+_\d+_\d+$/.test(key);
   }
+
   onDownloadClicked() {
     this.downloadPdf.emit();
   }
+
   detailBelongsToSubheading(detail: any, items: any[]): boolean {
-    if (!detail || !Array.isArray(items)) {
-      return false;
-    }
-    return items.some(
-      (item) => item.m_rec_score_field_id.toString() === detail.type.toString()
-    );
+    if (!detail || !Array.isArray(items)) return false;
+    return items.some(item => item.m_rec_score_field_id.toString() === detail.type.toString());
   }
 
   getFormDataKeys(dataObject: any): string[] {
@@ -351,32 +276,14 @@ export class Step9Component implements OnInit, OnDestroy {
   }
 
   isFileValue(value: any): boolean {
-    // Check if it's a JavaScript File object (newly uploaded)
-    if (value instanceof File) {
-      return true;
-    }
-
-    // Check if it is an object that is not null (for the {} case in your JSON if it's not strictly a File instance yet)
-    // We only assume it's a file if it's an object and NOT an array, usually associated with specific keys
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      // If it's an empty object in the JSON dump under an attachment key, treat it as valid
-      return true;
-    }
-
-    // Existing string check
-    return (
-      typeof value === 'string' &&
-      (value.startsWith('recruitment/') || value === 'FILE_UPLOADED')
-    );
+    if (value instanceof File) return true;
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) return true;
+    return typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED');
   }
 
-  // 2. Update this function to check the Data Array, not just filePaths map
   checkFilesForSubheading(sectionData: any, subheadKey: string): boolean {
-    if (!sectionData) {
-      return false;
-    }
+    if (!sectionData) return false;
 
-    // 1. Check the old way (filePaths map) - useful for data coming from DB
     const cleanSubheadKey = subheadKey.replace('qualifications', '');
     if (
       sectionData['filePaths'] &&
@@ -387,32 +294,22 @@ export class Step9Component implements OnInit, OnDestroy {
       return true;
     }
 
-    // 2. NEW: Check the actual data array for 'Attachment' key (useful for new uploads)
     const dataArray = sectionData[cleanSubheadKey];
     if (Array.isArray(dataArray) && dataArray.length > 0) {
-      // Check if any item in the array has an "Attachment" property with a value
       return dataArray.some(
         (item) =>
           (item['Attachment'] && this.isFileValue(item['Attachment'])) ||
           (item['attachment'] && this.isFileValue(item['attachment']))
       );
     }
-
     return false;
   }
+
   formatValue(value: any): string {
-    if (this.isFileValue(value)) {
-      return 'File Uploaded';
-    }
-    if (value === null || value === undefined || value === '') {
-      return '—';
-    }
+    if (this.isFileValue(value)) return 'File Uploaded';
+    if (value === null || value === undefined || value === '') return '—';
     if (Array.isArray(value)) {
-      return value
-        .map((item) =>
-          typeof item === 'object' ? Object.values(item).join(', ') : item
-        )
-        .join('; ');
+      return value.map((item) => typeof item === 'object' ? Object.values(item).join(', ') : item).join('; ');
     }
     if (typeof value === 'object' && !(value instanceof File)) {
       return JSON.stringify(value);
@@ -433,8 +330,7 @@ export class Step9Component implements OnInit, OnDestroy {
       const subhead = stepData['subheadings'][subheadKey];
       if (subhead && Array.isArray(subhead.items)) {
         const foundItem = subhead.items.find(
-          (item: any) =>
-            item.m_rec_score_field_id.toString() === detailType.toString()
+          (item: any) => item.m_rec_score_field_id.toString() === detailType.toString()
         );
         if (foundItem) {
           return foundItem.score_field_name_e;
@@ -443,6 +339,7 @@ export class Step9Component implements OnInit, OnDestroy {
     }
     return 'Detail';
   }
+
   getDisplayableKeys(obj: any): string[] {
     if (!obj) return [];
     return Object.keys(obj).filter(
@@ -454,16 +351,13 @@ export class Step9Component implements OnInit, OnDestroy {
         key !== 'calculated_experience'
     );
   }
+
   getHeadersForSubheading(stepIndex: number, subheadKey: string): string[] {
     const stepData = this.formData[stepIndex];
-    if (!stepData || !stepData['details'] || !stepData['subheadings']) {
-      return [];
-    }
+    if (!stepData || !stepData['details'] || !stepData['subheadings']) return [];
 
     const subhead = stepData['subheadings'][subheadKey];
-    if (!subhead || !subhead.items) {
-      return [];
-    }
+    if (!subhead || !subhead.items) return [];
 
     const firstRelevantDetail = stepData['details'].find((detail: any) =>
       this.detailBelongsToSubheading(detail, subhead.items)
@@ -472,18 +366,16 @@ export class Step9Component implements OnInit, OnDestroy {
     if (firstRelevantDetail) {
       return this.getDisplayableKeys(firstRelevantDetail);
     }
-
     return [];
   }
+
   hasDetailsForSubheading(stepIndex: number, subheadKey: string): boolean {
     const stepData = this.formData[stepIndex];
-    if (!stepData || !stepData['details'] || !stepData['subheadings']) {
-      return false;
-    }
+    if (!stepData || !stepData['details'] || !stepData['subheadings']) return false;
+
     const subhead = stepData['subheadings'][subheadKey];
-    if (!subhead || !subhead.items) {
-      return false;
-    }
+    if (!subhead || !subhead.items) return false;
+
     return stepData['details'].some((detail: any) =>
       this.detailBelongsToSubheading(detail, subhead.items)
     );
@@ -492,20 +384,15 @@ export class Step9Component implements OnInit, OnDestroy {
   submit(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.form.invalid) {
-        this.alertService.alert(
-          true,
-          'You must accept the declaration to proceed.'
-        );
+        this.alertService.alert(true, 'You must accept the declaration to proceed.');
         return reject(new Error('Declaration not accepted.'));
       }
 
       const registrationNo = this.formData[1]?.['registration_no'];
       const a_rec_app_main_id = this.formData[1]?.['a_rec_app_main_id'];
+
       if (!registrationNo) {
-        this.alertService.alert(
-          true,
-          'Cannot submit. Registration number is missing.'
-        );
+        this.alertService.alert(true, 'Cannot submit. Registration number is missing.');
         return reject(new Error('Registration number missing.'));
       }
 
@@ -518,92 +405,61 @@ export class Step9Component implements OnInit, OnDestroy {
         a_rec_app_main_id: a_rec_app_main_id,
       };
 
-      this.http
-        .postForm(
-          '/candidate/postFile/updateFinalDeclaration',
-          payload,
-          'recruitement'
-        )
-        .subscribe({
-          next: async (res: any) => {
-            this.loader.hide();
-            if (res?.body?.error) {
-              this.alertService.alert(
-                true,
-                res.body.error.message || 'An unknown error occurred.'
-              );
-              this.isSubmitted = false;
-              this.form.enable();
-              reject(new Error(res.body.error.message));
-            } else {
-
-              // Update global state so the app knows it is locked
-              this.recruitmentState.updateUserData({ Is_Final_Decl_YN: 'Y' });
-
-              // ✅ 3. Flip the local flag to true to reveal the buttons immediately
-              this.isFinalDeclared = true;
-
-              await this.alertService.alert(
-                false,
-                'Application Submitted Successfully!'
-              );
-              this.finalSubmitSuccess.emit();
-              resolve();
-              if (this.feeStatus?.transaction_status !== 'S') {
-                this.onPayClicked();
-              }
-            }
-          },
-          error: (err) => {
-            this.loader.hide();
-            this.alertService.alert(
-              true,
-              'A server error occurred. Please try again.'
-            );
+      this.http.postForm('/candidate/postFile/updateFinalDeclaration', payload, 'recruitement').subscribe({
+        next: async (res: any) => {
+          this.loader.hide();
+          if (res?.body?.error) {
+            this.alertService.alert(true, res.body.error.message || 'An unknown error occurred.');
             this.isSubmitted = false;
             this.form.enable();
-            reject(err);
-          },
-        });
+            reject(new Error(res.body.error.message));
+          } else {
+            this.recruitmentState.updateUserData({ Is_Final_Decl_YN: 'Y' });
+            this.isFinalDeclared = true;
+            await this.alertService.alert(false, 'Application Submitted Successfully!');
+            this.finalSubmitSuccess.emit();
+            resolve();
+            if (this.feeStatus?.transaction_status !== 'S') {
+              this.onPayClicked();
+            }
+          }
+        },
+        error: (err) => {
+          this.loader.hide();
+          this.alertService.alert(true, 'A server error occurred. Please try again.');
+          this.isSubmitted = false;
+          this.form.enable();
+          reject(err);
+        },
+      });
     });
   }
 
-
   getTransactionAmountDetails() {
-    // Safety check just in case this runs a millisecond too early
     if (!this.formData[1]) return;
-
     const params = {
       purpose_id: 19,
-      advertisement_id: this.formData[1]["a_rec_adv_main_id"], // <-- Make this dynamic!
+      advertisement_id: this.formData[1]["a_rec_adv_main_id"],
       category_code: this.formData[1]["candidate_category_id"]
     };
-    console.log("Amount params: ", JSON.stringify(params, null,2));
 
-    this.http.getParam('/fee/get/getTransactionAmountDetails/', params, 'academic')
-      .subscribe((result: any) => {
-        this.paymentData = !result.body.error ? result.body.data[0] : [];
-        this.getFeeStatus();
-      });
+    this.http.getParam('/fee/get/getTransactionAmountDetails/', params, 'academic').subscribe((result: any) => {
+      this.paymentData = !result.body.error ? result.body.data[0] : [];
+      this.getFeeStatus();
+    });
   }
 
-
   async onPayClicked() {
-
     const result = await this.alertService.confirmAlert_custom(
       'Proceed to Payment?',
       'Do you want to continue with the payment?',
       'question',
-      {
-        confirmText: 'Yes, Pay Now',
-        cancelText: 'No, Cancel'
-      }
+      { confirmText: 'Yes, Pay Now', cancelText: 'No, Cancel' }
     );
 
     if (result.isConfirmed) {
       try {
         this.makePayment();
-
       } catch (error) {
         this.alertService.alert(true, 'Transfer failed');
       }
@@ -611,29 +467,21 @@ export class Step9Component implements OnInit, OnDestroy {
   }
 
   private payloadForPay() {
-    // Safely fallback to empty objects if data isn't loaded yet
     const info = this.formData[1] || {};
     const payData = this.paymentData || {};
 
     const payee_detail = {
-      // ✅ Use dynamic IDs instead of hardcoded '1'
       advertisement_id: info["a_rec_adv_main_id"],
       purpose_id: 19,
       fee_purpose_name: 'Recruitment Application Fee',
       payee_id: info["registration_no"],
       payee_name: info["Applicant_First_Name_E"],
-      category: info["candidate_category_id"], // Dynamic category!
-
-      // ✅ Use the applicant's real email and mobile
+      category: info["candidate_category_id"],
       email: info["Email_Id"],
       mobile: info["Mobile_No"],
-
       paymentgatewayid: 5,
-      // ✅ Safe optional chaining to prevent JavaScript crashes
       receipt_student_data_source_id: payData?.receipt_student_data_source_id,
       applied_session: info["session_id"],
-
-      // ✅ Safe fee details
       fee_id: payData?.fee_id,
       fee_type_id: payData?.fee_type_id,
       amount: payData?.fee_amount,
@@ -648,25 +496,17 @@ export class Step9Component implements OnInit, OnDestroy {
   makePayment() {
     const payload = this.payloadForPay();
 
-    // NEW: Validate that payment data actually exists before trying to pay
     if (!payload.payee_detail.amount || !payload.payee_detail.receipt_student_data_source_id) {
       this.alertService.alert(true, 'Payment amount could not be loaded. Please refresh the page and try again.');
       return;
     }
 
-    console.log('🟢 Sending Payment Payload:', payload);
     this.receipt_student_data_source_id = payload.payee_detail.receipt_student_data_source_id;
-
     this.alertService.showLoading('Processing Payment', 'Please wait...');
 
-    this.http.postData(
-      '/fee/post/saveTransactionPayeeDetail',
-      payload,
-      'academic'
-    ).subscribe({
+    this.http.postData('/fee/post/saveTransactionPayeeDetail', payload, 'academic').subscribe({
       next: (res: any) => {
         this.alertService.closeAlert();
-
         const data = res?.body?.data?.payment;
 
         if (data?.order_id && data?.key && data?.amount) {
@@ -678,22 +518,20 @@ export class Step9Component implements OnInit, OnDestroy {
       error: (err) => {
         this.alertService.closeAlert();
         this.alertService.alert(true, 'Server not reachable or failed.');
-        console.error('Payment API Error:', err);
       },
     });
   }
 
   private openRazorpayCheckout(data: any) {
     const options: any = {
-      key: data?.key, // Razorpay key_id
-      amount: data?.amount, // in paise
+      key: data?.key,
+      amount: data?.amount,
       currency: 'INR',
       name: 'Mahatma Gandhi Udyanikee Evam Vanikee Vishwavidyalaya',
       description: data?.fee_purpose_name,
-      image: 'projects/shared/assets/other/logo.png', // optional
-      order_id: data.order_id, // from backend
+      image: 'projects/shared/assets/other/logo.png',
+      order_id: data.order_id,
       handler: (response: any) => {
-
         this.verifyPayment(response, data);
       },
       prefill: {
@@ -706,20 +544,14 @@ export class Step9Component implements OnInit, OnDestroy {
         refNo: data?.receipt,
       },
       theme: {
-        color: '#198754', // your green theme color
+        color: '#198754',
       },
     };
 
     const rzp = new (window as any).Razorpay(options);
 
     rzp.on('payment.failed', (response: any) => {
-      console.error('❌ Payment Failed:', response.error);
-
-
-      this.alertService.alert(
-        true,
-        response.error.description || 'Transaction failed.'
-      );
+      this.alertService.alert(true, response.error.description || 'Transaction failed.');
 
       const failurePayload = {
         order_id: response.error?.metadata?.order_id,
@@ -732,12 +564,7 @@ export class Step9Component implements OnInit, OnDestroy {
         refNo: data?.receipt,
       };
 
-
-      this.http.postData(
-        '/fee/post/razorpayPaymentFailed',
-        failurePayload,
-        'academic'
-      ).subscribe({
+      this.http.postData('/fee/post/razorpayPaymentFailed', failurePayload, 'academic').subscribe({
         next: (res: any) => console.log('📝 Payment failure logged:', res),
         error: (err) => console.error('⚠️ Failed to log payment failure:', err),
       });
@@ -745,7 +572,6 @@ export class Step9Component implements OnInit, OnDestroy {
 
     rzp.open();
   }
-
 
   private verifyPayment(paymentResponse: any, data: any) {
     const payload = {
@@ -756,58 +582,37 @@ export class Step9Component implements OnInit, OnDestroy {
       receipt_student_data_source_id: this.receipt_student_data_source_id
     };
 
-
     this.loader.showLoader();
 
-    this.http.postData(
-      '/fee/post/razorPayPaymentVerification',
-      payload,
-      'academic'
-    ).subscribe({
+    this.http.postData('/fee/post/razorPayPaymentVerification', payload, 'academic').subscribe({
       next: (res: any) => {
-
         this.loader.hideLoader();
-
-        console.log('🔍 Full verify response:', res);
-
-        // Renamed 'data' to 'responseData' to avoid shadowing the method parameter
         const responseData = res?.body?.data || res?.data || res;
 
         if (responseData?.success) {
-          this.alertService.alert(
-            false,
-            responseData.message || 'Payment Verified Successfully!'
-          );
+          this.alertService.alert(false, responseData.message || 'Payment Verified Successfully!');
           this.getFeeStatus();
         } else {
-          this.alertService.alert(
-            true,
-            responseData?.message || 'Could not verify payment.'
-          );
+          this.alertService.alert(true, responseData?.message || 'Could not verify payment.');
         }
       },
       error: (err) => {
-
         this.loader.hideLoader();
-
-        console.error('❌ Verification Error:', err);
         this.alertService.alert(true, 'Server not reachable for verification.');
       },
     });
   }
 
   getFeeStatus() {
-    // Safety check
     if (!this.formData[1]) return;
 
     const params = {
       payee_id: this.formData[1]["registration_no"],
-      advertisement_id: this.formData[1]["a_rec_adv_main_id"] // <-- Make this dynamic!
+      advertisement_id: this.formData[1]["a_rec_adv_main_id"]
     };
 
-    this.http.getParam('/fee/get/getFeeStatus/', params, 'academic')
-      .subscribe((result: any) => {
-        this.feeStatus = !result.body.error ? result.body.data[0] : [];
-      });
+    this.http.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe((result: any) => {
+      this.feeStatus = !result.body.error ? result.body.data[0] : [];
+    });
   }
 }

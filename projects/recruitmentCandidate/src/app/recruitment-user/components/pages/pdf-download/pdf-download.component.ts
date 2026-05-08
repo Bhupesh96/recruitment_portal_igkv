@@ -30,9 +30,13 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   isDataLoaded = false;
   private dataSubscription: Subscription | undefined;
   declarationText: SafeHtml = '';
-  private userData: UserRecruitmentData | null = null;
 
-  // Processed data for the template
+  // ✅ Changed to public so HTML can access userData?.action_date
+  public userData: UserRecruitmentData | null = null;
+
+  // ✅ Added feeStatus variable
+  feeStatus: any = null;
+
   processedSteps: any[] = [];
   processedAttachments: { type: string; remark: string }[] = [];
 
@@ -50,10 +54,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     this.dataSubscription = this.sharedDataService.formData$.subscribe(
       (data) => {
         if (data && Object.keys(data).length > 0) {
-          // Deep copy to avoid mutating shared state
           this.formData = JSON.parse(JSON.stringify(data));
 
-          // ✅ FIX: Remove Duplicate Languages before processing
           if (
             this.formData[1]?.languages &&
             Array.isArray(this.formData[1].languages)
@@ -66,9 +68,29 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
           this.processAllDataForView();
           this.isDataLoaded = true;
           this.loadDeclaration();
+
+          // ✅ Fetch fee status as soon as form data is ready
+          this.getFeeStatus();
         }
       }
     );
+  }
+
+  // ✅ Added method to fetch fee status for the PDF
+  getFeeStatus() {
+    if (!this.formData[1]) return;
+
+    const params = {
+      payee_id: this.formData[1]["registration_no"],
+      advertisement_id: this.formData[1]["a_rec_adv_main_id"]
+    };
+
+    this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
+      next: (result: any) => {
+        this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
+      },
+      error: (err) => console.error('Failed to load fee status for PDF', err)
+    });
   }
 
   ngOnDestroy(): void {
@@ -77,11 +99,9 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ✅ Helper to deduplicate languages based on ID
   private getUniqueLanguages(languages: any[]): any[] {
     const seen = new Set();
     return languages.filter((lang) => {
-      // Create a unique key based on language ID and Type ID
       const key = `${lang.m_rec_language_id}-${lang.m_rec_language_type_id}`;
       if (seen.has(key)) {
         return false;
@@ -91,24 +111,15 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ FIX: Robust check for File objects or strings to prevent [object Object]
   isFileValue(value: any): boolean {
-    // Case 1: It's a JavaScript File object (newly selected by user)
-    if (value instanceof File) {
-      return true;
-    }
-
-    // Case 2: It's an object containing file-like properties (common in some form structures)
+    if (value instanceof File) return true;
     if (
       typeof value === 'object' &&
       value !== null &&
       (value.name || value.size) &&
       !Array.isArray(value)
-    ) {
-      return true;
-    }
+    ) return true;
 
-    // Case 3: It's a string path from the database
     return (
       typeof value === 'string' &&
       (value.startsWith('recruitment/') || value === 'FILE_UPLOADED')
@@ -116,25 +127,10 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   formatValue(value: any): string {
-    if (this.isFileValue(value)) {
-      return '✓ File Uploaded';
-    }
-
-    if (value === null || value === undefined || value === '') {
-      return '—';
-    }
-
-    // If it's an array, join it nicely
-    if (Array.isArray(value)) {
-      return value.join(', ');
-    }
-
-    // ✅ FINAL SAFEGUARD: If it is still an object but NOT a file, return empty string
-    // instead of [object Object].
-    if (typeof value === 'object') {
-      return '';
-    }
-
+    if (this.isFileValue(value)) return '✓ File Uploaded';
+    if (value === null || value === undefined || value === '') return '—';
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') return '';
     return String(value);
   }
 
@@ -184,21 +180,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     const apiUrl = '/file/post/htmltoPdf';
     const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false, university_id : 2 };
     let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
-    // this.httpService.postBlob(apiUrl, payload, fileName, 'common').subscribe({
-    //   next: (res) => {
-    //     const a = document.createElement('a');
-    //     // Ensure body is not null before creating object URL
-    //     if (res.body) {
-    //       a.href = window.URL.createObjectURL(res.body);
-    //       a.click();
-    //     }
-    //     this.loader.hideLoader();
-    //   },
-    //   error: (err) => {
-    //     console.error('❌ PDF Generation Failed:', err);
-    //     this.loader.hideLoader();
-    //   },
-    // });
     this.httpService.postBlob(apiUrl, payload, fileName, "common").pipe(take(1)).subscribe(() => {
       console.log("PDF Generated");
       this.loader.hideLoader();
@@ -251,7 +232,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       .map((key) => {
         const stepData = this.formData[key];
 
-        // ❌ Skip language repeat (THIS FIXES YOUR ISSUE)
         if (stepData.languages && stepData.languages.length > 0) {
           return null;
         }
@@ -363,7 +343,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     if (!stepData || !stepData.subheadings) return [];
     return Object.keys(stepData.subheadings)
       .map((key) => {
-        if (!/^\d+_\d+_\d+$/.test(key)) return null; // Ensure it's an experience key
+        if (!/^\d+_\d+_\d+$/.test(key)) return null;
         const experiences = stepData[key] || [];
         if (experiences.length > 0) {
           return {

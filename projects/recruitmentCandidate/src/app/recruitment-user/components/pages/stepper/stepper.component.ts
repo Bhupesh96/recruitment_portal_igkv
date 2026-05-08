@@ -5,8 +5,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { Subscription } from 'rxjs';
 
 import { SharedDataService } from '../shared-data.service';
-import {AlertService, HttpService} from 'shared';
-import {RecruitmentStateService, UserRecruitmentData} from '../recruitment-state.service';
+import { AlertService, HttpService } from 'shared';
+import { RecruitmentStateService, UserRecruitmentData } from '../recruitment-state.service';
 
 import { Step1Component } from './step-1/step-1.component';
 import { Step2Component } from './step-2/step-2.component';
@@ -17,21 +17,20 @@ import { Step6Component } from './step-6/step-6.component';
 import { Step9Component } from './step-9/step-9.component';
 import { PdfDownloadComponent } from '../pdf-download/pdf-download.component';
 
+export interface StepDefinition {
+  compId: number;
+  name: string;
+  fieldId?: number; // Maps to m_rec_score_field_id from API
+  isMandatory?: boolean; // True for Personal Info & Final Submit
+}
+
 @Component({
   selector: 'app-stepper',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
-    ReactiveFormsModule,
-    Step1Component,
-    Step2Component,
-    Step3Component,
-    Step4Component,
-    Step5Component,
-    Step6Component,
-    Step9Component,
-    PdfDownloadComponent,
+    CommonModule, FormsModule, ReactiveFormsModule,
+    Step1Component, Step2Component, Step3Component, Step4Component,
+    Step5Component, Step6Component, Step9Component, PdfDownloadComponent,
   ],
   templateUrl: './stepper.component.html',
   styleUrls: ['./stepper.component.scss'],
@@ -55,28 +54,31 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild(Step5Component, { static: false }) step5Component?: Step5Component;
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
-
   @ViewChild('pdfDownloadComponent') pdfDownloadComponent!: PdfDownloadComponent;
 
-  steps = [
-    'Personal Info',
-    'Education',
-    'Academics',
-    'Publications',
-    'Experience',
-    'Performance',
-    'Preview & Submit',
+  // ✅ 1. Define the Master Mapping of your Steps to the API's m_rec_score_field_id
+  masterSteps: StepDefinition[] = [
+    { compId: 1, name: 'Personal Info', isMandatory: true }, // Always show
+    { compId: 2, name: 'Education', fieldId: 1 },            // Mapped to ID 1
+    { compId: 3, name: 'Academics', fieldId: 8 },            // Mapped to ID 8
+    // ⚠️ UPDATE the fieldIds below with the actual DB IDs for these steps
+    { compId: 4, name: 'Publications', fieldId: 3 },
+    { compId: 5, name: 'Experience', fieldId: 4 },
+    { compId: 6, name: 'Performance', fieldId: 5 },
+    { compId: 9, name: 'Preview & Submit', isMandatory: true } // Always show
   ];
 
-  currentStep = 1;
+  // The actual steps that will be rendered
+  activeSteps: StepDefinition[] = [];
+  currentStepIndex = 0; // Tracks position in activeSteps array
+
   formData: { [key: number]: { [key: string]: any } } = {};
-
   private printTriggered = false;
-
-  // State management flags
   isFinalDeclared = false;
   private userSub!: Subscription;
   private dbCheckDone = false;
+  isLoadingSteps = true; // Prevents UI from rendering until API maps steps
+
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
@@ -85,24 +87,63 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   ) {}
 
   ngOnInit(): void {
+    // Start by assuming only mandatory steps are active until API loads
+    this.activeSteps = this.masterSteps.filter(s => s.isMandatory);
 
     this.userSub = this.recruitmentStateService.userData$.subscribe((user: any) => {
       if (user) {
-        // If local state ALREADY says declared, just lock it.
+        // Fetch dynamic steps from API using user data
+        this.fetchDynamicSteps(user);
+
+        // Lock form if already declared
         if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
           this.isFinalDeclared = true;
-          this.currentStep = this.steps.length; // Jump directly to the final Preview step
-        }
-        // If local state says 'N' (like after a refresh), but we haven't checked the DB yet:
-        else if (user.registration_no && !this.dbCheckDone) {
-          this.dbCheckDone = true; // Mark as done so we don't spam the API
-          this.verifyLockStatusFromDB(user.registration_no); // Ask the DB!
+        } else if (user.registration_no && !this.dbCheckDone) {
+          this.dbCheckDone = true;
+          this.verifyLockStatusFromDB(user.registration_no);
         }
       }
     });
   }
 
-  // 3. Update this method to accept the registrationNo as an argument
+  // ✅ 2. Call API and filter master steps
+  fetchDynamicSteps(user: any) {
+    if (!user || !user.a_rec_adv_main_id) return;
+
+    // Build params for the API based on the logged-in user
+    const params = {
+      a_rec_adv_main_id: user.a_rec_adv_main_id,
+      post_code: user.post_code,
+      subject_id: user.subject_id,
+      m_rec_es_master_id: user.m_rec_es_master_id || 4 // Fallback to 4 based on your URL example
+    };
+
+    this.http.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
+      next: (res: any) => {
+        const apiData = res?.body?.data || res?.data || [];
+
+        // Extract all allowed field IDs
+        const allowedFieldIds = apiData.map((item: any) => item.m_rec_score_field_id);
+
+        // Filter the master list
+        this.activeSteps = this.masterSteps.filter(step =>
+          step.isMandatory || (step.fieldId && allowedFieldIds.includes(step.fieldId))
+        );
+
+        this.isLoadingSteps = false;
+
+        // If declared, force jump to the last step (Preview & Submit)
+        if (this.isFinalDeclared) {
+          this.currentStepIndex = this.activeSteps.length - 1;
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load calculation steps', err);
+        this.isLoadingSteps = false;
+      }
+    });
+  }
+
   verifyLockStatusFromDB(registrationNo: string | number) {
     this.http.getParam('/master/get/getApplicant', {
       registration_no: registrationNo,
@@ -110,12 +151,7 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     }, 'recruitement').subscribe({
       next: (res: any) => {
         const freshUser = res?.body?.data?.[0];
-
-        // If the DB says it's declared, force the global state to update!
         if (freshUser && (freshUser.Is_Final_Decl_YN === 'Y' || freshUser.is_final_decl_yn === 'Y')) {
-
-          // Updating the state will automatically trigger the subscription in ngOnInit,
-          // which will lock the stepper and hide the navigation.
           this.recruitmentStateService.updateUserData({ Is_Final_Decl_YN: 'Y' });
         }
       }
@@ -123,45 +159,36 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   ngOnDestroy(): void {
-    // Clean up memory to prevent leaks
-    if (this.userSub) {
-      this.userSub.unsubscribe();
-    }
+    if (this.userSub) this.userSub.unsubscribe();
   }
 
   ngAfterViewChecked(): void {
-    // If the print action was triggered and component is ready, print the PDF
     if (this.printTriggered && this.pdfDownloadComponent) {
       this.pdfDownloadComponent.downloadAsPdf();
       this.printTriggered = false;
     }
   }
 
-  /**
-   * Catches data emitted by child components.
-   * If in Preview Mode, immediately forwards the background-loaded data to the preview component.
-   */
-  updateFormData(step: number, data: { [key: string]: any }) {
-    this.formData[step] = { ...data };
-
+  updateFormData(compId: number, data: { [key: string]: any }) {
+    this.formData[compId] = { ...data };
     if (this.isFinalDeclared) {
       this.sharedDataService.setFormData(this.formData);
     }
   }
 
   async nextStep() {
-    if (this.isFinalDeclared) return; // Form is locked
+    if (this.isFinalDeclared) return;
+
+    const currentCompId = this.activeSteps[this.currentStepIndex].compId;
 
     try {
-      if (this.currentStep === this.steps.length) {
-        if (this.step9Component) {
-          await this.step9Component.submit();
-        }
+      // Trigger submission based on the ACTIVE component ID
+      if (currentCompId === 9) {
+        if (this.step9Component) await this.step9Component.submit();
         return;
       }
 
-      // Trigger child component validation/submit logic
-      switch (this.currentStep) {
+      switch (currentCompId) {
         case 1: if (this.step1Component) await this.step1Component.submitForm(); break;
         case 2: if (this.step2Component) await this.step2Component.submitForm(); break;
         case 3: if (this.step3Component) await this.step3Component.submit(); break;
@@ -170,56 +197,55 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
         case 6: if (this.step6Component) await this.step6Component.submit(); break;
       }
 
-      if (this.currentStep < this.steps.length) {
-        if (this.steps[this.currentStep] === 'Preview & Submit') {
-          // Push accumulated data to shared service for Step 9 to render
+      // Move to next step in the dynamic array
+      if (this.currentStepIndex < this.activeSteps.length - 1) {
+        const nextCompId = this.activeSteps[this.currentStepIndex + 1].compId;
+        if (nextCompId === 9) {
           this.sharedDataService.setFormData(this.formData);
         }
-        this.currentStep++;
+        this.currentStepIndex++;
       }
     } catch (error) {
-      console.error(`Validation or submission failed for step ${this.currentStep}:`, error);
+      console.error(`Validation failed for component ${currentCompId}:`, error);
     }
   }
 
   prevStep() {
-    if (this.isFinalDeclared) return; // Form is locked
-
-    if (this.currentStep > 1) {
-      this.currentStep--;
+    if (this.isFinalDeclared) return;
+    if (this.currentStepIndex > 0) {
+      this.currentStepIndex--;
     }
   }
 
-  goToStep(step: number) {
-    if (this.isFinalDeclared) return; // Form is locked
+  goToStep(index: number) {
+    if (this.isFinalDeclared) return;
 
-    if (this.isStepCompleted(step - 1) || step < this.currentStep) {
-      this.currentStep = step;
+    // Only allow jumping forward if previous step is valid, or jumping backward
+    if (this.isStepCompleted(index - 1) || index < this.currentStepIndex) {
+      this.currentStepIndex = index;
     }
   }
 
-  isStepCompleted(stepIndex: number): boolean {
-    if (this.isFinalDeclared) return true; // Show all completed visually if locked
-    const stepData = this.formData[stepIndex + 1];
+  isStepCompleted(index: number): boolean {
+    if (this.isFinalDeclared) return true;
+    if (index < 0) return true; // First step is implicitly reachable
+
+    const compId = this.activeSteps[index].compId;
+    const stepData = this.formData[compId];
     return !!(stepData && stepData['_isValid']);
   }
 
   onFinalSubmitSuccess() {
-    console.log('Final submit success.');
     this.isFinalDeclared = true;
+    this.currentStepIndex = this.activeSteps.length - 1;
   }
+
   triggerManualDownload() {
-    console.log('Manual download triggered.');
     if (this.pdfDownloadComponent) {
       this.pdfDownloadComponent.formData = this.formData;
-
-      // Use setTimeout to give Angular's change detection a split second
-      // to pass the formData into the PDF component before triggering the print
       setTimeout(() => {
         this.pdfDownloadComponent.downloadAsPdf();
       }, 100);
-    } else {
-      console.error('PDF component not found!');
     }
   }
 }
