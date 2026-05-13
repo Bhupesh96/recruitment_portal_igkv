@@ -1,290 +1,252 @@
-<div class="a4-container" #printSection [style.display]="isDataLoaded ? 'block' : 'none'">
+  <div class="a4-container" #printSection [style.display]="isDataLoaded ? 'block' : 'none'">
 
-  <!-- Header -->
-  <div class="header-section">
-    <div class="form-title">APPLICATION FORM FOR {{ formData[1]?.advertisment_name || "-" }}</div>
-  </div>
+    <!-- Header -->
+    <div class="header-section">
+      <div class="form-title">APPLICATION FORM FOR {{ formData[1]?.advertisment_name || "-" }}</div>
+    </div>
 
-  <!-- Top Info & Photo -->
-  <div
-    class="top-info-wrapper"
-    style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:20px;"
-  >
-
-    <!-- Main Info Box -->
+    <!-- Top Info & Photo -->
     <div
-      style="
-      flex:1;
-      border:1px solid #cfcfcf;
-      padding:18px 22px;
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      min-height:130px;
-    "
+      class="top-info-wrapper"
+      style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:20px;"
     >
 
-      <!-- Registration Details -->
-      <div>
+      <!-- Main Info Box -->
+      <div
+        style="
+        flex:1;
+        border:1px solid #cfcfcf;
+        padding:18px 22px;
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        min-height:130px;
+      "
+      >
+
+        <!-- Registration Details -->
         <div>
-          <span class="label" style="font-weight:bold;">Registration No.:</span>
-          {{ formData[1]?.registration_no || "-" }}
+          <div>
+            <span class="label" style="font-weight:bold;">Registration No.:</span>
+            {{ formData[1]?.registration_no || "-" }}
+          </div>
+
+          <div>
+            <span class="label" style="font-weight:bold;">Registration Date:</span>
+            {{ (formData[1]?.['action_date'] || userData?.['action_date']) | date:'dd-MM-yyyy' }}
+          </div>
+
+          <div>
+            <span class="label" style="font-weight:bold;">Applied Subject:</span>
+            {{ formData[1]?.Subject_Name_E || "-" }}
+          </div>
+
+          <div>
+            <span class="label" style="font-weight:bold;">Applied Post:</span>
+            {{ formData[1]?.post_name || "-" }}
+          </div>
         </div>
 
-        <div>
-          <span class="label" style="font-weight:bold;">Registration Date:</span>
-          {{ (formData[1]?.['action_date'] || userData?.['action_date']) | date:'dd-MM-yyyy' }}
-        </div>
+        <!-- Payment Details -->
+        <ng-container *ngIf="feeStatus?.transaction_status === 'S'">
+          <div
+            style="
+            padding-left:28px;
+            margin-left:auto;
+            border-left:1px dashed #bdbdbd;
+          "
+          >
+            <div>
+              <span class="label" style="font-weight:bold;">Reference No:</span>
+              {{ feeStatus.reference_no }}
+            </div>
 
-        <div>
-          <span class="label" style="font-weight:bold;">Applied Subject:</span>
-          {{ formData[1]?.Subject_Name_E || "-" }}
-        </div>
+            <div>
+              <span class="label" style="font-weight:bold;">Payment Date:</span>
+              {{ feeStatus.formatted_date }}
+            </div>
 
-        <div>
-          <span class="label" style="font-weight:bold;">Applied Post:</span>
-          {{ formData[1]?.post_name || "-" }}
-        </div>
+            <div>
+              <span class="label" style="font-weight:bold;">Amount Paid:</span>
+              Rs. {{ feeStatus.amount }}
+            </div>
+
+            <div>
+              <span class="label" style="font-weight:bold;">Bank Ref No:</span>
+              {{ feeStatus.bank_reff_no }}
+            </div>
+          </div>
+        </ng-container>
+
       </div>
 
-      <!-- Payment Details -->
-      <ng-container *ngIf="feeStatus?.transaction_status === 'S'">
-        <div
-          style="
-          padding-left:28px;
-          margin-left:auto;
-          border-left:1px dashed #bdbdbd;
-        "
-        >
-          <div>
-            <span class="label" style="font-weight:bold;">Reference No:</span>
-            {{ feeStatus.reference_no }}
-          </div>
-
-          <div>
-            <span class="label" style="font-weight:bold;">Payment Date:</span>
-            {{ feeStatus.formatted_date }}
-          </div>
-
-          <div>
-            <span class="label" style="font-weight:bold;">Amount Paid:</span>
-            Rs. {{ feeStatus.amount }}
-          </div>
-
-          <div>
-            <span class="label" style="font-weight:bold;">Bank Ref No:</span>
-            {{ feeStatus.bank_reff_no }}
-          </div>
-        </div>
-      </ng-container>
+      <!-- Photo -->
+      <div class="photo-box">
+        <img [src]="getFileUrl(formData[1]?.candidate_photo)" alt="Photo" />
+      </div>
 
     </div>
+    <!-- Applicant Basic Details -->
+    <div class="bordered-section">
+      <div class="section-heading-bar">Applicant Basic Detail</div>
 
-    <!-- Photo -->
-    <div class="photo-box">
-      <img [src]="getFileUrl(formData[1]?.candidate_photo)" alt="Photo" />
-    </div>
-
-  </div>
-  <!-- Applicant Basic Details -->
-  <div class="bordered-section">
-    <div class="section-heading-bar">Applicant Basic Detail</div>
-
-    <div class="details-flex">
-      <div class="detail-item"><span class="label">Full Name (Eng):</span>
-        {{ formData[1]?.Salutation_E_Name }} {{ formData[1]?.Applicant_First_Name_E }} {{ formData[1]?.Applicant_Middle_Name_E }} {{ formData[1]?.Applicant_Last_Name_E }}
-      </div>
-      <div class="detail-item"><span class="label">Full Name (Hin):</span>
-        {{ formData[1]?.Salutation_H_Name }} {{ formData[1]?.Applicant_First_Name_H }} {{ formData[1]?.Applicant_Middle_Name_H }} {{ formData[1]?.Applicant_Last_Name_H }}
-      </div>
-      <div class="detail-item"><span class="label">Gender:</span>
-        {{ formData[1]?.gender_id === "M" ? "Male" : formData[1]?.gender_id === "F" ? "Female" : "Other" }}
-      </div>
-      <div class="detail-item"><span class="label">Date of Birth:</span> {{ formData[1]?.DOB | date : "dd-MM-yyyy" }}</div>
-      <div class="detail-item"><span class="label">Age:</span> {{ formData[1]?.age }}</div>
-      <div class="detail-item"><span class="label">Father's Name:</span> {{ formData[1]?.Applicant_Father_Name_E }}</div>
-      <div class="detail-item"><span class="label">Mother's Name:</span> {{ formData[1]?.Applicant_Mother_Name_E }}</div>
-    </div>
-
-    <!-- Additional Info -->
-    <ng-container *ngIf="formData[1]?.additionalInfoDetails?.length > 0">
-      <div class="sub-section-heading-bar">Additional Information</div>
       <div class="details-flex">
-        <div class="detail-item" *ngFor="let item of formData[1].additionalInfoDetails">
-          <span class="label">{{ item.question }}:</span> {{ formatValue(item.answer) }}
+        <div class="detail-item"><span class="label">Full Name (Eng):</span>
+          {{ formData[1]?.Salutation_E_Name }} {{ formData[1]?.Applicant_First_Name_E }} {{ formData[1]?.Applicant_Middle_Name_E }} {{ formData[1]?.Applicant_Last_Name_E }}
         </div>
+        <div class="detail-item"><span class="label">Full Name (Hin):</span>
+          {{ formData[1]?.Salutation_H_Name }} {{ formData[1]?.Applicant_First_Name_H }} {{ formData[1]?.Applicant_Middle_Name_H }} {{ formData[1]?.Applicant_Last_Name_H }}
+        </div>
+        <div class="detail-item"><span class="label">Gender:</span>
+          {{ formData[1]?.gender_id === "M" ? "Male" : formData[1]?.gender_id === "F" ? "Female" : "Other" }}
+        </div>
+        <div class="detail-item"><span class="label">Date of Birth:</span> {{ formData[1]?.DOB | date : "dd-MM-yyyy" }}</div>
+        <div class="detail-item"><span class="label">Age:</span> {{ formData[1]?.age }}</div>
+        <div class="detail-item"><span class="label">Father's Name:</span> {{ formData[1]?.Applicant_Father_Name_E }}</div>
+        <div class="detail-item"><span class="label">Mother's Name:</span> {{ formData[1]?.Applicant_Mother_Name_E }}</div>
       </div>
-    </ng-container>
 
-    <!-- Permanent Address -->
-    <div class="sub-section-heading-bar">Permanent Address</div>
-    <div class="details-flex">
-      <div class="detail-item"><span class="label">Address:</span> {{ formData[1]?.Permanent_Address1 }}</div>
-      <div class="detail-item"><span class="label">City:</span> {{ formData[1]?.Permanent_City }}</div>
-      <div class="detail-item"><span class="label">District:</span> {{ formData[1]?.Permanent_District_Name }}</div>
-      <div class="detail-item"><span class="label">State:</span> {{ formData[1]?.Permanent_State_Name }}</div>
-      <div class="detail-item"><span class="label">Pincode:</span> {{ formData[1]?.Permanent_Pin_Code }}</div>
-    </div>
-
-    <!-- Present Address -->
-    <div class="sub-section-heading-bar">Present Address (For Correspondence)</div>
-    <div class="details-flex">
-      <div class="detail-item"><span class="label">Address:</span> {{ formData[1]?.Current_Address1 }}</div>
-      <div class="detail-item"><span class="label">City:</span> {{ formData[1]?.Current_City }}</div>
-      <div class="detail-item"><span class="label">District:</span> {{ formData[1]?.Current_District_Name }}</div>
-      <div class="detail-item"><span class="label">State:</span> {{ formData[1]?.Current_State_Name }}</div>
-      <div class="detail-item"><span class="label">Pincode:</span> {{ formData[1]?.Current_Pin_Code }}</div>
-      <div class="detail-item"><span class="label">Mobile Number:</span> {{ formData[1]?.Mobile_No }}</div>
-      <div class="detail-item"><span class="label">Email:</span> {{ formData[1]?.Email_Id }}</div>
-    </div>
-  </div>
-
-  <!-- Languages -->
-  <div class="bordered-section" *ngIf="formData[1]?.languages?.length > 0">
-    <div class="section-heading-bar">Language Detail</div>
-    <table>
-      <thead>
-      <tr>
-        <th style="width: 50px;">S.No.</th>
-        <th>Language Type</th>
-        <th>Language</th>
-        <th>Language Skill</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let lang of formData[1]?.languages; let i = index">
-        <td>{{ i + 1 }}</td>
-        <td>{{ lang.language_type }}</td>
-        <td>{{ lang.language_name }}</td>
-        <td>{{ lang.language_skill }}</td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Dynamic Steps (Education, Experience, Details) -->
-  <ng-container *ngFor="let step of processedSteps; let i = index">
-    <div class="bordered-section" [class.page-break-before]="i === 1"> <!-- Adjust break logic if needed -->
-      <div class="section-heading-bar">{{ step.heading }}</div>
-      <ng-container [ngSwitch]="step.type">
-        <ng-container *ngSwitchCase="'qualification'" [ngTemplateOutlet]="educationTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
-        <ng-container *ngSwitchCase="'experience'" [ngTemplateOutlet]="experienceTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
-        <ng-container *ngSwitchCase="'details'" [ngTemplateOutlet]="detailsTableTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
+      <!-- Additional Info -->
+      <ng-container *ngIf="formData[1]?.additionalInfoDetails?.length > 0">
+        <div class="sub-section-heading-bar">Additional Information</div>
+        <div class="details-flex">
+          <div class="detail-item" *ngFor="let item of formData[1].additionalInfoDetails">
+            <span class="label">{{ item.question }}:</span> {{ formatValue(item.answer) }}
+          </div>
+        </div>
       </ng-container>
-    </div>
-  </ng-container>
 
-  <!-- Attachments -->
-  <div class="bordered-section" *ngIf="processedAttachments.length > 0">
-    <div class="section-heading-bar">OTHER ATTACHMENTS</div>
-    <table>
-      <thead>
-      <tr>
-        <th style="width: 50px;">S.No.</th>
-        <th>Attachment Type</th>
-        <th>Remark</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr *ngFor="let attachment of processedAttachments; let i = index">
-        <td>{{ i + 1 }}</td>
-        <td>{{ attachment.type }}</td>
-        <td>{{ attachment.remark }}</td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+      <!-- Permanent Address -->
+      <div class="sub-section-heading-bar">Permanent Address</div>
+      <div class="details-flex">
+        <div class="detail-item"><span class="label">Address:</span> {{ formData[1]?.Permanent_Address1 }}</div>
+        <div class="detail-item"><span class="label">City:</span> {{ formData[1]?.Permanent_City }}</div>
+        <div class="detail-item"><span class="label">District:</span> {{ formData[1]?.Permanent_District_Name }}</div>
+        <div class="detail-item"><span class="label">State:</span> {{ formData[1]?.Permanent_State_Name }}</div>
+        <div class="detail-item"><span class="label">Pincode:</span> {{ formData[1]?.Permanent_Pin_Code }}</div>
+      </div>
 
-  <!-- Declarations & Signatures -->
-  <div class="bordered-section">
-    <div class="section-heading-bar">DECLARATION</div>
-    <div class="declaration-content">
-      <div [innerHTML]="declarationText"></div>
-
-      <div class="signature-container">
-        <div class="place-date-box">
-          <div><span class="label">Place:</span> ___________________</div>
-          <div><span class="label">Date:</span> ___________________</div>
-        </div>
-        <div class="signature-box">
-          <img *ngIf="formData[1]?.candidate_signature" [src]="getFileUrl(formData[1]?.candidate_signature)" alt="Signature" class="signature-img" />
-          <div class="signature-line">Signature of the Applicant</div>
-        </div>
+      <!-- Present Address -->
+      <div class="sub-section-heading-bar">Present Address (For Correspondence)</div>
+      <div class="details-flex">
+        <div class="detail-item"><span class="label">Address:</span> {{ formData[1]?.Current_Address1 }}</div>
+        <div class="detail-item"><span class="label">City:</span> {{ formData[1]?.Current_City }}</div>
+        <div class="detail-item"><span class="label">District:</span> {{ formData[1]?.Current_District_Name }}</div>
+        <div class="detail-item"><span class="label">State:</span> {{ formData[1]?.Current_State_Name }}</div>
+        <div class="detail-item"><span class="label">Pincode:</span> {{ formData[1]?.Current_Pin_Code }}</div>
+        <div class="detail-item"><span class="label">Mobile Number:</span> {{ formData[1]?.Mobile_No }}</div>
+        <div class="detail-item"><span class="label">Email:</span> {{ formData[1]?.Email_Id }}</div>
       </div>
     </div>
 
-    <div class="section-heading-bar" style="border-top: 1px solid #000;">REMARKS OF THE PRESENT EMPLOYER</div>
-    <div class="declaration-content">
-      <div style="font-weight: bold; margin-bottom: 10px;">(In case of those who are already in service)</div>
-      <p>
-        The applicant <strong>{{ formData[1]?.Salutation_E_Name }} {{ formData[1]?.Applicant_First_Name_E }} {{ formData[1]?.Applicant_Middle_Name_E }} {{ formData[1]?.Applicant_Last_Name_E }}</strong>
-        is holding a permanent/temporary post of <span class="underline-fill">&nbsp;</span> in the scale of Rs. <span class="underline-fill">&nbsp;</span> per month.
-        His/Her application is forwarded and he/she will be relieved in case he/she is selected for the post applied for.
-      </p>
+    <!-- Languages -->
+    <div class="bordered-section" *ngIf="formData[1]?.languages?.length > 0">
+      <div class="section-heading-bar">Language Detail</div>
+      <table>
+        <thead>
+        <tr>
+          <th style="width: 50px;">S.No.</th>
+          <th>Language Type</th>
+          <th>Language</th>
+          <th>Language Skill</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let lang of formData[1]?.languages; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ lang.language_type }}</td>
+          <td>{{ lang.language_name }}</td>
+          <td>{{ lang.language_skill }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <div class="signature-container">
-        <div class="place-date-box">
-          <div><span class="label">Place:</span> ___________________</div>
-          <div><span class="label">Date:</span> ___________________</div>
+    <!-- Dynamic Steps (Education, Experience, Details) -->
+    <ng-container *ngFor="let step of processedSteps; let i = index">
+      <div class="bordered-section" [class.page-break-before]="i === 1"> <!-- Adjust break logic if needed -->
+        <div class="section-heading-bar">{{ step.heading }}</div>
+        <ng-container [ngSwitch]="step.type">
+          <ng-container *ngSwitchCase="'qualification'" [ngTemplateOutlet]="educationTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
+          <ng-container *ngSwitchCase="'experience'" [ngTemplateOutlet]="experienceTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
+          <ng-container *ngSwitchCase="'details'" [ngTemplateOutlet]="detailsTableTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
+        </ng-container>
+      </div>
+    </ng-container>
+
+    <!-- Attachments -->
+    <div class="bordered-section" *ngIf="processedAttachments.length > 0">
+      <div class="section-heading-bar">OTHER ATTACHMENTS</div>
+      <table>
+        <thead>
+        <tr>
+          <th style="width: 50px;">S.No.</th>
+          <th>Attachment Type</th>
+          <th>Remark</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let attachment of processedAttachments; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ attachment.type }}</td>
+          <td>{{ attachment.remark }}</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Declarations & Signatures -->
+    <div class="bordered-section">
+      <div class="section-heading-bar">DECLARATION</div>
+      <div class="declaration-content">
+        <div [innerHTML]="declarationText"></div>
+
+        <div class="signature-container">
+          <div class="place-date-box">
+            <div><span class="label">Place:</span> ___________________</div>
+            <div><span class="label">Date:</span> ___________________</div>
+          </div>
+          <div class="signature-box" style="display: flex; flex-direction: column; align-items: center;">
+            <img *ngIf="formData[1]?.candidate_signature"
+                 [src]="getFileUrl(formData[1]?.candidate_signature)"
+                 alt="Signature"
+                 class="signature-img"
+                 style="margin-bottom: -20px; max-height: 50px; display: block;" />
+            <div class="signature-line" style="border-top: 1px solid #000; padding-top: 5px; min-width: 150px; text-align: center;">
+              Signature of the Applicant
+            </div>
+          </div>
         </div>
-        <div class="signature-box">
-          <div class="signature-line" style="margin-top: 60px;">Signature & Designation of Officer<br>(with official Seal)</div>
+      </div>
+
+      <div class="section-heading-bar" style="border-top: 1px solid #000;">REMARKS OF THE PRESENT EMPLOYER</div>
+      <div class="declaration-content">
+        <div style="font-weight: bold; margin-bottom: 10px;">(In case of those who are already in service)</div>
+        <p>
+          The applicant <strong>{{ formData[1]?.Salutation_E_Name }} {{ formData[1]?.Applicant_First_Name_E }} {{ formData[1]?.Applicant_Middle_Name_E }} {{ formData[1]?.Applicant_Last_Name_E }}</strong>
+          is holding a permanent/temporary post of <span class="underline-fill">&nbsp;</span> in the scale of Rs. <span class="underline-fill">&nbsp;</span> per month.
+          His/Her application is forwarded and he/she will be relieved in case he/she is selected for the post applied for.
+        </p>
+
+        <div class="signature-container">
+          <div class="place-date-box">
+            <div><span class="label">Place:</span> ___________________</div>
+            <div><span class="label">Date:</span> ___________________</div>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line" style="margin-top: 60px;">Signature & Designation of Officer<br>(with official Seal)</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ================= TEMPLATES ================= -->
+  <!-- ================= TEMPLATES ================= -->
 
-<ng-template #educationTemplate let-sections="sections">
-  <ng-container *ngIf="sections.length > 0; else noDataTemplate">
-    <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title }}</div>
-      <table>
-        <thead>
-        <tr>
-          <th *ngFor="let header of section.headers">{{ formatHeader(header) }}</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let detail of section.qualifications">
-          <td *ngFor="let header of section.headers">{{ formatValue(detail[header]) }}</td>
-        </tr>
-        </tbody>
-      </table>
-    </ng-container>
-  </ng-container>
-</ng-template>
-
-<ng-template #detailsTableTemplate let-sections="sections">
-  <ng-container *ngIf="sections.length > 0; else noDataTemplate">
-    <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title }}</div>
-      <table>
-        <thead>
-        <tr>
-          <th *ngFor="let header of section.headers">{{ formatHeader(header) }}</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr *ngFor="let detail of section.details">
-          <td *ngFor="let header of section.headers">
-            <span style="font-weight: bold;" *ngIf="isFileValue(detail[header])">✓ File Uploaded</span>
-            <ng-container *ngIf="!isFileValue(detail[header])">{{ formatValue(detail[header]) }}</ng-container>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-    </ng-container>
-  </ng-container>
-</ng-template>
-
-<ng-template #experienceTemplate let-sections="sections">
-  <ng-container *ngIf="sections.length > 0; else noDataTemplate">
-    <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title }}</div>
-      <ng-container *ngIf="section.experiences.length > 0; else noDataTemplate">
+  <ng-template #educationTemplate let-sections="sections">
+    <ng-container *ngIf="sections.length > 0; else noDataTemplate">
+      <ng-container *ngFor="let section of sections">
+        <div class="sub-section-heading-bar">{{ section.title }}</div>
         <table>
           <thead>
           <tr>
@@ -292,16 +254,60 @@
           </tr>
           </thead>
           <tbody>
-          <tr *ngFor="let experience of section.experiences">
-            <td *ngFor="let header of section.headers">{{ formatValue(experience[header]) }}</td>
+          <tr *ngFor="let detail of section.qualifications">
+            <td *ngFor="let header of section.headers">{{ formatValue(detail[header]) }}</td>
           </tr>
           </tbody>
         </table>
       </ng-container>
     </ng-container>
-  </ng-container>
-</ng-template>
+  </ng-template>
 
-<ng-template #noDataTemplate>
-  <div style="padding: 10px 15px; font-style: italic; color: #555;">Not Filled</div>
-</ng-template>
+  <ng-template #detailsTableTemplate let-sections="sections">
+    <ng-container *ngIf="sections.length > 0; else noDataTemplate">
+      <ng-container *ngFor="let section of sections">
+        <div class="sub-section-heading-bar">{{ section.title }}</div>
+        <table>
+          <thead>
+          <tr>
+            <th *ngFor="let header of section.headers">{{ formatHeader(header) }}</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let detail of section.details">
+            <td *ngFor="let header of section.headers">
+              <span style="font-weight: bold;" *ngIf="isFileValue(detail[header])">✓ File Uploaded</span>
+              <ng-container *ngIf="!isFileValue(detail[header])">{{ formatValue(detail[header]) }}</ng-container>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </ng-container>
+    </ng-container>
+  </ng-template>
+
+  <ng-template #experienceTemplate let-sections="sections">
+    <ng-container *ngIf="sections.length > 0; else noDataTemplate">
+      <ng-container *ngFor="let section of sections">
+        <div class="sub-section-heading-bar">{{ section.title }}</div>
+        <ng-container *ngIf="section.experiences.length > 0; else noDataTemplate">
+          <table>
+            <thead>
+            <tr>
+              <th *ngFor="let header of section.headers">{{ formatHeader(header) }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr *ngFor="let experience of section.experiences">
+              <td *ngFor="let header of section.headers">{{ formatValue(experience[header]) }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+  </ng-template>
+
+  <ng-template #noDataTemplate>
+    <div style="padding: 10px 15px; font-style: italic; color: #555;">Not Filled</div>
+  </ng-template>

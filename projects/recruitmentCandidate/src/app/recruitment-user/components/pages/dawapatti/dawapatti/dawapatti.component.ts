@@ -691,7 +691,7 @@ export class DawapattiComponent implements OnInit {
     appMainId: number,
     candidateAppMainId: number
   ): void {
-    const scoreFieldIds = [1, 8, 34, 18, 32];
+    const scoreFieldIds = [1, 8, 34, 3096, 32];
 
     // 1. Prepare Parent Requests (Top Level Headings)
     const parentRequests = scoreFieldIds.map((id) =>

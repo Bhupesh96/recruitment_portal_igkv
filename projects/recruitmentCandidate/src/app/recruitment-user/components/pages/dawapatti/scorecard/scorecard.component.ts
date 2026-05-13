@@ -238,7 +238,7 @@ export class ScorecardComponent implements OnInit {
     appMainId: number, // This is the 'E' record ID (e.g., 58)
     candidateAppMainId: number // ✅ This is the 'C' record ID (e.g., 12)
   ): void {
-    const scoreFieldIds = [1, 8, 34, 18, 32];
+    const scoreFieldIds = [1, 8, 34, 3096, 32];
 
     // --- Part A: Get the Scoring *Structure* ---
     const parentRequests = scoreFieldIds.map((id) =>
