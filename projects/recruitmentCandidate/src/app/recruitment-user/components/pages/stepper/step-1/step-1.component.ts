@@ -19,7 +19,7 @@ import {
   ValidatorFn,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import {HttpClient, HttpClientModule} from '@angular/common/http';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -133,6 +133,7 @@ export class Step1Component implements OnChanges, OnInit {
   constructor(
     private fb: FormBuilder,
     private HTTP: HttpService, // Use HttpService directly
+    private http : HttpClient,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private alert: AlertService,
@@ -646,9 +647,7 @@ export class Step1Component implements OnChanges, OnInit {
 
     // Fetch Districts based on State IDs
     if (data.Permanent_State_Id) {
-      requests['permanentDist'] = this.getDistrictsByState(
-        data.Permanent_State_Id
-      );
+      requests['permanentDist'] = this.getDistrictsByState(data.Permanent_State_Id);
     }
     if (data.Current_State_Id) {
       requests['currentDist'] = this.getDistrictsByState(data.Current_State_Id);
@@ -658,19 +657,24 @@ export class Step1Component implements OnChanges, OnInit {
     }
 
     // --- 3. Fetch Dependent Lists then Patch Form ---
-    // Check if we have any requests to make
     const hasRequests = Object.keys(requests).length > 0;
     const loader$ = hasRequests ? forkJoin(requests) : of({});
 
     loader$.subscribe({
       next: (responses: any) => {
-        // A. Populate Lists
+        // A. Populate Lists First
         if (responses.posts) {
           this.postList = responses.posts.body?.data || [];
         }
+
+        // ⭐ CRITICAL FIX 1: Map the subject IDs to strict Numbers immediately
         if (responses.subjects) {
-          this.subjectList = responses.subjects.body?.data || [];
+          this.subjectList = (responses.subjects.body?.data || []).map((s: any) => ({
+            ...s,
+            subject_id: Number(s.subject_id)
+          }));
         }
+
         if (responses.permanentDist) {
           this.permanentDistrictList = responses.permanentDist.body?.data || [];
         }
@@ -681,12 +685,26 @@ export class Step1Component implements OnChanges, OnInit {
           this.birthDistrictList = responses.birthDist.body?.data || [];
         }
 
-        // B. Patch Form Values (Now that lists are ready)
+        // ⭐ CRITICAL FIX 2: Ensure the UI knows a subject dropdown is needed
+        // We check 'data.subject_id' here because if they have a subject, we must show it.
+        if (data.subject_id) {
+          this.showSubjectDropdown = true;
+          this.form.get('subject_id')?.enable(); // Ensure it's enabled if needed (based on your disabled state logic)
+        }
+
+        // Force Angular to render the newly populated dropdown lists into the DOM
+        // BEFORE we attempt to patch the form values.
+        this.cdr.detectChanges();
+
+        // B. Patch Form Values (Now that lists are in the DOM)
         this.form.patchValue(
           {
             a_rec_app_main_id: data.a_rec_app_main_id,
             post_code: data.post_code,
-            subject_id: data.subject_id || null,
+
+            // ⭐ CRITICAL FIX 3: Patch strictly as a Number to match the mapped list
+            subject_id: data.subject_id ? Number(data.subject_id) : null,
+
             registration_no: data.registration_no,
             a_rec_adv_main_id: data.a_rec_adv_main_id,
             session_id: data.academic_session_id,
@@ -728,14 +746,12 @@ export class Step1Component implements OnChanges, OnInit {
         );
 
         // ✅ MANUALLY CALCULATE AGE
-        // Because emitEvent is false, the valueChanges listener won't fire.
-        // We must trigger this manually so the Age field populates.
         const dobValue = this.form.get('DOB')?.value;
         if (dobValue) {
           this.calculateAge(dobValue);
         }
 
-        // C. Trigger UI Update
+        // C. Trigger final UI Update
         this.cdr.markForCheck();
         this.emitFormData();
       },
@@ -745,7 +761,6 @@ export class Step1Component implements OnChanges, OnInit {
         // Even if dependent data fails, try to patch what we can
         this.form.patchValue(data, { emitEvent: false });
 
-        // ✅ ALSO CALCULATE AGE IN ERROR HANDLER
         const dobValue = this.form.get('DOB')?.value;
         if (dobValue) {
           this.calculateAge(dobValue);
