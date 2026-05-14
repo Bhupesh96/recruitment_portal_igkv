@@ -1794,20 +1794,24 @@ export class Step1Component implements OnChanges, OnInit {
   }
 
   translateToHindi(text: string): Observable<string | null> {
-    return this.HTTP.getParam(
-      '/master/get/getTransliterationHindi',
-      { text },
-      'recruitement'
-    ).pipe(
+    // 1. Point directly to Google's API
+    const url = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1`;
+
+    // 2. Use Angular's standard `this.http` instead of your custom `this.HTTP` wrapper.
+    // This ensures no custom backend headers or base URLs are accidentally attached.
+    return this.http.get(url).pipe(
       map((response: any) => {
-        const transliteration = response?.body?.data?.transliteration;
-        // ✅ Return the value on success, or null if not found
-        return transliteration || null;
+        // 3. Parse the specific array structure Google returns
+        if (response && response[0] === 'SUCCESS') {
+          const transliteratedWord = response[1][0][1][0];
+          return transliteratedWord || null;
+        }
+        return null;
       }),
       catchError((err) => {
-        // ✅ On network error, re-throw the error to be caught by the subscribe block
-        console.error('Transliteration API error:', err);
-        throw err;
+        // 4. If it fails (e.g., user loses internet), log it but don't break the form
+        console.error('Google Transliteration API error:', err);
+        return of(null);
       })
     );
   }
