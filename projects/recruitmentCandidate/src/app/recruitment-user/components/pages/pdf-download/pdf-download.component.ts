@@ -160,7 +160,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     let contentHtml = this.printContentRef.nativeElement.outerHTML;
     const baseUrl = window.location.origin;
     contentHtml = contentHtml.replace(
-      'src="assets/igkv_logo.png"',
+      'src="igkv_logo.png"',
       `src="${baseUrl}igkv_logo.png"`
     );
 
