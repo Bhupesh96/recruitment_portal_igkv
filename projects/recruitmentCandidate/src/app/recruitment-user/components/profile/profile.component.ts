@@ -534,7 +534,7 @@ export class Step1Component implements OnChanges, OnInit {
     });
 
     this.step1Service.getReligions().subscribe({
-      next: (response) => {
+      next: (response : any) => {
         this.religionList = response?.body?.data || [];
       },
       error: (err) => {
@@ -681,7 +681,7 @@ private buildAdditionalInfoFormControls(questions: any[]): void {
         question.options.forEach((option: any) => {
           // Check if this option was the one selected
           const isSelected = option.option_value === selectedValue;
-          
+
           if (option.has_condition === 'Y') {
             option.conditions.forEach((condition: any) => {
               const conditionControl = this.form.get(`condition_${condition.condition_id}`);

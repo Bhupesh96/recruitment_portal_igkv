@@ -56,6 +56,14 @@ export class Step1Component implements OnChanges, OnInit {
     { propertyName: 'languageSkills', queryId: 118 },
     { propertyName: 'advertisementList', queryId: 108 },
   ];
+  // ✅ NEW: Map to convert the numeric category_id from state service to the string used in radio buttons
+  private reverseCategoryMap: { [key: number]: string } = {
+    1: 'UR',
+    2: 'OBC',
+    3: 'SC',
+    4: 'ST',
+    5: 'EWS',
+  };
   form: FormGroup;
   showSubjectDropdown = false;
   salutations: any[] = [];
@@ -368,40 +376,48 @@ export class Step1Component implements OnChanges, OnInit {
       })
     );
   }
+//  REVISED: Locks Category logic
   private setupCustomLogicListeners(): void {
     const residentControl = this.form.get('question_3');
     const categoryControl = this.form.get('question_2');
 
-    // Exit if controls aren't available (defensive check)
     if (!residentControl || !categoryControl || !this.categoryQuestion) {
       console.error('Required controls for custom logic were not found.');
       return;
     }
 
-    // This is the core logic that filters the options
+    // Grab the locked category id from the State Service
+    const initialUserData = this.recruitmentState.getCurrentUserData();
+
+    // ✅ FIX: Use bracket notation ['category_id'] to resolve the TS4111 error
+    const lockedCategoryString = initialUserData?.['category_id']
+      ? this.reverseCategoryMap[initialUserData['category_id']]
+      : null;
+
     const updateCategoryOptions = (isResident: string | null) => {
       if (isResident === 'N') {
-        // NOT a resident
+        // Force UR if NOT a bonafide resident
         this.filteredCategoryOptions = this.categoryQuestion.options.filter(
           (opt: any) => opt.option_value === 'UR'
         );
-        // If the current selection is not 'UR', change it to 'UR'
         if (categoryControl.value !== 'UR') {
           categoryControl.setValue('UR');
         }
       } else {
-        // IS a resident (or value is null/undefined initially)
-        // Show all available options
+        // If they are a resident, show all options and strictly enforce their registered category
         this.filteredCategoryOptions = this.categoryQuestion.options;
+        if (lockedCategoryString && categoryControl.value !== lockedCategoryString) {
+          categoryControl.setValue(lockedCategoryString);
+        }
       }
-      // Tell Angular to update the view
+
+      // 🔒 CRITICAL: Lock the category control so the user cannot manually alter it.
+      categoryControl.disable({ emitEvent: false });
+
       this.cdr.markForCheck();
     };
 
-    // 1. Subscribe to any future changes the user makes
     residentControl.valueChanges.subscribe(updateCategoryOptions);
-
-    // 2. Call the logic immediately to set the correct initial state
     updateCategoryOptions(residentControl.value);
   }
   private initializeFormListeners(): void {
@@ -1209,13 +1225,14 @@ export class Step1Component implements OnChanges, OnInit {
   }
   public handleRadioChange(controlName: string, value: any): void {
     const control = this.form.get(controlName);
-    if (control) {
+
+    // EXTRA SECURITY: Ignore changes if the control is locked/disabled
+    if (control && !control.disabled) {
       control.setValue(value);
       control.markAsTouched();
       this.cdr.detectChanges();
     }
   }
-
   public getSelectedOption(question: any): any | null {
     const control = this.form.get(`question_${question.question_id}`);
     if (!control || !control.value) {
@@ -1431,23 +1448,28 @@ export class Step1Component implements OnChanges, OnInit {
       });
     });
   }
-
-  // --- Utility & Helper Methods ---
+// --- Utility & Helper Methods ---
   onCharacterInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const initialValue = input.value;
 
-    // This regex removes anything that is NOT a letter or a space
-    const sanitizedValue = initialValue.replace(/[^a-zA-Z\s]/g, '');
+    // 1. Remove non-letters/spaces, convert to UPPERCASE
+    let sanitizedValue = initialValue.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
 
-    if (initialValue !== sanitizedValue) {
-      // Get the form control name from the input element's id or name attribute
-      const formControlName = input.getAttribute('formControlName');
-      if (formControlName) {
-        this.form
-          .get(formControlName)
-          ?.setValue(sanitizedValue, { emitEvent: false });
-      }
+    // 2. Prevent double-spaces, but ALLOW single spaces so the user can type!
+    sanitizedValue = sanitizedValue.replace(/\s{2,}/g, ' ');
+
+    // 3. Update the input field visually right away
+    if (input.value !== sanitizedValue) {
+      input.value = sanitizedValue;
+    }
+
+    // 4. Update the form control WITHOUT .trim() so the spacebar works!
+    const formControlName = input.getAttribute('formControlName');
+    if (formControlName) {
+      this.form
+        .get(formControlName)
+        ?.setValue(sanitizedValue, { emitEvent: false });
     }
   }
   onNumericInput(event: Event, controlName: string): void {

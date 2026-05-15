@@ -51,6 +51,7 @@ export class RecruitmentStateService {
         a_rec_adv_main_id: currentUser.a_rec_adv_main_id,
         post_code: currentUser.post_code,
         subject_id: currentUser.subject_id,
+        category_id: currentUser.category_id,
         academic_session_id: currentUser.academic_session_id,
         a_rec_app_main_id: currentUser.a_rec_app_main_id,
         ...currentUser, // Spread the rest of the properties from the original object

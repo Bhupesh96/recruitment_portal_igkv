@@ -1,4 +1,4 @@
-<form [formGroup]="form" class="w-full font-['Source Sans Pro',sans-serif]">
+<form [formGroup]="form" class="w-full font-['Source Sans Pro',sans-serif]" autocomplete="none">
   <div class="space-y-8 text-base text-gray-700">
     <!-- Applicant Name Section -->
     <div class="space-y-4 border border-gray-300 rounded-lg p-6 bg-white shadow-sm">
@@ -53,6 +53,7 @@
           <input
             formControlName="Applicant_First_Name_E"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Applicant_First_Name_E')?.invalid &&
               form.get('Applicant_First_Name_E')?.touched
@@ -77,6 +78,7 @@
           <input
             formControlName="Applicant_Middle_Name_E"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
             placeholder="Middle name"
           />
@@ -88,6 +90,7 @@
           <input
             formControlName="Applicant_Last_Name_E"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
             placeholder="Last name"
           />
@@ -132,6 +135,7 @@
               form.get('Applicant_First_Name_H')?.invalid &&
               form.get('Applicant_First_Name_H')?.touched
             "
+            autocomplete="none"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
             placeholder="First name (Hindi)"
           />
@@ -151,6 +155,7 @@
           >
           <input
             formControlName="Applicant_Middle_Name_H"
+            autocomplete="none"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
             placeholder="Middle name (Hindi)"
           />
@@ -161,6 +166,7 @@
           >
           <input
             formControlName="Applicant_Last_Name_H"
+            autocomplete="none"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
             placeholder="Last name (Hindi)"
           />
@@ -328,6 +334,7 @@
           <input
             formControlName="Applicant_Father_Name_E"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Applicant_Father_Name_E')?.invalid &&
               form.get('Applicant_Father_Name_E')?.touched
@@ -352,6 +359,7 @@
           <input
             formControlName="Applicant_Mother_Name_E"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Applicant_Mother_Name_E')?.invalid &&
               form.get('Applicant_Mother_Name_E')?.touched
@@ -404,6 +412,7 @@
           <input
             formControlName="Identification_Mark1"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Identification_Mark1')?.invalid &&
               form.get('Identification_Mark1')?.touched
@@ -428,6 +437,7 @@
           <input
             formControlName="Identification_Mark2"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Identification_Mark2')?.invalid &&
               form.get('Identification_Mark2')?.touched
@@ -469,6 +479,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ng-container *ngFor="let question of additionalQuestions">
+
           <ng-container *ngIf="question.question_id === 2">
             <div
               *ngIf="form.get('question_3')?.value"
@@ -476,13 +487,13 @@
             >
               <div>
                 <label class="block mb-1.5 text-gray-800 text-base font-medium">
-                  {{ question.question_label
-                  }}<span class="text-red-700 ml-1">*</span>
+                  {{ question.question_label }}<span class="text-red-700 ml-1">*</span>
                 </label>
                 <div class="flex items-center gap-4 flex-wrap mt-2">
                   <label
                     *ngFor="let option of filteredCategoryOptions"
-                    class="flex items-center cursor-pointer text-base"
+                    class="flex items-center text-base"
+                    [ngClass]="form.get('question_' + question.question_id)?.disabled ? 'cursor-not-allowed opacity-100' : 'cursor-pointer'"
                   >
                     <input
                       type="radio"
@@ -492,13 +503,14 @@
                         form.get('question_' + question.question_id)?.value ===
                         option.option_value
                       "
+                      [disabled]="form.get('question_' + question.question_id)?.disabled"
                       (change)="
                         handleRadioChange(
                           'question_' + question.question_id,
                           option.option_value
                         )
                       "
-                      class="mr-2 w-4 h-4 text-blue-700 focus:ring-blue-700"
+                      class="mr-2 w-4 h-4 text-blue-700 focus:ring-blue-700 disabled:cursor-not-allowed"
                     />
                     {{ option.option_label }}
                   </label>
@@ -597,8 +609,7 @@
             <div class="flex flex-col space-y-2">
               <div>
                 <label class="block mb-1.5 text-gray-800 text-base font-medium">
-                  {{ question.question_label
-                  }}<span
+                  {{ question.question_label }}<span
                   *ngIf="question.is_required === 'Y'"
                   class="text-red-700 ml-1"
                 >*</span
@@ -607,7 +618,8 @@
                 <div class="flex items-center gap-4 flex-wrap mt-2">
                   <label
                     *ngFor="let option of question.options"
-                    class="flex items-center cursor-pointer text-base"
+                    class="flex items-center text-base"
+                    [ngClass]="form.get('question_' + question.question_id)?.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
                   >
                     <input
                       type="radio"
@@ -617,13 +629,14 @@
                         form.get('question_' + question.question_id)?.value ===
                         option.option_value
                       "
+                      [disabled]="form.get('question_' + question.question_id)?.disabled"
                       (change)="
                         handleRadioChange(
                           'question_' + question.question_id,
                           option.option_value
                         )
                       "
-                      class="mr-2 w-4 h-4 text-blue-700 focus:ring-blue-700"
+                      class="mr-2 w-4 h-4 text-blue-700 focus:ring-blue-700 disabled:cursor-not-allowed"
                     />
                     {{ option.option_label }}
                   </label>
@@ -833,6 +846,7 @@
           <input
             formControlName="Permanent_Address1"
             type="text"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Permanent_Address1')?.invalid &&
               form.get('Permanent_Address1')?.touched
@@ -857,6 +871,7 @@
           <input
             formControlName="Permanent_City"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Permanent_City')?.invalid &&
               form.get('Permanent_City')?.touched
@@ -969,6 +984,7 @@
             type="text"
             maxlength="6"
             inputmode="numeric"
+            autocomplete="none"
             formControlName="Permanent_Pin_Code"
             (input)="onNumericInput($event, 'Permanent_Pin_Code')"
             [class.border-red-600]="
@@ -1008,10 +1024,10 @@
 
       <!-- Present Address Section -->
       <h6
-        class="text-base font-semibold text-gray-800 flex items-center gap-2 mt-6 mb-4"
+        class="bg-blue-100 border border-blue-200 rounded-md px-3 py-3 text-base font-semibold text-blue-800 flex items-center gap-2 mb-4"
       >
         <svg
-          class="h-5 w-5 text-gray-600"
+          class="h-5 w-5 text-blue-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -1039,6 +1055,7 @@
           <input
             formControlName="Current_Address1"
             input="text"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Current_Address1')?.invalid &&
               form.get('Current_Address1')?.touched
@@ -1063,6 +1080,7 @@
           <input
             formControlName="Current_City"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Current_City')?.invalid &&
               form.get('Current_City')?.touched
@@ -1176,6 +1194,7 @@
           <input
             type="text"
             maxlength="6"
+            autocomplete="none"
             inputmode="numeric"
             formControlName="Current_Pin_Code"
             (input)="onNumericInput($event, 'Current_Pin_Code')"
@@ -1316,6 +1335,7 @@
           <input
             formControlName="Birth_Place"
             (input)="onCharacterInput($event)"
+            autocomplete="none"
             [class.border-red-600]="
               form.get('Birth_Place')?.invalid &&
               form.get('Birth_Place')?.touched
