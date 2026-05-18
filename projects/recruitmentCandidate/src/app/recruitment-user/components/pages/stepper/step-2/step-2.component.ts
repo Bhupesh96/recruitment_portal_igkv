@@ -25,6 +25,7 @@
     RecruitmentStateService,
     UserRecruitmentData,
   } from '../../recruitment-state.service';
+  import * as CryptoJS from 'crypto-js';
   import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
   import { environment } from 'environment';
   interface Heading {
@@ -833,8 +834,29 @@
 
       return `recruitment/${registrationNo}/${fileName}`;
     }
+    /**
+     * Generates a SHA-256 hash for a given File using CryptoJS.
+     */
+    private calculateFileHash(file: File): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
 
-    submitForm(): Promise<void> {
+        reader.onload = (event: any) => {
+          try {
+            const arrayBuffer = event.target.result;
+            const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+            const hash = CryptoJS.SHA256(wordArray).toString(CryptoJS.enc.Hex);
+            resolve(hash);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        reader.onerror = (error) => reject(error);
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    async submitForm(): Promise<void> {
       this.form.markAllAsTouched();
       this.checkMandatorySubheadingsAndParameters();
       this.emitFormData(); // Emit data so the stepper can check validity
@@ -847,42 +869,39 @@
             ? `${firstMissed} is mandatory. Please provide the required information.`
             : 'Please fill all mandatory fields.'
         );
-        // Reject the promise if the form is invalid
         return Promise.reject(new Error('Form is invalid'));
       }
+
+      // ✅ START LOADER AFTER VALIDATION PASSES
       this.loader.showLoader();
-      // Wrap the entire API logic in a new Promise
-      return new Promise((resolve, reject) => {
+
+      try {
         const freshUserData = this.recruitmentState.getCurrentUserData();
         this.userData = freshUserData;
         const registrationNo = this.userData?.registration_no;
         const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
         const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
-        // If there's no registration number, we can't proceed.
-        if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
-          const errorMsg = 'User identification is missing. Cannot submit.';
-          this.alertService.alert(true, errorMsg);
-          this.loader.hideLoader();
-          return reject(new Error(errorMsg));
-        }
-        const formData = new FormData();
 
-        // --- Payload Preparation ---
+        if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
+          throw new Error('User identification is missing. Cannot submit.');
+        }
+
+        const formData = new FormData();
         const allDetails: any[] = [];
         const allParameters: any[] = [];
         let parentCalculatedValue = 0;
 
-        // STEP 1: Loop through all subheadings to gather data for C/U/D
-        this.subheadings.forEach((sub, index) => {
-          const key = this.getUniqueKey(sub, index);
+        // STEP 1: Loop through all subheadings using a standard for loop (Required for async/await)
+        for (let i = 0; i < this.subheadings.length; i++) {
+          const sub = this.subheadings[i];
+          const key = this.getUniqueKey(sub, i);
           const isSelected = this.form.get(`is${key}Selected`)?.value;
           const formArray = this.form.get(`qualifications${key}`) as FormArray;
           const group = formArray.at(0) as FormGroup;
-          if (!group) return;
 
-          const existingDetailId = group.get(
-            'a_rec_app_score_field_detail_id'
-          )?.value;
+          if (!group) continue;
+
+          const existingDetailId = group.get('a_rec_app_score_field_detail_id')?.value;
 
           if (isSelected) {
             // --- LOGIC FOR CREATE / UPDATE ---
@@ -915,35 +934,37 @@
               m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
               score_field_value: percentage,
               score_field_actual_value: scoreResult.score_field_actual_value,
-              score_field_calculated_value:
-                scoreResult.score_field_calculated_value,
+              score_field_calculated_value: scoreResult.score_field_calculated_value,
               field_marks: sub.score_field_field_marks || 0,
               field_weightage: sub.score_field_field_weightage || 0,
               verify_remark: 'Not Verified',
               action_type: existingDetailId ? 'U' : 'C',
               action_date: new Date().toISOString(),
-              action_ip_address: '127.0.0.1',
               action_remark: 'data inserted/updated',
               action_by: 1,
               score_field_row_index: 1,
-              delete_flag: 'N', // Explicitly set to 'N' for create/update
+              delete_flag: 'N',
             };
             allDetails.push(detail);
 
-            this.getParameters(
-              sub.m_rec_score_field_id,
-              sub.a_rec_adv_post_detail_id
-            ).forEach((param) => {
+            const paramsList = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
+
+            // Loop through parameters using for...of (Required for async/await)
+            for (const param of paramsList) {
               const paramName = param.score_field_parameter_name;
               const paramValue = formValues[paramName];
               const isFile = paramValue instanceof File;
-              const existingParamId = group.get(
-                `param_${param.m_rec_score_field_parameter_new_id}_id`
-              )?.value;
+              const existingParamId = group.get(`param_${param.m_rec_score_field_parameter_new_id}_id`)?.value;
 
               if (paramValue) {
                 let finalParameterValue = '';
+
                 if (isFile) {
+                  // ✅ 1. Check for 0-byte corrupted files
+                  if (paramValue.size === 0) {
+                    throw new Error(`The selected file for "${paramName}" is empty or corrupted locally.`);
+                  }
+
                   finalParameterValue = this.generateFilePath(
                     registrationNo,
                     paramValue,
@@ -952,25 +973,25 @@
                     param.m_rec_score_field_parameter_new_id,
                     1
                   );
-                  const fileControlName = `file_${sub.score_field_parent_id}_${
-                    sub.m_rec_score_field_id
-                  }_${param.m_rec_score_field_parameter_new_id}_${
-                    param.parameter_display_order || 0
-                  }_1`;
+
+                  const fileControlName = `file_${sub.score_field_parent_id}_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_1`;
                   formData.append(fileControlName, paramValue, paramValue.name);
+
+                  // ✅ 2. Generate and append Hash
+                  const fileHash = await this.calculateFileHash(paramValue);
+                  formData.append(`${fileControlName}_hash`, fileHash);
+
                 } else {
                   finalParameterValue = String(paramValue ?? '');
                 }
 
                 const parameter = {
-                  a_rec_app_score_field_parameter_detail_id:
-                    existingParamId || undefined,
+                  a_rec_app_score_field_parameter_detail_id: existingParamId || undefined,
                   registration_no: registrationNo,
                   a_rec_app_score_field_detail_id: existingDetailId || undefined,
                   score_field_parent_id: sub.score_field_parent_id,
                   m_rec_score_field_id: sub.m_rec_score_field_id,
-                  m_rec_score_field_parameter_new_id:
-                    param.m_rec_score_field_parameter_new_id,
+                  m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
                   parameter_value: finalParameterValue,
                   parameter_row_index: 1,
                   parameter_display_no: param.parameter_display_order,
@@ -984,7 +1005,7 @@
                 };
                 allParameters.push(parameter);
               }
-            });
+            }
           } else if (!isSelected && existingDetailId) {
             // --- LOGIC FOR DELETION ---
             const detailToDelete = {
@@ -999,7 +1020,7 @@
             };
             allDetails.push(detailToDelete);
           }
-        });
+        }
 
         // STEP 2: Create Parent Record
         const parentRecord = {
@@ -1035,39 +1056,41 @@
         formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
 
         // STEP 4: Make the SINGLE API call
-        this.HTTP.postForm(
-          '/candidate/postFile/saveOrUpdateCandidateScoreCard',
-          formData,
-          'recruitement'
-        ).subscribe({
-          // Make the 'next' handler async to allow 'await'
-          next: async (res) => {
-            // 1. CHECK FOR BACKEND ERRORS FIRST
-            if (res?.body?.error) {
-              this.alertService.alert(
-                true,
-                res.body.error.message || 'An error occurred on the server.'
-              );
-              reject(new Error(res.body.error.message));
-              return;
-            }
-            this.loader.hideLoader();
-            // 2. AWAIT the success alert. The function will pause here.
-            await this.alertService.alert(false, 'Data saved successfully!');
+        return new Promise((resolve, reject) => {
+          this.HTTP.postForm(
+            '/candidate/postFile/saveOrUpdateCandidateScoreCard',
+            formData,
+            'recruitement'
+          ).subscribe({
+            next: async (res) => {
+              if (res?.body?.error) {
+                this.loader.hideLoader();
+                this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
+                return reject(new Error(res.body.error.message));
+              }
 
-            // 3. This code runs ONLY AFTER the alert is closed.
-            this.getParameterValuesAndPatch(); // Refresh data from DB
-            this.cdr.markForCheck();
-            resolve(); // Resolve the promise to let the stepper proceed.
-          },
-          error: (err) => {
-            this.alertService.alert(true, `Error saving data: ${err.message}`);
-            this.loader.hideLoader();
-            this.cdr.markForCheck();
-            reject(err); // Reject the promise on API error
-          },
+              this.loader.hideLoader();
+              await this.alertService.alert(false, 'Data saved successfully!');
+
+              this.getParameterValuesAndPatch();
+              this.cdr.markForCheck();
+              resolve();
+            },
+            error: (err) => {
+              this.loader.hideLoader();
+              this.alertService.alert(true, `Error saving data: ${err.message}`);
+              this.cdr.markForCheck();
+              reject(err);
+            },
+          });
         });
-      });
+
+      } catch (error: any) {
+        // ✅ Catch hashing failures or 0-byte file errors and hide the loader
+        this.loader.hideLoader();
+        this.alertService.alert(true, error.message || 'An error occurred while preparing your files.');
+        return Promise.reject(error);
+      }
     }
 
     private emitFormData(): void {

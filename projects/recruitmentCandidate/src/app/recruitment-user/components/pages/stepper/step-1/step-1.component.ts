@@ -36,6 +36,7 @@ import { RecruitmentStateService } from '../../recruitment-state.service';
 import { AlertService } from 'shared';
 import { LoaderService } from 'shared';
 import { environment } from 'environment';
+import * as CryptoJS from 'crypto-js';
 @Component({
   selector: 'app-step-1',
   standalone: true,
@@ -629,6 +630,13 @@ export class Step1Component implements OnChanges, OnInit {
 
   private patchUserData(data: any): void {
     // --- 1. Handle File Previews (Sync operations) ---
+    if (data.a_rec_app_main_id || data.registration_no || data.a_rec_adv_main_id) {
+      this.recruitmentState.updateUserData({
+        a_rec_app_main_id: data.a_rec_app_main_id,
+        registration_no: data.registration_no,
+        a_rec_adv_main_id: data.a_rec_adv_main_id
+      });
+    }
     if (data.candidate_photo) {
       this.filePaths.set('photo', data.candidate_photo);
       this.photoPreview = this.getFileUrl(data.candidate_photo);
@@ -1375,7 +1383,36 @@ export class Step1Component implements OnChanges, OnInit {
     });
     return errors;
   }
+  /**
+   * Generates a SHA-256 hash for a given File using CryptoJS.
+   * This works on both HTTP and HTTPS connections.
+   */
+  private calculateFileHash(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
 
+      reader.onload = (event: any) => {
+        try {
+          // Convert the ArrayBuffer to a CryptoJS WordArray
+          const arrayBuffer = event.target.result;
+          const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+
+          // Generate the SHA256 hash and convert it to a Hex string
+          const hash = CryptoJS.SHA256(wordArray).toString(CryptoJS.enc.Hex);
+          resolve(hash);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      reader.onerror = (error) => {
+        reject(error);
+      };
+
+      // Read the file as an ArrayBuffer
+      reader.readAsArrayBuffer(file);
+    });
+  }
   async saveAdditionalInformation(): Promise<void> {
     const formData = new FormData();
     const registrationNo = this.form.get('registration_no')?.value;
@@ -1929,289 +1966,270 @@ export class Step1Component implements OnChanges, OnInit {
 
     if (this.form.invalid) {
       const validationErrors = this.logValidationErrors(this.form);
-      const firstErrorMessage =
-        validationErrors[0] || 'Please fill all mandatory fields.';
+      const firstErrorMessage = validationErrors[0] || 'Please fill all mandatory fields.';
       this.alert.alert(true, firstErrorMessage);
       return Promise.reject(new Error('Form is invalid'));
     }
+
+    // ✅ START LOADER AFTER VALIDATION PASSES
     this.loader.showLoader();
 
-    const formData = new FormData();
-    const formValue = this.form.getRawValue();
+    try {
+      const formData = new FormData();
+      const formValue = this.form.getRawValue();
 
-    const mainPayloadForJson = { ...formValue };
-    delete mainPayloadForJson.photo;
-    delete mainPayloadForJson.signature;
+      const mainPayloadForJson = { ...formValue };
+      delete mainPayloadForJson.photo;
+      delete mainPayloadForJson.signature;
 
-    // --- 1. Handle Photo and Signature ---
-    const photoControlValue = formValue.photo;
-    const signatureControlValue = formValue.signature;
+      // --- 1. Handle Photo and Signature ---
+      const photoControlValue = formValue.photo;
+      const signatureControlValue = formValue.signature;
 
-    if (photoControlValue instanceof File) {
-      formData.append('photo', photoControlValue, photoControlValue.name);
-    } else {
-      mainPayloadForJson.candidate_photo = photoControlValue;
-    }
+      if (photoControlValue instanceof File) {
+        if (photoControlValue.size === 0) {
+          throw new Error('The selected photo file is empty or corrupted locally.');
+        }
+        formData.append('photo', photoControlValue, photoControlValue.name);
+        // ✅ ONLY HASH IF IT IS A FILE
+        const photoHash = await this.calculateFileHash(photoControlValue);
+        formData.append('photo_hash', photoHash);
+      } else {
+        mainPayloadForJson.candidate_photo = photoControlValue;
+      }
 
-    if (signatureControlValue instanceof File) {
-      formData.append(
-        'signature',
-        signatureControlValue,
-        signatureControlValue.name
-      );
-    } else {
-      mainPayloadForJson.candidate_signature = signatureControlValue;
-    }
+      if (signatureControlValue instanceof File) {
+        if (signatureControlValue.size === 0) {
+          throw new Error('The selected signature file is empty or corrupted locally.');
+        }
+        formData.append('signature', signatureControlValue, signatureControlValue.name);
+        // ✅ ONLY HASH IF IT IS A FILE
+        const signatureHash = await this.calculateFileHash(signatureControlValue);
+        formData.append('signature_hash', signatureHash);
+      } else {
+        mainPayloadForJson.candidate_signature = signatureControlValue;
+      }
 
-    // --- 2. Append Main Payload and Languages ---
-    const languagePayload = this.languagesArray.controls.map((ctrl) => ({
-      ...ctrl.value,
-      registration_no: mainPayloadForJson.registration_no,
-      a_rec_adv_main_id: mainPayloadForJson.a_rec_adv_main_id,
-    }));
+      // --- 2. Append Main Payload and Languages ---
+      const languagePayload = this.languagesArray.controls.map((ctrl) => ({
+        ...ctrl.value,
+        registration_no: mainPayloadForJson.registration_no,
+        a_rec_adv_main_id: mainPayloadForJson.a_rec_adv_main_id,
+      }));
 
-    formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
-    formData.append('languages', JSON.stringify(languagePayload));
+      formData.append('mainPayload', JSON.stringify(mainPayloadForJson));
+      formData.append('languages', JSON.stringify(languagePayload));
 
-    // --- 3. Prepare Additional Information Payload (based on current form state) ---
-    const additionalInfoPayload: any[] = [];
-    for (const question of this.additionalQuestions) {
-      const questionControlName = `question_${question.question_id}`;
-      const selectedOptionValue = this.form.get(questionControlName)?.value;
+      // --- 3. Prepare Additional Information Payload ---
+      const additionalInfoPayload: any[] = [];
 
-      if (selectedOptionValue) {
-        const selectedOption = question.options.find(
-          (opt: any) => opt.option_value === selectedOptionValue
-        );
-        if (selectedOption) {
-          const existingMainRecord = this.savedAdditionalInfo.find(
-            (info) =>
-              info.question_id === question.question_id &&
-              info.condition_id === null
+      for (const question of this.additionalQuestions) {
+        const questionControlName = `question_${question.question_id}`;
+        const selectedOptionValue = this.form.get(questionControlName)?.value;
+
+        if (selectedOptionValue) {
+          const selectedOption = question.options.find(
+            (opt: any) => opt.option_value === selectedOptionValue
           );
+          if (selectedOption) {
+            const existingMainRecord = this.savedAdditionalInfo.find(
+              (info) =>
+                info.question_id === question.question_id &&
+                info.condition_id === null
+            );
 
-          additionalInfoPayload.push({
-            a_rec_app_main_addtional_info_id:
-              existingMainRecord?.a_rec_app_main_addtional_info_id || null,
-            question_id: question.question_id,
-            option_id: selectedOption.option_id,
-            condition_id: null,
-            input_field: null,
-          });
+            additionalInfoPayload.push({
+              a_rec_app_main_addtional_info_id: existingMainRecord?.a_rec_app_main_addtional_info_id || null,
+              question_id: question.question_id,
+              option_id: selectedOption.option_id,
+              condition_id: null,
+              input_field: null,
+            });
 
-          if (selectedOption.has_condition === 'Y') {
-            for (const condition of selectedOption.conditions) {
-              const conditionControlName = `condition_${condition.condition_id}`;
-              const conditionValue = this.form.get(conditionControlName)?.value;
-              let inputFieldValue = null;
+            if (selectedOption.has_condition === 'Y') {
+              for (const condition of selectedOption.conditions) {
+                const conditionControlName = `condition_${condition.condition_id}`;
+                const conditionControl = this.form.get(conditionControlName);
+                const conditionValue = conditionControl?.value;
+                let inputFieldValue = null;
 
-              const existingConditionRecord = this.savedAdditionalInfo.find(
-                (info) =>
-                  info.question_id === question.question_id &&
-                  info.option_id === selectedOption.option_id &&
-                  info.condition_id === condition.condition_id
-              );
+                const existingConditionRecord = this.savedAdditionalInfo.find(
+                  (info) =>
+                    info.question_id === question.question_id &&
+                    info.option_id === selectedOption.option_id &&
+                    info.condition_id === condition.condition_id
+                );
 
-              if (condition.condition_data_type === 'file') {
-                if (conditionValue instanceof File) {
-                  const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
-                  formData.append(
-                    fileControlName,
-                    conditionValue,
-                    conditionValue.name
-                  );
+                if (condition.condition_data_type === 'file') {
+                  if (conditionValue instanceof File) {
+                    const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
+                    formData.append(fileControlName, conditionValue, conditionValue.name);
+
+                    // ✅ ONLY HASH IF IT IS A FILE
+                    const fileHash = await this.calculateFileHash(conditionValue);
+                    formData.append(`${fileControlName}_hash`, fileHash);
+                  } else {
+                    inputFieldValue = this.additionalFilePaths.get(conditionControlName) || null;
+                  }
                 } else {
-                  inputFieldValue =
-                    this.additionalFilePaths.get(conditionControlName) || null;
+                  inputFieldValue = conditionValue;
                 }
-              } else {
-                inputFieldValue = conditionValue;
-              }
 
-              additionalInfoPayload.push({
-                a_rec_app_main_addtional_info_id:
-                  existingConditionRecord?.a_rec_app_main_addtional_info_id ||
-                  null,
-                question_id: question.question_id,
-                option_id: selectedOption.option_id,
-                condition_id: condition.condition_id,
-                input_field: inputFieldValue,
-              });
+                additionalInfoPayload.push({
+                  a_rec_app_main_addtional_info_id: existingConditionRecord?.a_rec_app_main_addtional_info_id || null,
+                  question_id: question.question_id,
+                  option_id: selectedOption.option_id,
+                  condition_id: condition.condition_id,
+                  input_field: inputFieldValue,
+                });
+              }
             }
           }
         }
       }
-    }
 
-    // --- 4. ⭐ NEW LOGIC: Determine which records to delete ---
-    // Create a Set of primary keys from the new payload that should exist in the DB.
-    const newRecordIds = new Set(
-      additionalInfoPayload
-        .map((p) => p.a_rec_app_main_addtional_info_id)
-        .filter((id) => id != null) // Only consider existing records with an ID
-    );
-
-    // Compare the original saved records with the new set. Any missing ID is marked for deletion.
-    const additionalInfoIdsToDelete: number[] = [];
-    this.savedAdditionalInfo.forEach((savedRecord) => {
-      if (!newRecordIds.has(savedRecord.a_rec_app_main_addtional_info_id)) {
-        additionalInfoIdsToDelete.push(
-          savedRecord.a_rec_app_main_addtional_info_id
-        );
-      }
-    });
-
-    // --- 5. Append all data to FormData ---
-    if (additionalInfoPayload.length > 0) {
-      formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
-      formData.append(
-        'additionalInfoQuestions',
-        JSON.stringify(this.additionalQuestions)
+      // --- 4. Determine which records to delete ---
+      const newRecordIds = new Set(
+        additionalInfoPayload.map((p) => p.a_rec_app_main_addtional_info_id).filter((id) => id != null)
       );
-    }
 
-    // ⭐ NEW: Append the array of IDs to delete. The backend will handle them.
-    if (additionalInfoIdsToDelete.length > 0) {
-      formData.append(
-        'additionalInfoIdsToDelete',
-        JSON.stringify(additionalInfoIdsToDelete)
-      );
-    }
-
-    // --- 6. Make the SINGLE API call ---
-    return new Promise((resolve, reject) => {
-      this.HTTP.postForm(
-        '/candidate/postFile/saveOrUpdateFullCandidateProfile',
-        formData,
-        'recruitement'
-      ).subscribe({
-        next: async (res) => {
-          if (res?.body?.error) {
-            this.loader.hideLoader();
-            this.alert.alert(
-              true,
-              res.body.error.message || 'An error occurred.'
-            );
-            reject(new Error(res.body.error.message));
-            return;
-          }
-          this.loader.hideLoader();
-          await this.alert.alert(
-            false,
-            'All candidate details saved successfully!'
-          );
-          const responseRoot = res.body?.data;
-          const data = responseRoot?.data || {}; // Access the nested 'data' object
-
-          console.log(
-            '✅ Backend Response Data:',
-            JSON.stringify(data, null, 2)
-          );
-
-          // 1. Prepare the object to update the Global State Service
-          // Map backend keys (left) to Service keys (right)
-          const serviceUpdatePayload: any = {};
-
-          // ID
-          if (data.a_rec_app_main_id) {
-            serviceUpdatePayload.a_rec_app_main_id = data.a_rec_app_main_id;
-          }
-
-          // Names
-          if (data.first_name_E) {
-            serviceUpdatePayload.Applicant_First_Name_E = data.first_name_E;
-          }
-          if (data.first_name_H) {
-            serviceUpdatePayload.Applicant_First_Name_H = data.first_name_H;
-          }
-
-          // Photo (Save the path)
-          if (data.candidate_photo) {
-            serviceUpdatePayload.candidate_photo = data.candidate_photo;
-          }
-
-          // 2. Update the Service (One call updates everything)
-          if (Object.keys(serviceUpdatePayload).length > 0) {
-            console.log('🔄 Updating Service with:', serviceUpdatePayload);
-            this.recruitmentState.updateUserData(serviceUpdatePayload);
-          }
-
-          // 3. Update Local Form Controls (Visual Feedback)
-          if (serviceUpdatePayload.a_rec_app_main_id) {
-            this.form
-              .get('a_rec_app_main_id')
-              ?.setValue(serviceUpdatePayload.a_rec_app_main_id);
-          }
-          if (serviceUpdatePayload.Applicant_First_Name_E) {
-            this.form
-              .get('Applicant_First_Name_E')
-              ?.setValue(serviceUpdatePayload.Applicant_First_Name_E, {
-                emitEvent: false,
-              });
-          }
-          if (serviceUpdatePayload.Applicant_First_Name_H) {
-            this.form
-              .get('Applicant_First_Name_H')
-              ?.setValue(serviceUpdatePayload.Applicant_First_Name_H, {
-                emitEvent: false,
-              });
-          }
-
-          // 4. Special Handling for Photo Visuals
-          if (data.candidate_photo) {
-            this.filePaths.set('photo', data.candidate_photo);
-            this.photoPreview = this.getFileUrl(data.candidate_photo);
-            this.form
-              .get('photo')
-              ?.setValue(data.candidate_photo, { emitEvent: false });
-            this.form.get('photo')?.clearValidators();
-            this.form.get('photo')?.updateValueAndValidity();
-          }
-          // ⭐ NEW & CRITICAL: After a successful save, re-fetch the latest
-          // additional info to update our local state (`savedAdditionalInfo`).
-          // This ensures the next save operation works correctly.
-          const registrationNo = this.form.get('registration_no')?.value;
-          if (registrationNo) {
-            this.getSavedAdditionalInfo(registrationNo).subscribe(
-              (response) => {
-                this.savedAdditionalInfo = response?.body?.data || [];
-              }
-            );
-          }
-
-          if (res.body?.data?.photo_path) {
-            this.filePaths.set('photo', res.body.data.photo_path);
-            this.photoPreview = this.getFileUrl(res.body.data.photo_path);
-            this.form
-              .get('photo')
-              ?.setValue(res.body.data.photo_path, { emitEvent: false });
-          }
-          if (res.body?.data?.signature_path) {
-            this.filePaths.set('signature', res.body.data.signature_path);
-            this.signaturePreview = this.getFileUrl(
-              res.body.data.signature_path
-            );
-            this.form
-              .get('signature')
-              ?.setValue(res.body.data.signature_path, { emitEvent: false });
-          }
-
-          this.emitFormData();
-          this.cdr.markForCheck();
-
-          resolve();
-        },
-        error: (err) => {
-          const errorDetails = err.error?.details;
-          const errorMessage =
-            errorDetails?.message ||
-            err.error?.message ||
-            'Failed to save details. Please try again.';
-          this.alert.alert(true, errorMessage);
-          this.loader.hideLoader();
-          reject(err);
-        },
+      const additionalInfoIdsToDelete: number[] = [];
+      this.savedAdditionalInfo.forEach((savedRecord) => {
+        if (!newRecordIds.has(savedRecord.a_rec_app_main_addtional_info_id)) {
+          additionalInfoIdsToDelete.push(savedRecord.a_rec_app_main_addtional_info_id);
+        }
       });
-    });
+
+      // --- 5. Append all data to FormData ---
+      if (additionalInfoPayload.length > 0) {
+        formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
+        formData.append('additionalInfoQuestions', JSON.stringify(this.additionalQuestions));
+      }
+
+      if (additionalInfoIdsToDelete.length > 0) {
+        formData.append('additionalInfoIdsToDelete', JSON.stringify(additionalInfoIdsToDelete));
+      }
+
+      // --- 6. Make the SINGLE API call ---
+      return new Promise((resolve, reject) => {
+        this.isUploading = true;
+        this.uploadProgress = 0;
+
+        this.HTTP.postFile(
+          '/candidate/postFile/saveOrUpdateFullCandidateProfile',
+          formData,
+          'recruitement'
+        ).subscribe({
+          next: async (event: any) => {
+            // Track upload progress
+            if (event?.type === 1 && event.total) {
+              this.uploadProgress = Math.round(100 * event.loaded / event.total);
+              this.cdr.markForCheck();
+              return;
+            }
+
+            // 4 = HttpResponse. Only proceed if the upload is completely finished
+            if (event?.type !== undefined && event?.type !== 4) return;
+
+            this.isUploading = false;
+            const res = event;
+            const body = res?.body || res;
+
+            if (body?.error) {
+              this.loader.hideLoader();
+              this.alert.alert(true, body.error.message || 'An error occurred.');
+              reject(new Error(body.error.message));
+              return;
+            }
+
+            this.loader.hideLoader();
+            await this.alert.alert(false, 'All candidate details saved successfully!');
+
+            // 🚨 CRITICAL FIX 1: Robustly extract the ID from the backend response
+            // Look in multiple places just in case the backend nests it differently
+            const responseData = body?.data?.data || body?.data || {};
+            const newAppMainId = responseData.a_rec_app_main_id || body?.a_rec_app_main_id;
+
+            console.log("Extracted ID from Backend:", newAppMainId);
+
+            const serviceUpdatePayload: any = {};
+
+            // 🚨 CRITICAL FIX 2: Ensure the ID is always set in the payload
+            if (newAppMainId) {
+              serviceUpdatePayload.a_rec_app_main_id = newAppMainId;
+            } else {
+              // Fallback: If the backend DID NOT return the ID, use the one from the form
+              // (e.g., if this was an update, not a new insert)
+              const formAppMainId = this.form.get('a_rec_app_main_id')?.value;
+              if (formAppMainId) {
+                serviceUpdatePayload.a_rec_app_main_id = formAppMainId;
+              }
+            }
+
+            // Map the rest of the fields
+            if (responseData.first_name_E) serviceUpdatePayload.Applicant_First_Name_E = responseData.first_name_E;
+            if (responseData.first_name_H) serviceUpdatePayload.Applicant_First_Name_H = responseData.first_name_H;
+            if (responseData.candidate_photo) serviceUpdatePayload.candidate_photo = responseData.candidate_photo;
+
+            // 🚨 CRITICAL FIX 3: FORCE UPDATE THE STATE SERVICE
+            if (Object.keys(serviceUpdatePayload).length > 0) {
+              console.log("Updating State Service with:", serviceUpdatePayload);
+              this.recruitmentState.updateUserData(serviceUpdatePayload);
+            }
+
+            // --- UI Updates ---
+            if (serviceUpdatePayload.a_rec_app_main_id) {
+              this.form.get('a_rec_app_main_id')?.setValue(serviceUpdatePayload.a_rec_app_main_id);
+            }
+            if (serviceUpdatePayload.Applicant_First_Name_E) {
+              this.form.get('Applicant_First_Name_E')?.setValue(serviceUpdatePayload.Applicant_First_Name_E, { emitEvent: false });
+            }
+            if (serviceUpdatePayload.Applicant_First_Name_H) {
+              this.form.get('Applicant_First_Name_H')?.setValue(serviceUpdatePayload.Applicant_First_Name_H, { emitEvent: false });
+            }
+
+            if (responseData.candidate_photo) {
+              this.filePaths.set('photo', responseData.candidate_photo);
+              this.photoPreview = this.getFileUrl(responseData.candidate_photo);
+              this.form.get('photo')?.setValue(responseData.candidate_photo, { emitEvent: false });
+              this.form.get('photo')?.clearValidators();
+              this.form.get('photo')?.updateValueAndValidity();
+            }
+
+            if (responseData.signature_path) {
+              this.filePaths.set('signature', responseData.signature_path);
+              this.signaturePreview = this.getFileUrl(responseData.signature_path);
+              this.form.get('signature')?.setValue(responseData.signature_path, { emitEvent: false });
+            }
+
+            const registrationNo = this.form.get('registration_no')?.value;
+            if (registrationNo) {
+              this.getSavedAdditionalInfo(registrationNo).subscribe(response => {
+                this.savedAdditionalInfo = response?.body?.data || [];
+              });
+            }
+
+            this.emitFormData();
+            this.cdr.markForCheck();
+            resolve();
+          },
+          error: (err: any) => {
+            this.isUploading = false;
+            this.uploadProgress = 0;
+            this.loader.hideLoader();
+            const errorMessage = err?.error?.details?.message || err?.error?.message || 'Failed to save details.';
+            this.alert.alert(true, errorMessage);
+            reject(err);
+          },
+        });
+      });
+
+    } catch (error: any) {
+      // ✅ CATCH ANY SYNCHRONOUS ERRORS (LIKE HASHING FAILURES) AND STOP THE LOADER
+      this.loader.hideLoader();
+      this.isUploading = false;
+      this.alert.alert(true, error.message || 'An error occurred while preparing your files.');
+      return Promise.reject(error);
+    }
   }
 }

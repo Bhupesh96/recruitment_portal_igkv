@@ -63,13 +63,10 @@ isLoggedIn(): boolean {
     }
   }
 get currentUser() {
-  console.log("Current user function called")
+
   const user_cookie = this.cookie.get('user');
   const session_cookie = this.cookie.get('session');
 
-  console.group('🔍 AuthService Cookie Debug');
-  console.log('1. Raw User Cookie String:', user_cookie);
-  console.log('2. Raw Session Cookie String:', session_cookie);
 
   if (user_cookie && session_cookie) {
     try {
