@@ -32,10 +32,10 @@
       <!-- Stepper Navigation -->
       <div *ngIf="!isFinalDeclared" class="w-full flex justify-center py-4">
         <div class="bg-white px-2 sm:px-4 py-3 w-full max-w-7xl">
-          <div class="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pb-2">
+          <div class="w-full overflow-x-auto lg:overflow-x-hidden pb-2">
 
             <!-- ✅ CHANGED: Used justify-center and min-w-max to prevent stretching -->
-            <div class="flex items-center justify-center min-w-max px-2 mx-auto">
+            <div class="flex items-center justify-center min-w-max lg:min-w-0 lg:w-full px-2 mx-auto gap-2">
 
               <ng-container *ngFor="let step of activeSteps; let i = index">
                 <div
@@ -72,9 +72,9 @@
 
                   <!-- ✅ CHANGED: Fixed line width and margins so they stay consistently spaced -->
                   <!-- Line + Arrow -->
-                  <div *ngIf="i < activeSteps.length - 1" class="flex items-center ml-4 mr-2 sm:ml-6 sm:mr-4">
+                  <div *ngIf="i < activeSteps.length - 1" class="flex items-center ml-2 mr-1 sm:ml-3 sm:mr-2">
                     <div
-                      class="h-1 w-8 sm:w-12 transition-all duration-300"
+                      class="h-1 w-6 sm:w-8 transition-all duration-300"
                       [ngClass]="{
                         'bg-blue-500': currentStepIndex > i,
                         'bg-gray-300': currentStepIndex <= i

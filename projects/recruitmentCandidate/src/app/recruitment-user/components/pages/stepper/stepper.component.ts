@@ -55,16 +55,18 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
   @ViewChild('pdfDownloadComponent') pdfDownloadComponent!: PdfDownloadComponent;
-
-  // ✅ 1. Define the Master Mapping of your Steps to the API's m_rec_score_field_id
+// 1. Define the Master Mapping of your Steps to the API's m_rec_score_field_id
   masterSteps: StepDefinition[] = [
     { compId: 1, name: 'Personal Info', isMandatory: true }, // Always show
+
     { compId: 2, name: 'Education', fieldId: 1 },            // Mapped to ID 1
     { compId: 3, name: 'Academics', fieldId: 8 },            // Mapped to ID 8
-    // ⚠️ UPDATE the fieldIds below with the actual DB IDs for these steps
-    { compId: 4, name: 'Publications', fieldId: 3 },
-    { compId: 5, name: 'Experience', fieldId: 4 },
-    { compId: 6, name: 'Performance', fieldId: 5 },
+
+    // FIX: Updated the fieldIds below with the actual DB IDs from your API response
+    { compId: 4, name: 'Publications', fieldId: 3096 },      // Mapped to ID 3096
+    { compId: 5, name: 'Experience', fieldId: 32 },          // Mapped to ID 32
+    { compId: 6, name: 'Performance', fieldId: 34 },         // Mapped to ID 34
+
     { compId: 9, name: 'Preview & Submit', isMandatory: true } // Always show
   ];
 
@@ -115,7 +117,7 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
       a_rec_adv_main_id: user.a_rec_adv_main_id,
       post_code: user.post_code,
       subject_id: user.subject_id,
-      m_rec_es_master_id: user.m_rec_es_master_id || 4 // Fallback to 4 based on your URL example
+      m_rec_es_master_id: 4 // Fallback to 4 based on your URL example
     };
 
     this.http.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
