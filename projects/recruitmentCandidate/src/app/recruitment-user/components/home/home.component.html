@@ -58,11 +58,25 @@
                 <!-- Subject Selection -->
                 <div *ngIf="post.subjects?.length" class="pb-6 mb-6 border-b border-gray-200">
                   <p class="text-base font-bold text-gray-800 mb-3">Select your Subject:</p>
-                  <div class="flex flex-wrap gap-6">
-                    <div *ngFor="let subject of post.subjects" class="flex items-center">
-                      <input type="radio" [(ngModel)]="post.selectedSubjectId" [value]="subject.subject_id" [id]="'subj-desktop-'+post.post_code+'-'+subject.a_rec_adv_post_subject_detail_id" [name]="'subject-group-desktop-' + post.post_code" class="h-4 w-4 text-blue-700 focus:ring-blue-700 border-gray-300"/>
-                      <label [for]="'subj-desktop-'+post.post_code+'-'+subject.a_rec_adv_post_subject_detail_id" class="ml-2 text-base text-gray-900 font-medium">{{ subject.Subject_Name_E }}</label>
-                    </div>
+                  <div class="flex flex-wrap gap-4">
+
+                    <label *ngFor="let subject of post.subjects"
+                           class="flex items-center px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200 shadow-sm"
+                           [ngClass]="post.selectedSubjectId === subject.subject_id ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' : 'border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'">
+
+                      <input type="radio"
+                             [(ngModel)]="post.selectedSubjectId"
+                             [value]="subject.subject_id"
+                             [name]="'subject-group-desktop-' + post.post_code"
+                             class="h-5 w-5 text-blue-700 focus:ring-blue-700 border-gray-400 cursor-pointer"/>
+
+                      <span class="ml-3 text-base font-semibold"
+                            [ngClass]="post.selectedSubjectId === subject.subject_id ? 'text-blue-900' : 'text-gray-700'">
+        {{ subject.Subject_Name_E }}
+      </span>
+
+                    </label>
+
                   </div>
                 </div>
 
