@@ -29,6 +29,7 @@ import {
 } from '../../recruitment-state.service';
 import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 import { environment } from 'environment';
+import * as CryptoJS from 'crypto-js';
 interface DetailFormGroup {
   type: FormControl<string | null>;
   _rowIndex: FormControl<number | null>; // Explicitly define _rowIndex
@@ -148,6 +149,28 @@ export class Step3Component implements OnInit {
     this.form.get('details')?.valueChanges.subscribe(() => {
       this.checkMandatorySubheadingsAndParameters();
       this.cdr.detectChanges();
+    });
+  }
+  /**
+   * Generates a SHA-256 hash for a given File using CryptoJS.
+   */
+  private calculateFileHash(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (event: any) => {
+        try {
+          const arrayBuffer = event.target.result;
+          const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+          const hash = CryptoJS.SHA256(wordArray).toString(CryptoJS.enc.Hex);
+          resolve(hash);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      reader.onerror = (error) => reject(error);
+      reader.readAsArrayBuffer(file);
     });
   }
 
@@ -1297,232 +1320,232 @@ export class Step3Component implements OnInit {
   // in step-3.component.ts
 
   saveToDatabase(): Promise<void> {
-    // ✅ Wrap the entire logic in a new Promise
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.loader.showLoader();
-      const registrationNo = this.userData?.registration_no;
-      const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
-      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
-      if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
-        const errorMsg = 'User identification is missing. Cannot save data.';
-        this.alertService.alert(true, errorMsg);
-        this.loader.hideLoader(); // Also hide loader on early exit
-        return reject(new Error(errorMsg)); // Stop the function here
-      }
-      const formData = new FormData();
-      const finalDetailList: any[] = [];
-      const finalParameterList: any[] = [];
 
-      // STEP 1: Create Summary Detail Records (One per item type)
-      const rowsGroupedByType = new Map<string, any[]>();
-      this.detailsArray.controls.forEach((control) => {
-        const typeValue = control.get('type')?.value;
-        if (typeValue) {
-          if (!rowsGroupedByType.has(typeValue)) {
-            rowsGroupedByType.set(typeValue, []);
+      try {
+        const registrationNo = this.userData?.registration_no;
+        const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+        const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
+
+        if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
+          throw new Error('User identification is missing. Cannot save data.');
+        }
+
+        const formData = new FormData();
+        const finalDetailList: any[] = [];
+        const finalParameterList: any[] = [];
+
+        // STEP 1: Create Summary Detail Records (One per item type)
+        const rowsGroupedByType = new Map<string, any[]>();
+
+        // (Using standard for loop instead of forEach for consistency/safety)
+        for (const control of this.detailsArray.controls) {
+          const typeValue = control.get('type')?.value;
+          if (typeValue) {
+            if (!rowsGroupedByType.has(typeValue)) {
+              rowsGroupedByType.set(typeValue, []);
+            }
+            rowsGroupedByType.get(typeValue)!.push(control);
           }
-          rowsGroupedByType.get(typeValue)!.push(control);
         }
-      });
 
-      rowsGroupedByType.forEach((rowControls, typeValue) => {
-        const scoreFieldId = Number(typeValue);
-        const totalCount = rowControls.length;
-        const subHeading = this.subHeadings.find((sub) =>
-          sub.items.some(
-            (item: any) => item.m_rec_score_field_id === scoreFieldId
-          )
-        );
-        if (!subHeading) return;
-        const subHeadingId = subHeading.m_rec_score_field_id;
-        const item = subHeading.items.find(
-          (i: any) => i.m_rec_score_field_id === scoreFieldId
-        )!;
-        const detailKey = `${subHeadingId}_${scoreFieldId}`;
-        const existingDetailId = this.existingDetailIds.get(detailKey);
-        const scoreResult = this.utils.calculateScore(
-          3,
-          {
-            quantityInputs: [
-              {
-                scoreFieldId: item.m_rec_score_field_id,
-                quantity: totalCount,
-                weightage: item.score_field_field_weightage || 0,
-                scoreFieldMarks: item.score_field_field_marks || 0,
-              },
-            ],
-          },
-          item.score_field_field_marks || 0
-        );
-        const detailRecord = {
-          ...(existingDetailId && {
-            a_rec_app_score_field_detail_id: existingDetailId,
-          }),
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_app_main_id,
-          a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
-          score_field_parent_id: subHeadingId,
-          m_rec_score_field_id: scoreFieldId,
-          m_rec_score_field_method_id: subHeading.m_rec_score_field_method_id,
-          score_field_value: totalCount,
-          score_field_actual_value: scoreResult.score_field_actual_value,
-          score_field_calculated_value:
-            scoreResult.score_field_calculated_value,
-          field_marks: item.score_field_field_marks || 0,
-          field_weightage: item.score_field_field_weightage || 0,
-          verify_remark: 'Not Verified',
-          active_status: 'Y',
-          delete_flag: 'N',
-          action_type: existingDetailId ? 'U' : 'C',
-          action_date: new Date().toISOString(),
-          action_remark: existingDetailId ? 'data updated' : 'data inserted',
+        for (const [typeValue, rowControls] of rowsGroupedByType.entries()) {
+          const scoreFieldId = Number(typeValue);
+          const totalCount = rowControls.length;
+          const subHeading = this.subHeadings.find((sub) =>
+            sub.items.some((item: any) => item.m_rec_score_field_id === scoreFieldId)
+          );
 
-          action_by: 1,
-        };
-        finalDetailList.push(detailRecord);
-      });
+          if (!subHeading) continue;
 
-      // STEP 2: Create Granular Parameter Records for each UI row
-      const subHeadingRowCounters: { [key: number]: number } = {};
-      this.detailsArray.controls.forEach((rowControl) => {
-        const typeValue = rowControl.get('type')?.value;
-        if (!typeValue) return;
-        const scoreFieldId = Number(typeValue);
-        const subHeading = this.subHeadings.find((sub) =>
-          sub.items.some(
-            (item: any) => item.m_rec_score_field_id === scoreFieldId
-          )
-        );
-        if (!subHeading) return;
-        const subHeadingId = subHeading.m_rec_score_field_id;
-        const detailKey = `${subHeadingId}_${scoreFieldId}`;
-        const detailRecordFk = this.existingDetailIds.get(detailKey);
+          const subHeadingId = subHeading.m_rec_score_field_id;
+          const item = subHeading.items.find((i: any) => i.m_rec_score_field_id === scoreFieldId)!;
+          const detailKey = `${subHeadingId}_${scoreFieldId}`;
+          const existingDetailId = this.existingDetailIds.get(detailKey);
 
-        const rowIndex = rowControl.get('_rowIndex')?.value;
-        if (rowIndex === null || rowIndex === undefined) {
-          console.warn('Skipping a row because it has no rowIndex.');
-          return; // This skips the current iteration of the forEach loop
+          const scoreResult = this.utils.calculateScore(
+            3,
+            {
+              quantityInputs: [
+                {
+                  scoreFieldId: item.m_rec_score_field_id,
+                  quantity: totalCount,
+                  weightage: item.score_field_field_weightage || 0,
+                  scoreFieldMarks: item.score_field_field_marks || 0,
+                },
+              ],
+            },
+            item.score_field_field_marks || 0
+          );
+
+          const detailRecord = {
+            ...(existingDetailId && { a_rec_app_score_field_detail_id: existingDetailId }),
+            registration_no: registrationNo,
+            a_rec_app_main_id: a_rec_app_main_id,
+            a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
+            score_field_parent_id: subHeadingId,
+            m_rec_score_field_id: scoreFieldId,
+            m_rec_score_field_method_id: subHeading.m_rec_score_field_method_id,
+            score_field_value: totalCount,
+            score_field_actual_value: scoreResult.score_field_actual_value,
+            score_field_calculated_value: scoreResult.score_field_calculated_value,
+            field_marks: item.score_field_field_marks || 0,
+            field_weightage: item.score_field_field_weightage || 0,
+            verify_remark: 'Not Verified',
+            active_status: 'Y',
+            delete_flag: 'N',
+            action_type: existingDetailId ? 'U' : 'C',
+            action_date: new Date().toISOString(),
+            action_remark: existingDetailId ? 'data updated' : 'data inserted',
+            action_by: 1,
+          };
+
+          finalDetailList.push(detailRecord);
         }
-        const subHeadingParameters =
-          this.subHeadingParameters[subHeadingId.toString()] || [];
-        subHeadingParameters.forEach((param: any) => {
-          const paramValue = rowControl.getRawValue()[param.normalizedKey];
-          const isFile = paramValue instanceof File;
-          const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
-          const existingParamId = this.existingParameterIds.get(paramKey);
-          const existingFilePath = this.filePaths.get(paramKey);
-          if (paramValue || existingParamId) {
-            const parameter = {
-              ...(existingParamId && {
-                a_rec_app_score_field_parameter_detail_id: existingParamId,
-              }),
-              ...(detailRecordFk && {
-                a_rec_app_score_field_detail_id: detailRecordFk,
-              }),
-              registration_no: registrationNo,
-              score_field_parent_id: subHeadingId,
-              m_rec_score_field_id: scoreFieldId,
-              m_rec_score_field_parameter_new_id:
-                param.m_rec_score_field_parameter_new_id,
-              parameter_value: isFile
-                ? this.generateFilePath(
-                    registrationNo,
-                    paramValue,
-                    scoreFieldId,
-                    param.m_rec_score_field_parameter_new_id,
-                    rowIndex,
-                    subHeadingId
-                  )
-                : paramValue === 'FILE_UPLOADED' && existingFilePath
-                ? existingFilePath
-                : String(paramValue ?? ''),
-              parameter_row_index: rowIndex,
-              parameter_display_order: param.parameter_display_order || 0,
-              verify_remark: 'Not Verified',
-              active_status: 'Y',
-              delete_flag: 'N',
-              action_type: existingParamId ? 'U' : 'C',
-              action_date: new Date().toISOString(),
-              action_remark: existingParamId
-                ? 'parameter updated'
-                : 'parameter inserted',
 
-              action_by: 1,
-            };
-            finalParameterList.push(parameter);
-            if (isFile) {
-              const fileControlName = `file_${subHeadingId}_${scoreFieldId}_${
-                param.m_rec_score_field_parameter_new_id
-              }_${param.parameter_display_order || 0}_${rowIndex}`;
-              formData.append(fileControlName, paramValue, paramValue.name);
+        // STEP 2: Create Granular Parameter Records for each UI row
+        // 🚨 CRITICAL: Use for...of loop here to allow 'await' for file hashing
+        for (const rowControl of this.detailsArray.controls) {
+          const typeValue = rowControl.get('type')?.value;
+          if (!typeValue) continue;
+
+          const scoreFieldId = Number(typeValue);
+          const subHeading = this.subHeadings.find((sub) =>
+            sub.items.some((item: any) => item.m_rec_score_field_id === scoreFieldId)
+          );
+
+          if (!subHeading) continue;
+
+          const subHeadingId = subHeading.m_rec_score_field_id;
+          const detailKey = `${subHeadingId}_${scoreFieldId}`;
+          const detailRecordFk = this.existingDetailIds.get(detailKey);
+          const rowIndex = rowControl.get('_rowIndex')?.value;
+
+          if (rowIndex === null || rowIndex === undefined) {
+            console.warn('Skipping a row because it has no rowIndex.');
+            continue;
+          }
+
+          const subHeadingParameters = this.subHeadingParameters[subHeadingId.toString()] || [];
+
+          // 🚨 CRITICAL: Use for...of loop here to allow 'await' for file hashing
+          for (const param of subHeadingParameters) {
+            const paramValue = rowControl.getRawValue()[param.normalizedKey];
+            const isFile = paramValue instanceof File;
+            const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
+            const existingParamId = this.existingParameterIds.get(paramKey);
+            const existingFilePath = this.filePaths.get(paramKey);
+
+            if (paramValue || existingParamId) {
+
+              let finalParameterValue = '';
+
+              if (isFile) {
+                // ✅ 1. Empty File Check
+                if (paramValue.size === 0) {
+                  throw new Error(`The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`);
+                }
+
+                finalParameterValue = this.generateFilePath(
+                  registrationNo,
+                  paramValue,
+                  scoreFieldId,
+                  param.m_rec_score_field_parameter_new_id,
+                  rowIndex,
+                  subHeadingId
+                );
+
+                const fileControlName = `file_${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${rowIndex}`;
+
+                formData.append(fileControlName, paramValue, paramValue.name);
+
+                // ✅ 2. Generate and Append Hash
+                const fileHash = await this.calculateFileHash(paramValue);
+                formData.append(`${fileControlName}_hash`, fileHash);
+
+              } else {
+                finalParameterValue = paramValue === 'FILE_UPLOADED' && existingFilePath
+                  ? existingFilePath
+                  : String(paramValue ?? '');
+              }
+
+              const parameter = {
+                ...(existingParamId && { a_rec_app_score_field_parameter_detail_id: existingParamId }),
+                ...(detailRecordFk && { a_rec_app_score_field_detail_id: detailRecordFk }),
+                registration_no: registrationNo,
+                score_field_parent_id: subHeadingId,
+                m_rec_score_field_id: scoreFieldId,
+                m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
+                parameter_value: finalParameterValue,
+                parameter_row_index: rowIndex,
+                parameter_display_order: param.parameter_display_order || 0,
+                verify_remark: 'Not Verified',
+                active_status: 'Y',
+                delete_flag: 'N',
+                action_type: existingParamId ? 'U' : 'C',
+                action_date: new Date().toISOString(),
+                action_remark: existingParamId ? 'parameter updated' : 'parameter inserted',
+                action_by: 1,
+              };
+
+              finalParameterList.push(parameter);
             }
           }
-        });
-      });
+        }
 
-      // STEP 3: Append the list of parameter IDs to be DELETED.
-      if (this.parameterIdsToDelete.length > 0) {
-        formData.append(
-          'parameterIdsToDelete',
-          JSON.stringify(this.parameterIdsToDelete)
-        );
-      }
+        // STEP 3: Append the list of parameter IDs to be DELETED.
+        if (this.parameterIdsToDelete.length > 0) {
+          formData.append('parameterIdsToDelete', JSON.stringify(this.parameterIdsToDelete));
+        }
 
-      // STEP 4: Create the Parent Record
-      const parentRecord = this.createParentRecord(
-        registrationNo,
-        a_rec_app_main_id
-      );
-      if (parentRecord) {
-        formData.append('parentScore', JSON.stringify(parentRecord));
-      }
+        // STEP 4: Create the Parent Record
+        const parentRecord = this.createParentRecord(registrationNo, a_rec_app_main_id);
+        if (parentRecord) {
+          formData.append('parentScore', JSON.stringify(parentRecord));
+        }
 
-      // STEP 5: Append final lists and make the API call
-      formData.append('registration_no', registrationNo.toString());
-      formData.append('scoreFieldDetailList', JSON.stringify(finalDetailList));
-      formData.append(
-        'scoreFieldParameterList',
-        JSON.stringify(finalParameterList)
-      );
+        // STEP 5: Append final lists and make the API call
+        formData.append('registration_no', registrationNo.toString());
+        formData.append('scoreFieldDetailList', JSON.stringify(finalDetailList));
+        formData.append('scoreFieldParameterList', JSON.stringify(finalParameterList));
 
-      // STEP 6: Call the API Endpoint
-      this.HTTP.postForm(
-        '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
-        formData,
-        'recruitement'
-      ).subscribe({
-        // ✅ Make the 'next' handler async
-        next: async (res) => {
-          // ✅ 1. CHECK FOR BACKEND ERRORS FIRST
-          if (res?.body?.error) {
-            this.alertService.alert(
-              true,
-              res.body.error.message || 'An error occurred on the server.'
-            );
+        // STEP 6: Call the API Endpoint
+        this.HTTP.postForm(
+          '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
+          formData,
+          'recruitement'
+        ).subscribe({
+          next: async (res) => {
+            if (res?.body?.error) {
+              this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
+              this.loader.hideLoader();
+              reject(new Error(res.body.error.message));
+              return;
+            }
+
             this.loader.hideLoader();
-            reject(new Error(res.body.error.message));
-            return;
-          }
-          this.loader.hideLoader();
-          // ✅ 2. AWAIT the success alert. The function will pause here.
-          await this.alertService.alert(false, 'Data saved successfully!');
+            await this.alertService.alert(false, 'Data saved successfully!');
 
-          // ✅ 3. This code runs ONLY AFTER the alert is closed.
-          this.parameterIdsToDelete = [];
-          this.getParameterValuesAndPatch();
-          this.cdr.markForCheck();
-          resolve(); // Resolve the promise to let the stepper proceed.
-        },
-        error: (err) => {
-          this.alertService.alert(
-            true,
-            'Error saving records: ' + (err.error?.message || err.message)
-          );
-          this.cdr.markForCheck();
-          this.loader.hideLoader();
-          reject(err); // ✅ Reject the promise on API error
-        },
-      });
+            this.parameterIdsToDelete = [];
+            this.getParameterValuesAndPatch();
+            this.cdr.markForCheck();
+            resolve();
+          },
+          error: (err) => {
+            this.alertService.alert(true, 'Error saving records: ' + (err.error?.message || err.message));
+            this.cdr.markForCheck();
+            this.loader.hideLoader();
+            reject(err);
+          },
+        });
+
+      } catch (error: any) {
+        // ✅ CATCH ANY SYNCHRONOUS ERRORS (LIKE HASHING FAILURES) AND STOP THE LOADER
+        this.loader.hideLoader();
+        this.alertService.alert(true, error.message || 'An error occurred while preparing your files.');
+        reject(error);
+      }
     });
   }
 

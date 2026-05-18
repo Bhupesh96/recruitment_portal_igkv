@@ -40,12 +40,24 @@ export class RecruitmentStateService {
     this._screeningCandidateData.asObservable();
 
   constructor(private authService: AuthService) {
-    // When the service is first created, it immediately checks the AuthService.
-    const currentUser = this.authService.currentUser;
+    // 1. Attempt to grab from AuthService (works during normal SPA navigation)
+    let currentUser = this.authService.currentUser;
 
+    // 2. Fallback: If null (e.g., after a hard refresh), pull directly from storage
+    if (!currentUser) {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          console.log('🔄 Restored user data from localStorage after refresh.');
+        } catch (e) {
+          console.error('Failed to parse stored user data', e);
+        }
+      }
+    }
+
+    // 3. Initialize the state if we successfully found the user via either method
     if (currentUser) {
-      // If a user object exists, we extract the necessary data.
-      // This mapping creates a clean, dedicated object for our form's state.
       const recruitmentData: UserRecruitmentData = {
         registration_no: currentUser.registration_no,
         a_rec_adv_main_id: currentUser.a_rec_adv_main_id,
@@ -54,18 +66,17 @@ export class RecruitmentStateService {
         category_id: currentUser.category_id,
         academic_session_id: currentUser.academic_session_id,
         a_rec_app_main_id: currentUser.a_rec_app_main_id,
-        ...currentUser, // Spread the rest of the properties from the original object
+        ...currentUser,
       };
 
-      // We update the BehaviorSubject with the new data.
       this._userData.next(recruitmentData);
       console.log(
-        '✅ RecruitmentStateService initialized with data from AuthService:',
+        '✅ RecruitmentStateService initialized:',
         JSON.stringify(recruitmentData, null, 2)
       );
     } else {
       console.warn(
-        'RecruitmentStateService: No currentUser was found in AuthService upon initialization.'
+        'RecruitmentStateService: No currentUser was found in AuthService or LocalStorage upon initialization.'
       );
     }
   }

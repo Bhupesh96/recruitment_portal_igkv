@@ -29,7 +29,7 @@
     } from '../../recruitment-state.service';
     import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
     import { environment } from 'environment';
-
+    import * as CryptoJS from 'crypto-js';
     interface Heading {
       a_rec_adv_main_id: number;
       a_rec_adv_post_detail_id: number;
@@ -807,7 +807,29 @@
         const fullPath = `recruitment/${registrationNo}/${fileName}`;
         return { fullPath, fileName };
       }
+      /**
+       * Generates a SHA-256 hash for a given File using CryptoJS.
+       * Runs natively under non-secure local environments (HTTP).
+       */
+      private calculateFileHash(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
 
+          reader.onload = (event: any) => {
+            try {
+              const arrayBuffer = event.target.result;
+              const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+              const hash = CryptoJS.SHA256(wordArray).toString(CryptoJS.enc.Hex);
+              resolve(hash);
+            } catch (err) {
+              reject(err);
+            }
+          };
+
+          reader.onerror = (error) => reject(error);
+          reader.readAsArrayBuffer(file);
+        });
+      }
       async submitForm(): Promise<void> {
         this.form.markAllAsTouched();
         this.checkMandatorySubheadingsAndParameters();
@@ -820,6 +842,7 @@
           );
           return Promise.reject(new Error('Mandatory field missing.'));
         }
+
         let hasDateError = false;
         this.subheadings.forEach((sub, index) => {
           const key = this.getUniqueKey(sub, index);
@@ -839,9 +862,9 @@
           return Promise.reject(new Error('Invalid Date Range'));
         }
 
-        // Temporarily disable empty placeholder rows so they don't block `this.form.invalid`
+        // Temporarily disable empty placeholder rows so they don't block validation check rules
         const disabledGroups: AbstractControl[] = [];
-        let hasAnyValidDataAtAll = false; // ✅ Track if the form is completely empty overall
+        let hasAnyValidDataAtAll = false;
 
         this.subheadings.forEach((sub, subIndex) => {
           const key = this.getUniqueKey(sub, subIndex);
@@ -854,7 +877,7 @@
             const hasUserEnteredData = this.hasValidData(formValues, rawIndex, sub, key);
 
             if (hasUserEnteredData) {
-              hasAnyValidDataAtAll = true; // Found valid data
+              hasAnyValidDataAtAll = true;
             }
 
             if (!hasUserEnteredData && !existingDetailId && !isDeleted) {
@@ -864,9 +887,7 @@
           });
         });
 
-        // ✅ NEW CHECK: If the entire form is completely blank and we don't even have a parent ID, do not fire the API
         if (!hasAnyValidDataAtAll && !this.existingParentDetailId && this.ghostDetailsToDelete.length === 0) {
-          // Just emit empty data to allow the stepper to move forward without saving garbage to DB
           this.emitFormData();
           return;
         }
@@ -876,231 +897,228 @@
             true,
             'Please fill all required fields correctly.'
           );
-          // Re-enable in case user needs to fix the actual errors
           disabledGroups.forEach(g => g.enable({ emitEvent: false }));
           return;
         }
 
-        const freshUserData = this.recruitmentState.getCurrentUserData();
-        this.userData = freshUserData;
-
-        const registrationNo = this.userData?.registration_no;
-        const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
-        if (!registrationNo || !a_rec_app_main_id) {
-          this.alertService.alert(
-            true,
-            'Cannot submit, user identification is missing.'
-          );
-          disabledGroups.forEach(g => g.enable({ emitEvent: false }));
-          return Promise.reject(new Error('User identification is missing.'));
-        }
-        const formData = new FormData();
-
-        const allDetails: any[] = [];
-        const allParameters: any[] = [];
-        let totalCalculatedExperience = 0;
-
-        this.ghostDetailsToDelete.forEach(ghost => {
-          allDetails.push({
-            a_rec_app_score_field_detail_id: ghost.a_rec_app_score_field_detail_id,
-            registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_app_main_id,
-            a_rec_adv_post_detail_id: ghost.a_rec_adv_post_detail_id,
-            score_field_parent_id: ghost.score_field_parent_id,
-            m_rec_score_field_id: ghost.m_rec_score_field_id,
-            m_rec_score_field_method_id: ghost.m_rec_score_field_method_id,
-            score_field_value: 0,
-            score_field_actual_value: 0,
-            score_field_calculated_value: 0,
-            field_marks: ghost.field_marks || 0,
-            field_weightage: ghost.field_weightage || 0,
-            verify_remark: 'Not Verified',
-            action_type: 'U',
-            action_date: new Date().toISOString(),
-            action_ip_address: '127.0.0.1',
-            action_remark: 'Cleaning up ghost record',
-            action_by: 1,
-            score_field_row_index: 0,
-            delete_flag: 'Y'
-          });
-        });
-
-        this.subheadings.forEach((sub, subIndex) => {
-          const key = this.getUniqueKey(sub, subIndex);
-          const formArray = this.form.get(key) as FormArray;
-
-          let validRowIndex = 1;
-
-          formArray.getRawValue().forEach((formValues: any, rawIndex: number) => {
-            const existingDetailId = formValues.a_rec_app_score_field_detail_id;
-            let isDeleted = formValues.is_deleted;
-
-            const hasUserEnteredData = this.hasValidData(formValues, rawIndex, sub, key);
-
-            if (!hasUserEnteredData && existingDetailId) {
-              isDeleted = true;
-            }
-
-            if (!hasUserEnteredData && !existingDetailId && !isDeleted) {
-              return;
-            }
-
-            let currentExperience = 0;
-            const fromDate = formValues['Period From'];
-            const toDate = formValues['Period To'];
-            if (fromDate && toDate) {
-              currentExperience = this.utils.calculateDuration(
-                new Date(fromDate),
-                new Date(toDate),
-                sub.score_field_field_weightage || 1,
-                'decimalYears'
-              );
-            }
-
-            if (!isDeleted) {
-              totalCalculatedExperience += currentExperience;
-            }
-
-            const detail = {
-              a_rec_app_score_field_detail_id: existingDetailId || undefined,
-              registration_no: registrationNo,
-              a_rec_app_main_id: a_rec_app_main_id,
-              a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-              score_field_parent_id: sub.score_field_parent_id,
-              m_rec_score_field_id: sub.m_rec_score_field_id,
-              m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
-              score_field_value: currentExperience,
-              score_field_actual_value: currentExperience,
-              score_field_calculated_value: currentExperience,
-              field_marks: sub.score_field_field_marks || 0,
-              field_weightage: sub.score_field_field_weightage || 0,
-              verify_remark: 'Not Verified',
-              action_type: existingDetailId ? 'U' : 'C',
-              action_date: new Date().toISOString(),
-              action_ip_address: '127.0.0.1',
-              action_remark: 'data inserted/updated',
-              action_by: 1,
-              score_field_row_index: validRowIndex,
-              delete_flag: isDeleted ? 'Y' : 'N',
-            };
-            allDetails.push(detail);
-
-            if (!isDeleted || (isDeleted && existingDetailId)) {
-              const formGroup = formArray.at(rawIndex);
-              this.getParameters(
-                sub.m_rec_score_field_id,
-                sub.a_rec_adv_post_detail_id
-              ).forEach((param) => {
-                const paramValue = formValues[param.score_field_parameter_name];
-                const isNewFile = paramValue instanceof File;
-                const existingParamId = formGroup.get(
-                  `param_${param.m_rec_score_field_parameter_new_id}_id`
-                )?.value;
-                const existingFilePath =
-                  param.control_type === 'A'
-                    ? this.getFilePath(
-                      key,
-                      param.m_rec_score_field_parameter_new_id,
-                      rawIndex
-                    )
-                    : null;
-
-                let finalParameterValue = '';
-
-                if (isNewFile) {
-                  const { fullPath } = this.generateFilePath(
-                    registrationNo,
-                    paramValue,
-                    sub.score_field_parent_id,
-                    sub.m_rec_score_field_id,
-                    param.m_rec_score_field_parameter_new_id,
-                    validRowIndex
-                  );
-                  finalParameterValue = fullPath;
-                  const fileControlName = `${registrationNo}_${
-                    sub.score_field_parent_id
-                  }_${sub.m_rec_score_field_id}_${
-                    param.m_rec_score_field_parameter_new_id
-                  }_${param.parameter_display_order || 0}_${validRowIndex}`;
-                  formData.append(fileControlName, paramValue, paramValue.name);
-                } else if (param.control_type === 'A' && existingFilePath) {
-                  finalParameterValue = existingFilePath;
-                } else if (param.control_type !== 'A' && paramValue != null) {
-                  finalParameterValue = String(paramValue);
-                }
-
-                if (finalParameterValue !== '' || existingParamId) {
-                  const parameter = {
-                    a_rec_app_score_field_parameter_detail_id:
-                      existingParamId || undefined,
-                    a_rec_app_score_field_detail_id: existingDetailId || undefined,
-                    registration_no: registrationNo,
-                    score_field_parent_id: sub.score_field_parent_id,
-                    m_rec_score_field_id: sub.m_rec_score_field_id,
-                    m_rec_score_field_parameter_new_id:
-                    param.m_rec_score_field_parameter_new_id,
-                    parameter_value: finalParameterValue || '',
-                    parameter_row_index: validRowIndex,
-                    parameter_display_no: param.parameter_display_order,
-                    verify_remark: 'Not Verified',
-                    active_status: 'Y',
-                    action_type: existingParamId ? 'U' : 'C',
-                    action_date: new Date().toISOString(),
-                    action_remark: 'parameter inserted/updated',
-                    action_by: 1,
-                    delete_flag: isDeleted ? 'Y' : 'N',
-                  };
-                  allParameters.push(parameter);
-                }
-              });
-            }
-            validRowIndex++;
-          });
-        });
-
-        if (!this.heading) {
-          this.alertService.alert(
-            true,
-            'Cannot submit, heading information is missing.',
-            5000
-          );
-          disabledGroups.forEach(g => g.enable({ emitEvent: false }));
-          return;
-        }
-        const parentRecord = {
-          ...(this.existingParentDetailId && {
-            a_rec_app_score_field_detail_id: this.existingParentDetailId,
-          }),
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_app_main_id,
-          a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
-          score_field_parent_id: 0,
-          m_rec_score_field_id: this.heading.m_rec_score_field_id,
-          m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
-          score_field_value: this.heading.score_field_field_marks,
-          score_field_actual_value: totalCalculatedExperience,
-          score_field_calculated_value: Math.min(
-            totalCalculatedExperience,
-            this.heading.score_field_field_marks
-          ),
-          field_marks: this.heading?.score_field_field_marks,
-          field_weightage: this.heading?.score_field_field_weightage,
-          verify_remark: 'Not Verified',
-          action_type: 'U',
-          action_date: new Date().toISOString(),
-          action_remark: 'parent data updated from recruitment form',
-          action_by: 1,
-          delete_flag: 'N',
-        };
-
-        formData.append('parentScore', JSON.stringify(parentRecord));
-        formData.append('registration_no', registrationNo.toString());
-        formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
-        formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
+        // ✅ LOADER INITIALIZED
         this.loader.showLoader();
 
         try {
-          const res: HttpResponse<any> = await lastValueFrom(
+          const freshUserData = this.recruitmentState.getCurrentUserData();
+          this.userData = freshUserData;
+
+          const registrationNo = this.userData?.registration_no;
+          const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
+
+          if (!registrationNo || !a_rec_app_main_id) {
+            throw new Error('Cannot submit, user identification is missing.');
+          }
+
+          const formData = new FormData();
+          const allDetails: any[] = [];
+          const allParameters: any[] = [];
+          let totalCalculatedExperience = 0;
+
+          this.ghostDetailsToDelete.forEach(ghost => {
+            allDetails.push({
+              a_rec_app_score_field_detail_id: ghost.a_rec_app_score_field_detail_id,
+              registration_no: registrationNo,
+              a_rec_app_main_id: a_rec_app_main_id,
+              a_rec_adv_post_detail_id: ghost.a_rec_adv_post_detail_id,
+              score_field_parent_id: ghost.score_field_parent_id,
+              m_rec_score_field_id: ghost.m_rec_score_field_id,
+              m_rec_score_field_method_id: ghost.m_rec_score_field_method_id,
+              score_field_value: 0,
+              score_field_actual_value: 0,
+              score_field_calculated_value: 0,
+              field_marks: ghost.field_marks || 0,
+              field_weightage: ghost.field_weightage || 0,
+              verify_remark: 'Not Verified',
+              action_type: 'U',
+              action_date: new Date().toISOString(),
+              action_ip_address: '127.0.0.1',
+              action_remark: 'Cleaning up ghost record',
+              action_by: 1,
+              score_field_row_index: 0,
+              delete_flag: 'Y'
+            });
+          });
+
+          // 🚨 CRITICAL REFAC: Outer loop changed to standard sequential loop to avoid broken promise chains
+          for (let subIndex = 0; subIndex < this.subheadings.length; subIndex++) {
+            const sub = this.subheadings[subIndex];
+            const key = this.getUniqueKey(sub, subIndex);
+            const formArray = this.form.get(key) as FormArray;
+            if (!formArray) continue;
+
+            let validRowIndex = 1;
+            const rawControls = formArray.controls;
+
+            for (let rawIndex = 0; rawIndex < rawControls.length; rawIndex++) {
+              const formGroup = rawControls[rawIndex] as FormGroup;
+              const formValues = formGroup.getRawValue();
+
+              const existingDetailId = formValues.a_rec_app_score_field_detail_id;
+              let isDeleted = formValues.is_deleted;
+              const hasUserEnteredData = this.hasValidData(formValues, rawIndex, sub, key);
+
+              if (!hasUserEnteredData && existingDetailId) {
+                isDeleted = true;
+              }
+
+              if (!hasUserEnteredData && !existingDetailId && !isDeleted) {
+                continue;
+              }
+
+              let currentExperience = 0;
+              const fromDate = formValues['Period From'];
+              const toDate = formValues['Period To'];
+              if (fromDate && toDate) {
+                currentExperience = this.utils.calculateDuration(
+                  new Date(fromDate),
+                  new Date(toDate),
+                  sub.score_field_field_weightage || 1,
+                  'decimalYears'
+                );
+              }
+
+              if (!isDeleted) {
+                totalCalculatedExperience += currentExperience;
+              }
+
+              const detail = {
+                a_rec_app_score_field_detail_id: existingDetailId || undefined,
+                registration_no: registrationNo,
+                a_rec_app_main_id: a_rec_app_main_id,
+                a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+                score_field_parent_id: sub.score_field_parent_id,
+                m_rec_score_field_id: sub.m_rec_score_field_id,
+                m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
+                score_field_value: currentExperience,
+                score_field_actual_value: currentExperience,
+                score_field_calculated_value: currentExperience,
+                field_marks: sub.score_field_field_marks || 0,
+                field_weightage: sub.score_field_field_weightage || 0,
+                verify_remark: 'Not Verified',
+                active_status: 'Y',
+                delete_flag: isDeleted ? 'Y' : 'N',
+                action_type: existingDetailId ? 'U' : 'C',
+                action_date: new Date().toISOString(),
+                action_ip_address: '127.0.0.1',
+                action_remark: 'data inserted/updated',
+                action_by: 1,
+                score_field_row_index: validRowIndex,
+              };
+              allDetails.push(detail);
+
+              if (!isDeleted || (isDeleted && existingDetailId)) {
+                const paramsList = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
+
+                // 🚨 CRITICAL REFAC: Inner loop changed to for...of loop to process hashes sequentially
+                for (const param of paramsList) {
+                  const paramName = param.score_field_parameter_name;
+                  const paramValue = formValues[paramName];
+                  const isNewFile = paramValue instanceof File;
+                  const existingParamId = formGroup.get(`param_${param.m_rec_score_field_parameter_new_id}_id`)?.value;
+                  const existingFilePath = param.control_type === 'A' ? this.getFilePath(key, param.m_rec_score_field_parameter_new_id, rawIndex) : null;
+
+                  let finalParameterValue = '';
+
+                  if (isNewFile) {
+                    // ✅ Empty file validation guard
+                    if (paramValue.size === 0) {
+                      throw new Error(`The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`);
+                    }
+
+                    const { fullPath } = this.generateFilePath(
+                      registrationNo,
+                      paramValue,
+                      sub.score_field_parent_id,
+                      sub.m_rec_score_field_id,
+                      param.m_rec_score_field_parameter_new_id,
+                      validRowIndex
+                    );
+                    finalParameterValue = fullPath;
+
+                    const fileControlName = `${registrationNo}_${sub.score_field_parent_id}_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${validRowIndex}`;
+
+                    formData.append(fileControlName, paramValue, paramValue.name);
+
+                    // ✅ Calculate block payload hash string and map to payload key structure
+                    const fileHash = await this.calculateFileHash(paramValue);
+                    formData.append(`${fileControlName}_hash`, fileHash);
+
+                  } else if (param.control_type === 'A' && existingFilePath) {
+                    finalParameterValue = existingFilePath;
+                  } else if (param.control_type !== 'A' && paramValue != null) {
+                    finalParameterValue = String(paramValue);
+                  }
+
+                  if (finalParameterValue !== '' || existingParamId) {
+                    const parameter = {
+                      a_rec_app_score_field_parameter_detail_id: existingParamId || undefined,
+                      a_rec_app_score_field_detail_id: existingDetailId || undefined,
+                      registration_no: registrationNo,
+                      score_field_parent_id: sub.score_field_parent_id,
+                      m_rec_score_field_id: sub.m_rec_score_field_id,
+                      m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
+                      parameter_value: finalParameterValue || '',
+                      parameter_row_index: validRowIndex,
+                      parameter_display_no: param.parameter_display_order,
+                      verify_remark: 'Not Verified',
+                      active_status: 'Y',
+                      delete_flag: isDeleted ? 'Y' : 'N',
+                      action_type: existingParamId ? 'U' : 'C',
+                      action_date: new Date().toISOString(),
+                      action_remark: 'parameter inserted/updated',
+                      action_by: 1,
+                    };
+                    allParameters.push(parameter);
+                  }
+                }
+              }
+              validRowIndex++;
+            }
+          }
+
+          if (!this.heading) {
+            throw new Error('Cannot submit, heading information is missing.');
+          }
+
+          const parentRecord = {
+            ...(this.existingParentDetailId && {
+              a_rec_app_score_field_detail_id: this.existingParentDetailId,
+            }),
+            registration_no: registrationNo,
+            a_rec_app_main_id: a_rec_app_main_id,
+            a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
+            score_field_parent_id: 0,
+            m_rec_score_field_id: this.heading.m_rec_score_field_id,
+            m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
+            score_field_value: this.heading.score_field_field_marks,
+            score_field_actual_value: totalCalculatedExperience,
+            score_field_calculated_value: Math.min(
+              totalCalculatedExperience,
+              this.heading.score_field_field_marks
+            ),
+            field_marks: this.heading?.score_field_field_marks,
+            field_weightage: this.heading?.score_field_field_weightage,
+            verify_remark: 'Not Verified',
+            action_type: 'U',
+            action_date: new Date().toISOString(),
+            action_remark: 'parent data updated from recruitment form',
+            action_by: 1,
+            delete_flag: 'N',
+          };
+
+          formData.append('parentScore', JSON.stringify(parentRecord));
+          formData.append('registration_no', registrationNo.toString());
+          formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
+          formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
+
+          // STEP 6: Execute payload transmission over HTTP pipeline
+          const res = await lastValueFrom(
             this.HTTP.postForm(
               '/candidate/postFile/saveOrUpdateCandidateScoreCard',
               formData,
@@ -1109,33 +1127,25 @@
           );
 
           if (res?.body?.error) {
-            this.alertService.alert(
-              true,
-              res.body.error.message || 'An error occurred on the server.'
-            );
-            this.loader.hideLoader();
-            disabledGroups.forEach(g => g.enable({ emitEvent: false }));
-            throw new Error(res.body.error.message);
+            throw new Error(res.body.error.message || 'An error occurred on the server.');
           }
+
           this.loader.hideLoader();
           disabledGroups.forEach(g => g.enable({ emitEvent: false }));
           await this.alertService.alert(false, 'Data saved successfully!');
 
           this.getParameterValuesAndPatch();
+          this.emitFormData();
           this.cdr.markForCheck();
+
         } catch (err: any) {
-          const errorMessage =
-            err.error?.message ||
-            err.message ||
-            'An unknown error occurred while saving.';
-          this.alertService.alert(true, `Error: ${errorMessage}`);
           this.loader.hideLoader();
           disabledGroups.forEach(g => g.enable({ emitEvent: false }));
+          const errorMessage = err.error?.message || err.message || 'An unknown error occurred while saving.';
+          this.alertService.alert(true, `Error: ${errorMessage}`);
           this.cdr.markForCheck();
-          throw err;
+          return Promise.reject(err);
         }
-
-        this.emitFormData();
       }
 
       private emitFormData(): void {
