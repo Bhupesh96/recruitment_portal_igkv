@@ -10,25 +10,36 @@ import { PdfDownloadComponent } from './recruitment-user/components/pages/pdf-do
 import { DawapattiComponent } from './recruitment-user/components/pages/dawapatti/dawapatti/dawapatti.component';
 import { DawapattiHomeComponent } from './recruitment-user/components/pages/dawapatti/dawapatti-home/dawapatti-home.component';
 import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
+import {RecruitmentAuthGuard} from '../../../shared/service/recruitment-auth.guard';
+
 
 const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' }, // 👈 Default route
 
+  // 🔓 PUBLIC ROUTES (No Guard)
   { path: 'home', component: HomeComponent },
 
-  { path: 'login', component: LoginComponent },
 
-  { path: 'pdf-preview', component: PdfPreviewComponent },
-  { path: 'pdf-download', component: PdfDownloadComponent },
+  // 🔒 PROTECTED ROUTES (Requires Login)
+  {
+    path: 'pdf-preview',
+    component: PdfPreviewComponent,
+    canActivate: [RecruitmentAuthGuard] // 👈 Blocks access if not logged in
+  },
+  {
+    path: 'pdf-download',
+    component: PdfDownloadComponent,
+    canActivate: [RecruitmentAuthGuard]
+  },
 
-
-  // ✅ Dawapatti layout with nested routes
+  // 🔒 PROTECTED LAYOUT WITH CHILDREN
   {
     path: 'recruitment',
     component: DawapattiHomeComponent,
+    canActivate: [RecruitmentAuthGuard],      // 👈 Protects the main layout
+    canActivateChild: [RecruitmentAuthGuard], // 👈 Automatically protects all children inside this layout
     children: [
       { path: '', redirectTo: 'recruitment-form', pathMatch: 'full' },
-
       { path: 'recruitment-form', component: StepperComponent },
     ],
   },

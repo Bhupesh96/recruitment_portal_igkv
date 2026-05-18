@@ -846,6 +846,7 @@
           <input
             formControlName="Permanent_Address1"
             type="text"
+            (input)="onCharacterInput($event)"
             autocomplete="none"
             [class.border-red-600]="
               form.get('Permanent_Address1')?.invalid &&
@@ -1055,6 +1056,7 @@
           <input
             formControlName="Current_Address1"
             input="text"
+            (input)="onCharacterInput($event)"
             autocomplete="none"
             [class.border-red-600]="
               form.get('Current_Address1')?.invalid &&
@@ -1695,5 +1697,27 @@
         </button>
       </div>
     </div>
+    <div *ngIf="isUploading" class="border border-blue-200 rounded-lg p-4 bg-white shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-blue-800 flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          Uploading your data, please do not close this page...
+        </span>
+        <span class="text-sm font-semibold text-blue-800">{{ uploadProgress }}%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+        <div
+          class="bg-blue-700 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+          [style.width.%]="uploadProgress">
+        </div>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">
+        Please wait while your photo, signature and documents are being uploaded securely.
+      </p>
+    </div>
+
   </div>
 </form>

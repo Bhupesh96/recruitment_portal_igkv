@@ -92,20 +92,41 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     // Start by assuming only mandatory steps are active until API loads
     this.activeSteps = this.masterSteps.filter(s => s.isMandatory);
 
-    this.userSub = this.recruitmentStateService.userData$.subscribe((user: any) => {
-      if (user) {
-        // Fetch dynamic steps from API using user data
-        this.fetchDynamicSteps(user);
+    // 1. Immediately check if we already have the user data synchronously
+    const currentUser = this.recruitmentStateService.getCurrentUserData();
+    if (currentUser && currentUser.a_rec_adv_main_id) {
+      this.handleUserReady(currentUser);
+    }
 
-        // Lock form if already declared
-        if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
-          this.isFinalDeclared = true;
-        } else if (user.registration_no && !this.dbCheckDone) {
-          this.dbCheckDone = true;
-          this.verifyLockStatusFromDB(user.registration_no);
-        }
+    // 2. Also subscribe in case it loads asynchronously later (or changes)
+    this.userSub = this.recruitmentStateService.userData$.subscribe((user: any) => {
+      if (user && user.a_rec_adv_main_id) {
+        this.handleUserReady(user);
       }
     });
+
+    // 3. Fallback: If 5 seconds pass and we STILL haven't loaded steps, abort the spinner
+    setTimeout(() => {
+      if (this.isLoadingSteps) {
+        console.warn("User data took too long to load. Aborting spinner.");
+        this.isLoadingSteps = false;
+      }
+    }, 5000);
+  }
+
+  // Refactored logic to keep things clean
+  private handleUserReady(user: any) {
+    // Prevent fetching multiple times if the subscription fires rapidly
+    if (!this.isLoadingSteps && this.activeSteps.length > 2) return;
+
+    this.fetchDynamicSteps(user);
+
+    if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
+      this.isFinalDeclared = true;
+    } else if (user.registration_no && !this.dbCheckDone) {
+      this.dbCheckDone = true;
+      this.verifyLockStatusFromDB(user.registration_no);
+    }
   }
 
   // ✅ 2. Call API and filter master steps
