@@ -11,7 +11,7 @@ import { DawapattiComponent } from './recruitment-user/components/pages/dawapatt
 import { DawapattiHomeComponent } from './recruitment-user/components/pages/dawapatti/dawapatti-home/dawapatti-home.component';
 import { ScorecardComponent } from './recruitment-user/components/pages/dawapatti/scorecard/scorecard.component';
 import {RecruitmentAuthGuard} from '../../../shared/service/recruitment-auth.guard';
-
+import {RecruitmentFormGuard} from '../../../shared/service/recruitment-form.guard';
 
 const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' }, // 👈 Default route
@@ -32,15 +32,29 @@ const routes: Routes = [
     canActivate: [RecruitmentAuthGuard]
   },
 
-  // 🔒 PROTECTED LAYOUT WITH CHILDREN
   {
     path: 'recruitment',
-    component: DawapattiHomeComponent,
-    canActivate: [RecruitmentAuthGuard],      // 👈 Protects the main layout
-    canActivateChild: [RecruitmentAuthGuard], // 👈 Automatically protects all children inside this layout
+    component: DawapattiHomeComponent, // The layout with Sidenav and <router-outlet>
+    canActivate: [RecruitmentAuthGuard],
+    canActivateChild: [RecruitmentAuthGuard],
     children: [
-      { path: '', redirectTo: 'recruitment-form', pathMatch: 'full' },
-      { path: 'recruitment-form', component: StepperComponent },
+      // 🚨 REMOVE the redirectTo: 'recruitment-form'
+      // Leave the path empty, but don't attach a component so the parent layout handles the logic
+      { path: '', pathMatch: 'full', children: [] },
+
+      {
+        path: 'recruitment-form',
+        component: StepperComponent,
+        canActivate: [RecruitmentFormGuard] // This guard remains strictly for this URL
+      },
+      {
+        path: 'score-card',
+        component: ScorecardComponent,
+      },
+      {
+        path: 'dawapatti',
+        component: DawapattiComponent,
+      },
     ],
   },
 

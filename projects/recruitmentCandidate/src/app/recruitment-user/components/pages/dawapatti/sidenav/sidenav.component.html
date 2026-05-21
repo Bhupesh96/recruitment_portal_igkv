@@ -12,7 +12,7 @@
   <ul class="relative flex-1 px-3 py-5 space-y-1 overflow-y-auto z-10 select-none">
 
     <!-- Recruitment Form -->
-    <li>
+    <li *ngIf="showRecruitmentForm">
       <a
         (click)="changeView('recruitment-form')"
         [class.active-link]="currentView === 'recruitment-form'"

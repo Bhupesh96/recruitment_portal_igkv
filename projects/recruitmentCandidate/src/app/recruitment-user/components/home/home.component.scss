@@ -272,3 +272,6 @@ $white: #ffffff;
     }
   }
 }
+.clip-label {
+  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+}

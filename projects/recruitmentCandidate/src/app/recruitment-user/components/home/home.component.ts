@@ -1,15 +1,17 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { SignupComponent } from '../pages/registration/signup/signup.component';
-import { HeaderComponent } from '../header/header.component';
-import { FooterComponent } from '../footer/footer.component';
-import { LoginComponent } from '../pages/registration/login/login.component';
-import { StepperComponent } from '../pages/stepper/stepper.component';
-import { HttpService, AuthService } from 'shared';
-import { Router } from '@angular/router';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {RouterModule} from '@angular/router';
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {SignupComponent} from '../pages/registration/signup/signup.component';
+import {HeaderComponent} from '../header/header.component';
+import {FooterComponent} from '../footer/footer.component';
+import {LoginComponent} from '../pages/registration/login/login.component';
+import {StepperComponent} from '../pages/stepper/stepper.component';
+import {HttpService, AuthService} from 'shared';
+import {Router} from '@angular/router';
+import {environment} from 'environment';
+import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
 
 interface Advertisement {
   a_rec_adv_main_id: number;
@@ -51,20 +53,20 @@ export class HomeComponent implements OnInit {
   ads: Advertisement[] = [];
   allPosts: Post[] = [];
   selectedAdDetails: Advertisement | null = null;
-  backendBaseUrl = 'http://192.168.1.57:3500';
   sessions: any[] = [];
-
+  latestNotifications: any[] = [];
+  marqueeItems: any[] = [];
   tabsWithoutLogin: Array<'signup' | 'notification' | 'complaint'> = [
     'signup',
     'notification',
     'complaint',
   ];
-
+  showMarqueeModal = false;
   // ✅ New Object to track the active status and message for each tab
   linkStatuses: any = {
-    signup: { active: false, message: 'Registration is currently closed.' },
-    notification: { active: false, message: 'Notifications are currently unavailable.' },
-    complaint: { active: false, message: 'Online Complaint is currently closed.' }
+    signup: {active: false, message: 'Registration is currently closed.'},
+    notification: {active: false, message: 'Notifications are currently unavailable.'},
+    complaint: {active: false, message: 'Online Complaint is currently closed.'}
   };
 
   isMobileView = false;
@@ -75,8 +77,10 @@ export class HomeComponent implements OnInit {
   constructor(
     private HTTP: HttpService,
     private router: Router,
+    private sanitizer: DomSanitizer,
     private authService: AuthService
-  ) {}
+  ) {
+  }
 
   ngOnInit() {
     if (this.authService.isLoggedIn()) {
@@ -94,22 +98,38 @@ export class HomeComponent implements OnInit {
     return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 
+  formatDateForView(dateStr: string): string {
+
+    if (!dateStr) return '';
+
+    const d = new Date(dateStr.replace(' ', 'T'));
+
+    const pad = (n: number) =>
+      n.toString().padStart(2, '0');
+
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+  }
+
   showLoginForm() {
     this.showLogin = true;
     this.showSignup = false;
   }
+
   showSignupForm() {
     this.showLogin = false;
     this.showSignup = true;
   }
+
   switchToLogin() {
     this.showLogin = true;
     this.showSignup = false;
   }
+
   showSelectionView() {
     this.showLogin = false;
     this.showSignup = true;
   }
+
   handleLoginSuccess() {
     this.router.navigate(['/recruitment']);
   }
@@ -133,7 +153,7 @@ export class HomeComponent implements OnInit {
     }
 
     const sessionId = this.sessions[index].academic_session_id;
-    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', { academic_session_id: sessionId }, 'recruitement').subscribe((result: any): void => {
+    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', {academic_session_id: sessionId}, 'recruitement').subscribe((result: any): void => {
       const fetchedAds = result.body.data || [];
       if (fetchedAds.length > 0) {
         this.selectedSession = sessionId.toString();
@@ -148,7 +168,7 @@ export class HomeComponent implements OnInit {
   }
 
   getAdvertisement(academic_session_id: number) {
-    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', { academic_session_id }, 'recruitement').subscribe((result: any): void => {
+    this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', {academic_session_id}, 'recruitement').subscribe((result: any): void => {
       this.ads = result.body.data || [];
       if (this.ads.length > 0) {
         this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
@@ -190,23 +210,79 @@ export class HomeComponent implements OnInit {
       next: (res: any) => {
         // Reset defaults
         this.linkStatuses = {
-          signup: { active: false, message: 'Registration configuration not found.' },
-          notification: { active: false, message: 'Notifications configuration not found.' },
-          complaint: { active: false, message: 'Online Complaint configuration not found.' }
+          signup: {active: false, message: 'Registration configuration not found.'},
+          notification: {active: false, message: 'Notifications configuration not found.'},
+          complaint: {active: false, message: 'Online Complaint configuration not found.'}
         };
-
+        this.latestNotifications = [];
+        this.latestNotifications = [];
         if (res?.body?.data) {
           const now = new Date();
 
           res.body.data.forEach((link: any) => {
-            const name = link.linkname?.trim().toLowerCase();
+            // Latest Notifications
+            if (
+              link.m_rec_link_type_id === 5 &&
+              link.Live_YN === 'Y'
+            ) {
+
+              const startDate = new Date(
+                link.startDate.replace(' ', 'T')
+              );
+
+              const endDate = new Date(
+                link.endDate.replace(' ', 'T')
+              );
+
+              const now = new Date();
+
+              if (now >= startDate && now <= endDate) {
+
+                this.latestNotifications.push({
+                  title: link.linkname,
+                  file_path: link.file_path,
+                  target_url: link.TargetUrl,
+                  startDate: link.startDate,
+                  endDate: link.endDate
+                });
+              }
+            }
+            // Marquee
+            if (
+              link.m_rec_link_type_id === 8 &&
+              link.Live_YN === 'Y' &&
+              link.visible_after_login == 'N'
+            ) {
+
+              const startDate = new Date(
+                link.startDate.replace(' ', 'T')
+              );
+
+              const endDate = new Date(
+                link.endDate.replace(' ', 'T')
+              );
+
+              const now = new Date();
+
+              if (now >= startDate && now <= endDate) {
+
+                this.marqueeItems.push({
+                  title: link.linkname,
+                  file_path: link.file_path,
+                  target_url: link.TargetUrl
+                });
+              }
+            }
             let key = '';
 
-            // Map the API string to our HTML keys
-            if (name === 'signup') key = 'signup';
-            else if (name === 'notification') key = 'notification';
-            else if (name === 'online complain' || name === 'online complaint') key = 'complaint';
-
+            // Use system codes instead of dynamic names
+            if (link.isHeadingYN === 'S') {
+              key = 'signup';
+            } else if (link.isHeadingYN === 'L') {
+              key = 'notification';
+            } else if (link.isHeadingYN === 'O') {
+              key = 'complaint';
+            }
             if (key) {
               const startDate = new Date(link.startDate.replace(' ', 'T'));
               const endDate = new Date(link.endDate.replace(' ', 'T'));
@@ -239,7 +315,7 @@ export class HomeComponent implements OnInit {
   }
 
   fetchPostsByAdvertisement(adId: string) {
-    this.HTTP.getParam('/publicapi/get/getPostByAdvertimentForLogin/', { a_rec_adv_main_id: adId }, 'recruitement').subscribe({
+    this.HTTP.getParam('/publicapi/get/getPostByAdvertimentForLogin/', {a_rec_adv_main_id: adId}, 'recruitement').subscribe({
       next: (result: any) => {
         const postsList = result.body.data || [];
 
@@ -274,7 +350,7 @@ export class HomeComponent implements OnInit {
   }
 
   fetchSubjectsForPost(post: Post) {
-    this.HTTP.getParam('/publicapi/get/getSubjectsByPostDetailIdForLogin', { a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id }, 'recruitement').subscribe({
+    this.HTTP.getParam('/publicapi/get/getSubjectsByPostDetailIdForLogin', {a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id}, 'recruitement').subscribe({
       next: (result: any) => {
         if (result.body && result.body.data) post.subjects = result.body.data;
       },
@@ -287,17 +363,36 @@ export class HomeComponent implements OnInit {
     return 0;
   }
 
-  get filteredAds(): Advertisement[] { return this.ads; }
-  get filteredPosts(): Post[] { return this.selectedAd ? this.allPosts : []; }
+  get filteredAds(): Advertisement[] {
+    return this.ads;
+  }
 
-  setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') { post.activeTab = tab; }
-  togglePost(post: Post) { post.expanded = !post.expanded; }
+  get filteredPosts(): Post[] {
+    return this.selectedAd ? this.allPosts : [];
+  }
 
-  getFileUrl(filePath: string | undefined): string {
-    if (!filePath) return '';
-    let normalizedPath = filePath.replace(/\\/g, '/');
-    normalizedPath = normalizedPath.replace(/^\.\.\//, '/');
-    return `${this.backendBaseUrl}${normalizedPath}`;
+  setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') {
+    post.activeTab = tab;
+  }
+
+  togglePost(post: Post) {
+    post.expanded = !post.expanded;
+  }
+
+  getFileUrl(fileName?: string): SafeUrl {
+
+    if (!fileName) {
+      return this.sanitizer.bypassSecurityTrustUrl('');
+    }
+
+    const normalized = fileName
+      .replace(/^services[\\/]/, '')
+      .replace(/\\/g, '/');
+
+    const url =
+      `${environment.recruitmentFileBaseUrl}/${normalized}`;
+
+    return this.sanitizer.bypassSecurityTrustUrl(url);
   }
 
   isValidFile(filePath: any): boolean {
@@ -306,4 +401,5 @@ export class HomeComponent implements OnInit {
     if (strPath === '' || strPath === 'null' || strPath === 'undefined') return false;
     return true;
   }
+
 }

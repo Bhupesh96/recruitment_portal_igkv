@@ -1,7 +1,7 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpService, AuthService } from 'shared';
-
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-sidenav',
   standalone: true,
@@ -15,7 +15,7 @@ export class SidenavComponent implements OnInit {
   // Flags to control menu visibility
   showScoreCard: boolean = false;
   showDawapatti: boolean = false;
-
+  showRecruitmentForm: boolean = false;
   // Track the active view for styling
   currentView: string = 'recruitment-form';
 
@@ -24,7 +24,8 @@ export class SidenavComponent implements OnInit {
 
   constructor(
     private httpService: HttpService,
-    private authService: AuthService
+    private authService: AuthService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -37,23 +38,23 @@ export class SidenavComponent implements OnInit {
 
   changeView(viewName: string) {
     this.currentView = viewName;
-    this.viewChanged.emit(viewName);
-  }
 
+    // Update parent component UI
+    this.viewChanged.emit(viewName);
+
+    // Update URL
+    this.router.navigate(['/recruitment', viewName]);
+  }
   checkMenuVisibility() {
     const user = this.authService.currentUser;
-    console.log('Sidenav - Current User:', user); // Debugging: check if user object is loaded
 
     if (!user) return;
 
-    // Retrieve IDs from the logged-in user session
     const advId = user.a_rec_adv_main_id || user.advertisement_id;
     const sessionId = user.academic_session_id || user.session_id;
 
-    console.log('Sidenav - Extracted IDs:', { advId, sessionId }); // Debugging: Check if IDs exist
-
     if (!advId || !sessionId) {
-      console.warn('Missing Advertisement or Session ID for Link Management in Sidenav');
+      console.warn('Missing Advertisement or Session ID');
       return;
     }
 
@@ -61,32 +62,60 @@ export class SidenavComponent implements OnInit {
 
     this.httpService.getData(url, 'recruitement').subscribe({
       next: (res: any) => {
-        // ✅ FIX: Use res?.body?.data exactly like you do in login.component.ts
         const linksData = res?.body?.data || res?.data;
-
-        console.log('Sidenav - Link Data Received:', linksData); // Debugging
 
         if (linksData) {
           const now = new Date();
 
-          linksData.forEach((link: any) => {
-            const name = link.linkname?.trim().toLowerCase();
+          // reset flags
+          this.showRecruitmentForm = false;
+          this.showDawapatti = false;
+          this.showScoreCard = false;
 
-            if (link.Live_YN === 'Y') {
+          linksData.forEach((link: any) => {
+            const type = link.isHeadingYN;
+            const live = link.Live_YN;
+
+            if (live === 'Y') {
               const startDate = new Date(link.startDate.replace(' ', 'T'));
               const endDate = new Date(link.endDate.replace(' ', 'T'));
 
-              // Check if current date falls within the active window
               if (now >= startDate && now <= endDate) {
-                if (name === 'dawa patti' || name === 'dawapatti') {
-                  this.showDawapatti = true;
-                }
-                if (name === 'score card' || name === 'scorecard') {
-                  this.showScoreCard = true;
-                }
+                if (type === 'R') this.showRecruitmentForm = true;
+                if (type === 'D') this.showDawapatti = true;
+                if (type === 'SC') this.showScoreCard = true;
               }
             }
           });
+
+          // 🚦 TRAFFIC CONTROLLER LOGIC 🚦
+          // If the user lands on the base '/recruitment' URL, auto-route them to the first available open link
+          if (this.router.url === '/recruitment' || this.router.url === '/recruitment/') {
+
+            if (this.showRecruitmentForm) {
+              this.currentView = 'recruitment-form';
+              this.router.navigate(['/recruitment/recruitment-form']);
+            }
+            else if (this.showScoreCard) {
+              this.currentView = 'score-card';
+              this.router.navigate(['/recruitment/score-card']);
+            }
+            else if (this.showDawapatti) {
+              this.currentView = 'dawapatti';
+              this.router.navigate(['/recruitment/dawapatti']);
+            }
+            else {
+              // Nothing is open, send them home
+              this.router.navigate(['/home']);
+            }
+
+          } else {
+            // User went directly to a specific URL (e.g., '/recruitment/score-card')
+            // Just update the active tab styling to match the URL
+            if (this.router.url.includes('recruitment-form')) this.currentView = 'recruitment-form';
+            if (this.router.url.includes('score-card')) this.currentView = 'score-card';
+            if (this.router.url.includes('dawapatti')) this.currentView = 'dawapatti';
+          }
         }
       },
       error: (err) => console.error('Failed to load menu link status', err),

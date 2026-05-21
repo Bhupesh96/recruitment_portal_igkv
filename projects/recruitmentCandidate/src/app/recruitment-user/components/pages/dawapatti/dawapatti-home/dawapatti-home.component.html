@@ -2,7 +2,82 @@
 <div class="flex flex-col h-screen overflow-hidden">
   <!-- Header (fixed) -->
   <app-dawapatti-header></app-dawapatti-header>
+  <!-- After Login Marquee -->
+  <div
+    *ngIf="marqueeItems.length"
+    class="relative flex items-center overflow-hidden bg-[#1a0000] border-y border-red-900 h-12 shadow-md"
+  >
 
+    <!-- Left Label -->
+    <div
+      class="relative z-20 flex items-center h-full px-6 bg-gradient-to-r from-red-700 to-red-600 text-white font-black uppercase tracking-[0.18em] text-sm shadow-lg"
+      style="clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%)"
+    >
+
+      <!-- Pulse Dot -->
+      <span class="relative flex h-2.5 w-2.5 mr-3">
+
+      <span
+        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-200 opacity-75"
+      ></span>
+
+      <span
+        class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-100"
+      ></span>
+
+    </span>
+
+      Latest Updates
+
+    </div>
+
+    <!-- Scrolling Content -->
+    <div
+      class="flex animate-marquee whitespace-nowrap pl-10 hover:[animation-play-state:paused]"
+    >
+
+      <a
+        *ngFor="let item of marqueeItems"
+        [href]="item.file_path ? getFileUrl(item.file_path) : item.target_url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group inline-flex items-center !text-gray-100 visited:!text-gray-100 hover:!text-yellow-200 active:!text-white no-underline transition-all duration-300 px-8 text-[15px] font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+      >
+
+        <!-- Diamond -->
+        <span
+          class="w-2 h-2 bg-red-400 rotate-45 mr-4 opacity-90 group-hover:scale-125 group-hover:bg-yellow-300 transition-all duration-300"
+        ></span>
+
+        <!-- Text -->
+        <span class="tracking-wide group-hover:tracking-wider transition-all duration-300">
+        {{ item.title }}
+      </span>
+
+      </a>
+
+    </div>
+
+    <!-- View All Button -->
+    <button
+      type="button"
+      (click)="showMarqueeModal = true"
+      class="absolute right-3 z-30 flex items-center gap-2 px-4 h-9 rounded-3 bg-red-600 text-white text-sm font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.45)] hover:shadow-[0_10px_24px_rgba(220,38,38,0.6)] hover:scale-[1.04] active:scale-[0.98] transition-all duration-200"
+    >
+
+
+      <span>
+    View All
+  </span>
+
+    </button>
+
+    <!-- Right Gradient Fade -->
+    <div
+      class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#1a0000] via-[#1a0000]/95 to-transparent pointer-events-none"
+    ></div>
+
+  </div>
   <div class="flex flex-1 overflow-hidden">
 
     <!-- ✅ Sidebar: Listen for the (viewChanged) event -->
@@ -33,4 +108,119 @@
 
   <!-- Footer -->
   <app-footer></app-footer>
+  <!-- Marquee Modal -->
+  <div
+    *ngIf="showMarqueeModal"
+    class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+  >
+
+    <!-- Modal Box -->
+    <div
+      class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
+    >
+
+      <!-- Header -->
+      <div
+        class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-red-700 to-red-600"
+      >
+
+        <div class="flex items-center gap-3">
+
+          <div
+            class="w-1.5 h-7 rounded-full bg-white"
+          ></div>
+
+          <h3
+            class="text-2xl font-black text-white tracking-tight mb-0"
+          >
+            Latest Updates
+          </h3>
+
+        </div>
+
+        <!-- Close -->
+        <button
+          type="button"
+          (click)="showMarqueeModal = false"
+          class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white text-xl font-bold transition"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <!-- Body -->
+      <div
+        class="max-h-[70vh] overflow-y-auto p-6 space-y-3 bg-gray-50"
+      >
+
+        <a
+          *ngFor="let item of marqueeItems"
+          [href]="item.file_path ? getFileUrl(item.file_path) : item.target_url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group flex items-center justify-between bg-white border border-gray-200 rounded-xl px-5 py-4 hover:border-red-300 hover:bg-red-50/40 hover:shadow-md transition-all duration-200 no-underline"
+        >
+
+          <!-- Left -->
+          <div class="flex items-center gap-4 min-w-0">
+
+            <!-- Icon -->
+            <div
+              class="flex items-center justify-center w-11 h-11 rounded-xl bg-red-100 text-red-700 flex-shrink-0"
+            >
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M13 2L3 14h7v8l11-12h-7z"
+                />
+              </svg>
+
+            </div>
+
+            <!-- Text -->
+            <div
+              class="font-bold text-gray-900 group-hover:text-red-700 transition truncate"
+            >
+              {{ item.title }}
+            </div>
+
+          </div>
+
+          <!-- Right -->
+          <div
+            class="flex items-center gap-2 text-red-700 font-bold text-sm"
+          >
+
+            <span>Open</span>
+
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 group-hover:translate-x-1 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+
+          </div>
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
 </div>
