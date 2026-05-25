@@ -1,184 +1,351 @@
-<div
-  class="w-full max-w-md mx-auto p-6 sm:p-8 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-200 font-['Source Sans Pro',sans-serif]"
->
-  <!-- Title -->
-  <h2 class="text-3xl font-bold text-gray-900 mb-1 text-center tracking-tight">
-    Log In
-  </h2>
-  <p class="text-center text-gray-600 text-base mb-8">
-    Access your recruitment dashboard
-  </p>
+  <div
+    class="w-full max-w-md mx-auto p-6 sm:p-8 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-200 font-['Source Sans Pro',sans-serif]"
+  >
+    <!-- Title -->
+    <h2 class="text-3xl font-bold text-gray-900 mb-1 text-center tracking-tight">
+      Log In
+    </h2>
+    <p class="text-center text-gray-600 text-base mb-2">
+      Access your recruitment dashboard
+    </p>
+    <div
+      *ngIf="showOtpModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    >
 
-  <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-5">
-    <!-- Registration Number -->
-    <div>
-      <label class="block text-base font-semibold text-gray-800 mb-1.5">
-        Registration Number <span class="text-red-700">*</span>
-      </label>
+      <!-- Modal Box -->
+      <div
+        class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-fadeIn"
+      >
 
-      <div class="relative">
-        <span class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-700">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14c4.418 0 8-2.239 8-5s-3.582-5-8-5-8 2.239-8 5 3.582 5 8 5z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 17c1.5-2 4.5-3 7-3s5.5 1 7 3" />
-          </svg>
-        </span>
-
-        <input
-          type="number"
-          formControlName="user_id"
-          placeholder="Registration number"
-          class="w-full border border-gray-300 rounded-lg pl-11 pr-4 py-2.5 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
-        />
-      </div>
-    </div>
-
-    <!-- Password -->
-    <div>
-      <label class="block text-base font-semibold text-gray-800 mb-1.5">
-        Password <span class="text-red-700">*</span>
-      </label>
-
-      <div class="relative">
-        <span class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-700">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 11V7a5 5 0 10-10 0v4H5v10h14V11h-2z" />
-          </svg>
-        </span>
-
-        <input
-          [type]="showPassword ? 'text' : 'password'"
-          formControlName="password"
-          placeholder="Password"
-          class="w-full border border-gray-300 rounded-lg pl-11 pr-11 py-2.5 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
-        />
-
-        <!-- Eye Toggle -->
+        <!-- Close Button -->
         <button
           type="button"
-          (click)="togglePasswordVisibility()"
-          class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-gray-500 hover:text-blue-700 transition-colors"
-          aria-label="Toggle password visibility"
+          (click)="showOtpModal = false"
+          class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-red-700 hover:bg-red-600 text-white hover:text-red-600 transition flex items-center justify-center rounded-2"
         >
-          <svg *ngIf="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-          <svg *ngIf="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M6.81 6.792A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.963 9.963 0 01-4.058 5.319" />
-          </svg>
+          ✕
         </button>
+
+        <!-- Header -->
+        <div class="bg-blue-100 border-b border-blue-200 px-6 py-5">
+          <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-900">
+            Important OTP Requirement
+          </h2>
+
+          <p class="text-gray-600 text-center mt-2 text-sm md:text-base">
+            Please complete this step before signup
+          </p>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 md:p-8">
+
+          <div class="flex flex-col md:flex-row items-center gap-8">
+
+            <!-- QR -->
+            <div class="flex flex-col items-center">
+
+              <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-md">
+                <img
+                  src="sandesh.svg"
+                  alt="Sandes QR"
+                  class="w-48 h-48 object-contain"
+                />
+              </div>
+
+              <p class="mt-4 text-sm font-bold tracking-wide text-gray-500 uppercase">
+                Scan To Download
+              </p>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 text-center md:text-left">
+
+              <div class="flex items-center gap-2 justify-center md:justify-start mb-4">
+                <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+
+                <span class="font-bold text-green-700 text-sm uppercase tracking-wide">
+              Mandatory Step
+            </span>
+              </div>
+
+              <h3 class="text-2xl font-bold text-gray-900 leading-snug mb-4">
+                Install Sandes App To Receive OTP
+              </h3>
+
+              <p class="text-gray-700 leading-relaxed text-base mb-5">
+                To receive your OTP successfully, you must install the
+                <span class="font-bold text-blue-700">Sandes App</span>
+                and log in using the
+                <span class="font-bold text-gray-900">
+    same mobile number
+  </span>
+                that you entered during signup.
+              </p>
+
+              <!-- Features -->
+              <div class="space-y-3 mb-6">
+
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 text-green-600">✔</div>
+                  <p class="text-gray-700 text-sm">
+                    OTP will be sent through Sandes App
+                  </p>
+                </div>
+
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 text-green-600">✔</div>
+                  <p class="text-gray-700 text-sm">
+                    Register with same mobile number
+                  </p>
+                </div>
+
+                <div class="flex items-start gap-3">
+                  <div class="mt-1 text-green-600">✔</div>
+                  <p class="text-gray-700 text-sm">
+                    Keep notification permission enabled
+                  </p>
+                </div>
+
+              </div>
+
+              <!-- Buttons -->
+              <div class="flex items-center justify-center md:justify-start gap-3 flex-nowrap">
+
+                <a
+                  href="https://igkv.ac.in/__Manual/sandesAppInstallationManual.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 h-10 rounded-lg text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+
+                  Installation Manual
+                </a>
+
+                <button
+                  type="button"
+                  (click)="showOtpModal = false"
+                  class="inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 h-10 rounded-lg text-sm font-semibold shadow-sm transition-all whitespace-nowrap"
+                >
+                  Continue Login
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- Captcha Section (Optimized for Sidebar) -->
-    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
-      <!-- Row 1: Captcha Image Container -->
-      <div
-        #captchaContainer
-        class="w-full min-h-[3.5rem] py-2 flex items-center justify-center border border-gray-300 bg-white rounded [&>svg]:max-w-full [&>svg]:h-auto mb-2"
+    <div class="flex justify-center mb-2">
+      <button
+        type="button"
+        (click)="showOtpModal = true"
+        class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 h-10 rounded-lg transition-all"
       >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+
+        OTP Info
+      </button>
+    </div>
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="space-y-5">
+      <!-- Registration Number -->
+      <div>
+        <label class="block text-base font-semibold text-gray-800 mb-1.5">
+          Registration Number <span class="text-red-700">*</span>
+        </label>
+
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 14c4.418 0 8-2.239 8-5s-3.582-5-8-5-8 2.239-8 5 3.582 5 8 5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 17c1.5-2 4.5-3 7-3s5.5 1 7 3" />
+            </svg>
+          </span>
+
+          <input
+            type="number"
+            formControlName="user_id"
+            placeholder="Registration number"
+            class="w-full border border-gray-300 rounded-lg pl-11 pr-4 py-2.5 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
+          />
+        </div>
       </div>
 
-      <!-- Row 2: Input and Refresh Group -->
-      <div class="flex items-center gap-2">
+      <!-- Password -->
+      <div>
+        <label class="block text-base font-semibold text-gray-800 mb-1.5">
+          Password <span class="text-red-700">*</span>
+        </label>
+
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 w-11 flex items-center justify-center text-blue-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 11V7a5 5 0 10-10 0v4H5v10h14V11h-2z" />
+            </svg>
+          </span>
+
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Password"
+            class="w-full border border-gray-300 rounded-lg pl-11 pr-11 py-2.5 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
+          />
+
+          <!-- Eye Toggle -->
+          <button
+            type="button"
+            (click)="togglePasswordVisibility()"
+            class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-gray-500 hover:text-blue-700 transition-colors"
+            aria-label="Toggle password visibility"
+          >
+            <svg *ngIf="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <svg *ngIf="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M6.81 6.792A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.963 9.963 0 01-4.058 5.319" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Captcha Section (Optimized for Sidebar) -->
+      <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+        <!-- Row 1: Captcha Image Container -->
+        <div
+          #captchaContainer
+          class="w-full min-h-[3.5rem] py-2 flex items-center justify-center border border-gray-300 bg-white rounded [&>svg]:max-w-full [&>svg]:h-auto mb-2"
+        >
+        </div>
+
+        <!-- Row 2: Input and Refresh Group -->
+        <div class="flex items-center gap-2">
+          <input
+            type="text"
+            formControlName="captcha"
+            placeholder="Captcha"
+            class="flex-grow border border-gray-300 rounded-lg px-3 py-2 text-base bg-white text-gray-900 focus:ring-1 focus:ring-gray-400 outline-none"
+          />
+
+          <button
+            type="button"
+            (click)="getCaptcha()"
+            class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:text-blue-700 hover:border-blue-400 shadow-sm transition-all"
+            title="Refresh Captcha"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="loginError" class="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg text-center font-bold">
+        ⚠ {{ loginError }}
+      </div>
+      <div *ngIf="otpSent" class="mt-4">
+
+        <label
+          class="block text-base font-semibold text-gray-800 mb-1.5"
+        >
+          Login OTP
+        </label>
+
         <input
           type="text"
-          formControlName="captcha"
-          placeholder="Captcha"
-          class="flex-grow border border-gray-300 rounded-lg px-3 py-2 text-base bg-white text-gray-900 focus:ring-1 focus:ring-gray-400 outline-none"
+
+          [(ngModel)]="loginOtp"
+
+          [ngModelOptions]="{ standalone: true }"
+
+          maxlength="6"
+
+          placeholder="Enter OTP"
+
+          class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base"
         />
 
-        <button
-          type="button"
-          (click)="getCaptcha()"
-          class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-300 text-gray-600 hover:text-blue-700 hover:border-blue-400 shadow-sm transition-all"
-          title="Refresh Captcha"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a9 9 0 0115.5-5.5L20 10M20 14a9 9 0 01-15.5 5.5L4 14" />
-          </svg>
-        </button>
       </div>
-    </div>
-
-    <!-- Error Message -->
-    <div *ngIf="loginError" class="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg text-center font-bold">
-      ⚠ {{ loginError }}
-    </div>
-    <div *ngIf="otpSent" class="mt-4">
-
-      <label
-        class="block text-base font-semibold text-gray-800 mb-1.5"
+      <div
+        *ngIf="otpSent"
+        class="flex items-center justify-between mt-2"
       >
-        Login OTP
-      </label>
 
-      <input
-        type="text"
-
-        [(ngModel)]="loginOtp"
-
-        [ngModelOptions]="{ standalone: true }"
-
-        maxlength="6"
-
-        placeholder="Enter OTP"
-
-        class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base"
-      />
-
-    </div>
-    <div
-      *ngIf="otpSent"
-      class="flex items-center justify-between mt-2"
+    <span
+      class="text-sm text-gray-500"
     >
 
-  <span
-    class="text-sm text-gray-500"
-  >
+      <ng-container *ngIf="!canResendOtp">
 
-    <ng-container *ngIf="!canResendOtp">
+        Resend OTP in
+        {{ resendSeconds }}s
 
-      Resend OTP in
-      {{ resendSeconds }}s
+      </ng-container>
 
-    </ng-container>
+    </span>
 
-  </span>
+        <button
+          *ngIf="canResendOtp"
 
+          type="button"
+
+          (click)="resendOtp()"
+
+          class="text-sm font-bold text-blue-700 hover:text-blue-800"
+        >
+
+          Resend OTP
+
+        </button>
+
+      </div>
+      <!-- Submit Button (Unified Blue-700) -->
       <button
-        *ngIf="canResendOtp"
-
-        type="button"
-
-        (click)="resendOtp()"
-
-        class="text-sm font-bold text-blue-700 hover:text-blue-800"
+        type="submit"
+        [disabled]="loginForm.invalid || isLoggingIn"
+        class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold text-base h-12 rounded-lg shadow-sm transition-all disabled:bg-blue-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-
-        Resend OTP
-
+        <svg *ngIf="!isLoggingIn" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+        <span *ngIf="isLoggingIn" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+        {{
+          isLoggingIn
+            ? 'Please wait...'
+            : otpSent
+              ? 'Verify OTP'
+              : 'Log In'
+        }}
       </button>
-
-    </div>
-    <!-- Submit Button (Unified Blue-700) -->
-    <button
-      type="submit"
-      [disabled]="loginForm.invalid || isLoggingIn"
-      class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold text-base h-12 rounded-lg shadow-sm transition-all disabled:bg-blue-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-    >
-      <svg *ngIf="!isLoggingIn" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-      </svg>
-      <span *ngIf="isLoggingIn" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-      {{
-        isLoggingIn
-          ? 'Please wait...'
-          : otpSent
-            ? 'Verify OTP'
-            : 'Log In'
-      }}
-    </button>
-  </form>
-</div>
+    </form>
+  </div>

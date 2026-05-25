@@ -42,7 +42,7 @@ export class LoginComponent implements OnInit {
   isLoggingIn = false; // Prevents multiple clicks while APIs are running
   otpSent = false;
   resendSeconds = 30;
-
+  showOtpModal = false;
   canResendOtp = false;
 
   private resendInterval: any;

@@ -41,6 +41,7 @@
     confirmPassword = '';
     captchaError = '';
     userAnswer = '';
+    showOtpModal = true;
     // OTP
     otpMobile = '';
     otpEmail = '';
