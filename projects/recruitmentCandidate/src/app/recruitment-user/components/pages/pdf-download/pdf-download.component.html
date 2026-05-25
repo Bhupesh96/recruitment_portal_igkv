@@ -111,7 +111,7 @@
         <div class="sub-section-heading-bar">Additional Information</div>
         <div class="details-flex">
           <div class="detail-item" *ngFor="let item of formData[1].additionalInfoDetails">
-            <span class="label">{{ item.question }}:</span> {{ formatValue(item.answer) }}
+            <span class="label">{{ item.question }}:</span> {{ formatValue(item.answer, item.question) }}
           </div>
         </div>
       </ng-container>

@@ -62,18 +62,18 @@ export class AlertService {
     })
   }
 
-  confirmAlert(title: any, html: any, icons: any): any {
-    return Swal.fire({
-      title: `<b>${title}</b>`,
-      text: html,
-      icon: icons,
-      showConfirmButton: true,
-      showCancelButton: true,
-      confirmButtonText: 'Yes',
-      cancelButtonText: 'No',
-      backdrop: true,
-    })
-  }
+    confirmAlert(title: any, html: any, icons: any): any {
+      return Swal.fire({
+        title: `<b>${title}</b>`,
+        text: html,
+        icon: icons,
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        backdrop: true,
+      })
+    }
 
    confirmAlert_custom(
     title: any,

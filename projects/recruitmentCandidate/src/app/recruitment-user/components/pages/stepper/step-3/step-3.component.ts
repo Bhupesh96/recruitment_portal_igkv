@@ -393,10 +393,9 @@ export class Step3Component implements OnInit {
     return hasRows;
   }
 
-  getCountOptions(): number[] {
-    return Array.from({ length: 10 }, (_, i) => i + 1);
+  getCountOptions(maxRows: number = 10): number[] {
+    return Array.from({ length: maxRows }, (_, i) => i + 1);
   }
-
   getCheckboxName(detailForm: AbstractControl): string {
     const typeValue = detailForm.get('type')?.value;
     for (const subHeading of this.subHeadings) {

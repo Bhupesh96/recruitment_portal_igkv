@@ -1275,6 +1275,37 @@ export class Step1Component implements OnChanges, OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
       const file = input.files[0];
+      const allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+
+        this.alert.alert(
+          true,
+          'Only JPG, JPEG and PNG files are allowed for photo.'
+        );
+
+        input.value = '';
+
+        return;
+      }
+
+      const maxSize = 100 * 1024;
+
+      if (file.size > maxSize) {
+
+        this.alert.alert(
+          true,
+          'Photo size cannot exceed 100 KB.'
+        );
+
+        input.value = '';
+
+        return;
+      }
       this.form.get('photo')?.setValue(file);
       this.form.get('photo')?.setValidators([Validators.required]);
       this.form.get('photo')?.updateValueAndValidity();
@@ -1292,6 +1323,37 @@ export class Step1Component implements OnChanges, OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files?.length) {
       const file = input.files[0];
+      const allowedTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+
+        this.alert.alert(
+          true,
+          'Only JPG, JPEG and PNG files are allowed for photo.'
+        );
+
+        input.value = '';
+
+        return;
+      }
+
+      const maxSize = 50 * 1024;
+
+      if (file.size > maxSize) {
+
+        this.alert.alert(
+          true,
+          'Signature size cannot exceed 50 KB.'
+        );
+
+        input.value = '';
+
+        return;
+      }
       this.form.get('signature')?.setValue(file);
       this.form.get('signature')?.setValidators([Validators.required]);
       this.form.get('signature')?.updateValueAndValidity();

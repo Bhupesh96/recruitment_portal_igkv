@@ -40,7 +40,17 @@ export class LoginComponent implements OnInit {
   showPassword = false;
   loginError = '';
   isLoggingIn = false; // Prevents multiple clicks while APIs are running
+  otpSent = false;
+  resendSeconds = 30;
 
+  canResendOtp = false;
+
+  private resendInterval: any;
+  loginOtp = '';
+
+  tempLoginPayload: any = null;
+
+  verifiedUserData: any = null;
   constructor(
     private httpService: HttpService,
     private authService: AuthService,
@@ -83,7 +93,13 @@ export class LoginComponent implements OnInit {
 
   onLogin() {
     this.loginError = '';
+    if (this.otpSent) {
 
+      this.verifyLoginOtp();
+
+      return;
+
+    }
     if (this.loginForm.invalid) {
       this.loginError = 'Please fill in all required fields.';
       return;
@@ -161,10 +177,12 @@ export class LoginComponent implements OnInit {
             }
           }
         }
-
         if (isAllowed) {
-          // Proceed to Step 3
-          this.executeFinalLogin();
+
+          // STEP 3:
+          // Validate credentials first
+          this.validateLoginCredentials();
+
         } else {
           this.handleFailedVerification(errorMsg);
         }
@@ -174,7 +192,305 @@ export class LoginComponent implements OnInit {
       },
     });
   }
+  private validateLoginCredentials() {
 
+    const encryptedPassword =
+
+      CryptoJS.AES.encrypt(
+
+        this.loginForm.value.password,
+
+        this.passwordKey
+
+      ).toString();
+
+    const payload = {
+
+      user_id:
+      this.loginForm.value.user_id,
+
+      password:
+      encryptedPassword
+
+    };
+
+    this.alertService.showLoading(
+
+      'Please wait...',
+
+      'Validating credentials'
+
+    );
+
+    this.httpService.postData(
+
+      '/publicApi/post/validateLoginCredentials',
+
+      payload,
+
+      'recruitement'
+
+    ).subscribe({
+
+      next: (res: any) => {
+
+        if (
+          res?.body?.error
+        ) {
+
+          this.alertService.closeAlert();
+
+          this.handleLoginError(
+            res.body.error
+          );
+
+          return;
+
+        }
+
+        // Save user data temporarily
+        this.verifiedUserData =
+
+          res?.body?.data;
+
+        // Send OTP
+        this.sendLoginOtp();
+
+      },
+
+      error: (err) => {
+
+        this.alertService.closeAlert();
+
+        this.handleLoginError(
+          err?.error?.error
+        );
+
+      }
+
+    });
+
+  }
+  private sendLoginOtp() {
+
+    const payload = {
+
+      mobile_no:
+      this.verifiedUserData.mobile_no,
+
+      email_id:
+      this.verifiedUserData.email_id,
+
+      purpose:
+        'LOGIN',
+
+      action_remark:
+        'Login OTP'
+
+    };
+
+    this.alertService.showLoading(
+
+      'Please wait...',
+
+      'Sending OTP'
+
+    );
+
+    this.httpService.postData(
+
+      '/publicapi/post/saveRecruitmentOtpVerification',
+
+      payload,
+
+      'recruitement'
+
+    ).subscribe({
+
+      next: (res: any) => {
+
+        this.alertService.closeAlert();
+
+        if (
+          res?.body?.error
+        ) {
+
+          this.alertService.alert(
+
+            true,
+
+            res.body.error.message ||
+
+            'Unable to send OTP.'
+
+          );
+
+          this.isLoggingIn = false;
+
+          return;
+
+        }
+
+        this.otpSent = true;
+        this.startOtpTimer();
+        this.alertService.alert(
+
+          false,
+
+          'OTP sent successfully.'
+
+        );
+
+        this.isLoggingIn = false;
+
+      },
+
+      error: () => {
+
+        this.alertService.closeAlert();
+
+        this.alertService.alert(
+
+          true,
+
+          'Unable to send OTP.'
+
+        );
+
+        this.isLoggingIn = false;
+
+      }
+
+    });
+
+  }
+  startOtpTimer() {
+
+    this.canResendOtp = false;
+
+    this.resendSeconds = 30;
+
+    clearInterval(
+      this.resendInterval
+    );
+
+    this.resendInterval =
+      setInterval(() => {
+
+        if (
+          this.resendSeconds > 0
+        ) {
+
+          this.resendSeconds--;
+
+        }
+
+        else {
+
+          this.canResendOtp = true;
+
+          clearInterval(
+            this.resendInterval
+          );
+
+        }
+
+      }, 1000);
+
+  }resendOtp() {
+
+    if (!this.canResendOtp) {
+      return;
+    }
+
+    this.sendLoginOtp();
+
+  }
+  private verifyLoginOtp() {
+
+    if (!this.loginOtp) {
+
+      this.alertService.alert(
+
+        true,
+
+        'Please enter OTP.'
+
+      );
+
+      return;
+
+    }
+
+    this.alertService.showLoading(
+
+      'Please wait...',
+
+      'Verifying OTP'
+
+    );
+
+    this.httpService.postData(
+
+      '/publicapi/post/verifyRecruitmentOtp',
+
+      {
+
+        mobile_no:
+        this.verifiedUserData.mobile_no,
+
+        otp:
+        this.loginOtp
+
+      },
+
+      'recruitement'
+
+    ).subscribe({
+
+      next: (res: any) => {
+
+        this.alertService.closeAlert();
+
+        if (
+          !res?.body?.data ||
+          res.body.data.length === 0
+        ) {
+
+          this.alertService.alert(
+
+            true,
+
+            'Invalid or expired OTP.'
+
+          );
+
+          return;
+
+        }
+
+        // OTP verified
+        this.executeFinalLogin();
+
+      },
+
+      error: () => {
+
+        this.alertService.closeAlert();
+
+        this.alertService.alert(
+
+          true,
+
+          'Unable to verify OTP.'
+
+        );
+
+      }
+
+    });
+
+  }
   // STEP 3: Execute the Actual Login Payload
   private executeFinalLogin() {
     const encryptedPassword = CryptoJS.AES.encrypt(

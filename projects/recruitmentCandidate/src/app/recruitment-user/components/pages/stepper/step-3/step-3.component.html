@@ -95,7 +95,7 @@
                   >
                     <option [ngValue]="null" selected>Select Count</option>
                     <option
-                      *ngFor="let n of getCountOptions()"
+                      *ngFor="let n of getCountOptions(item.score_field_no_of_rows || 10)"
                       [value]="n"
                       [disabled]="n <= getExistingRowCount(item)"
                     >

@@ -8,7 +8,7 @@ import {HeaderComponent} from '../header/header.component';
 import {FooterComponent} from '../footer/footer.component';
 import {LoginComponent} from '../pages/registration/login/login.component';
 import {StepperComponent} from '../pages/stepper/stepper.component';
-import {HttpService, AuthService} from 'shared';
+import {HttpService, AuthService, AlertService} from 'shared';
 import {Router} from '@angular/router';
 import {environment} from 'environment';
 import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
@@ -56,6 +56,12 @@ export class HomeComponent implements OnInit {
   sessions: any[] = [];
   latestNotifications: any[] = [];
   marqueeItems: any[] = [];
+  complaintProblems: any[] = [];
+  selectedProblemId: number | null = null;
+  complaintRegistrationNo = '';
+  complaintUserData: any = null;
+  complaintProblemText = '';
+  complaintFile: File | null = null;
   tabsWithoutLogin: Array<'signup' | 'notification' | 'complaint'> = [
     'signup',
     'notification',
@@ -78,7 +84,8 @@ export class HomeComponent implements OnInit {
     private HTTP: HttpService,
     private router: Router,
     private sanitizer: DomSanitizer,
-    private authService: AuthService
+    private authService: AuthService,
+    private alertService: AlertService,
   ) {
   }
 
@@ -88,6 +95,7 @@ export class HomeComponent implements OnInit {
       return;
     }
     this.getAcademicSession();
+    this.getComplaintProblems();
     this.checkViewport();
     window.addEventListener('resize', this.checkViewport.bind(this));
   }
@@ -141,6 +149,34 @@ export class HomeComponent implements OnInit {
         this.findFirstSessionWithAds(0);
       }
     });
+  }
+  getComplaintProblems() {
+
+    this.HTTP.getData(
+      '/publicApi/get/getComplaintProblems?module_id=12',
+      'recruitement'
+    ).subscribe({
+
+      next: (res: any) => {
+
+        this.complaintProblems =
+          res?.body?.data || [];
+
+      },
+
+      error: (err) => {
+
+        console.error(
+          'Error loading complaint problems',
+          err
+        );
+
+        this.complaintProblems = [];
+
+      }
+
+    });
+
   }
 
   findFirstSessionWithAds(index: number) {
@@ -400,6 +436,338 @@ export class HomeComponent implements OnInit {
     const strPath = String(filePath).trim().toLowerCase();
     if (strPath === '' || strPath === 'null' || strPath === 'undefined') return false;
     return true;
+  }
+  onComplaintFileChange(event: any) {
+
+    const file =
+      event?.target?.files?.[0];
+
+    if (!file) return;
+
+    // Max 1 MB
+    const maxSize =
+      1 * 1024 * 1024;
+
+    // Allowed Types
+    const allowedTypes = [
+
+      'application/pdf',
+
+      'image/png',
+
+      'image/jpeg',
+
+      'image/jpg'
+
+    ];
+
+    // File Size Validation
+    if (file.size > maxSize) {
+
+      this.alertService.alertMessage(
+        'File Size Limit',
+        'File size must be less than 1 MB.',
+        'info'
+      );
+
+      // Reset
+      event.target.value = '';
+
+      this.complaintFile = null;
+
+      return;
+
+    }
+
+    // File Type Validation
+    if (!allowedTypes.includes(file.type)) {
+
+      this.alertService.alertMessage(
+        'Upload Failed',
+        'Only PDF, JPG and PNG files are allowed.',
+        'error'
+      );
+
+      // Reset
+      event.target.value = '';
+
+      this.complaintFile = null;
+
+      return;
+
+    }
+
+    // Success
+    this.complaintFile = file;
+
+    this.alertService.alert(
+
+      false,
+
+      'File selected successfully.',
+
+      1200
+
+    );
+
+  }
+  submitComplaint() {
+
+    // Problem Validation
+    if (!this.selectedProblemId) {
+
+      this.alertService.alertMessage(
+
+        'Warning',
+
+        'Please select problem type.',
+
+        'warning'
+
+      );
+
+      return;
+
+    }
+
+    // Registration Validation
+    if (!this.complaintRegistrationNo) {
+
+      this.alertService.alertMessage(
+
+        'Warning',
+
+        'Please enter registration number.',
+
+        'warning'
+
+      );
+
+      return;
+
+    }
+
+    // Problem Description
+    if (!this.complaintProblemText?.trim()) {
+
+      this.alertService.alertMessage(
+
+        'Warning',
+
+        'Please enter problem description.',
+
+        'warning'
+
+      );
+
+      return;
+
+    }
+
+    // Loader
+    this.alertService.showLoading(
+      'Please wait...',
+      'Verifying registration details'
+    );
+
+    // STEP 1: VERIFY REGISTRATION
+    this.HTTP.getData(
+
+      `/publicApi/get/getRegistration?registration_no=${this.complaintRegistrationNo}`,
+
+      'recruitement'
+
+    ).subscribe({
+
+      next: (verifyRes: any) => {
+
+        const data =
+          verifyRes?.body?.data || [];
+
+        // Invalid Registration
+        if (!data.length) {
+
+          this.alertService.closeAlert();
+
+          this.alertService.alertMessage(
+
+            'Invalid Registration',
+
+            'Registration number not found.',
+
+            'warning'
+
+          );
+
+          return;
+
+        }
+
+        const userData = data[0];
+
+        // STEP 2: CREATE FORMDATA
+        const formData = new FormData();
+
+        const payloadObj = {
+
+          problem_id:
+          this.selectedProblemId,
+
+          subproblem_id: 0,
+
+          student_emp_id:
+          userData.registration_no,
+
+          student_emp_name:
+          userData.applicant_name,
+
+          mobile_no:
+          userData.mobile_no,
+
+          email_id:
+          userData.email_id,
+
+          problem:
+          this.complaintProblemText,
+
+          resolve_yn: 'N',
+
+          delete_flag: 'N',
+
+          active_status: 'Y',
+
+          action_type: 'C',
+
+          action_remark:
+            'Complaint submitted from recruitment portal',
+
+          action_by:
+          userData.registration_no
+
+        };
+
+        formData.append(
+          'data',
+          JSON.stringify(payloadObj)
+        );
+
+        // File
+        if (this.complaintFile) {
+
+          formData.append(
+            'problem_screen_shot',
+            this.complaintFile,
+            this.complaintFile.name
+          );
+
+        }
+
+        // STEP 3: SAVE COMPLAINT
+        this.HTTP.postForm(
+
+          '/public/postFile/saveRecruitmentComplaintRegistration',
+
+          formData,
+
+          'academic'
+
+        ).subscribe({
+
+          next: (res: any) => {
+
+            this.alertService.closeAlert();
+
+            if (
+              res?.body?.error ||
+              res?.error
+            ) {
+
+              const errMsg =
+
+                res?.body?.error?.message ||
+
+                res?.error?.message ||
+
+                'Unable to submit complaint.';
+
+              this.alertService.alertMessage(
+
+                'Warning',
+
+                errMsg,
+
+                'warning'
+
+              );
+
+              return;
+
+            }
+
+            // Success
+            this.alertService.alertMessage(
+
+              'Success',
+
+              'Complaint submitted successfully.',
+
+              'success'
+
+            );
+
+            // Reset
+            this.selectedProblemId = null;
+
+            this.complaintRegistrationNo = '';
+
+            this.complaintProblemText = '';
+
+            this.complaintFile = null;
+
+          },
+
+          error: (err) => {
+
+            this.alertService.closeAlert();
+
+            console.error(err);
+
+            this.alertService.alertMessage(
+
+              'Error',
+
+              'Unable to submit complaint.',
+
+              'error'
+
+            );
+
+          }
+
+        });
+
+      },
+
+      error: (err) => {
+
+        this.alertService.closeAlert();
+
+        console.error(err);
+
+        this.alertService.alertMessage(
+
+          'Error',
+
+          'Unable to verify registration number.',
+
+          'error'
+
+        );
+
+      }
+
+    });
+
   }
 
 }

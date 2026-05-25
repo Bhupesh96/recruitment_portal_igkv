@@ -126,11 +126,60 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     );
   }
 
-  formatValue(value: any): string {
-    if (this.isFileValue(value)) return '✓ File Uploaded';
-    if (value === null || value === undefined || value === '') return '—';
-    if (Array.isArray(value)) return value.join(', ');
-    if (typeof value === 'object') return '';
+  formatValue(value: any, question?: string): string {
+
+    // Category Mapping
+    if (
+      question?.toLowerCase().includes('category')
+    ) {
+
+      const categoryMap: any = {
+
+        UR: 'Unreserved (UR)',
+
+        OBC: 'Other Backward Class (OBC)',
+
+        SC: 'Scheduled Caste (SC)',
+
+        ST: 'Scheduled Tribe (ST)',
+
+        EWS: 'Economically Weaker Section (EWS)',
+
+        1: 'Unreserved (UR)',
+
+        2: 'Other Backward Class (OBC)',
+
+        3: 'Scheduled Caste (SC)',
+
+        4: 'Scheduled Tribe (ST)',
+
+        5: 'Economically Weaker Section (EWS)',
+
+      };
+
+      return categoryMap[value] || value;
+    }
+
+    if (this.isFileValue(value)) {
+      return '✓ File Uploaded';
+    }
+
+    if (
+      value === null ||
+      value === undefined ||
+      value === ''
+    ) {
+      return '—';
+    }
+
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return '';
+    }
+
     return String(value);
   }
 
