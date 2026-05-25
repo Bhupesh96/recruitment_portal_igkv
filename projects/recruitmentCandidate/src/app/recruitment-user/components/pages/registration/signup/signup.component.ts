@@ -166,114 +166,172 @@
     }
 
     sendOtp() {
+
       // Validate
-      if (!this.validateMobileAndEmail()) return;
+      if (!this.validateMobileAndEmail()) {
+        return;
+      }
 
       // Loader
-      this.alertService.showLoading('Please wait...', 'Checking registration');
+      this.alertService.showLoading(
 
-      // STEP 1: Check already registered
+        'Please wait...',
+
+        'Checking registration'
+
+      );
+
+      // STEP 1:
+      // Check already registered
       this.http.getData(
+
         `/publicApi/get/getRegistration?checkRegistration=true&mobile_no=${this.mobile}&email_id=${this.email}`,
+
         'recruitement'
+
       ).subscribe({
+
         next: (checkRes: any) => {
+
           // Already Registered
-          if (checkRes?.body?.data?.length > 0) {
+          if (
+            checkRes?.body?.data?.length > 0
+          ) {
+
             this.alertService.closeAlert();
-            this.alertService.alertMessage('Warning', 'Mobile number or email is already registered.', 'warning');
+
+            this.alertService.alertMessage(
+
+              'Warning',
+
+              'Mobile number or email is already registered.',
+
+              'warning'
+
+            );
+
             return;
+
           }
 
-          // STEP 2: Generate and Save OTP in Backend
+          // STEP 2:
+          // Send OTP
           const payload = {
+
             mobile_no: this.mobile,
+
             email_id: this.email,
+
             purpose: 'REGISTRATION',
-            action_remark: 'OTP generated for recruitment signup'
+
+            action_remark:
+              'OTP generated for recruitment signup'
+
           };
 
-          this.alertService.showLoading('Please wait...', 'Generating OTP');
+          this.alertService.showLoading(
 
-          this.http.postData('/publicapi/post/saveRecruitmentOtpVerification', payload, 'recruitement')
-            .subscribe({
-              next: (res: any) => {
-                if (res?.body?.error) {
-                  this.alertService.closeAlert();
-                  this.alertService.alertMessage('Warning', res.body.error.message || 'Unable to generate OTP.', 'warning');
-                  return;
-                }
+            'Please wait...',
 
-                // Successfully saved in DB. Now extract the generated OTP to send it via SMS
-                // 🚨 Fixed to check inside '.data' as well
-                const generatedOtp = res?.body?.data?.generated_otp || res?.body?.generated_otp;
+            'Sending OTP'
 
-                if (!generatedOtp) {
-                  this.alertService.closeAlert();
-                  this.alertService.alertMessage('Error', 'OTP was not generated properly by the server.', 'error');
-                  return;
-                }
+          );
 
-                // STEP 3: Dispatch SMS from Frontend
-                this.alertService.showLoading('Please wait...', 'Sending SMS');
-                this.dispatchSmsFromFrontend(generatedOtp, this.mobile);
-              },
-              error: (err: any) => {
-                this.alertService.closeAlert();
-                console.error(err);
-                this.alertService.alertMessage('Error', 'Unable to generate OTP.', 'error');
+          this.http.postData(
+
+            '/publicapi/post/saveRecruitmentOtpVerification',
+
+            payload,
+
+            'recruitement'
+
+          ).subscribe({
+
+            next: (res: any) => {
+
+              this.alertService.closeAlert();
+
+              if (res?.body?.error) {
+
+                this.alertService.alertMessage(
+
+                  'Warning',
+
+                  res.body.error.message ||
+
+                  'Unable to send OTP.',
+
+                  'warning'
+
+                );
+
+                return;
+
               }
-            });
+
+              // Success
+              this.alertService.alertMessage(
+
+                'Success',
+
+                'OTP sent successfully to your mobile number.',
+
+                'success'
+
+              );
+
+              this.otpSent = true;
+
+              this.startResendCooldown();
+
+            },
+
+            error: (err: any) => {
+
+              this.alertService.closeAlert();
+
+              console.error(err);
+
+              this.alertService.alertMessage(
+
+                'Error',
+
+                'Unable to send OTP.',
+
+                'error'
+
+              );
+
+            }
+
+          });
+
         },
+
         error: (err: any) => {
+
           this.alertService.closeAlert();
+
           console.error(err);
-          this.alertService.alertMessage('Error', 'Unable to validate registration.', 'error');
-        }
-      });
-    }
-
-    //  NEW METHOD: Calls the ASMX Endpoint using native 'fetch' to bypass CORS issues
-    dispatchSmsFromFrontend(otpValue: string, mobileNumber: string) {
-      const smsText = `Your OTP for recruitment registration is ${otpValue}. Do not share it with anyone.`;
-
-      // Format the payload as a URL-encoded string
-      const urlEncodedBody = new URLSearchParams();
-      urlEncodedBody.append('userid', '0');
-      urlEncodedBody.append('message', smsText);
-      urlEncodedBody.append('number', mobileNumber);
-
-      // Using native browser 'fetch' with 'no-cors' to bypass strict Angular HTTP checks
-      fetch('https://mguvv.ac.in/__custom/utilities.asmx/sendSandesWithoutFormat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: urlEncodedBody.toString(),
-        mode: 'no-cors' // This is the magic key to ignore cross-origin complaints
-      })
-        .then(() => {
-          // Because we use 'no-cors', the browser won't let us read the actual response data,
-          // but if the promise resolves (.then), we know the network request successfully left the browser.
-          this.alertService.closeAlert();
-          console.log('SMS Dispatch Triggered Successfully via Fetch.');
-
-          this.alertService.alertMessage('Success', 'OTP sent successfully to your mobile number.', 'success');
-          this.otpSent = true;
-          this.startResendCooldown();
-        })
-        .catch((error) => {
-          // This will only trigger if the internet is disconnected or the server physically blocks the connection
-          this.alertService.closeAlert();
-          console.error('Fetch SMS Dispatch Failed:', error);
 
           this.alertService.alertMessage(
-            'OTP Service Unavailable',
-            'OTP service is temporarily unavailable. Please try again later.',
-            'warning'
+
+            'Error',
+
+            'Unable to validate registration.',
+
+            'error'
+
           );
-        });
+
+        }
+
+      });
+
     }
+
+
+
 
     startResendCooldown(seconds: number = 30) {
       this.resendCooldown = seconds;

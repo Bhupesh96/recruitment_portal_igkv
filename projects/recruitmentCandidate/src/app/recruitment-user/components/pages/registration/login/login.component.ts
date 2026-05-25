@@ -273,91 +273,99 @@ export class LoginComponent implements OnInit {
 
   }
   private sendLoginOtp() {
+
     const payload = {
-      mobile_no: this.verifiedUserData.mobile_no,
-      email_id: this.verifiedUserData.email_id,
-      purpose: 'LOGIN',
-      action_remark: 'Login OTP'
+
+      mobile_no:
+      this.verifiedUserData.mobile_no,
+
+      email_id:
+      this.verifiedUserData.email_id,
+
+      purpose:
+        'LOGIN',
+
+      action_remark:
+        'Login OTP'
+
     };
 
-    this.alertService.showLoading('Please wait...', 'Generating OTP');
+    this.alertService.showLoading(
+
+      'Please wait...',
+
+      'Sending OTP'
+
+    );
 
     this.httpService.postData(
+
       '/publicapi/post/saveRecruitmentOtpVerification',
+
       payload,
+
       'recruitement'
+
     ).subscribe({
+
       next: (res: any) => {
-        if (res?.body?.error) {
-          this.alertService.closeAlert();
-          this.alertService.alert(true, res.body.error.message || 'Unable to generate OTP.');
-          this.isLoggingIn = false;
-          return;
-        }
 
-        // Successfully saved in DB. Now extract the generated OTP to send it via SMS
-        const generatedOtp = res?.body?.data?.generated_otp;
-
-        if (!generatedOtp) {
-          this.alertService.closeAlert();
-          this.alertService.alertMessage('Error', 'OTP was not generated properly by the server.', 'error');
-          this.isLoggingIn = false;
-          return;
-        }
-
-        // Dispatch SMS from Frontend
-        this.alertService.showLoading('Please wait...', 'Sending SMS');
-        this.dispatchSmsFromFrontend(generatedOtp, this.verifiedUserData.mobile_no);
-      },
-      error: () => {
         this.alertService.closeAlert();
-        this.alertService.alert(true, 'Unable to generate OTP.');
-        this.isLoggingIn = false;
-      }
-    });
-  }
-  dispatchSmsFromFrontend(otpValue: string, mobileNumber: string) {
-    const smsText = `Your OTP for recruitment login is ${otpValue}. Do not share it with anyone.`;
 
-    // Format the payload as a URL-encoded string
-    const urlEncodedBody = new URLSearchParams();
-    urlEncodedBody.append('userid', '0');
-    urlEncodedBody.append('message', smsText);
-    urlEncodedBody.append('number', mobileNumber);
+        if (
+          res?.body?.error
+        ) {
 
-    // Using native browser 'fetch' with 'no-cors' to bypass strict Angular HTTP checks
-    fetch('https://mguvv.ac.in/__custom/utilities.asmx/sendSandesWithoutFormat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: urlEncodedBody.toString(),
-      mode: 'no-cors' // 🚨 This is the magic key to ignore cross-origin complaints
-    })
-      .then(() => {
-        // Because we use 'no-cors', the browser won't let us read the actual response data,
-        // but if the promise resolves (.then), we know the network request successfully left the browser.
-        this.alertService.closeAlert();
-        console.log('SMS Dispatch Triggered Successfully via Fetch.');
+          this.alertService.alert(
+
+            true,
+
+            res.body.error.message ||
+
+            'Unable to send OTP.'
+
+          );
+
+          this.isLoggingIn = false;
+
+          return;
+
+        }
 
         this.otpSent = true;
         this.startOtpTimer();
-        this.alertService.alertMessage('Success', 'OTP sent successfully to your mobile device.', 'success');
-        this.isLoggingIn = false;
-      })
-      .catch((error) => {
-        // This will only trigger if the internet is disconnected or the server physically blocks the connection
-        this.alertService.closeAlert();
-        console.error('Fetch SMS Dispatch Failed:', error);
+        this.alertService.alert(
 
-        this.alertService.alertMessage(
-          'Gateway Error',
-          'We generated your OTP, but your browser could not connect to the SMS gateway. Please check your internet connection.',
-          'error'
+          false,
+
+          'OTP sent successfully.'
+
         );
+
         this.isLoggingIn = false;
-      });
+
+      },
+
+      error: () => {
+
+        this.alertService.closeAlert();
+
+        this.alertService.alert(
+
+          true,
+
+          'Unable to send OTP.'
+
+        );
+
+        this.isLoggingIn = false;
+
+      }
+
+    });
+
   }
+
   startOtpTimer() {
 
     this.canResendOtp = false;
