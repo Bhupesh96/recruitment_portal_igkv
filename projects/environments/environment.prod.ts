@@ -1,11 +1,12 @@
 
-let host = window.location.protocol + '//' + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+// let host = window.location.protocol + '//' + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+let host = "https://mguvv.ac.in";
 
 const prefix = 'mmis'
 
 export const environment = {
   production: true,
-  printCSS: '',
+  printCSS: `${host}/mmis/commonApi/printcss.css`,
   serverApi: `${host}/Api`,
   PASSWORD_SECRET_KEY: "08t16e502526fesanfjh8nasd2",
   CAPTCHA_SECRET_KEY: '03f26e402586fkisanf2395fsg9632faa8da4c98a35f1b20d6b033c50',

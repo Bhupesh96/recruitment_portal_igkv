@@ -1,6 +1,6 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpService, AuthService, AlertService } from 'shared'; // 🚨 Added AlertService
+import { HttpService, AuthService, AlertService } from 'shared';
 import { Router } from '@angular/router';
 
 @Component({
@@ -26,7 +26,7 @@ export class SidenavComponent implements OnInit {
   constructor(
     private httpService: HttpService,
     private authService: AuthService,
-    private alertService: AlertService, // 🚨 Injected AlertService
+    private alertService: AlertService,
     private router: Router
   ) {}
 
@@ -76,7 +76,6 @@ export class SidenavComponent implements OnInit {
           this.showScoreCard = false;
 
           linksData.forEach((link: any) => {
-            // 🚨 Use the link_type_code (mapped as isHeadingYN in your API)
             const linkTypeCode = link.isHeadingYN;
             const live = link.Live_YN;
 
@@ -94,22 +93,20 @@ export class SidenavComponent implements OnInit {
 
           // 🚨 NO ACTIVE LINKS FOUND LOGIC 🚨
           if (!this.showRecruitmentForm && !this.showScoreCard && !this.showDawapatti) {
-            // Show alert and logout on confirmation/dismissal
-            if (!this.showRecruitmentForm && !this.showScoreCard && !this.showDawapatti) {
-              // Show alert with only an "OK" button
-              this.alertService.confirmAlert_custom(
-                'Portal Closed',
-                'There are no active application forms, score cards, or objection links open for your session at this time.',
-                'info',
-                {
-                  showCancel: false,     // Removes the "No" button
-                  confirmText: 'OK'      // Changes "Yes" to "OK"
-                }
-              ).then(() => {
-                this.logout();
-              });
-              return; // Stop further routing logic
-            }
+            // Show alert with only an "OK" button
+            this.alertService.confirmAlert_custom(
+              'Portal Closed',
+              'There are no active application forms, score cards, or objection links open for your session at this time.',
+              'info',
+              {
+                showCancel: false,     // Removes the "No" button
+                confirmText: 'OK'      // Changes "Yes" to "OK"
+              }
+            ).then(() => {
+              this.logout();
+            });
+            return; // Stop further routing logic
+          }
 
           // 🚦 TRAFFIC CONTROLLER LOGIC 🚦
           // If the user lands on the base '/recruitment' URL, auto-route them to the first available open link
