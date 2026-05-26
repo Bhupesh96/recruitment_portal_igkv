@@ -1,7 +1,8 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpService, AuthService } from 'shared';
+import { HttpService, AuthService, AlertService } from 'shared'; // 🚨 Added AlertService
 import { Router } from '@angular/router';
+
 @Component({
   selector: 'app-sidenav',
   standalone: true,
@@ -25,6 +26,7 @@ export class SidenavComponent implements OnInit {
   constructor(
     private httpService: HttpService,
     private authService: AuthService,
+    private alertService: AlertService, // 🚨 Injected AlertService
     private router: Router
   ) {}
 
@@ -45,6 +47,7 @@ export class SidenavComponent implements OnInit {
     // Update URL
     this.router.navigate(['/recruitment', viewName]);
   }
+
   checkMenuVisibility() {
     const user = this.authService.currentUser;
 
@@ -73,7 +76,8 @@ export class SidenavComponent implements OnInit {
           this.showScoreCard = false;
 
           linksData.forEach((link: any) => {
-            const type = link.isHeadingYN;
+            // 🚨 Use the link_type_code (mapped as isHeadingYN in your API)
+            const linkTypeCode = link.isHeadingYN;
             const live = link.Live_YN;
 
             if (live === 'Y') {
@@ -81,12 +85,31 @@ export class SidenavComponent implements OnInit {
               const endDate = new Date(link.endDate.replace(' ', 'T'));
 
               if (now >= startDate && now <= endDate) {
-                if (type === 'R') this.showRecruitmentForm = true;
-                if (type === 'D') this.showDawapatti = true;
-                if (type === 'SC') this.showScoreCard = true;
+                if (linkTypeCode === 'R') this.showRecruitmentForm = true;
+                if (linkTypeCode === 'D') this.showDawapatti = true;
+                if (linkTypeCode === 'SC') this.showScoreCard = true;
               }
             }
           });
+
+          // 🚨 NO ACTIVE LINKS FOUND LOGIC 🚨
+          if (!this.showRecruitmentForm && !this.showScoreCard && !this.showDawapatti) {
+            // Show alert and logout on confirmation/dismissal
+            if (!this.showRecruitmentForm && !this.showScoreCard && !this.showDawapatti) {
+              // Show alert with only an "OK" button
+              this.alertService.confirmAlert_custom(
+                'Portal Closed',
+                'There are no active application forms, score cards, or objection links open for your session at this time.',
+                'info',
+                {
+                  showCancel: false,     // Removes the "No" button
+                  confirmText: 'OK'      // Changes "Yes" to "OK"
+                }
+              ).then(() => {
+                this.logout();
+              });
+              return; // Stop further routing logic
+            }
 
           // 🚦 TRAFFIC CONTROLLER LOGIC 🚦
           // If the user lands on the base '/recruitment' URL, auto-route them to the first available open link
@@ -104,10 +127,6 @@ export class SidenavComponent implements OnInit {
               this.currentView = 'dawapatti';
               this.router.navigate(['/recruitment/dawapatti']);
             }
-            else {
-              // Nothing is open, send them home
-              this.router.navigate(['/home']);
-            }
 
           } else {
             // User went directly to a specific URL (e.g., '/recruitment/score-card')
@@ -120,5 +139,20 @@ export class SidenavComponent implements OnInit {
       },
       error: (err) => console.error('Failed to load menu link status', err),
     });
+  }
+
+  // 🚨 Helper method to handle logout safely
+  logout() {
+    // Attempt to use your standard AuthService logout method
+    if (this.authService && typeof (this.authService as any).logout === 'function') {
+      (this.authService as any).logout();
+    } else {
+      // Fallback if the method name is different in your AuthService
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+
+    // Redirect to home page
+    this.router.navigate(['/home']);
   }
 }

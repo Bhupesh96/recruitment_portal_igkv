@@ -146,23 +146,26 @@ export class LoginComponent implements OnInit {
   }
 
   // STEP 2: Check Link Management Rules
+// STEP 2: Check Link Management Rules
   private verifyLinkStatus(advId: number, sessionId: number) {
     const linkUrl = `/publicApi/get/getRecruitmentLinkManagementListPublic?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
 
     this.httpService.getData(linkUrl, 'recruitement').subscribe({
       next: (res: any) => {
-        let isAllowed = false;
+        let isLoginAllowed = false;
+        let hasActiveModules = false; // NEW: Track if any actual modules are open
         let errorMsg = 'Login configuration not found for this advertisement.';
 
         if (res && res?.body?.data) {
-          const loginLink = res?.body?.data.find((item: any) => item.linkname === 'Login');
+          const now = new Date();
 
+          // 1. Check if the Login Link itself is valid and active
+          const loginLink = res?.body?.data.find((item: any) => item.isHeadingYN === 'A');
           if (loginLink) {
-            const now = new Date();
             const startDate = new Date(loginLink.startDate.replace(' ', 'T'));
+
             const endDate = new Date(loginLink.endDate.replace(' ', 'T'));
 
-            // Helper function to format Date to DD-MM-YYYY HH:mm:ss
             const formatDateTime = (d: Date) => {
               const pad = (n: number) => n.toString().padStart(2, '0');
               return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -171,19 +174,31 @@ export class LoginComponent implements OnInit {
             if (loginLink.Live_YN !== 'Y') {
               errorMsg = 'Login is currently disabled by administrators.';
             } else if (now < startDate || now > endDate) {
-              // Use the formatted dates in the error message
               errorMsg = `Login portal is only available between ${formatDateTime(startDate)} and ${formatDateTime(endDate)}.`;
             } else {
-              isAllowed = true;
+              isLoginAllowed = true;
             }
           }
+
+          // 2. NEW: Check if any functional modules (R, SC, D) are currently open
+          res.body.data.forEach((link: any) => {
+            const type = link.isHeadingYN;
+            if (link.Live_YN === 'Y' && ['R', 'SC', 'D'].includes(type)) {
+              const startDate = new Date(link.startDate.replace(' ', 'T'));
+              const endDate = new Date(link.endDate.replace(' ', 'T'));
+              if (now >= startDate && now <= endDate) {
+                hasActiveModules = true; // Found at least one open module!
+              }
+            }
+          });
         }
-        if (isAllowed) {
 
-          // STEP 3:
-          // Validate credentials first
+        // Final Validation: Login must be allowed AND at least one module must be open
+        if (isLoginAllowed && hasActiveModules) {
           this.validateLoginCredentials();
-
+        } else if (isLoginAllowed && !hasActiveModules) {
+          // Block login because there's nothing to do inside
+          this.handleFailedVerification('There are no active application forms, score cards, or objection links open at this time.');
         } else {
           this.handleFailedVerification(errorMsg);
         }
