@@ -55,24 +55,24 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild(Step6Component, { static: false }) step6Component?: Step6Component;
   @ViewChild(Step9Component, { static: false }) step9Component?: Step9Component;
   @ViewChild('pdfDownloadComponent') pdfDownloadComponent!: PdfDownloadComponent;
-// 1. Define the Master Mapping of your Steps to the API's m_rec_score_field_id
+
+  // 1. Define the Master Mapping of your Steps to the API's m_rec_score_field_id
   masterSteps: StepDefinition[] = [
     { compId: 1, name: 'Personal Info', isMandatory: true }, // Always show
-
     { compId: 2, name: 'Education', fieldId: 1 },            // Mapped to ID 1
     { compId: 3, name: 'Academics', fieldId: 8 },            // Mapped to ID 8
-
-    // FIX: Updated the fieldIds below with the actual DB IDs from your API response
     { compId: 4, name: 'Publications', fieldId: 3096 },      // Mapped to ID 3096
     { compId: 5, name: 'Experience', fieldId: 32 },          // Mapped to ID 32
     { compId: 6, name: 'Performance', fieldId: 34 },         // Mapped to ID 34
-
     { compId: 9, name: 'Preview & Submit', isMandatory: true } // Always show
   ];
 
   // The actual steps that will be rendered
   activeSteps: StepDefinition[] = [];
   currentStepIndex = 0; // Tracks position in activeSteps array
+
+  // ✅ Track which components the user has actually viewed to allow lazy loading
+  visitedSteps: number[] = [];
 
   formData: { [key: number]: { [key: string]: any } } = {};
   private printTriggered = false;
@@ -114,7 +114,6 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     }, 5000);
   }
 
-  // Refactored logic to keep things clean
   private handleUserReady(user: any) {
     // Prevent fetching multiple times if the subscription fires rapidly
     if (!this.isLoadingSteps && this.activeSteps.length > 2) return;
@@ -129,16 +128,15 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  // ✅ 2. Call API and filter master steps
+  // 2. Call API and filter master steps
   fetchDynamicSteps(user: any) {
     if (!user || !user.a_rec_adv_main_id) return;
 
-    // Build params for the API based on the logged-in user
     const params = {
       a_rec_adv_main_id: user.a_rec_adv_main_id,
       post_code: user.post_code,
       subject_id: user.subject_id,
-      m_rec_es_master_id: 4 // Fallback to 4 based on your URL example
+      m_rec_es_master_id: 4
     };
 
     this.http.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
@@ -159,12 +157,30 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (this.isFinalDeclared) {
           this.currentStepIndex = this.activeSteps.length - 1;
         }
+
+        // ✅ Mark the initial step as visited so it renders immediately
+        this.markStepAsVisited(this.currentStepIndex);
       },
       error: (err) => {
         console.error('Failed to load calculation steps', err);
         this.isLoadingSteps = false;
       }
     });
+  }
+
+  // ✅ Helper method to mark steps as visited
+  markStepAsVisited(index: number) {
+    if (this.activeSteps[index]) {
+      const compId = this.activeSteps[index].compId;
+      if (!this.visitedSteps.includes(compId)) {
+        this.visitedSteps.push(compId);
+      }
+    }
+  }
+
+  // ✅ Helper method for HTML to check if a step has been visited
+  hasVisited(compId: number): boolean {
+    return this.visitedSteps.includes(compId);
   }
 
   verifyLockStatusFromDB(registrationNo: string | number) {
@@ -205,7 +221,6 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     const currentCompId = this.activeSteps[this.currentStepIndex].compId;
 
     try {
-      // Trigger submission based on the ACTIVE component ID
       if (currentCompId === 9) {
         if (this.step9Component) await this.step9Component.submit();
         return;
@@ -220,13 +235,15 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
         case 6: if (this.step6Component) await this.step6Component.submit(); break;
       }
 
-      // Move to next step in the dynamic array
       if (this.currentStepIndex < this.activeSteps.length - 1) {
         const nextCompId = this.activeSteps[this.currentStepIndex + 1].compId;
         if (nextCompId === 9) {
           this.sharedDataService.setFormData(this.formData);
         }
         this.currentStepIndex++;
+
+        // ✅ Mark the newly reached step as visited to lazy-load it
+        this.markStepAsVisited(this.currentStepIndex);
       }
     } catch (error) {
       console.error(`Validation failed for component ${currentCompId}:`, error);
@@ -237,21 +254,26 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.isFinalDeclared) return;
     if (this.currentStepIndex > 0) {
       this.currentStepIndex--;
+
+      // ✅ Mark as visited (just in case)
+      this.markStepAsVisited(this.currentStepIndex);
     }
   }
 
   goToStep(index: number) {
     if (this.isFinalDeclared) return;
 
-    // Only allow jumping forward if previous step is valid, or jumping backward
     if (this.isStepCompleted(index - 1) || index < this.currentStepIndex) {
       this.currentStepIndex = index;
+
+      // ✅ Mark the jumped-to step as visited to lazy-load it
+      this.markStepAsVisited(this.currentStepIndex);
     }
   }
 
   isStepCompleted(index: number): boolean {
     if (this.isFinalDeclared) return true;
-    if (index < 0) return true; // First step is implicitly reachable
+    if (index < 0) return true;
 
     const compId = this.activeSteps[index].compId;
     const stepData = this.formData[compId];

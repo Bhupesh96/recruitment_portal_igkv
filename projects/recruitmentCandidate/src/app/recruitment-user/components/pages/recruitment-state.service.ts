@@ -13,6 +13,7 @@ export interface UserRecruitmentData {
   subject_id: number | null;
   academic_session_id: number | null;
   a_rec_app_main_id: number | null;
+  a_rec_adv_post_detail_id:number | null;
   // This allows for any other properties that might exist on the currentUser object.
   [key: string]: any;
 }

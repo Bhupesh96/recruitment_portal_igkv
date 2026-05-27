@@ -590,6 +590,7 @@
 
     private loadFormData(): Observable<void> {
       const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+      const a_rec_adv_post_detail_id = this.userData?.a_rec_adv_post_detail_id;
       const m_rec_score_field_id = 1;
       const m_rec_score_field = 'N'; //Heading
 
@@ -599,6 +600,7 @@
           m_rec_score_field,
           adv_main_id: a_rec_adv_main_id,
           m_rec_score_field_id,
+          a_rec_adv_post_detail_id
         },
         'recruitement'
       ) as Observable<HttpResponse<ApiResponse<Heading>>>;
@@ -628,7 +630,7 @@
                     a_rec_adv_main_id,
                     m_rec_score_field_id: sub.m_rec_score_field_id,
                     score_field_parent_code: sub.score_field_parent_code,
-
+                    a_rec_adv_post_detail_id,
                     m_parameter_master: 'Y',
                   },
                   'recruitement'

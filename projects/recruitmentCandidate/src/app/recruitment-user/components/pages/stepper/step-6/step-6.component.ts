@@ -651,9 +651,9 @@ export class Step6Component implements OnInit {
   loadFormStructure() {
     const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
     const m_rec_score_field_id = 34; // Main Heading ID
-
+    const a_rec_adv_post_detail_id = this.userData?.a_rec_adv_post_detail_id;
     this.HTTP.getData(
-      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}`,
+      `/master/get/getSubHeadingParameterByParentScoreField?m_rec_score_field=N&adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${m_rec_score_field_id}&a_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
       'recruitement'
     ).subscribe({
       next: (headingResponse: any) => {
@@ -697,7 +697,7 @@ export class Step6Component implements OnInit {
 
             const paramRequests = this.subHeadings.map((sub) =>
               this.HTTP.getData(
-                `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${sub.m_rec_score_field_id}&score_field_parent_code=${sub.score_field_parent_code}&m_parameter_master=Y`,
+                `/master/get/getSubHeadingParameterByParentScoreField?a_rec_adv_main_id=${a_rec_adv_main_id}&m_rec_score_field_id=${sub.m_rec_score_field_id}&score_field_parent_code=${sub.score_field_parent_code}&m_parameter_master=Ya_rec_adv_post_detail_id=${a_rec_adv_post_detail_id}`,
                 'recruitement'
               )
             );
