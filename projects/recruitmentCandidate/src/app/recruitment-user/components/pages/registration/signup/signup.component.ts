@@ -181,37 +181,20 @@
 
       );
 
-      // STEP 1:
-      // Check already registered
-      this.http.getData(
+      const subject = this.subjectId !== null ? this.subjectId : 0;
+      const checkUrl = `/publicApi/get/getRegistration?checkRegistration=true&mobile_no=${this.mobile}&email_id=${this.email}&a_rec_adv_main_id=${this.advertisementId}&post_code=${this.postCode}&subject_id=${subject}`;
 
-        `/publicApi/get/getRegistration?checkRegistration=true&mobile_no=${this.mobile}&email_id=${this.email}`,
-
-        'recruitement'
-
-      ).subscribe({
-
+      this.http.getData(checkUrl, 'recruitement').subscribe({
         next: (checkRes: any) => {
-
           // Already Registered
-          if (
-            checkRes?.body?.data?.length > 0
-          ) {
-
+          if (checkRes?.body?.data?.length > 0) {
             this.alertService.closeAlert();
-
             this.alertService.alertMessage(
-
               'Warning',
-
-              'Mobile number or email is already registered.',
-
+              'You have already registered for this specific Post and Subject.',
               'warning'
-
             );
-
             return;
-
           }
 
           // STEP 2:
