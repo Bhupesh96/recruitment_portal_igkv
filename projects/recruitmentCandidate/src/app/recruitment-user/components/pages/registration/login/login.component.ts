@@ -288,97 +288,79 @@ export class LoginComponent implements OnInit {
 
   }
   private sendLoginOtp() {
-
     const payload = {
-
-      mobile_no:
-      this.verifiedUserData.mobile_no,
-
-      email_id:
-      this.verifiedUserData.email_id,
-
-      purpose:
-        'LOGIN',
-
-      action_remark:
-        'Login OTP'
-
+      mobile_no: this.verifiedUserData.mobile_no,
+      email_id: this.verifiedUserData.email_id,
+      purpose: 'LOGIN',
+      action_remark: 'Login OTP'
     };
 
-    this.alertService.showLoading(
-
-      'Please wait...',
-
-      'Sending OTP'
-
-    );
+    this.alertService.showLoading('Please wait...', 'Sending OTP');
 
     this.httpService.postData(
-
       '/publicapi/post/saveRecruitmentOtpVerification',
-
       payload,
-
       'recruitement'
-
     ).subscribe({
-
       next: (res: any) => {
-
         this.alertService.closeAlert();
 
-        if (
-          res?.body?.error
-        ) {
+        // 1. Convert the entire response to a string to catch sneaky XML payloads in success block
+        const resString = (typeof res === 'string') ? res : JSON.stringify(res);
 
-          this.alertService.alert(
-
-            true,
-
-            res.body.error.message ||
-
-            'Unable to send OTP.'
-
-          );
-
-          this.isLoggingIn = false;
-
-          return;
-
+        // 2. Check if the Sandes error is hiding inside the "success" response
+        if (resString.includes('GEN016') || resString.includes('User not registered')) {
+          this.handleOtpError(resString);
+          return; // Stop execution here!
         }
 
+        // 3. Normal error check
+        if (res?.body?.error) {
+          this.handleOtpError(res.body.error);
+          return;
+        }
+
+        // 4. If we passed all checks, it's a true success
         this.otpSent = true;
         this.startOtpTimer();
-        this.alertService.alert(
-
-          false,
-
-          'OTP sent successfully.'
-
-        );
-
+        this.alertService.alert(false, 'OTP sent successfully.');
         this.isLoggingIn = false;
-
       },
-
-      error: () => {
-
+      error: (err: any) => {
         this.alertService.closeAlert();
 
-        this.alertService.alert(
-
-          true,
-
-          'Unable to send OTP.'
-
-        );
-
-        this.isLoggingIn = false;
-
+        // Pass whatever error object or string the HTTP client caught
+        const errorData = err?.error?.error || err?.error || err?.message || JSON.stringify(err);
+        this.handleOtpError(errorData);
       }
-
     });
+  }
 
+  // Helper method to parse Sandes gateway errors
+  private handleOtpError(errorData: any) {
+    this.isLoggingIn = false;
+    this.otpSent = false; // FORCE the UI to stay on the login form
+
+    // Safely convert the error payload to a string
+    const errString = typeof errorData === 'string' ? errorData : JSON.stringify(errorData);
+
+    // Check for Sandes specific error code or message
+    if (errString.includes('GEN016') || errString.includes('User not registered')) {
+
+      this.alertService.alertMessage(
+        'App Registration Required',
+        'User not registered in Sandes app. Please get registered first.',
+        'info'
+      );
+
+      // Automatically open the instructional modal with the QR code
+      this.showOtpModal = true;
+
+    } else {
+      // Standard error fallback
+      const defaultMsg = errorData?.message || 'Unable to send OTP.';
+      this.alertService.alert(true, defaultMsg);
+    }
   }
 
   startOtpTimer() {

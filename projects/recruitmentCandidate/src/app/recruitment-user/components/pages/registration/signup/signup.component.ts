@@ -166,7 +166,6 @@
     }
 
     sendOtp() {
-
       // Validate
       if (!this.validateMobileAndEmail()) {
         return;
@@ -174,11 +173,8 @@
 
       // Loader
       this.alertService.showLoading(
-
         'Please wait...',
-
         'Checking registration'
-
       );
 
       const subject = this.subjectId !== null ? this.subjectId : 0;
@@ -197,122 +193,90 @@
             return;
           }
 
-          // STEP 2:
-          // Send OTP
+          // STEP 2: Send OTP
           const payload = {
-
             mobile_no: this.mobile,
-
             email_id: this.email,
-
             purpose: 'REGISTRATION',
-
-            action_remark:
-              'OTP generated for recruitment signup'
-
+            action_remark: 'OTP generated for recruitment signup'
           };
 
-          this.alertService.showLoading(
-
-            'Please wait...',
-
-            'Sending OTP'
-
-          );
+          this.alertService.showLoading('Please wait...', 'Sending OTP');
 
           this.http.postData(
-
             '/publicapi/post/saveRecruitmentOtpVerification',
-
             payload,
-
             'recruitement'
-
           ).subscribe({
-
             next: (res: any) => {
-
               this.alertService.closeAlert();
 
-              if (res?.body?.error) {
+              // 1. Convert the entire response to a string to catch sneaky XML payloads in success block
+              const resString = (typeof res === 'string') ? res : JSON.stringify(res);
 
-                this.alertService.alertMessage(
-
-                  'Warning',
-
-                  res.body.error.message ||
-
-                  'Unable to send OTP.',
-
-                  'warning'
-
-                );
-
-                return;
-
+              // 2. Check if the Sandes error is hiding inside the "success" response
+              if (resString.includes('GEN016') || resString.includes('User not registered')) {
+                this.handleOtpError(resString);
+                return; // Stop execution here!
               }
 
-              // Success
-              this.alertService.alertMessage(
+              // 3. Normal backend JSON error check
+              if (res?.body?.error) {
+                this.handleOtpError(res.body.error);
+                return;
+              }
 
+              // 4. True Success
+              this.alertService.alertMessage(
                 'Success',
-
                 'OTP sent successfully to your mobile number.',
-
                 'success'
-
               );
-
               this.otpSent = true;
-
               this.startResendCooldown();
-
             },
-
             error: (err: any) => {
-
-              this.alertService.closeAlert();
-
               console.error(err);
-
-              this.alertService.alertMessage(
-
-                'Error',
-
-                'Unable to send OTP.',
-
-                'error'
-
-              );
-
+              // Pass whatever error object or string the HTTP client caught
+              const errorData = err?.error?.error || err?.error || err?.message || JSON.stringify(err);
+              this.handleOtpError(errorData);
             }
-
           });
-
         },
-
         error: (err: any) => {
-
           this.alertService.closeAlert();
-
           console.error(err);
-
-          this.alertService.alertMessage(
-
-            'Error',
-
-            'Unable to validate registration.',
-
-            'error'
-
-          );
-
+          this.alertService.alertMessage('Error', 'Unable to validate registration.', 'error');
         }
-
       });
-
     }
 
+    // NEW: Helper method to parse Sandes gateway errors for Signup
+    private handleOtpError(errorData: any) {
+      this.alertService.closeAlert();
+      this.otpSent = false; // FORCE the UI to stay on the signup form
+
+      // Safely convert the error payload to a string
+      const errString = typeof errorData === 'string' ? errorData : JSON.stringify(errorData);
+
+      // Check for Sandes specific error code or message
+      if (errString.includes('GEN016') || errString.includes('User not registered')) {
+
+        this.alertService.alertMessage(
+          'App Registration Required',
+          'User not registered in Sandes app. Please get registered first.',
+          'info'
+        );
+
+        // Automatically open the instructional modal with the QR code
+        this.showOtpModal = true;
+
+      } else {
+        // Standard error fallback
+        const defaultMsg = typeof errorData === 'object' && errorData?.message ? errorData.message : 'Unable to send OTP.';
+        this.alertService.alertMessage('Warning', defaultMsg, 'warning');
+      }
+    }
 
 
 
