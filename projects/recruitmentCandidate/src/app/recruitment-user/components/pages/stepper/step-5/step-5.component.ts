@@ -132,8 +132,14 @@
 
       ngOnInit(): void {
         this.loader.showLoader();
-        this.loadFormData().subscribe(() => {
-          this.getParameterValuesAndPatch();
+
+        this.loadFormData().subscribe({
+          next: () => {
+            this.getParameterValuesAndPatch();
+          },
+          error: () => {
+            this.loader.hideLoader();
+          }
         });
       }
 
@@ -257,6 +263,7 @@
             if (savedData.length === 0) {
               this.checkMandatorySubheadingsAndParameters();
               this.cdr.markForCheck();
+              this.loader.hideLoader();
               this.emitFormData();
               return;
             }
