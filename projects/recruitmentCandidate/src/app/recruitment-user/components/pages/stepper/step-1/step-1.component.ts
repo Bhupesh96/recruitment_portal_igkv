@@ -842,39 +842,57 @@ export class Step1Component implements OnChanges, OnInit {
       },
     });
   }
-
+// Dynamic getter for the Age Label
+  get ageLabel(): string {
+    if (this.advertisementDetails?.age_calculation_date) {
+      const datePart = this.advertisementDetails.age_calculation_date.split('T')[0];
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+        return 'Age as on ' + parts[2] + '-' + parts[1] + '-' + parts[0];
+      }
+    }
+    return 'Age';
+  }
   private calculateAge(dobValue: string): void {
     if (!dobValue) {
       this.form.get('age')?.setValue('', { emitEvent: false });
       this.form.get('age')?.setErrors(null);
       return;
     }
+
     const dob = new Date(dobValue);
-    const today = new Date();
-    let years = today.getFullYear() - dob.getFullYear();
-    let months = today.getMonth() - dob.getMonth();
-    let days = today.getDate() - dob.getDate();
+
+    // Calculate against the advertisement's calculation date if available, otherwise fallback to today
+    const targetDate = this.advertisementDetails?.age_calculation_date
+      ? new Date(this.advertisementDetails.age_calculation_date)
+      : new Date();
+
+    let years = targetDate.getFullYear() - dob.getFullYear();
+    let months = targetDate.getMonth() - dob.getMonth();
+    let days = targetDate.getDate() - dob.getDate();
 
     if (days < 0) {
       months--;
-      const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+      const prevMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 0);
       days += prevMonth.getDate();
     }
     if (months < 0) {
       years--;
       months += 12;
     }
-    const ageString = `${years} year${years !== 1 ? 's' : ''}, ${months} month${
-      months !== 1 ? 's' : ''
-    }, ${days} day${days !== 1 ? 's' : ''}`;
+
+    const ageString = years + ' years, ' + months + ' months, ' + days + ' days';
     this.form.get('age')?.setValue(ageString, { emitEvent: false });
+
     if (years < 18) {
       this.form.get('age')?.setErrors({ underage: true });
     } else {
       this.form.get('age')?.setErrors(null);
     }
-  }
 
+// Force UI refresh so the label updates
+    this.cdr.detectChanges();
+  }
   getFileUrl(fileName: string): string {
     const normalized = fileName
       .replace(/^services[\\/]/, '')
@@ -997,6 +1015,7 @@ export class Step1Component implements OnChanges, OnInit {
             '✅ Advertisement Details Loaded:',
             this.advertisementDetails
           );
+
           const dobControl = this.form.get('DOB');
           if (dobControl && this.advertisementDetails.age_calculation_date) {
             dobControl.setValidators([
@@ -1004,6 +1023,12 @@ export class Step1Component implements OnChanges, OnInit {
               this.dobValidator(this.advertisementDetails.age_calculation_date),
             ]);
             dobControl.updateValueAndValidity();
+
+            // Re-calculate age now that we have the target date from the API
+            const dobValue = dobControl.value;
+            if (dobValue) {
+              this.calculateAge(dobValue);
+            }
           }
           this.form.get('condition_1')?.updateValueAndValidity();
         }
@@ -1013,7 +1038,6 @@ export class Step1Component implements OnChanges, OnInit {
       },
     });
   }
-
   private loadAndPatchAdditionalInfo(registrationNo: number): Observable<void> {
     // Return the Observable stream instead of subscribing inside the function
     return this.getSavedAdditionalInfo(registrationNo).pipe(

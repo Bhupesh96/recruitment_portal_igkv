@@ -1382,7 +1382,11 @@ export class Step4Component implements OnInit {
             a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
             score_field_parent_id: subHeadingId,
             m_rec_score_field_id: scoreFieldId,
-            m_rec_score_field_method_id: subHeading.m_rec_score_field_method_id,
+            m_rec_score_field_method_id:
+              item.m_rec_score_field_method_id ||
+              subHeading.m_rec_score_field_method_id ||
+              this.heading?.m_rec_score_field_method_id ||
+              null,
             score_field_value: totalCount,
             score_field_actual_value: scoreResult.score_field_actual_value,
             score_field_calculated_value: scoreResult.score_field_calculated_value,
