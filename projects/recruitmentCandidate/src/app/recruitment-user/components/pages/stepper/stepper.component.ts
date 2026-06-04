@@ -115,20 +115,25 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private handleUserReady(user: any) {
-    // Prevent fetching multiple times if the subscription fires rapidly
-    if (!this.isLoadingSteps && this.activeSteps.length > 2) return;
-
-    this.fetchDynamicSteps(user);
-
+    // 1. ALWAYS evaluate the Final Declaration lock status FIRST
     if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
       this.isFinalDeclared = true;
+
+      // Force jump to the last step if the steps array is already populated
+      if (this.activeSteps.length > 0) {
+        this.currentStepIndex = this.activeSteps.length - 1;
+      }
     } else if (user.registration_no && !this.dbCheckDone) {
       this.dbCheckDone = true;
       this.verifyLockStatusFromDB(user.registration_no);
     }
+
+    // 2. NOW check if we need to prevent fetching steps multiple times
+    if (!this.isLoadingSteps && this.activeSteps.length > 2) return;
+
+    this.fetchDynamicSteps(user);
   }
 
-  // 2. Call API and filter master steps
   fetchDynamicSteps(user: any) {
     if (!user || !user.a_rec_adv_main_id) return;
 
@@ -142,24 +147,23 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.http.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
       next: (res: any) => {
         const apiData = res?.body?.data || res?.data || [];
-
-        // Extract all allowed field IDs
         const allowedFieldIds = apiData.map((item: any) => item.m_rec_score_field_id);
 
-        // Filter the master list
         this.activeSteps = this.masterSteps.filter(step =>
           step.isMandatory || (step.fieldId && allowedFieldIds.includes(step.fieldId))
         );
 
         this.isLoadingSteps = false;
 
-        // If declared, force jump to the last step (Preview & Submit)
         if (this.isFinalDeclared) {
           this.currentStepIndex = this.activeSteps.length - 1;
-        }
 
-        // ✅ Mark the initial step as visited so it renders immediately
-        this.markStepAsVisited(this.currentStepIndex);
+          // ✅ FIX: Eagerly mark ALL steps as visited so they fetch their data in the background
+          this.activeSteps.forEach((_, index) => this.markStepAsVisited(index));
+        } else {
+          // Normal flow: just mark the current step
+          this.markStepAsVisited(this.currentStepIndex);
+        }
       },
       error: (err) => {
         console.error('Failed to load calculation steps', err);
@@ -210,11 +214,14 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   updateFormData(compId: number, data: { [key: string]: any }) {
     this.formData[compId] = { ...data };
-    if (this.isFinalDeclared) {
+
+    // ✅ FIX: Share data with Step 9 if the form is declared OR if the user is currently on Step 9
+    const isCurrentlyOnStep9 = this.activeSteps[this.currentStepIndex]?.compId === 9;
+
+    if (this.isFinalDeclared || isCurrentlyOnStep9) {
       this.sharedDataService.setFormData(this.formData);
     }
   }
-
   async nextStep() {
     if (this.isFinalDeclared) return;
 

@@ -50,6 +50,7 @@ export class Step9Component implements OnInit, OnDestroy {
     'Current_City', 'Current_Pin_Code', 'Current_Country_Id', 'Current_State_Id',
     'Current_District_Id', 'Current_Country_Name', 'Current_State_Name',
     'Current_District_Name',
+    'candidate_category_id'
   ]);
 
   private destroy$ = new Subject<void>();
