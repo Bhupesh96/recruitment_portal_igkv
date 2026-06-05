@@ -1,5 +1,5 @@
   import { CommonModule } from '@angular/common';
-  import { Component, EventEmitter, OnDestroy, OnInit, Output, Input } from '@angular/core';
+  import { Component, EventEmitter, OnDestroy, OnInit, Output, Input, ChangeDetectorRef } from '@angular/core';
   import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
   import { SharedDataService } from '../../shared-data.service';
   import { AlertService, HttpService, LoaderService } from 'shared';
@@ -75,6 +75,7 @@
       private sanitizer: DomSanitizer,
       private loader: LoaderService,
       private recruitmentState: RecruitmentStateService,
+      private cdr: ChangeDetectorRef
     ) {
       this.form = this.fb.group({
         declaration: [false, Validators.requiredTrue],
@@ -656,13 +657,11 @@
             const snapshotPayload = {
               registration_no: this.formData[1]?.['registration_no'],
               advertisement_id: this.formData[1]?.['a_rec_adv_main_id'],
-              applicationData: this.formData,
-              paymentData: {
-                razorpay_order_id: paymentResponse?.razorpay_order_id,
-                razorpay_payment_id: paymentResponse?.razorpay_payment_id,
-                razorpay_signature: paymentResponse?.razorpay_signature,
-                receipt_no: data?.receipt
-              }
+
+              // ... (your existing snapshot metadata logic here) ...
+
+              rawUserData: this.userData,
+              applicationData: this.formData
             };
 
             this.http.postData(
@@ -670,12 +669,8 @@
               snapshotPayload,
               'recruitement'
             ).subscribe({
-              next: () => {
-                console.log('✅ Snapshot saved');
-              },
-              error: (err) => {
-                console.error('❌ Snapshot save failed', err);
-              }
+              next: () => console.log('✅ Snapshot saved with full metadata'),
+              error: (err) => console.error('❌ Snapshot save failed', err)
             });
 
             this.alertService.alert(
@@ -683,7 +678,13 @@
               responseData.message || 'Payment Verified Successfully!'
             );
 
-            this.getFeeStatus();
+            this.getFeeStatus(); // This fetches the new status
+
+            // ✅ NEW: Automatically trigger the PDF download 1.5 seconds after success
+            setTimeout(() => {
+              this.downloadPdf.emit();
+            }, 1500);
+
           } else {
             this.alertService.alert(true, responseData?.message || 'Could not verify payment.');
           }
@@ -699,12 +700,21 @@
       if (!this.formData[1]) return;
 
       const params = {
+        recruitment:true,
         payee_id: this.formData[1]["registration_no"],
         advertisement_id: this.formData[1]["a_rec_adv_main_id"]
       };
 
       this.http.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe((result: any) => {
-        this.feeStatus = !result.body.error ? result.body.data[0] : [];
+        // Safely assign the data
+        if (!result.body.error && result.body.data && result.body.data.length > 0) {
+          this.feeStatus = result.body.data[0];
+        } else {
+          this.feeStatus = {};
+        }
+
+        // ✅ CRITICAL FIX: Tell Angular the background data changed so it swaps the buttons!
+        this.cdr.detectChanges();
       });
     }
   }
