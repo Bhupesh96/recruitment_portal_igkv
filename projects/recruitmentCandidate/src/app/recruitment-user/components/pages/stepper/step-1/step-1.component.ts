@@ -860,28 +860,34 @@ export class Step1Component implements OnChanges, OnInit {
       return;
     }
 
-    const dob = new Date(dobValue);
+    // 1. Strip time/timezone and split into [YYYY, MM, DD]
+    const targetDateStr = this.advertisementDetails?.age_calculation_date
+      ? this.advertisementDetails.age_calculation_date.split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
-    // Calculate against the advertisement's calculation date if available, otherwise fallback to today
-    const targetDate = this.advertisementDetails?.age_calculation_date
-      ? new Date(this.advertisementDetails.age_calculation_date)
-      : new Date();
+    const dobStr = dobValue.split('T')[0];
 
-    let years = targetDate.getFullYear() - dob.getFullYear();
-    let months = targetDate.getMonth() - dob.getMonth();
-    let days = targetDate.getDate() - dob.getDate();
+    const [tYear, tMonth, tDay] = targetDateStr.split('-').map(Number);
+    const [dYear, dMonth, dDay] = dobStr.split('-').map(Number);
 
+    // 2. Calculate pure differences
+    let years = tYear - dYear;
+    let months = tMonth - dMonth;
+    let days = tDay - dDay;
+
+    // 3. Adjust for negative days or months
     if (days < 0) {
       months--;
-      const prevMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 0);
-      days += prevMonth.getDate();
+      // Get number of days in the month PRECEDING the target date
+      const prevMonthDays = new Date(tYear, tMonth - 1, 0).getDate();
+      days += prevMonthDays;
     }
     if (months < 0) {
       years--;
       months += 12;
     }
 
-    const ageString = years + ' years, ' + months + ' months, ' + days + ' days';
+    const ageString = `${years} years, ${months} months, ${days} days`;
     this.form.get('age')?.setValue(ageString, { emitEvent: false });
 
     if (years < 18) {
@@ -890,7 +896,7 @@ export class Step1Component implements OnChanges, OnInit {
       this.form.get('age')?.setErrors(null);
     }
 
-// Force UI refresh so the label updates
+    // Force UI refresh so the label updates
     this.cdr.detectChanges();
   }
   getFileUrl(fileName: string): string {
@@ -967,15 +973,19 @@ export class Step1Component implements OnChanges, OnInit {
       if (!control.value || !maxDateStr) {
         return null;
       }
-      const selectedDate = new Date(control.value);
-      const maxDate = new Date(maxDateStr);
-      selectedDate.setHours(0, 0, 0, 0);
-      maxDate.setHours(0, 0, 0, 0);
+
+      // Strip timezones to prevent shifts, then force local midnight parsing
+      const selectedDatePart = control.value.split('T')[0];
+      const maxDatePart = maxDateStr.split('T')[0];
+
+      const selectedDate = new Date(selectedDatePart + 'T00:00:00');
+      const maxDate = new Date(maxDatePart + 'T00:00:00');
+
       if (selectedDate > maxDate) {
         return {
           invalidMarriageDateMax: {
-            max: this.formatDateToYYYYMMDD(maxDate),
-            actual: this.formatDateToYYYYMMDD(selectedDate),
+            max: this.formatDateToYYYYMMDD(maxDatePart), // Safe string formatting
+            actual: this.formatDateToYYYYMMDD(selectedDatePart),
           },
         };
       }
@@ -988,15 +998,19 @@ export class Step1Component implements OnChanges, OnInit {
       if (!control.value || !maxDateStr) {
         return null;
       }
-      const selectedDate = new Date(control.value);
-      const maxDate = new Date(maxDateStr);
-      selectedDate.setHours(0, 0, 0, 0);
-      maxDate.setHours(0, 0, 0, 0);
+
+      // Strip timezones to prevent shifts, then force local midnight parsing
+      const selectedDatePart = control.value.split('T')[0];
+      const maxDatePart = maxDateStr.split('T')[0];
+
+      const selectedDate = new Date(selectedDatePart + 'T00:00:00');
+      const maxDate = new Date(maxDatePart + 'T00:00:00');
+
       if (selectedDate > maxDate) {
         return {
           invalidDobMax: {
-            max: this.formatDateToYYYYMMDD(maxDate),
-            actual: this.formatDateToYYYYMMDD(selectedDate),
+            max: this.formatDateToYYYYMMDD(maxDatePart), // Safe string formatting
+            actual: this.formatDateToYYYYMMDD(selectedDatePart),
           },
         };
       }
