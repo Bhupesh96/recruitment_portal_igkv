@@ -13,7 +13,7 @@ export const environment = {
   sharedSecret: 'tg:D/|oP$:s2I[-8-Pc:|8/U7+?!r]g#',
   publicKey: "BLaV0kn22SFt30rA1H6lEX6dgTOzToFY3bVfCXzGwM0gg2CFEjILyLp4qoL8H_hNFaJhOYndp4vquNH6zYy5r2M",
   recruitmentFileBaseUrl: `${host}:3500/__Files`,
-  logoUrl: `${host}:4390/igkv_logo.png`
+  logoUrl: `${host}:4390/logo.png`
 };
 
 export const reportConfig = {

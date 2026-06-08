@@ -1389,7 +1389,7 @@ export class Step3Component implements OnInit {
               item.m_rec_score_field_method_id ||
               subHeading.m_rec_score_field_method_id ||
               this.heading?.m_rec_score_field_method_id ||
-              null,
+              3,
             score_field_value: totalCount,
             score_field_actual_value: scoreResult.score_field_actual_value,
             score_field_calculated_value: scoreResult.score_field_calculated_value,
@@ -1552,7 +1552,7 @@ export class Step3Component implements OnInit {
     });
   }
 
-  // You might need a helper function for the parent record to avoid duplicating code
+// You might need a helper function for the parent record to avoid duplicating code
   private createParentRecord(
     registrationNo: number,
     a_rec_app_main_id: number
@@ -1599,7 +1599,10 @@ export class Step3Component implements OnInit {
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
-      m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
+
+      // ✅ FIX: Added the || 3 fallback here to prevent the Foreign Key crash on the parent record
+      m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id || 3,
+
       score_field_value: scoreResult.score_field_value,
       score_field_actual_value: scoreResult.score_field_actual_value,
       score_field_calculated_value: scoreResult.score_field_calculated_value,
@@ -1608,7 +1611,6 @@ export class Step3Component implements OnInit {
       verify_remark: 'Not Verified',
       action_type: 'U',
       action_date: new Date().toISOString(),
-
       action_remark: 'parent data updated from recruitment form',
       action_by: 1,
       delete_flag: 'N',

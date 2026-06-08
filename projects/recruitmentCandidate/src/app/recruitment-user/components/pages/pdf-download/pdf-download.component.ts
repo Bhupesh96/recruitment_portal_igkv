@@ -176,18 +176,46 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   public downloadAsPdf(): void {
-    this.cdr.detectChanges(); // Ensure the latest data is bound before printing
+    this.loader.showLoader();
 
+    // ✅ ALWAYS fetch the latest fee status directly from the DB right before printing!
+    if (this.formData[1]) {
+      const params = {
+        recruitment: true,
+        payee_id: this.formData[1]["registration_no"],
+        advertisement_id: this.formData[1]["a_rec_adv_main_id"]
+      };
+
+      this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
+        next: (result: any) => {
+          this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
+          this.cdr.detectChanges(); // Force the HTML to update with the new payment data
+          this.generatePdfDocument(); // Proceed to print
+        },
+        error: (err) => {
+          console.error('Failed to load fee status for PDF', err);
+          this.generatePdfDocument(); // Print anyway if it fails
+        }
+      });
+    } else {
+      this.generatePdfDocument();
+    }
+  }
+
+  // ✅ Moved the actual PDF generation logic into its own helper method
+  private generatePdfDocument(): void {
     if (!this.printContentRef) {
       console.error('Content element not found!');
+      this.loader.hideLoader();
       return;
     }
-    this.loader.showLoader();
+
     const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
     let stylesHtml = '';
     styleNodes.forEach((node) => {
       stylesHtml += node.outerHTML;
     });
+
     let contentHtml = this.printContentRef.nativeElement.outerHTML;
     const baseUrl = window.location.origin;
     contentHtml = contentHtml.replace(
@@ -195,7 +223,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       `src="${baseUrl}igkv_logo.png"`
     );
 
-    // ✅ INJECTED CSS: Ensures the flex layout behaves perfectly inside the PDF
     const fullHtmlPayload = `
     <!DOCTYPE html>
     <html>
@@ -228,6 +255,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     const apiUrl = '/file/post/htmltoPdf';
     const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false, university_id : 2 };
     let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
+
     this.httpService.postBlob(apiUrl, payload, fileName, "common").pipe(take(1)).subscribe(() => {
       console.log("PDF Generated");
       this.loader.hideLoader();
