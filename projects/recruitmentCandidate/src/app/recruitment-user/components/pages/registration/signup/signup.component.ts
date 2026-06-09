@@ -16,10 +16,11 @@
   import {EncryptionService} from 'shared';
   import {OnChanges, SimpleChanges} from '@angular/core';
   import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+  import {InputTooltipDirective} from '../../../../../directives/input-tooltip.directive'
   @Component({
     selector: 'app-signup',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule,InputTooltipDirective],
     templateUrl: './signup.component.html',
   })
   export class SignupComponent implements OnInit, OnChanges {
@@ -64,6 +65,9 @@
     showSuccessAlert = false;
     categoryList: any[] = [];
     selectedCategory: number | null = null;
+    securityQuestionList: any[] = [];
+    selectedSecurityQuestion: number | null = null;
+    securityAnswer = '';
     passwordErrors = {
       capital: false,
       lowercase: false,
@@ -94,8 +98,25 @@
     ngOnInit() {
       this.getCaptcha();
       this.getCategoryList();
+      this.getSecurityQuestions();
     }
-
+    getSecurityQuestions() {
+      this.http
+        .getData(
+          '/publicApi/get/getSecurityQuestions',
+          'recruitement'
+        )
+        .subscribe({
+          next: (res: any) => {
+            if (!res?.body?.error) {
+              this.securityQuestionList = res?.body?.data || [];
+            }
+          },
+          error: (err) => {
+            console.error('Error loading security questions', err);
+          }
+        });
+    }
     ngOnChanges(changes: SimpleChanges): void {
       if (
         changes['advertisementId'] ||
@@ -505,7 +526,21 @@
         this.password,
         this.passwordKey
       ).toString();
+      if (!this.selectedSecurityQuestion) {
+        this.alertService.alert(
+          true,
+          'Please select a security question.'
+        );
+        return;
+      }
 
+      if (!this.securityAnswer?.trim()) {
+        this.alertService.alert(
+          true,
+          'Please enter security answer.'
+        );
+        return;
+      }
       const payload = {
         mobile_no: this.mobile,
         email_id: this.email,
@@ -515,6 +550,8 @@
         post_code: this.postCode,
         subject_id: this.subjectId,
         category_id: this.selectedCategory,
+        security_question_id: this.selectedSecurityQuestion,
+        security_answer: this.securityAnswer
       };
 
       // ✅ 2. Call your backend API

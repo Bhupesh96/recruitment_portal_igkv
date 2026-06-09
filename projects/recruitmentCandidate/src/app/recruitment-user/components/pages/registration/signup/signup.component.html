@@ -177,65 +177,65 @@
         </div>
       </div>
       <form (ngSubmit)="handleAction()" class="space-y-5">
-        <!-- Mobile Number -->
-        <div>
-          <label class="block text-base font-semibold text-gray-800 mb-1.5 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            Mobile Number <span class="text-red-700">*</span>
-          </label>
-          <input
-            type="tel"
-            name="mobile"
-            [(ngModel)]="mobile"
-            #mobileField="ngModel"
-            required
-            pattern="^[6-9][0-9]{9}$"
-            maxlength="10"
-            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-            class="w-full border border-gray-300 px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
-            [disabled]="otpSent || isVerified"
-          />
 
-          <div *ngIf="(mobileField.invalid && (mobileField.dirty || mobileField.touched)) || mobileError" class="text-sm text-red-700 mt-1 font-medium">
-            <div *ngIf="mobileField.errors?.['required'] || mobileError === 'Mobile number is required'">Mobile number is required.</div>
-            <div *ngIf="mobileField.errors?.['pattern'] || mobileError === 'Please enter a valid 10-digit mobile number'">Enter a valid 10-digit Indian mobile number.</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              Mobile Number <span class="text-red-700">*</span>
+            </label>
+            <input
+              type="tel"
+              name="mobile"
+              [(ngModel)]="mobile"
+              #mobileField="ngModel"
+              required
+              pattern="^[6-9][0-9]{9}$"
+              maxlength="10"
+              oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
+              [disabled]="otpSent || isVerified"
+              appInputTooltip
+            />
+            <div *ngIf="(mobileField.invalid && (mobileField.dirty || mobileField.touched)) || mobileError" class="text-xs text-red-700 mt-1 font-medium">
+              <div *ngIf="mobileField.errors?.['required'] || mobileError === 'Mobile number is required'">Required.</div>
+              <div *ngIf="mobileField.errors?.['pattern'] || mobileError === 'Please enter a valid 10-digit mobile number'">Valid 10-digit number required.</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Email <span class="text-red-700">*</span>
+            </label>
+            <input
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              #emailField="ngModel"
+              required
+              email
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
+              [disabled]="otpSent || isVerified"
+              appInputTooltip
+            />
+            <div *ngIf="(emailField.invalid && (emailField.dirty || emailField.touched)) || emailError" class="text-xs text-red-700 mt-1 font-medium">
+              <div *ngIf="emailField.errors?.['required'] || emailError === 'Email is required'">Required.</div>
+              <div *ngIf="emailField.errors?.['email'] || emailError === 'Please enter a valid email address'">Invalid email.</div>
+            </div>
           </div>
         </div>
 
-        <!-- Email Input -->
         <div>
-          <label class="block text-base font-semibold text-gray-800 mb-1.5 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Email <span class="text-red-700">*</span>
-          </label>
-          <input
-            type="email"
-            name="email"
-            [(ngModel)]="email"
-            #emailField="ngModel"
-            required
-            email
-            class="w-full border border-gray-300 px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
-            [disabled]="otpSent || isVerified"
-          />
-
-          <div *ngIf="(emailField.invalid && (emailField.dirty || emailField.touched)) || emailError" class="text-sm text-red-700 mt-1 font-medium">
-            <div *ngIf="emailField.errors?.['required'] || emailError === 'Email is required'">Email address is required.</div>
-            <div *ngIf="emailField.errors?.['email'] || emailError === 'Please enter a valid email address'">Invalid email address.</div>
-          </div>
-        </div>
-
-        <!-- Category Dropdown -->
-        <div>
-          <label class="block text-base font-semibold text-gray-800 mb-1.5">Category <span class="text-red-700">*</span></label>
+          <label class="block text-sm font-semibold text-gray-800 mb-1.5">Category <span class="text-red-700">*</span></label>
           <select
             [(ngModel)]="selectedCategory"
             name="category"
-            class="w-full border border-gray-300 px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none bg-white transition disabled:bg-gray-50 disabled:text-gray-600"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none bg-white transition disabled:bg-gray-50 disabled:text-gray-600"
             [disabled]="otpSent || isVerified"
             required
           >
@@ -244,17 +244,46 @@
           </select>
         </div>
 
-        <!-- Captcha Section (Optimized for Sidebar/Container Width) -->
-        <div class="mt-4" *ngIf="!isVerified">
-          <div class="bg-gray-50 p-3 border border-gray-300 rounded-md">
-            <!-- Row 1: The Captcha Image (Width set to full to prevent pushing out) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50/50 p-3 -mx-3 rounded-lg border border-transparent">
+          <div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5">
+              Security Question <span class="text-red-700">*</span>
+            </label>
+            <select
+              [(ngModel)]="selectedSecurityQuestion"
+              name="securityQuestion"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
+              [disabled]="otpSent || isVerified"
+            >
+              <option [ngValue]="null">Select Question</option>
+              <option *ngFor="let q of securityQuestionList" [ngValue]="q.security_question_id">
+                {{ q.question_text }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5">
+              Security Answer <span class="text-red-700">*</span>
+            </label>
+            <input
+              type="text"
+              [(ngModel)]="securityAnswer"
+              name="securityAnswer"
+              placeholder="Your answer"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-gray-400 focus:border-gray-400 outline-none transition disabled:bg-gray-50 disabled:text-gray-600"
+              [disabled]="otpSent || isVerified"
+              appInputTooltip
+            />
+          </div>
+        </div>
+
+        <div class="" *ngIf="!isVerified">
+          <div class="bg-gray-50 p-3 border border-gray-300 rounded-lg">
             <div
               #captchaContainer
-              class="w-full min-h-[3.5rem] py-2 flex items-center justify-center border border-gray-300 bg-white rounded [&>svg]:max-w-full [&>svg]:h-auto"
-            >
-            </div>
-
-            <!-- Row 2: Input and Refresh Button (Grouped together) -->
+              class="w-full min-h-[3.5rem] py-2 flex items-center justify-center border border-gray-300 bg-white rounded-md [&>svg]:max-w-full [&>svg]:h-auto"
+            ></div>
             <div class="flex items-center gap-2 mt-3">
               <div class="relative flex-grow">
                 <input
@@ -262,15 +291,13 @@
                   [(ngModel)]="userAnswer"
                   name="captcha"
                   placeholder="Enter Captcha"
-                  class="w-full border border-gray-300 px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 outline-none rounded"
+                  class="w-full border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 outline-none rounded-md"
                 />
               </div>
-
-              <!-- Refresh Button with consistent height -->
               <button
                 type="button"
                 (click)="getCaptcha()"
-                class="flex-shrink-0 p-2 text-gray-600 hover:text-blue-800 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-50 transition-colors"
+                class="flex-shrink-0 p-2 text-gray-600 hover:text-blue-800 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition-colors"
                 title="Refresh Captcha"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -281,19 +308,17 @@
           </div>
         </div>
 
-        <!-- OTP Success -->
         <div *ngIf="otpSuccess && !isVerified" class="text-sm text-green-700 font-bold mt-1">✓ {{ otpSuccess }}</div>
 
-        <!-- OTP Inputs -->
         <div *ngIf="otpSent && !isVerified" class="space-y-4">
-          <div class="flex gap-4">
-            <div class="flex-1">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
               <label class="block text-sm font-bold text-gray-800 mb-1">Mobile OTP</label>
-              <input type="tel" [(ngModel)]="enteredOtpMobile" name="otpMobile" required pattern="\d{6}" maxlength="6" class="w-full border border-gray-300 px-3 py-2 text-base text-center tracking-widest outline-none focus:ring-1 focus:ring-gray-400"/>
+              <input type="tel" [(ngModel)]="enteredOtpMobile" name="otpMobile" required pattern="\d{6}" maxlength="6" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-center tracking-widest outline-none focus:ring-1 focus:ring-gray-400"/>
             </div>
-            <div class="flex-1">
+            <div>
               <label class="block text-sm font-bold text-gray-800 mb-1">Email OTP</label>
-              <input type="tel" [(ngModel)]="enteredOtpEmail" name="otpEmail" required pattern="\d{6}" maxlength="6" class="w-full border border-gray-300 px-3 py-2 text-base text-center tracking-widest outline-none focus:ring-1 focus:ring-gray-400"/>
+              <input type="tel" [(ngModel)]="enteredOtpEmail" name="otpEmail" required pattern="\d{6}" maxlength="6" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-center tracking-widest outline-none focus:ring-1 focus:ring-gray-400"/>
             </div>
           </div>
           <div *ngIf="otpError" class="text-sm text-red-700 font-medium">{{ otpError }}</div>
@@ -304,37 +329,36 @@
           </div>
         </div>
 
-        <!-- Password Fields (Verified State) -->
-        <div *ngIf="isVerified" class="space-y-4 pt-2 border-t border-gray-200">
+        <div *ngIf="isVerified" class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-200">
           <div>
-            <label class="block text-base font-semibold text-gray-800 mb-1.5">New Password <span class="text-red-700">*</span></label>
-            <input type="password" [(ngModel)]="password" (ngModelChange)="validatePassword()" name="password" autocomplete="new-password" class="w-full border border-gray-300 px-3 py-2 text-base outline-none focus:ring-1 focus:ring-gray-400" required />
-            <div class="mt-1 text-sm font-medium" [ngClass]="isPasswordStrong ? 'text-green-700' : 'text-red-700'">{{ passwordValidationMessage }}</div>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5">New Password <span class="text-red-700">*</span></label>
+            <input type="password" [(ngModel)]="password" (ngModelChange)="validatePassword()" name="password" autocomplete="new-password" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-gray-400" required />
+            <div class="mt-1 text-xs font-medium" [ngClass]="isPasswordStrong ? 'text-green-700' : 'text-red-700'">{{ passwordValidationMessage }}</div>
           </div>
           <div>
-            <label class="block text-base font-semibold text-gray-800 mb-1.5">Confirm Password <span class="text-red-700">*</span></label>
+            <label class="block text-sm font-semibold text-gray-800 mb-1.5">Confirm Password <span class="text-red-700">*</span></label>
             <div class="relative">
-              <input [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" (ngModelChange)="checkPasswordMatch()" name="confirmPassword" autocomplete="new-password" class="w-full border border-gray-300 px-3 py-2 pr-10 text-base outline-none focus:ring-1 focus:ring-gray-400" />
-              <button type="button" (click)="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 px-3 text-gray-600 hover:text-blue-800"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+              <input [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" (ngModelChange)="checkPasswordMatch()" name="confirmPassword" autocomplete="new-password" class="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 text-sm outline-none focus:ring-1 focus:ring-gray-400" />
+              <button type="button" (click)="showConfirmPassword = !showConfirmPassword" class="absolute inset-y-0 right-0 px-3 text-gray-600 hover:text-blue-800">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              </button>
             </div>
-            <div class="mt-1 text-sm font-medium" [ngClass]="confirmPasswordMessage === 'Passwords match' ? 'text-green-700' : 'text-red-700'">{{ confirmPasswordMessage }}</div>
+            <div class="mt-1 text-xs font-medium" [ngClass]="confirmPasswordMessage === 'Passwords match' ? 'text-green-700' : 'text-red-700'">{{ confirmPasswordMessage }}</div>
           </div>
         </div>
 
-        <!-- Final Messages -->
-        <div *ngIf="signupSuccess" class="p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded font-bold">✓ {{ signupSuccess }}</div>
-        <div *ngIf="signupError" class="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded font-bold">⚠ {{ signupError }}</div>
+        <div *ngIf="signupSuccess" class="p-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md font-bold">✓ {{ signupSuccess }}</div>
+        <div *ngIf="signupError" class="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-md font-bold">⚠ {{ signupError }}</div>
 
-        <!-- Unified Submit Button -->
         <button
           type="button"
           (click)="handleAction()"
-          class="w-full bg-blue-700 text-white h-12 font-bold text-base rounded shadow-sm hover:bg-blue-800 transition-all flex items-center justify-center gap-2"
+          class="w-full bg-blue-700 text-white h-11 font-bold text-base rounded-md shadow-sm hover:bg-blue-800 transition-all flex items-center justify-center gap-2 mt-2"
         >
           {{ buttonLabel }}
         </button>
 
-        <div class="text-center text-base text-gray-700 mt-4">
+        <div class="text-center text-sm text-gray-700 mt-4">
           Already have an account?
           <button type="button" (click)="onLoginClick()" class="text-blue-700 font-bold hover:underline cursor-pointer ml-1">Login</button>
         </div>
