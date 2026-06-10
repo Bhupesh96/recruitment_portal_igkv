@@ -1,20 +1,10 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  ElementRef,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-  ChangeDetectorRef
-} from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { SharedDataService } from '../shared-data.service';
 import { Subscription, take } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpService, LoaderService } from 'shared';
-import {
-  RecruitmentStateService,
-  UserRecruitmentData,
-} from '../recruitment-state.service';
+import { RecruitmentStateService, UserRecruitmentData } from '../recruitment-state.service';
 import { environment } from 'environment';
 
 @Component({
@@ -76,51 +66,48 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     this.userData = this.recruitmentState.getCurrentUserData();
   }
 
+  toTitleCase(str: any): string {
+    if (!str) return '';
+    if (typeof str !== 'string') return String(str);
+    if (str.includes('@') && str.includes('.')) return str.toLowerCase();
+
+    return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
   ngOnInit(): void {
-    this.dataSubscription = this.sharedDataService.formData$.subscribe(
-      (data) => {
-        if (data && Object.keys(data).length > 0) {
-          this.formData = JSON.parse(JSON.stringify(data));
-
-          if (
-            this.formData[1]?.languages &&
-            Array.isArray(this.formData[1].languages)
-          ) {
-            this.formData[1].languages = this.getUniqueLanguages(
-              this.formData[1].languages
-            );
-          }
-
-          this.processedPersonalInfo = this.getProcessedPersonalInfo();
-          this.processAllDataForView();
-          this.isDataLoaded = true;
-          this.loadDeclaration();
-          this.getFeeStatus();
+    this.dataSubscription = this.sharedDataService.formData$.subscribe((data) => {
+      if (data && Object.keys(data).length > 0) {
+        this.formData = JSON.parse(JSON.stringify(data));
+        if (this.formData[1]?.languages && Array.isArray(this.formData[1].languages)) {
+          this.formData[1].languages = this.getUniqueLanguages(this.formData[1].languages);
         }
+        this.processedPersonalInfo = this.getProcessedPersonalInfo();
+        this.processAllDataForView();
+        this.isDataLoaded = true;
+        this.loadDeclaration();
+        this.getFeeStatus();
       }
-    );
+    });
   }
 
   getFeeStatus() {
     if (!this.formData[1]) return;
     const params = {
-      recruitment: true, // ✅ RESTORED: This is critical for the backend to fetch the correct data
+      recruitment: true,
       payee_id: this.formData[1]["registration_no"],
       advertisement_id: this.formData[1]["a_rec_adv_main_id"]
     };
     this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
       next: (result: any) => {
         this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
-        this.cdr.detectChanges(); // Ensure UI catches the payment date
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Failed to load fee status for PDF', err)
     });
   }
 
   ngOnDestroy(): void {
-    if (this.dataSubscription) {
-      this.dataSubscription.unsubscribe();
-    }
+    if (this.dataSubscription) this.dataSubscription.unsubscribe();
   }
 
   private getUniqueLanguages(languages: any[]): any[] {
@@ -135,34 +122,49 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
 
   isFileValue(value: any): boolean {
     if (value instanceof File) return true;
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      (value.name || value.size) &&
-      !Array.isArray(value)
-    ) return true;
+    if (typeof value === 'object' && value !== null && (value.name || value.size) && !Array.isArray(value)) return true;
+    return (typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED'));
+  }
 
-    return (
-      typeof value === 'string' &&
-      (value.startsWith('recruitment/') || value === 'FILE_UPLOADED')
-    );
+  // ✅ New Method: Extract category directly from additionalInfoDetails based on JSON
+  getAppliedCategory(): string {
+    const info = this.formData[1];
+    if (!info) return '—';
+
+    // 1. Find it in additionalInfoDetails
+    if (info.additionalInfoDetails && Array.isArray(info.additionalInfoDetails)) {
+      const categoryItem = info.additionalInfoDetails.find((item: any) =>
+        item.question?.toLowerCase().includes('category')
+      );
+      if (categoryItem) {
+        return this.formatValue(categoryItem.answer, categoryItem.question);
+      }
+    }
+
+    // 2. Fallback to candidate_category_id
+    if (info.candidate_category_id) {
+      return this.formatValue(info.candidate_category_id, 'category');
+    }
+
+    return '—';
   }
 
   formatValue(value: any, question?: string): string {
     if (question?.toLowerCase().includes('category')) {
+      // Adjusted map to strictly match your JSON options (including the 'EWS ' with space)
       const categoryMap: any = {
-        UR: 'Unreserved (UR)', OBC: 'Other Backward Class (OBC)', SC: 'Scheduled Caste (SC)', ST: 'Scheduled Tribe (ST)', EWS: 'Economically Weaker Section (EWS)',
-        1: 'Unreserved (UR)', 2: 'Other Backward Class (OBC)', 3: 'Scheduled Caste (SC)', 4: 'Scheduled Tribe (ST)', 5: 'Economically Weaker Section (EWS)',
+        UR: 'Unreserved (UR)', OBC: 'Other Backward Class (OBC)', SC: 'Scheduled Caste (SC)', ST: 'Scheduled Tribe (ST)', EWS: 'Economically Weaker Section (EWS)', 'EWS ': 'Economically Weaker Section (EWS)',
+        1: 'Unreserved (UR)', 2: 'Other Backward Class (OBC)', 3: 'Scheduled Caste (SC)', 4: 'Scheduled Tribe (ST)', 5: 'Economically Weaker Section (EWS)'
       };
-      return categoryMap[value] || value;
+      return categoryMap[value] || String(value || '');
     }
 
     if (this.isFileValue(value)) return '✓ File Uploaded';
     if (value === null || value === undefined || value === '') return '—';
-    if (Array.isArray(value)) return value.join(', ');
+    if (Array.isArray(value)) return value.map(v => this.toTitleCase(String(v))).join(', ');
     if (typeof value === 'object') return '';
 
-    return String(value);
+    return this.toTitleCase(String(value));
   }
 
   private processAllDataForView(): void {
@@ -177,24 +179,17 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
 
   public downloadAsPdf(): void {
     this.loader.showLoader();
-
-    // ✅ ALWAYS fetch the latest fee status directly from the DB right before printing!
     if (this.formData[1]) {
-      const params = {
-        recruitment: true,
-        payee_id: this.formData[1]["registration_no"],
-        advertisement_id: this.formData[1]["a_rec_adv_main_id"]
-      };
-
+      const params = { recruitment: true, payee_id: this.formData[1]["registration_no"], advertisement_id: this.formData[1]["a_rec_adv_main_id"] };
       this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
         next: (result: any) => {
           this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
-          this.cdr.detectChanges(); // Force the HTML to update with the new payment data
-          this.generatePdfDocument(); // Proceed to print
+          this.cdr.detectChanges();
+          this.generatePdfDocument();
         },
         error: (err) => {
           console.error('Failed to load fee status for PDF', err);
-          this.generatePdfDocument(); // Print anyway if it fails
+          this.generatePdfDocument();
         }
       });
     } else {
@@ -202,26 +197,19 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ✅ Moved the actual PDF generation logic into its own helper method
   private generatePdfDocument(): void {
     if (!this.printContentRef) {
-      console.error('Content element not found!');
       this.loader.hideLoader();
       return;
     }
 
     const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
     let stylesHtml = '';
-    styleNodes.forEach((node) => {
-      stylesHtml += node.outerHTML;
-    });
+    styleNodes.forEach((node) => { stylesHtml += node.outerHTML; });
 
     let contentHtml = this.printContentRef.nativeElement.outerHTML;
     const baseUrl = window.location.origin;
-    contentHtml = contentHtml.replace(
-      'src="igkv_logo.png"',
-      `src="${baseUrl}igkv_logo.png"`
-    );
+    contentHtml = contentHtml.replace('src="igkv_logo.png"', `src="${baseUrl}igkv_logo.png"`);
 
     const fullHtmlPayload = `
     <!DOCTYPE html>
@@ -232,9 +220,9 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
           body { font-family: Arial, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 0; background: #fff; }
           .a4-container { width: 100%; max-width: 800px; margin: 0 auto; }
           .header-section { text-align: center; margin-bottom: 20px; }
-          .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; text-transform: uppercase; }
+          .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; text-transform: capitalize; }
           .bordered-section { border: 1px solid #000; margin-bottom: 15px; page-break-inside: avoid; }
-          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; text-transform: uppercase; }
+          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; text-transform: capitalize; }
           .sub-section-heading-bar { background-color: #f5f5f5; padding: 6px 10px; font-weight: bold; border-bottom: 1px solid #000; border-top: 1px solid #000; }
           table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
           tr { page-break-inside: avoid; page-break-after: auto; }
@@ -257,7 +245,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
 
     this.httpService.postBlob(apiUrl, payload, fileName, "common").pipe(take(1)).subscribe(() => {
-      console.log("PDF Generated");
       this.loader.hideLoader();
     });
   }
@@ -268,11 +255,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   formatHeader(key: string): string {
-    return key
-      .replace(/_/g, ' ')
-      .replace(/([A-Z])/g, ' $1')
-      .trim()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    const formatted = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+    return this.toTitleCase(formatted);
   }
 
   loadDeclaration(): void {
@@ -316,11 +300,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   formatKey(key: string): string {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .trim()
-      .replace(/_/g, ' ')
-      .replace(/^\w/, (c) => c.toUpperCase());
+    const formatted = key.replace(/([A-Z])/g, ' $1').trim().replace(/_/g, ' ');
+    return this.toTitleCase(formatted);
   }
 
   getProcessedPersonalInfo(): { key: string; value: string }[] {
@@ -328,31 +309,12 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     if (!info) return [];
 
     const processedData: { key: string; value: string }[] = [];
-    const personalInfoExcludeKeys = new Set([
-      'a_rec_adv_main_id', 'a_rec_app_main_id', 'post_code', 'session_id', 'subject_id',
-      'Salutation_E', 'Salutation_H', 'photo', 'signature', '_isValid',
-      'candidate_photo', 'candidate_signature', 'presentSame', 'registration_no',
-      'religion_code', 'gender_id', 'advertisment_name', 'post_name',
-      'Subject_Name_E', 'Salutation_E_Name', 'Salutation_H_Name',
-      'Applicant_First_Name_E', 'Applicant_Middle_Name_E', 'Applicant_Last_Name_E',
-      'Applicant_First_Name_H', 'Applicant_Middle_Name_H', 'Applicant_Last_Name_H',
-      'Applicant_Father_Name_E', 'Applicant_Mother_Name_E', 'DOB', 'age',
-      'Birth_Place', 'Birth_Country_Id', 'Birth_State_Id', 'Birth_District_Id',
-      'Birth_Country_Name', 'Birth_State_Name', 'Birth_District_Name',
-      'Permanent_Address1', 'Permanent_City', 'Permanent_Pin_Code', 'Permanent_Country_Id',
-      'Permanent_State_Id', 'Permanent_District_Id', 'Permanent_Country_Name',
-      'Permanent_State_Name', 'Permanent_District_Name', 'Current_Address1',
-      'Current_City', 'Current_Pin_Code', 'Current_Country_Id', 'Current_State_Id',
-      'Current_District_Id', 'Current_Country_Name', 'Current_State_Name',
-      'Current_District_Name', 'candidate_category_id', 'advertisment_no',
-      'uk_advertisementNo', 'advertisementNo'
-    ]);
 
     const fullNameE = [
       info['Salutation_E_Name'], info['Applicant_First_Name_E'],
       info['Applicant_Middle_Name_E'], info['Applicant_Last_Name_E'],
     ].filter(Boolean).join(' ');
-    processedData.push({ key: 'Applicant Full Name (English)', value: fullNameE });
+    processedData.push({ key: 'Applicant Full Name (English)', value: this.toTitleCase(fullNameE) });
 
     const fullNameH = [
       info['Salutation_H_Name'], info['Applicant_First_Name_H'],
@@ -380,7 +342,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       const targetDateStr = this.ageCalculationDate
         ? this.ageCalculationDate.split('T')[0]
         : new Date().toISOString().split('T')[0];
-
       const dobStr = info['DOB'].split('T')[0];
 
       const [tYear, tMonth, tDay] = targetDateStr.split('-').map(Number);
@@ -399,7 +360,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
         years--;
         months += 12;
       }
-
       calculatedAge = `${years} Years, ${months} Months, ${days} Days`;
     }
 
@@ -415,29 +375,29 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       info['Birth_Place'], info['Birth_District_Name'],
       info['Birth_State_Name'], info['Birth_Country_Name'],
     ].filter(Boolean).join(', ');
-    processedData.push({ key: 'Birth Place', value: birthPlace });
+    processedData.push({ key: 'Birth Place', value: this.toTitleCase(birthPlace) });
 
     const permanentAddress = [
       info['Permanent_Address1'], info['Permanent_City'],
       info['Permanent_District_Name'], info['Permanent_State_Name'],
       info['Permanent_Country_Name'],
     ].filter(Boolean).join(', ') + (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
-    processedData.push({ key: 'Permanent Address', value: permanentAddress });
+    processedData.push({ key: 'Permanent Address', value: this.toTitleCase(permanentAddress) });
 
     if (info['presentSame']) {
-      processedData.push({ key: 'Current Address', value: permanentAddress });
+      processedData.push({ key: 'Current Address', value: this.toTitleCase(permanentAddress) });
     } else {
       const currentAddress = [
         info['Current_Address1'], info['Current_City'],
         info['Current_District_Name'], info['Current_State_Name'],
         info['Current_Country_Name'],
       ].filter(Boolean).join(', ') + (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
-      processedData.push({ key: 'Current Address', value: currentAddress });
+      processedData.push({ key: 'Current Address', value: this.toTitleCase(currentAddress) });
     }
 
     for (const key of this.getFormDataKeys(info)) {
       if (
-        !personalInfoExcludeKeys.has(key) &&
+        !this.personalInfoExcludeKeys.has(key) &&
         info[key] &&
         key !== 'languages' &&
         !key.startsWith('question_') &&
@@ -455,171 +415,110 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   }
 
   private getProcessedSteps(): any[] {
-    return Object.keys(this.formData)
-      .map(Number)
-      .filter((key) => key > 1)
-      .sort((a, b) => a - b)
-      .map((key) => {
-        const stepData = this.formData[key];
+    return Object.keys(this.formData).map(Number).filter((key) => key > 1).sort((a, b) => a - b).map((key) => {
+      const stepData = this.formData[key];
+      if (stepData.languages && stepData.languages.length > 0) return null;
 
-        if (stepData.languages && stepData.languages.length > 0) return null;
+      let stepType = '';
+      let sections: any[] = [];
 
-        let stepType = '';
-        let sections: any[] = [];
+      if (this.isQualificationStep(stepData)) {
+        stepType = 'qualification';
+        sections = this.getQualificationSections(stepData);
+      } else if (this.isExperienceStep(stepData)) {
+        stepType = 'experience';
+        sections = this.getExperienceSections(stepData);
+      } else if (this.isDetailsStep(stepData)) {
+        stepType = 'details';
+        sections = this.getSubheadingsWithDetails(stepData);
+      }
 
-        if (this.isQualificationStep(stepData)) {
-          stepType = 'qualification';
-          sections = this.getQualificationSections(stepData);
-        } else if (this.isExperienceStep(stepData)) {
-          stepType = 'experience';
-          sections = this.getExperienceSections(stepData);
-        } else if (this.isDetailsStep(stepData)) {
-          stepType = 'details';
-          sections = this.getSubheadingsWithDetails(stepData);
-        }
+      if (sections.length === 0 && !stepData.attachments) return null;
 
-        if (sections.length === 0 && !stepData.attachments) return null;
-
-        return {
-          key,
-          heading: stepData?.heading?.score_field_title_name || 'Details',
-          type: stepType,
-          sections,
-        };
-      })
-      .filter((step) => step !== null);
+      return { key, heading: stepData?.heading?.score_field_title_name || 'Details', type: stepType, sections };
+    }).filter((step) => step !== null);
   }
 
   private getDisplayableKeys(obj: any): string[] {
     if (!obj) return [];
-    return Object.keys(obj).filter(
-      (key) =>
-        !key.toLowerCase().includes('_id') &&
-        !key.toLowerCase().includes('a_rec_app') &&
-        !key.toLowerCase().includes('is_deleted') &&
-        !key.startsWith('param_') &&
-        key !== 'calculated_experience'
+    return Object.keys(obj).filter((key) =>
+      !key.toLowerCase().includes('_id') &&
+      !key.toLowerCase().includes('a_rec_app') &&
+      !key.toLowerCase().includes('is_deleted') &&
+      !key.startsWith('param_') &&
+      key !== 'calculated_experience'
     );
   }
 
-  private isQualificationStep(stepData: any): boolean {
-    return stepData && Object.keys(stepData).some((key) => key.startsWith('qualifications'));
-  }
-
-  private isExperienceStep(stepData: any): boolean {
-    return stepData && Object.keys(stepData).some((key) => /^\d+_\d+_\d+$/.test(key));
-  }
-
-  private isDetailsStep(stepData: any): boolean {
-    return stepData && Array.isArray(stepData.details) && stepData.subheadings;
-  }
+  private isQualificationStep(stepData: any): boolean { return stepData && Object.keys(stepData).some((key) => key.startsWith('qualifications')); }
+  private isExperienceStep(stepData: any): boolean { return stepData && Object.keys(stepData).some((key) => /^\d+_\d+_\d+$/.test(key)); }
+  private isDetailsStep(stepData: any): boolean { return stepData && Array.isArray(stepData.details) && stepData.subheadings; }
 
   private getQualificationSections(stepData: any): any[] {
     if (!stepData || !stepData.subheadings) return [];
-    return Object.keys(stepData.subheadings)
-      .map((key) => {
-        const qualifications = stepData[`qualifications${key}`] || [];
-        if (qualifications.length > 0) {
-          return {
-            title: stepData.subheadings[key]?.score_field_title_name || 'Qualification',
-            headers: this.getDisplayableKeys(qualifications[0]),
-            qualifications: qualifications,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
+    return Object.keys(stepData.subheadings).map((key) => {
+      const qualifications = stepData[`qualifications${key}`] || [];
+      if (qualifications.length > 0) {
+        return { title: stepData.subheadings[key]?.score_field_title_name || 'Qualification', headers: this.getDisplayableKeys(qualifications[0]), qualifications: qualifications };
+      }
+      return null;
+    }).filter(Boolean);
   }
 
   private getSubheadingsWithDetails(stepData: any): any[] {
     if (!stepData || !stepData.subheadings || !stepData.details) return [];
-    return Object.keys(stepData.subheadings)
-      .map((key) => {
-        const subhead = stepData.subheadings[key];
-        const subheadItemIds = (subhead.items || []).map((item: any) =>
-          item.m_rec_score_field_id.toString()
-        );
-        const details = stepData.details
-          .filter((detail: any) =>
-            subheadItemIds.includes(detail.type.toString())
-          )
-          .map((detail: any) => ({
-            ...detail,
-            type: this.getDetailItemName(stepData, detail.type),
-          }));
+    return Object.keys(stepData.subheadings).map((key) => {
+      const subhead = stepData.subheadings[key];
+      const subheadItemIds = (subhead.items || []).map((item: any) => item.m_rec_score_field_id.toString());
+      const details = stepData.details.filter((detail: any) => subheadItemIds.includes(detail.type.toString())).map((detail: any) => ({
+        ...detail, type: this.getDetailItemName(stepData, detail.type)
+      }));
 
-        if (details.length > 0) {
-          return {
-            title: subhead.score_field_name_e || 'Details',
-            details: details,
-            headers: this.getDisplayableKeys(details[0]),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
+      if (details.length > 0) {
+        return { title: subhead.score_field_name_e || 'Details', details: details, headers: this.getDisplayableKeys(details[0]) };
+      }
+      return null;
+    }).filter(Boolean);
   }
 
   private getExperienceSections(stepData: any): any[] {
     if (!stepData || !stepData.subheadings) return [];
-    return Object.keys(stepData.subheadings)
-      .map((key) => {
-        if (!/^\d+_\d+_\d+$/.test(key)) return null;
-        const experiences = stepData[key] || [];
-        if (experiences.length > 0) {
-          return {
-            title: stepData.subheadings[key]?.score_field_title_name || 'Experience',
-            experiences: experiences,
-            headers: this.getDisplayableKeys(experiences[0]),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
+    return Object.keys(stepData.subheadings).map((key) => {
+      if (!/^\d+_\d+_\d+$/.test(key)) return null;
+      const experiences = stepData[key] || [];
+      if (experiences.length > 0) {
+        return { title: stepData.subheadings[key]?.score_field_title_name || 'Experience', experiences: experiences, headers: this.getDisplayableKeys(experiences[0]) };
+      }
+      return null;
+    }).filter(Boolean);
   }
 
   private getProcessedAttachments(): { type: string; remark: string }[] {
-    const attachmentStepKey = Object.keys(this.formData).find(
-      (key) => this.formData[Number(key)]?.attachments
-    );
-
+    const attachmentStepKey = Object.keys(this.formData).find((key) => this.formData[Number(key)]?.attachments);
     if (!attachmentStepKey) return [];
-
     const stepData = this.formData[Number(attachmentStepKey)];
     if (!stepData || !Array.isArray(stepData.attachments)) return [];
 
     const subheadKeys = Object.keys(stepData.subheadings || {});
-    return stepData.attachments
-      .map((att: any, index: number) => {
-        if (att.remark && att.remark.trim() !== '') {
-          const key = subheadKeys[index];
-          if (key) {
-            const type =
-              stepData.subheadings[key]?.score_field_title_name ||
-              `Attachment ${index + 1}`;
-            return { type, remark: att.remark };
-          }
+    return stepData.attachments.map((att: any, index: number) => {
+      if (att.remark && att.remark.trim() !== '') {
+        const key = subheadKeys[index];
+        if (key) {
+          const type = stepData.subheadings[key]?.score_field_title_name || `Attachment ${index + 1}`;
+          return { type, remark: att.remark };
         }
-        return null;
-      })
-      .filter(
-        (item: any): item is { type: string; remark: string } => item !== null
-      );
+      }
+      return null;
+    }).filter((item: any): item is { type: string; remark: string } => item !== null);
   }
 
   private getDetailItemName(stepData: any, detailType: string): string {
     if (!stepData || !stepData.subheadings) return 'Detail';
-
     for (const subheadKey of Object.keys(stepData.subheadings)) {
       const subhead = stepData.subheadings[subheadKey];
       if (subhead && Array.isArray(subhead.items)) {
-        const foundItem = subhead.items.find(
-          (item: any) =>
-            item.m_rec_score_field_id.toString() === detailType.toString()
-        );
-        if (foundItem) {
-          return foundItem.score_field_name_e;
-        }
+        const foundItem = subhead.items.find((item: any) => item.m_rec_score_field_id.toString() === detailType.toString());
+        if (foundItem) return foundItem.score_field_name_e;
       }
     }
     return detailType;

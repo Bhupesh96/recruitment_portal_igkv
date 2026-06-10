@@ -1,40 +1,22 @@
 <div class="flex flex-col min-h-screen bg-blue-50/30 font-['Source Sans Pro',sans-serif]">
   <app-header class="sticky top-0 z-50 bg-white shadow-sm"></app-header>
 
-
   <div
     *ngIf="marqueeItems.length"
     class="relative flex items-center overflow-hidden bg-[#1a0000] border-y border-red-900 h-12 shadow-md"
   >
-
-    <!-- Left Label -->
     <div
       class="relative z-20 flex items-center h-full px-6 bg-gradient-to-r from-red-700 to-red-600 text-white font-black uppercase tracking-[0.18em] text-sm shadow-lg"
       style="clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%)"
     >
-
-      <!-- Pulse Dot -->
       <span class="relative flex h-2.5 w-2.5 mr-3">
-
-      <span
-        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-200 opacity-75"
-      ></span>
-
-      <span
-        class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-100"
-      ></span>
-
-    </span>
-
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-200 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-100"></span>
+      </span>
       Latest Updates
-
     </div>
 
-    <!-- Scrolling Content -->
-    <div
-      class="flex animate-marquee whitespace-nowrap pl-10 hover:[animation-play-state:paused]"
-    >
-
+    <div class="flex animate-marquee whitespace-nowrap pl-10 hover:[animation-play-state:paused]">
       <a
         *ngFor="let item of marqueeItems"
         [href]="item.file_path ? getFileUrl(item.file_path) : item.target_url"
@@ -42,63 +24,28 @@
         rel="noopener noreferrer"
         class="group inline-flex items-center !text-gray-100 visited:!text-gray-100 hover:!text-yellow-200 active:!text-white no-underline transition-all duration-300 px-8 text-[15px] font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
       >
-
-        <!-- Diamond -->
-        <span
-          class="w-2 h-2 bg-red-400 rotate-45 mr-4 opacity-90 group-hover:scale-125 group-hover:bg-yellow-300 transition-all duration-300"
-        ></span>
-
-        <!-- Text -->
+        <span class="w-2 h-2 bg-red-400 rotate-45 mr-4 opacity-90 group-hover:scale-125 group-hover:bg-yellow-300 transition-all duration-300"></span>
         <span class="tracking-wide group-hover:tracking-wider transition-all duration-300">
-        {{ item.title }}
-      </span>
-
+          {{ item.title }}
+        </span>
       </a>
-
     </div>
 
-    <!-- View All Button -->
     <button
       type="button"
       (click)="showMarqueeModal = true"
       class="absolute right-3 z-30 flex items-center gap-2 px-4 h-9 rounded-3 bg-red-600 text-white text-sm font-semibold shadow-[0_8px_20px_rgba(220,38,38,0.45)] hover:shadow-[0_10px_24px_rgba(220,38,38,0.6)] hover:scale-[1.04] active:scale-[0.98] transition-all duration-200"
     >
-
-
-      <span>
-    View All
-  </span>
-
+      <span>View All</span>
     </button>
 
-    <!-- Right Gradient Fade -->
-    <div
-      class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#1a0000] via-[#1a0000]/95 to-transparent pointer-events-none"
-    ></div>
-
+    <div class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#1a0000] via-[#1a0000]/95 to-transparent pointer-events-none"></div>
   </div>
+
   <main class="flex-grow">
-    <!-- Hero Banner (Unified Blue-900) -->
-<!--    <header-->
-<!--      class="relative py-12 sm:py-16 flex flex-col items-center justify-center text-white bg-blue-900 overflow-hidden">-->
-<!--      &lt;!&ndash; Decorative SVG Background omitted for brevity, keep yours &ndash;&gt;-->
-<!--      <div class="relative z-10 text-center px-4 sm:px-6 lg:px-8">-->
-<!--        <h1 class="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight">Find Your Next Opportunity</h1>-->
-<!--        <p class="mt-4 text-base sm:text-xl max-w-2xl mx-auto text-blue-100">Connect with top jobs and apply seamlessly-->
-<!--          through our recruitment portal New</p>-->
-<!--        <div class="mt-6" *ngIf="isMobileView && !showLogin">-->
-<!--          <button (click)="showLogin = true"-->
-<!--                  class="px-6 py-2 text-base bg-white text-blue-900 font-bold rounded-md shadow-md hover:bg-gray-100 transition">-->
-<!--            Login-->
-<!--          </button>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </header>-->
+    <section class="w-full max-w-[90rem] mx-auto px-4 sm:px-8 lg:px-12 z-10 relative animate-fadeIn">
 
-    <section class="w-full max-w-[90rem] mx-auto px-4 sm:px-8 lg:px-12  z-10 relative animate-fadeIn">
       <div *ngIf="!isMobileView" class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-
-        <!-- Left Column: Job Selection -->
         <div class="lg:col-span-3 mt-6">
           <div class="bg-white border border-gray-300 rounded-lg shadow-sm p-6 mb-6">
             <div class="flex flex-col md:flex-row gap-6">
@@ -129,7 +76,6 @@
             </div>
           </div>
 
-          <!-- Post Cards -->
           <div *ngIf="filteredPosts.length > 0" class="space-y-4">
             <div *ngFor="let post of filteredPosts; let i = index"
                  class="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden transition-all duration-300"
@@ -142,33 +88,25 @@
               </button>
 
               <div *ngIf="post.expanded" class="bg-gray-50 px-6 py-6 border-t border-gray-200">
-
-                <!-- Subject Selection -->
                 <div *ngIf="post.subjects?.length" class="pb-6 mb-6 border-b border-gray-200">
                   <p class="text-base font-bold text-gray-800 mb-3">Select your Subject:</p>
                   <div class="flex flex-wrap gap-4">
-
                     <label *ngFor="let subject of post.subjects"
                            class="flex items-center px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200 shadow-sm"
                            [ngClass]="post.selectedSubjectId === subject.subject_id ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600' : 'border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'">
-
                       <input type="radio"
                              [(ngModel)]="post.selectedSubjectId"
                              [value]="subject.subject_id"
                              [name]="'subject-group-desktop-' + post.post_code"
                              class="h-5 w-5 text-blue-700 focus:ring-blue-700 border-gray-400 cursor-pointer"/>
-
                       <span class="ml-3 text-base font-semibold"
                             [ngClass]="post.selectedSubjectId === subject.subject_id ? 'text-blue-900' : 'text-gray-700'">
-          {{ subject.Subject_Name_E }}
-        </span>
-
+                        {{ subject.Subject_Name_E }}
+                      </span>
                     </label>
-
                   </div>
                 </div>
 
-                <!-- Tabs -->
                 <div class="flex flex-wrap gap-3 mb-6">
                   <button *ngFor="let tab of tabsWithoutLogin" (click)="setActiveTab(post, tab)"
                           class="px-5 py-2 text-sm font-bold rounded-full transition-colors border"
@@ -177,11 +115,9 @@
                   </button>
                 </div>
 
-                <!-- Content Area -->
                 <div class="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
                   <ng-container [ngSwitch]="post.activeTab">
 
-                    <!-- SIGNUP TAB -->
                     <div *ngSwitchCase="'signup'">
                       <div *ngIf="linkStatuses.signup.active; else signupClosed">
                         <app-signup (loginClicked)="switchToLogin()" [academicSessionId]="selectedSessionId"
@@ -196,16 +132,12 @@
                       </ng-template>
                     </div>
 
-                    <!-- NOTIFICATION TAB -->
                     <div *ngSwitchCase="'notification'">
                       <div *ngIf="linkStatuses.notification.active; else notifClosed">
                         <p class="text-base text-gray-700 leading-relaxed mb-6">Stay updated with latest documents for
                           <strong>{{ post.post_name }}</strong>.</p>
                         <div class="space-y-3">
-
-                          <!-- Advertisement -->
                           <div *ngIf="selectedAdDetails" class="flex flex-wrap gap-4">
-
                             <a
                               *ngIf="isValidFile(selectedAdDetails.advertisement_order_copy)"
                               [href]="getFileUrl(selectedAdDetails.advertisement_order_copy)"
@@ -214,7 +146,6 @@
                             >
                               View Advertisement
                             </a>
-
                             <a
                               *ngIf="isValidFile(selectedAdDetails.score_card_order_copy)"
                               [href]="getFileUrl(selectedAdDetails.score_card_order_copy)"
@@ -223,102 +154,42 @@
                             >
                               View Score Card
                             </a>
-
                           </div>
-                          <!-- Latest Notifications -->
                           <div *ngIf="latestNotifications.length" class="mt-5">
-
-                            <!-- Header -->
-                            <div
-                              class="flex items-center justify-between mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-100"
-                            >
-
-                              <!-- Left -->
+                            <div class="flex items-center justify-between mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-100">
                               <div class="flex items-center gap-3">
-
-                                <div
-                                  class="w-1.5 h-7 rounded-full bg-red-500"
-                                ></div>
-
-                                <h5
-                                  class="text-[22px] font-extrabold text-gray-900 tracking-tight leading-none m-0 flex items-center"
-                                >
+                                <div class="w-1.5 h-7 rounded-full bg-red-500"></div>
+                                <h5 class="text-[22px] font-extrabold text-gray-900 tracking-tight leading-none m-0 flex items-center">
                                   Latest Notifications
                                 </h5>
-
                               </div>
-
-                              <!-- Right Badge -->
-                              <div
-                                class="flex items-center justify-center px-3 py-1.5 text-xs font-extrabold rounded-full bg-red-100 text-red-700 leading-none min-h-[32px]"
-                              >
+                              <div class="flex items-center justify-center px-3 py-1.5 text-xs font-extrabold rounded-full bg-red-100 text-red-700 leading-none min-h-[32px]">
                                 {{ latestNotifications.length }} New
                               </div>
-
                             </div>
-
-                            <!-- Notification List -->
                             <div class="space-y-3">
-
                               <a
                                 *ngFor="let item of latestNotifications"
                                 [href]="item.file_path ? getFileUrl(item.file_path) : item.target_url"
                                 target="_blank"
                                 class="group flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm hover:shadow-md hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200 no-underline"
                               >
-
-                                <!-- Left -->
                                 <div class="flex items-center gap-4 min-w-0">
-
-                                  <!-- PDF Icon -->
-                                  <div
-                                    class="flex items-center justify-center w-11 h-11 rounded-lg bg-red-100 text-red-700 flex-shrink-0"
-                                  >
-
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      class="w-6 h-6"
-                                      fill="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        d="M6 2C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM8 13h1.5c1.1 0 2-.9 2-2s-.9-2-2-2H8v6zm1.5-4c.3 0 .5.2.5.5s-.2.5-.5.5H9V9h.5zm3.5 4h1v-2h1c1.1 0 2-.9 2-2s-.9-2-2-2h-2v6zm1-4h1c.3 0 .5.2.5.5s-.2.5-.5.5h-1V9zm4 4h1.5v-1H18v-1h1v-1h-1V9h1.5V8H17v6z"
-                                      />
+                                  <div class="flex items-center justify-center w-11 h-11 rounded-lg bg-red-100 text-red-700 flex-shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M6 2C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM8 13h1.5c1.1 0 2-.9 2-2s-.9-2-2-2H8v6zm1.5-4c.3 0 .5.2.5.5s-.2.5-.5.5H9V9h.5zm3.5 4h1v-2h1c1.1 0 2-.9 2-2s-.9-2-2-2h-2v6zm1-4h1c.3 0 .5.2.5.5s-.2.5-.5.5h-1V9zm4 4h1.5v-1H18v-1h1v-1h-1V9h1.5V8H17v6z"/>
                                     </svg>
-
                                   </div>
-
-                                  <!-- Title -->
-                                  <div
-                                    class="font-semibold text-gray-900 group-hover:text-blue-800 transition truncate"
-                                  >
+                                  <div class="font-semibold text-gray-900 group-hover:text-blue-800 transition truncate">
                                     {{ item.title }}
                                   </div>
-
                                 </div>
-
-                                <!-- Right Arrow -->
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform flex-shrink-0"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M9 5l7 7-7 7"
-                                  />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-600 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                                 </svg>
-
                               </a>
-
                             </div>
-
                           </div>
-
                         </div>
                       </div>
                       <ng-template #notifClosed>
@@ -328,309 +199,85 @@
                       </ng-template>
                     </div>
 
-                    <!-- COMPLAINT TAB -->
                     <div *ngSwitchCase="'complaint'">
-
                       <div *ngIf="linkStatuses.complaint.active; else compClosed">
-
-                        <div
-                          class="w-full bg-white border border-gray-200 overflow-hidden rounded-2"
-                        >
-
-                          <!-- Header -->
-                          <div
-                            class="relative px-6 py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700"
-                          >
-
+                        <div class="w-full bg-white border border-gray-200 overflow-hidden rounded-2">
+                          <div class="relative px-6 py-4 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700">
                             <div class="flex items-center gap-3">
-
-                              <!-- Icon -->
-                              <div
-                                class="flex items-center justify-center w-11 h-11 rounded-xl bg-white/10"
-                              >
-
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="w-5 h-5 text-white"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M8 10h8M8 14h5m-9 7h16a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 0013.586 3H10.414a1 1 0 00-.707.293L8.293 4.707A1 1 0 017.586 5H4a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                  />
+                              <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-white/10">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m-9 7h16a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 0013.586 3H10.414a1 1 0 00-.707.293L8.293 4.707A1 1 0 017.586 5H4a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
-
                               </div>
-
-                              <!-- Title -->
                               <div>
-
-                                <h2
-                                  class="text-xl font-black text-white tracking-tight leading-none mb-1"
-                                >
-                                  Online Complaint
-                                </h2>
-
-                                <p class="text-blue-100 text-sm mb-0">
-                                  Raise your issue regarding recruitment process
-                                </p>
-
+                                <h2 class="text-xl font-black text-white tracking-tight leading-none mb-1">Online Complaint</h2>
+                                <p class="text-blue-100 text-sm mb-0">Raise your issue regarding recruitment process</p>
                               </div>
-
                             </div>
-
                           </div>
-
-                          <!-- Form -->
                           <div class="p-6 bg-white">
-
-                            <form
-                              class="space-y-5"
-                              (ngSubmit)="submitComplaint()"
-                            >
-
-                              <!-- Grid -->
+                            <form class="space-y-5" (ngSubmit)="submitComplaint()">
                               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                                <!-- Problem Type -->
                                 <div>
-
-                                  <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    Problem Type
-                                  </label>
-
-                                  <select
-                                    [(ngModel)]="selectedProblemId"
-                                    name="problemType"
-                                    class="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition"
-                                  >
-
-                                    <option [ngValue]="null">
-                                      Select Problem Type
-                                    </option>
-
-                                    <option
-                                      *ngFor="let item of complaintProblems"
-                                      [ngValue]="item.problem_id"
-                                    >
-                                      {{ item.problem_short_name }}
-                                    </option>
-
+                                  <label class="block text-sm font-bold text-gray-700 mb-2">Problem Type</label>
+                                  <select [(ngModel)]="selectedProblemId" name="problemType" class="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition">
+                                    <option [ngValue]="null">Select Problem Type</option>
+                                    <option *ngFor="let item of complaintProblems" [ngValue]="item.problem_id">{{ item.problem_short_name }}</option>
                                   </select>
-
                                 </div>
-
-
-                                <!-- Registration -->
                                 <div>
-
-                                  <label class="block text-sm font-bold text-gray-700 mb-2">
-                                    Registration Number
-                                  </label>
-
+                                  <label class="block text-sm font-bold text-gray-700 mb-2">Registration Number</label>
                                   <div>
-
-                                    <input
-                                      type="number"
-                                      [(ngModel)]="complaintRegistrationNo"
-                                      name="complaintRegistrationNo"
-                                      placeholder="Enter Registration Number"
-                                      class="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition"
-                                    />
-
-
-
+                                    <input type="number" [(ngModel)]="complaintRegistrationNo" name="complaintRegistrationNo" placeholder="Enter Registration Number" class="w-full h-11 rounded-xl border border-gray-300 bg-white px-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition"/>
                                   </div>
-
                                 </div>
-
-
                               </div>
-
-                              <!-- Problem -->
                               <div>
-
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                  Problem Description
-                                </label>
-
-                                <textarea
-                                  rows="5"
-                                  [(ngModel)]="complaintProblemText"
-                                  name="complaintProblemText"
-                                  placeholder="Write your issue here..."
-                                  class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium resize-none focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition"
-                                ></textarea>
-
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Problem Description</label>
+                                <textarea rows="5" [(ngModel)]="complaintProblemText" name="complaintProblemText" placeholder="Write your issue here..." class="w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-medium resize-none focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition"></textarea>
                               </div>
-
-                              <!-- Attachment -->
                               <div>
-
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
-                                  Attachment
-                                </label>
-
-                                <label
-                                  class="group relative flex flex-col items-center justify-center w-full min-h-[170px] border-2 border-dashed border-blue-300 rounded-2xl bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:border-blue-500 hover:from-blue-100 hover:to-blue-50 transition-all duration-300 overflow-hidden"
-                                >
-
-                                  <!-- Glow -->
-                                  <div
-                                    class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12),transparent_70%)]"
-                                  ></div>
-
-                                  <!-- Upload Icon -->
-                                  <div
-                                    class="relative z-10 flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-[0_8px_24px_rgba(59,130,246,0.15)] mb-4 group-hover:scale-105 transition-transform duration-300"
-                                  >
-
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      class="w-8 h-8 text-blue-700"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      stroke-width="2"
-                                    >
-                                      <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                      />
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Attachment</label>
+                                <label class="group relative flex flex-col items-center justify-center w-full min-h-[170px] border-2 border-dashed border-blue-300 rounded-2xl bg-gradient-to-br from-blue-50 to-white cursor-pointer hover:border-blue-500 hover:from-blue-100 hover:to-blue-50 transition-all duration-300 overflow-hidden">
+                                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12),transparent_70%)]"></div>
+                                  <div class="relative z-10 flex items-center justify-center w-16 h-16 rounded-2xl bg-white shadow-[0_8px_24px_rgba(59,130,246,0.15)] mb-4 group-hover:scale-105 transition-transform duration-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                      <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
-
                                   </div>
-
-                                  <!-- Text -->
                                   <div class="relative z-10 text-center px-4">
-
-                                    <div
-                                      class="text-base font-extrabold text-gray-800 mb-1"
-                                    >
-                                      Upload Supporting File
-                                    </div>
-
-                                    <div
-                                      class="text-sm text-gray-500"
-                                    >
-                                      Drag & drop file here or click to browse
-                                    </div>
-
-                                    <div
-                                      class="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold"
-                                    >
-                                      PDF, JPG, PNG • Max 1MB
-                                    </div>
-
+                                    <div class="text-base font-extrabold text-gray-800 mb-1">Upload Supporting File</div>
+                                    <div class="text-sm text-gray-500">Drag & drop file here or click to browse</div>
+                                    <div class="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">PDF, JPG, PNG • Max 1MB</div>
                                   </div>
-
-                                  <!-- Hidden Input -->
-                                  <input
-                                    type="file"
-                                    class="hidden"
-                                    accept=".pdf,.png,.jpg,.jpeg"
-                                    (change)="onComplaintFileChange($event)"
-                                  />
-
-                                  <!-- Selected File Preview -->
-                                  <div
-                                    *ngIf="complaintFile"
-                                    class="relative z-10 mt-5 flex items-center gap-3 bg-white border border-blue-200 rounded-2xl px-4 py-3 shadow-sm"
-                                  >
-
-                                    <!-- File Icon -->
-                                    <div
-                                      class="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex-shrink-0"
-                                    >
-
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="w-6 h-6"
-                                        fill="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm0 2.5L18.5 9H14z"
-                                        />
+                                  <input type="file" class="hidden" accept=".pdf,.png,.jpg,.jpeg" (change)="onComplaintFileChange($event)"/>
+                                  <div *ngIf="complaintFile" class="relative z-10 mt-5 flex items-center gap-3 bg-white border border-blue-200 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex-shrink-0">
+                                      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zm0 2.5L18.5 9H14z"/>
                                       </svg>
-
                                     </div>
-
-                                    <!-- File Details -->
                                     <div class="flex-1 min-w-0">
-
-                                      <div
-                                        class="text-sm font-bold text-gray-900 truncate"
-                                      >
-                                        {{ complaintFile.name }}
-                                      </div>
-
-                                      <div
-                                        class="text-xs text-gray-500 mt-0.5"
-                                      >
-                                        {{ (complaintFile.size / 1024 / 1024).toFixed(2) }} MB
-                                      </div>
-
+                                      <div class="text-sm font-bold text-gray-900 truncate">{{ complaintFile.name }}</div>
+                                      <div class="text-xs text-gray-500 mt-0.5">{{ (complaintFile.size / 1024 / 1024).toFixed(2) }} MB</div>
                                     </div>
-
-                                    <!-- Remove -->
-                                    <button
-                                      type="button"
-                                      (click)="complaintFile = null"
-                                      class="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition"
-                                    >
-                                      ×
-                                    </button>
-
+                                    <button type="button" (click)="complaintFile = null" class="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition">×</button>
                                   </div>
-
                                 </label>
-
                               </div>
-
-                              <!-- Buttons -->
                               <div class="flex items-center justify-end gap-3 pt-2">
-
-                                <!-- Clear -->
-                                <button
-                                  type="button"
-                                  class="px-5 h-11 rounded-xl bg-gray-300 hover:bg-gray-400 text-gray-900 text-sm font-bold transition rounded-2"
-                                >
-                                  Clear
-                                </button>
-
-                                <!-- Submit -->
-                                <button
-                                  type="submit"
-                                  class="px-6 h-11 rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black shadow-md hover:shadow-lg transition rounded-2"
-                                >
-                                  Submit Complaint
-                                </button>
-
+                                <button type="button" class="px-5 h-11 rounded-xl bg-gray-300 hover:bg-gray-400 text-gray-900 text-sm font-bold transition rounded-2">Clear</button>
+                                <button type="submit" class="px-6 h-11 rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-black shadow-md hover:shadow-lg transition rounded-2">Submit Complaint</button>
                               </div>
-
                             </form>
-
                           </div>
-
                         </div>
-
                       </div>
-
-                      <!-- Closed -->
                       <ng-template #compClosed>
-
                         <div class="p-4 bg-yellow-50 text-yellow-800 font-bold border border-yellow-200 rounded">
                           ⚠ {{ linkStatuses.complaint.message }}
                         </div>
-
                       </ng-template>
-
                     </div>
 
                   </ng-container>
@@ -640,20 +287,19 @@
           </div>
         </div>
 
-        <!-- Right Column: Login Sticky Card -->
         <div class="lg:col-span-2 mt-6">
-          <div class="bg-white rounded-xl shadow-lg border border-gray-300 p-8 sticky top-24">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Existing User?</h2>
-            <p class="text-gray-600 text-base text-center mb-8">Log in to continue your application</p>
+          <div class="bg-white rounded-xl border border-gray-300 p-8 sticky top-24">
+<!--            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Existing User?</h2>-->
+<!--            <p class="text-gray-600 text-base text-center mb-8">Log in to continue your application</p>-->
             <app-login (signupClicked)="showSignupForm()" (loginSuccess)="handleLoginSuccess()"></app-login>
             <app-stepper *ngIf="isLoggedIn"></app-stepper>
           </div>
         </div>
       </div>
 
-      <!-- Mobile View -->
       <div *ngIf="isMobileView" class="mt-6 space-y-6">
         <div class="bg-white border border-gray-300 rounded-lg p-5 shadow-md">
+
           <ng-container *ngIf="!showLogin; else loginTemplate">
             <div class="space-y-4">
               <div class="flex flex-col">
@@ -673,12 +319,22 @@
                 </select>
               </div>
             </div>
+
+            <div class="mt-5 pt-5 border-t border-gray-200">
+              <p class="text-sm text-center text-gray-600 font-semibold mb-3">Already registered?</p>
+              <button (click)="showLoginForm()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold text-base h-11 rounded-md shadow-sm transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Log In
+              </button>
+            </div>
           </ng-container>
 
           <ng-template #loginTemplate>
             <button (click)="showSelectionView()"
                     class="mb-4 inline-flex items-center text-blue-800 font-bold hover:underline">
-              Back to Selection
+              ← Back to Selection
             </button>
             <app-login (signupClicked)="showSignupForm()" (loginSuccess)="handleLoginSuccess()"></app-login>
             <app-stepper *ngIf="isLoggedIn"></app-stepper>
@@ -691,82 +347,65 @@
                [ngClass]="{'shadow-lg z-10': post.expanded}">
             <button (click)="togglePost(post)"
                     class="w-full flex justify-between items-center text-left px-4 py-3 hover:bg-gray-50 transition">
-              <h4 class="text-base font-semibold text-blue-800">{{ post.post_name }} - ({{ post.post_status_name }}
-                )</h4>
+              <h4 class="text-base font-semibold text-blue-800">{{ post.post_name }} - ({{ post.post_status_name }})</h4>
             </button>
 
             <div *ngIf="post.expanded" class="bg-gray-50 px-4 py-4 border-t border-gray-200">
+              <div
+                *ngIf="post.subjects?.length"
+                class="pb-4 mb-4 border-b border-gray-200"
+              >
+                <p class="text-sm font-bold text-gray-800 mb-3">
+                  Select Subject
+                </p>
 
-                <div
-                  *ngIf="post.subjects?.length"
-                  class="pb-4 mb-4 border-b border-gray-200"
-                >
-
-                  <!-- Heading -->
-                  <p
-                    class="text-sm font-bold text-gray-800 mb-3"
+                <div class="flex flex-wrap gap-2">
+                  <label
+                    *ngFor="let subject of post.subjects"
+                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all duration-200 whitespace-nowrap"
+                    [ngClass]="
+                      post.selectedSubjectId === subject.subject_id
+                        ? 'border-blue-600 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 bg-white'
+                    "
                   >
-                    Select Subject
-                  </p>
+                    <input
+                      type="radio"
+                      [(ngModel)]="post.selectedSubjectId"
+                      [value]="subject.subject_id"
+                      [id]="'subj-mobile-'+post.post_code+'-'+subject.a_rec_adv_post_subject_detail_id"
+                      [name]="'subject-group-mobile-' + post.post_code"
+                      class="sr-only"
+                    />
 
-                  <!-- Subject List -->
-                  <div class="flex flex-wrap gap-2">
-
-                    <label
-                      *ngFor="let subject of post.subjects"
-                      class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all duration-200 whitespace-nowrap"
+                    <div
+                      class="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0"
                       [ngClass]="
-          post.selectedSubjectId === subject.subject_id
-            ? 'border-blue-600 bg-blue-50 shadow-sm'
-            : 'border-gray-200 bg-white'
-        "
+                        post.selectedSubjectId === subject.subject_id
+                          ? 'border-blue-700 bg-blue-700'
+                          : 'border-gray-400 bg-white'
+                      "
                     >
-
-                      <!-- Hidden Radio -->
-                      <input
-                        type="radio"
-                        [(ngModel)]="post.selectedSubjectId"
-                        [value]="subject.subject_id"
-                        [id]="'subj-mobile-'+post.post_code+'-'+subject.a_rec_adv_post_subject_detail_id"
-                        [name]="'subject-group-mobile-' + post.post_code"
-                        class="sr-only"
-                      />
-
-                      <!-- Custom Radio -->
                       <div
-                        class="w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                        [ngClass]="
-            post.selectedSubjectId === subject.subject_id
-              ? 'border-blue-700 bg-blue-700'
-              : 'border-gray-400 bg-white'
-          "
-                      >
+                        *ngIf="post.selectedSubjectId === subject.subject_id"
+                        class="w-2 h-2 rounded-full bg-white"
+                      ></div>
+                    </div>
 
-                        <div
-                          *ngIf="post.selectedSubjectId === subject.subject_id"
-                          class="w-2 h-2 rounded-full bg-white"
-                        ></div>
-
-                      </div>
-
-                      <!-- Subject Name -->
-                      <div
-                        class="flex-1 text-[13px] font-semibold leading-[18px] truncate"
-                        [ngClass]="
+                    <div
+                      class="flex-1 text-[13px] font-semibold leading-[18px] truncate"
+                      [ngClass]="
                         post.selectedSubjectId === subject.subject_id
                           ? 'text-blue-900'
                           : 'text-gray-700'
                       "
-                        title="{{ subject.Subject_Name_E }}"
-                      >
-                        {{ subject.Subject_Name_E }}
-                      </div>
-
-                    </label>
-
-                  </div>
-
+                      title="{{ subject.Subject_Name_E }}"
+                    >
+                      {{ subject.Subject_Name_E }}
+                    </div>
+                  </label>
                 </div>
+              </div>
 
               <div class="flex flex-wrap gap-2 mb-4">
                 <button *ngFor="let tab of tabsWithoutLogin" (click)="setActiveTab(post, tab)"
@@ -778,7 +417,6 @@
 
               <div class="bg-white p-4 rounded-md border border-gray-200 text-gray-700 shadow-sm">
                 <ng-container [ngSwitch]="post.activeTab">
-
                   <div *ngSwitchCase="'signup'">
                     <div *ngIf="linkStatuses.signup.active; else mSignupClosed">
                       <app-signup (loginClicked)="showLoginForm()" [academicSessionId]="selectedSessionId"
@@ -852,7 +490,6 @@
 
                   <div *ngSwitchCase="'complaint'">
                     <div *ngIf="linkStatuses.complaint.active; else mCompClosed">
-
                       <div class="w-full bg-white border border-gray-200 overflow-hidden rounded-2">
                         <div class="relative px-4 py-3 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700">
                           <div class="flex items-center gap-3">
@@ -868,7 +505,6 @@
 
                         <div class="p-4 bg-white">
                           <form class="space-y-4" (ngSubmit)="submitComplaint()">
-
                             <div>
                               <label class="block text-xs font-bold text-gray-700 mb-1">Problem Type</label>
                               <select [(ngModel)]="selectedProblemId" name="problemType" class="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500">
@@ -895,11 +531,9 @@
                             <div class="flex items-center justify-end gap-2 pt-2">
                               <button type="submit" class="px-5 h-10 rounded-lg bg-gradient-to-r from-blue-900 to-blue-700 hover:from-blue-800 hover:to-blue-600 disabled:opacity-50 text-white text-sm font-black shadow-md w-full">Submit</button>
                             </div>
-
                           </form>
                         </div>
                       </div>
-
                     </div>
                     <ng-template #mCompClosed>
                       <div class="p-3 bg-yellow-50 text-yellow-800 text-sm font-bold border border-yellow-200 rounded">
@@ -918,37 +552,19 @@
   </main>
 
   <app-footer class="w-full"></app-footer>
-  <!-- Marquee Modal -->
+
   <div
     *ngIf="showMarqueeModal"
     class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
   >
-
-    <!-- Modal Box -->
     <div
       class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-fadeIn"
     >
-
-      <!-- Header -->
-      <div
-        class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-red-700 to-red-600"
-      >
-
+      <div class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-red-700 to-red-600">
         <div class="flex items-center gap-3">
-
-          <div
-            class="w-1.5 h-7 rounded-full bg-white"
-          ></div>
-
-          <h3
-            class="text-2xl font-black text-white tracking-tight mb-0"
-          >
-            Latest Updates
-          </h3>
-
+          <div class="w-1.5 h-7 rounded-full bg-white"></div>
+          <h3 class="text-2xl font-black text-white tracking-tight mb-0">Latest Updates</h3>
         </div>
-
-        <!-- Close -->
         <button
           type="button"
           (click)="showMarqueeModal = false"
@@ -956,14 +572,9 @@
         >
           ×
         </button>
-
       </div>
 
-      <!-- Body -->
-      <div
-        class="max-h-[70vh] overflow-y-auto p-6 space-y-3 bg-gray-50"
-      >
-
+      <div class="max-h-[70vh] overflow-y-auto p-6 space-y-3 bg-gray-50">
         <a
           *ngFor="let item of marqueeItems"
           [href]="item.file_path ? getFileUrl(item.file_path) : item.target_url"
@@ -971,66 +582,24 @@
           rel="noopener noreferrer"
           class="group flex items-center justify-between bg-white border border-gray-200 rounded-xl px-5 py-4 hover:border-red-300 hover:bg-red-50/40 hover:shadow-md transition-all duration-200 no-underline"
         >
-
-          <!-- Left -->
           <div class="flex items-center gap-4 min-w-0">
-
-            <!-- Icon -->
-            <div
-              class="flex items-center justify-center w-11 h-11 rounded-xl bg-red-100 text-red-700 flex-shrink-0"
-            >
-
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M13 2L3 14h7v8l11-12h-7z"
-                />
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl bg-red-100 text-red-700 flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h7v8l11-12h-7z" />
               </svg>
-
             </div>
-
-            <!-- Text -->
-            <div
-              class="font-bold text-gray-900 group-hover:text-red-700 transition truncate"
-            >
+            <div class="font-bold text-gray-900 group-hover:text-red-700 transition truncate">
               {{ item.title }}
             </div>
-
           </div>
-
-          <!-- Right -->
-          <div
-            class="flex items-center gap-2 text-red-700 font-bold text-sm"
-          >
-
+          <div class="flex items-center gap-2 text-red-700 font-bold text-sm">
             <span>Open</span>
-
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="w-5 h-5 group-hover:translate-x-1 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 5l7 7-7 7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-
           </div>
-
         </a>
-
       </div>
-
     </div>
-
   </div>
 </div>

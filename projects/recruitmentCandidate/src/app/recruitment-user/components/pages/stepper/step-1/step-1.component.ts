@@ -928,6 +928,19 @@ export class Step1Component implements OnChanges, OnInit {
         control.markAsTouched();
         return;
       }
+      const minSizeInBytes = 100 * 1024;
+
+      if (file.size < minSizeInBytes) {
+        this.alert.alert(
+          true,
+          `File size must be at least 100KB. Your file is ~${Math.round(file.size / 1024)}KB.`
+        );
+
+        input.value = '';
+        control.setValue(null);
+        control.markAsTouched();
+        return;
+      }
       // Validate file size if a max size is specified in the API response
       if (maxSizeKB) {
         const maxSizeInBytes = maxSizeKB * 1024;
@@ -1330,18 +1343,26 @@ export class Step1Component implements OnChanges, OnInit {
 
         return;
       }
-
+      const minSize = 20 * 1024;
       const maxSize = 100 * 1024;
 
-      if (file.size > maxSize) {
+      if (file.size < minSize) {
+        this.alert.alert(
+          true,
+          'Photo size must be at least 20 KB.'
+        );
 
+        input.value = '';
+        return;
+      }
+
+      if (file.size > maxSize) {
         this.alert.alert(
           true,
           'Photo size cannot exceed 100 KB.'
         );
 
         input.value = '';
-
         return;
       }
       this.form.get('photo')?.setValue(file);
@@ -1378,18 +1399,26 @@ export class Step1Component implements OnChanges, OnInit {
 
         return;
       }
-
+      const minSize = 10 * 1024;
       const maxSize = 50 * 1024;
 
-      if (file.size > maxSize) {
+      if (file.size < minSize) {
+        this.alert.alert(
+          true,
+          'Signature size must be at least 10 KB.'
+        );
 
+        input.value = '';
+        return;
+      }
+
+      if (file.size > maxSize) {
         this.alert.alert(
           true,
           'Signature size cannot exceed 50 KB.'
         );
 
         input.value = '';
-
         return;
       }
       this.form.get('signature')?.setValue(file);

@@ -5,6 +5,7 @@ import {
   OnInit,
   ViewChild,
   ElementRef,
+  Input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -28,6 +29,12 @@ import { SweetAlertResult } from 'sweetalert2';
   templateUrl: './login.component.html',
 })
 export class LoginComponent implements OnInit {
+  // --- Context Inputs (Used for Login, but Forgot Reg fetches its own) ---
+  @Input() academicSessionId: number | null = null;
+  @Input() advertisementId: string | number = '';
+  @Input() postCode: number | null = null;
+  @Input() subjectId: number | null = null;
+
   @Output() loginSuccess = new EventEmitter<void>();
   @Output() signupClicked = new EventEmitter<void>();
 
@@ -46,6 +53,9 @@ export class LoginComponent implements OnInit {
   public generatedCaptcha: any = '';
   private currentCaptchaSvg: string = '';
 
+  // --- View State Manager ---
+  activeView: 'LOGIN' | 'FORGOT_PWD' | 'FORGOT_REG' = 'LOGIN';
+
   // --- Login State ---
   loginForm!: FormGroup;
   showPassword = false;
@@ -63,13 +73,25 @@ export class LoginComponent implements OnInit {
   private resendInterval: any;
 
   // --- Forgot Password State ---
-  isForgotPasswordMode = false;
-  forgotPasswordStep = 1; // 1: RegNo, 2: OTP, 3: New Password
-  forgotPasswordForm!: FormGroup;
+  forgotPwdStep = 1; // 1: RegNo, 2: OTP, 3: New Password
+  forgotPwdForm!: FormGroup;
   showNewPassword = false;
   showConfirmPassword = false;
-  isProcessingForgotPw = false;
-  forgotPasswordUserData: any = null; // ✅ Store fetched user details silently
+  isProcessingForgotPwd = false;
+  forgotPwdUserData: any = null;
+
+  // --- Forgot Registration Flow State ---
+  forgotRegStep = 1; // 1: Form, 2: Security Answer, 3: OTP, 4: Show Reg No
+  forgotRegForm!: FormGroup;
+  isProcessingForgotReg = false;
+  fetchedRegData: any = null;
+
+  // --- Dropdown Lists for Forgot Registration ---
+  sessionList: any[] = [];
+  advList: any[] = [];
+  postList: any[] = [];
+  subjectList: any[] = [];
+  subjectsAvailable = false;
 
   constructor(
     private httpService: HttpService,
@@ -92,15 +114,52 @@ export class LoginComponent implements OnInit {
       captcha: ['', Validators.required],
     });
 
-    // ✅ REMOVED mobile_no from the form!
-    this.forgotPasswordForm = this.fb.group({
+    this.forgotPwdForm = this.fb.group({
       registration_no: ['', Validators.required],
       captcha: ['', Validators.required],
       otp: [''],
       new_password: [''],
       confirm_password: ['']
     });
+
+    this.forgotRegForm = this.fb.group({
+      academic_session_id: [null, Validators.required],
+      a_rec_adv_main_id: [null, Validators.required],
+      post_code: [null, Validators.required],
+      subject_id: [null],
+      mobile_no: ['', [Validators.required, Validators.pattern('^[6-9][0-9]{9}$')]],
+      captcha: ['', Validators.required],
+      security_answer: [''],
+      otp: ['']
+    });
   }
+
+  switchView(view: 'LOGIN' | 'FORGOT_PWD' | 'FORGOT_REG') {
+    this.activeView = view;
+    this.loginError = '';
+    this.otpSent = false;
+    this.loginOtp = '';
+
+    // Reset all forms
+    this.loginForm.reset();
+    this.forgotPwdForm.reset();
+    this.forgotRegForm.reset();
+
+    // Reset steps
+    this.forgotPwdStep = 1;
+    this.forgotRegStep = 1;
+    this.subjectsAvailable = false;
+
+    this.getCaptcha();
+
+    if (view === 'FORGOT_REG') {
+      this.getSessions(); // Load initial dropdown data
+    }
+  }
+
+  // ========================================================================
+  // UTILS & CAPTCHA
+  // ========================================================================
 
   getCaptcha() {
     this.httpService.getData(`/getCaptcha`).subscribe({
@@ -113,8 +172,7 @@ export class LoginComponent implements OnInit {
           }
         }
       },
-      error: (err) => {
-        console.error('Failed to load captcha', err);
+      error: () => {
         this.loginError = 'Could not load captcha. Please refresh.';
       },
     });
@@ -125,26 +183,24 @@ export class LoginComponent implements OnInit {
     const txtCaptcha = bytes.toString(CryptoJS.enc.Utf8);
     return userInput === txtCaptcha;
   }
-//  New helper to enforce 6-digit limit strictly
+
   public onOtpInput(event: any): void {
     const input = event.target as HTMLInputElement;
     if (input.value.length > 6) {
       input.value = input.value.slice(0, 6);
-
-      // Sync back to the model if using [(ngModel)] (for loginOtp)
-      if (this.otpSent) {
-        this.loginOtp = input.value;
-      }
+      if (this.otpSent) this.loginOtp = input.value;
     }
   }
 
-  //  Keeps your existing number restriction
   public restrictToNumbers(event: KeyboardEvent): void {
     const charCode = event.which ? event.which : event.keyCode;
-    if (charCode < 48 || charCode > 57) {
-      event.preventDefault();
-    }
+    if (charCode < 48 || charCode > 57) event.preventDefault();
   }
+
+  togglePasswordVisibility() { this.showPassword = !this.showPassword; }
+  toggleNewPasswordVisibility() { this.showNewPassword = !this.showNewPassword; }
+  toggleConfirmPasswordVisibility() { this.showConfirmPassword = !this.showConfirmPassword; }
+
   // ========================================================================
   // CORE LOGIN FLOW
   // ========================================================================
@@ -169,94 +225,31 @@ export class LoginComponent implements OnInit {
     }
 
     this.isLoggingIn = true;
-
     const regNo = this.loginForm.value.user_id;
-    this.httpService
-      .getData(`/publicApi/get/getAdvForLogin?registration_no=${regNo}`, 'recruitement')
-      .subscribe({
-        next: (res: any) => {
-          if (res?.body?.data && res?.body?.data.length > 0) {
-            const advId = res?.body?.data[0].a_rec_adv_main_id;
-            const sessionId = res?.body?.data[0].session_id;
-            this.verifyLinkStatus(advId, sessionId);
-          } else {
-            this.handleFailedVerification('Registration Number not found or no associated advertisement.');
-          }
-        },
-        error: (err) => {
-          this.handleFailedVerification('Failed to verify Registration Number. Please try again.');
-        },
-      });
-  }
 
-  private verifyLinkStatus(advId: number, sessionId: number) {
-    const linkUrl = `/publicApi/get/getRecruitmentLinkManagementListPublic?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
-
-    this.httpService.getData(linkUrl, 'recruitement').subscribe({
+    this.httpService.getData(`/publicApi/get/getAdvForLogin?registration_no=${regNo}`, 'recruitement').subscribe({
       next: (res: any) => {
-        let isLoginAllowed = false;
-        let hasActiveModules = false;
-        let errorMsg = 'Login configuration not found for this advertisement.';
-
-        if (res && res?.body?.data) {
-          const now = new Date();
-          const loginLink = res?.body?.data.find((item: any) => item.isHeadingYN === 'A');
-
-          if (loginLink) {
-            const startDate = new Date(loginLink.startDate.replace(' ', 'T'));
-            const endDate = new Date(loginLink.endDate.replace(' ', 'T'));
-
-            const formatDateTime = (d: Date) => {
-              const pad = (n: number) => n.toString().padStart(2, '0');
-              return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-            };
-
-            if (loginLink.Live_YN !== 'Y') {
-              errorMsg = 'Login is currently disabled by administrators.';
-            } else if (now < startDate || now > endDate) {
-              errorMsg = `Login portal is only available between ${formatDateTime(startDate)} and ${formatDateTime(endDate)}.`;
-            } else {
-              isLoginAllowed = true;
-            }
-          }
-
-          res.body.data.forEach((link: any) => {
-            const type = link.isHeadingYN;
-            if (link.Live_YN === 'Y' && ['R', 'SC', 'D'].includes(type)) {
-              const startDate = new Date(link.startDate.replace(' ', 'T'));
-              const endDate = new Date(link.endDate.replace(' ', 'T'));
-              if (now >= startDate && now <= endDate) hasActiveModules = true;
-            }
-          });
-        }
-
-        if (isLoginAllowed && hasActiveModules) {
-          this.validateLoginCredentials();
-        } else if (isLoginAllowed && !hasActiveModules) {
-          this.handleFailedVerification('There are no active application forms, score cards, or objection links open at this time.');
+        if (res?.body?.data && res?.body?.data.length > 0) {
+          const advId = res?.body?.data[0].a_rec_adv_main_id;
+          const sessionId = res?.body?.data[0].session_id;
+          this.verifyLinkStatus(advId, sessionId);
         } else {
-          this.handleFailedVerification(errorMsg);
+          this.handleFailedVerification('Registration Number not found or no associated advertisement.');
         }
       },
-      error: (err) => {
-        this.handleFailedVerification('Failed to verify link status. Please try again.');
-      },
+      error: () => this.handleFailedVerification('Failed to verify Registration Number. Please try again.'),
     });
   }
 
-  private validateLoginCredentials() {
-    const encryptedPassword = CryptoJS.AES.encrypt(
-      this.loginForm.value.password,
-      this.passwordKey
-    ).toString();
+  private verifyLinkStatus(advId: number, sessionId: number) {
+    this.validateLoginCredentials();
+  }
 
-    const payload = {
-      user_id: this.loginForm.value.user_id,
-      password: encryptedPassword
-    };
+  private validateLoginCredentials() {
+    const encryptedPassword = CryptoJS.AES.encrypt(this.loginForm.value.password, this.passwordKey).toString();
+    const payload = { user_id: this.loginForm.value.user_id, password: encryptedPassword };
 
     this.alertService.showLoading('Please wait...', 'Validating credentials');
-
     this.httpService.postData('/publicApi/post/validateLoginCredentials', payload, 'recruitement').subscribe({
       next: (res: any) => {
         if (res?.body?.error) {
@@ -264,12 +257,7 @@ export class LoginComponent implements OnInit {
           this.handleLoginError(res.body.error);
           return;
         }
-
-        this.tempLoginPayload = {
-          password: this.loginForm.value.password,
-          captcha: this.loginForm.value.captcha
-        };
-
+        this.tempLoginPayload = { password: this.loginForm.value.password, captcha: this.loginForm.value.captcha };
         this.loginForm.disable();
         this.verifiedUserData = res?.body?.data;
         this.sendOtp('LOGIN');
@@ -281,21 +269,16 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  private verifyLoginOtp() {
+  private verifyLoginOtp(): void {
     if (!this.loginOtp) {
       this.alertService.alert(true, 'Please enter OTP.');
       return;
     }
-
     this.alertService.showLoading('Please wait...', 'Verifying OTP');
 
     this.httpService.postData(
       '/publicapi/post/verifyRecruitmentOtp',
-      {
-        mobile_no: this.verifiedUserData.mobile_no,
-        otp: this.loginOtp,
-        registration_no: this.verifiedUserData.registration_no
-      },
+      { mobile_no: this.verifiedUserData.mobile_no, otp: this.loginOtp, registration_no: this.verifiedUserData.registration_no },
       'recruitement'
     ).subscribe({
       next: (res: any) => {
@@ -313,17 +296,9 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  private executeFinalLogin() {
-    const encryptedPassword = CryptoJS.AES.encrypt(
-      this.tempLoginPayload.password,
-      this.passwordKey
-    ).toString();
-
-    const payload = {
-      user_id: this.verifiedUserData.registration_no,
-      password: encryptedPassword,
-      captcha: this.tempLoginPayload.captcha,
-    };
+  private executeFinalLogin(): void {
+    const encryptedPassword = CryptoJS.AES.encrypt(this.tempLoginPayload.password, this.passwordKey).toString();
+    const payload = { user_id: this.verifiedUserData.registration_no, password: encryptedPassword, captcha: this.tempLoginPayload.captcha };
 
     this.httpService.postData('/scoreCardEntry/login/', payload, 'recruitement').subscribe({
       next: (response: any) => {
@@ -346,94 +321,104 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  // ========================================================================
-  // FORGOT PASSWORD FLOW (Streamlined)
-  // ========================================================================
+  private handleFailedVerification(message: string) {
+    this.isLoggingIn = false;
+    this.alertService.alertMessage('Login Unavailable', message,'info');
+    this.loginForm.patchValue({ captcha: '' });
+    this.getCaptcha();
+  }
 
-  toggleForgotPasswordMode(enable: boolean) {
-    this.isForgotPasswordMode = enable;
-    this.loginError = '';
+  private handleLoginError(error: any) {
+    this.isLoggingIn = false;
+    this.loginForm.enable();
+    const code = error?.code;
 
-    if (enable) {
-      this.forgotPasswordStep = 1;
-      this.forgotPasswordForm.reset();
-      this.forgotPasswordForm.enable();
-      this.forgotPasswordUserData = null; // Clear cached user data
-      this.getCaptcha();
+    if (code === 'sc012') {
+      this.alertService.confirmAlert('Already Logged In', 'This user is logged in elsewhere. Log out other sessions?', 'warning').then((result: SweetAlertResult) => {
+        if (result.isConfirmed) this.logoutAllUserByUserId(this.loginForm.value.user_id);
+      });
     } else {
-      this.loginForm.reset();
-      this.loginForm.enable();
-      this.otpSent = false;
-      this.loginOtp = '';
+      this.loginError = code === 'sc001' ? 'Invalid Registration No.' : (code === 'sc002' ? 'Invalid Registration No. or Password.' : (error?.message || 'An error occurred.'));
+      this.alertService.alert(true, this.loginError);
+      this.loginForm.patchValue({ password: '', captcha: '' });
       this.getCaptcha();
     }
   }
 
-  onForgotPasswordRequestOtp() {
-    const form = this.forgotPasswordForm;
+  logoutAllUserByUserId(userId: string) {
+    this.httpService.getData(`/logoutAllUserByUserId/${userId}`).subscribe({
+      next: (res: any) => {
+        if (res.body && !res.body.error) {
+          this.alertService.alert(false, 'Other sessions cleared.', 2000);
+          this.onLogin();
+        } else {
+          this.alertService.alert(true, 'Could not log out other sessions.');
+        }
+      }
+    });
+  }
+
+  // ========================================================================
+  // FORGOT PASSWORD FLOW
+  // ========================================================================
+
+  onForgotPwdStep1() {
+    const form = this.forgotPwdForm;
     if (form.get('registration_no')?.invalid || form.get('captcha')?.invalid) {
       form.markAllAsTouched();
       return;
     }
 
     if (!this.validateCaptchaLocally(form.value.captcha)) {
-      this.alertService.alert(true, 'Incorrect captcha. Please try again.');
+      this.alertService.alert(true, 'Incorrect captcha.');
       this.getCaptcha();
       form.patchValue({ captcha: '' });
       return;
     }
 
-    this.isProcessingForgotPw = true;
+    this.isProcessingForgotPwd = true;
     this.alertService.showLoading('Please wait...', 'Locating account details');
 
-    // ✅ NEW: Fetch the user's mobile number silently before sending OTP
     const regNo = form.value.registration_no;
     this.httpService.getParam('/publicApi/get/getRegistration', { registration_no: regNo }, 'recruitement').subscribe({
       next: (res: any) => {
         if (!res.body.error && res.body.data && res.body.data.length > 0) {
-          this.forgotPasswordUserData = res.body.data[0];
+          this.forgotPwdUserData = res.body.data[0];
 
-          if (!this.forgotPasswordUserData.mobile_no) {
+          if (!this.forgotPwdUserData.mobile_no) {
             this.alertService.closeAlert();
             this.alertService.alert(true, 'No mobile number is linked to this account.');
-            this.isProcessingForgotPw = false;
+            this.isProcessingForgotPwd = false;
             return;
           }
-
-          // Move to sending OTP
-          this.sendOtp('FORGOT_PASSWORD');
+          this.sendOtp('FORGOT_PWD');
         } else {
           this.alertService.closeAlert();
-          this.alertService.alert(true, 'Registration Number not found in our records.');
-          this.isProcessingForgotPw = false;
+          this.alertService.alert(true, 'Registration Number not found.');
+          this.isProcessingForgotPwd = false;
           this.getCaptcha();
           form.patchValue({ captcha: '' });
         }
       },
       error: () => {
         this.alertService.closeAlert();
-        this.alertService.alert(true, 'Failed to connect to server. Please try again.');
-        this.isProcessingForgotPw = false;
+        this.alertService.alert(true, 'Failed to connect to server.');
+        this.isProcessingForgotPwd = false;
       }
     });
   }
 
-  onForgotPasswordVerifyOtp() {
-    const form = this.forgotPasswordForm;
+  onForgotPwdStep2() {
+    const form = this.forgotPwdForm;
     if (!form.value.otp) {
-      this.alertService.alert(true, 'Please enter the OTP.');
+      this.alertService.alert(true, 'Please enter OTP.');
       return;
     }
 
     this.alertService.showLoading('Please wait...', 'Verifying OTP');
-
     this.httpService.postData(
       '/publicapi/post/verifyRecruitmentOtp',
-      {
-        mobile_no: this.forgotPasswordUserData.mobile_no, // ✅ Use the fetched mobile
-        otp: form.value.otp,
-        registration_no: this.forgotPasswordUserData.registration_no
-      },
+      { mobile_no: this.forgotPwdUserData.mobile_no, otp: form.value.otp, registration_no: this.forgotPwdUserData.registration_no },
       'recruitement'
     ).subscribe({
       next: (res: any) => {
@@ -442,15 +427,11 @@ export class LoginComponent implements OnInit {
           this.alertService.alert(true, 'Invalid or expired OTP.');
           return;
         }
-        // Success
-        this.forgotPasswordStep = 3;
-
-        // Add dynamic validators for passwords now that we reached step 3
-        this.forgotPasswordForm.get('new_password')?.setValidators([Validators.required, Validators.minLength(6)]);
-        this.forgotPasswordForm.get('confirm_password')?.setValidators([Validators.required]);
-        this.forgotPasswordForm.get('new_password')?.updateValueAndValidity();
-        this.forgotPasswordForm.get('confirm_password')?.updateValueAndValidity();
-
+        this.forgotPwdStep = 3;
+        this.forgotPwdForm.get('new_password')?.setValidators([Validators.required, Validators.minLength(6)]);
+        this.forgotPwdForm.get('confirm_password')?.setValidators([Validators.required]);
+        this.forgotPwdForm.get('new_password')?.updateValueAndValidity();
+        this.forgotPwdForm.get('confirm_password')?.updateValueAndValidity();
       },
       error: () => {
         this.alertService.closeAlert();
@@ -459,45 +440,36 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  onResetPasswordSubmit() {
-    const form = this.forgotPasswordForm;
+  onForgotPwdStep3() {
+    const form = this.forgotPwdForm;
     if (form.get('new_password')?.invalid || form.get('confirm_password')?.invalid) {
       form.markAllAsTouched();
       return;
     }
-
     if (form.value.new_password !== form.value.confirm_password) {
       this.alertService.alert(true, 'Passwords do not match.');
       return;
     }
 
-    this.isProcessingForgotPw = true;
+    this.isProcessingForgotPwd = true;
     this.alertService.showLoading('Please wait...', 'Resetting Password');
 
-    const encryptedPassword = CryptoJS.AES.encrypt(
-      form.value.new_password,
-      this.passwordKey
-    ).toString();
-
-    const payload = {
-      registration_no: this.forgotPasswordUserData.registration_no,
-      new_password: encryptedPassword
-    };
+    const encryptedPassword = CryptoJS.AES.encrypt(form.value.new_password, this.passwordKey).toString();
+    const payload = { registration_no: this.forgotPwdUserData.registration_no, new_password: encryptedPassword };
 
     this.httpService.postData('/publicApi/post/resetCandidatePassword', payload, 'recruitement').subscribe({
       next: (res: any) => {
-        this.isProcessingForgotPw = false;
+        this.isProcessingForgotPwd = false;
         this.alertService.closeAlert();
-
         if (res?.body?.error) {
           this.alertService.alert(true, res.body.error.message || 'Failed to reset password.');
         } else {
           this.alertService.alert(false, 'Password reset successfully! You can now log in.');
-          this.toggleForgotPasswordMode(false); // Return to login
+          this.switchView('LOGIN');
         }
       },
       error: (err) => {
-        this.isProcessingForgotPw = false;
+        this.isProcessingForgotPwd = false;
         this.alertService.closeAlert();
         this.alertService.alert(true, err?.error?.message || 'Failed to reset password.');
       }
@@ -505,32 +477,230 @@ export class LoginComponent implements OnInit {
   }
 
   // ========================================================================
+  // FORGOT REGISTRATION FLOW
+  // ========================================================================
+
+  getSessions() {
+    this.httpService.getData('/publicApi/get/getAcademicSessionForLogin', 'recruitement').subscribe({
+      next: (res: any) => { this.sessionList = res?.body?.data || []; }
+    });
+  }
+
+  onSessionChange() {
+    this.forgotRegForm.patchValue({ a_rec_adv_main_id: null, post_code: null, subject_id: null });
+    this.advList = []; this.postList = []; this.subjectList = [];
+    this.subjectsAvailable = false;
+
+    const sid = this.forgotRegForm.value.academic_session_id;
+    if(sid) {
+      this.httpService.getParam('/publicApi/get/getLatestAdvertisementForLogin', { academic_session_id: sid }, 'recruitement').subscribe({
+        next: (res: any) => { this.advList = res?.body?.data || []; }
+      });
+    }
+  }
+
+  onAdvChange() {
+    this.forgotRegForm.patchValue({ post_code: null, subject_id: null });
+    this.postList = []; this.subjectList = [];
+    this.subjectsAvailable = false;
+
+    const advId = this.forgotRegForm.value.a_rec_adv_main_id;
+    if(advId) {
+      this.httpService.getParam('/publicApi/get/getPostByAdvertimentForLogin', { a_rec_adv_main_id: advId }, 'recruitement').subscribe({
+        next: (res: any) => { this.postList = res?.body?.data || []; }
+      });
+    }
+  }
+
+  onPostChange() {
+    this.forgotRegForm.patchValue({ subject_id: null });
+    this.subjectList = [];
+    this.subjectsAvailable = false;
+
+    const advId = this.forgotRegForm.value.a_rec_adv_main_id;
+    const postCode = this.forgotRegForm.value.post_code;
+    const selectedPost = this.postList.find(
+      (item: any) => item.post_code == postCode
+    );
+
+    const a_rec_adv_post_detail_id =
+      selectedPost?.a_rec_adv_post_detail_id;
+    if(advId && postCode) {
+      this.httpService.getParam('/publicApi/get/getSubjectsByPostDetailIdForLogin', { a_rec_adv_main_id: advId, a_rec_adv_post_detail_id: a_rec_adv_post_detail_id }, 'recruitement').subscribe({
+        next: (res: any) => {
+          this.subjectList = res?.body?.data || [];
+          if (this.subjectList.length > 0) {
+            this.subjectsAvailable = true;
+            this.forgotRegForm.get('subject_id')?.setValidators([Validators.required]);
+          } else {
+            this.forgotRegForm.get('subject_id')?.clearValidators();
+          }
+          this.forgotRegForm.get('subject_id')?.updateValueAndValidity();
+        }
+      });
+    }
+  }
+
+  onForgotRegStep1() {
+    const form = this.forgotRegForm;
+    if (form.invalid) {
+      form.markAllAsTouched();
+      return;
+    }
+
+    if (!this.validateCaptchaLocally(form.value.captcha)) {
+      this.alertService.alert(true, 'Incorrect captcha.');
+      this.getCaptcha();
+      form.patchValue({ captcha: '' });
+      return;
+    }
+
+    this.isProcessingForgotReg = true;
+    this.alertService.showLoading('Please wait...', 'Fetching Registration details');
+
+    const val = form.value;
+    let url = `/publicApi/get/getForgotRegistration?academic_session_id=${val.academic_session_id}&a_rec_adv_main_id=${val.a_rec_adv_main_id}&post_code=${val.post_code}&mobile_no=${val.mobile_no}`;
+    if (this.subjectsAvailable && val.subject_id) {
+      url += `&subject_id=${val.subject_id}`;
+    }
+
+    this.httpService.getData(url, 'recruitement').subscribe({
+      next: (res: any) => {
+        if (!res.body.error && res.body.data && res.body.data.length > 0) {
+          this.fetchedRegData = res.body.data[0];
+          this.forgotRegForm.get('security_answer')?.setValidators([Validators.required]);
+          this.forgotRegForm.get('security_answer')?.updateValueAndValidity();
+          this.forgotRegStep = 2;
+          this.alertService.closeAlert();
+        } else {
+          this.alertService.closeAlert();
+          this.alertService.alert(true, 'No registration found for this mobile number in the selected post.');
+          this.getCaptcha();
+          form.patchValue({ captcha: '' });
+        }
+        this.isProcessingForgotReg = false;
+      },
+      error: () => {
+        this.alertService.closeAlert();
+        this.alertService.alert(true, 'Failed to connect to server.');
+        this.isProcessingForgotReg = false;
+      }
+    });
+  }
+
+  onForgotRegStep2() {
+    const form = this.forgotRegForm;
+
+    if (form.get('security_answer')?.invalid) {
+      form.markAllAsTouched();
+      return;
+    }
+
+    this.isProcessingForgotReg = true;
+    this.alertService.showLoading(
+      'Please wait...',
+      'Validating Security Answer'
+    );
+
+    const payload = {
+      academic_session_id: form.value.academic_session_id,
+      a_rec_adv_main_id: form.value.a_rec_adv_main_id,
+      post_code: form.value.post_code,
+      mobile_no: form.value.mobile_no,
+      subject_id: form.value.subject_id,
+      security_answer: form.value.security_answer
+    };
+
+    this.httpService
+      .postData(
+        '/publicApi/post/validateSecurityAnswer',
+        payload,
+        'recruitement'
+      )
+      .subscribe({
+        next: (res: any) => {
+          this.alertService.closeAlert();
+
+          if (res?.body?.error) {
+            this.alertService.alert(
+              true,
+              res.body.error.message || 'Incorrect security answer.'
+            );
+            this.isProcessingForgotReg = false;
+            return;
+          }
+
+          // Store registration number returned by API
+          this.fetchedRegData = {
+            ...this.fetchedRegData,
+            registration_no:
+            res?.body?.data?.registration_no
+          };
+
+          console.log(
+            'Registration Number:',
+            this.fetchedRegData.registration_no
+          );
+
+          // Send OTP after successful validation
+          this.sendOtp('FORGOT_REG');
+        },
+
+        error: (err) => {
+          console.error(err);
+
+          this.alertService.closeAlert();
+          this.alertService.alert(
+            true,
+            'Failed to validate security answer.'
+          );
+
+          this.isProcessingForgotReg = false;
+        }
+      });
+  }
+
+  onForgotRegStep3() {
+    const form = this.forgotRegForm;
+    if (!form.value.otp) {
+      this.alertService.alert(true, 'Please enter OTP.');
+      return;
+    }
+
+    this.alertService.showLoading('Please wait...', 'Verifying OTP');
+    this.httpService.postData(
+      '/publicapi/post/verifyRecruitmentOtp',
+      { mobile_no: form.value.mobile_no, otp: form.value.otp, registration_no: this.fetchedRegData.registration_no },
+      'recruitement'
+    ).subscribe({
+      next: (res: any) => {
+        this.alertService.closeAlert();
+        if (!res?.body?.data || res.body.data.length === 0) {
+          this.alertService.alert(true, 'Invalid or expired OTP.');
+          return;
+        }
+        this.forgotRegStep = 4;
+      },
+      error: () => {
+        this.alertService.closeAlert();
+        this.alertService.alert(true, 'Unable to verify OTP.');
+      }
+    });
+  }
+  // ========================================================================
   // SHARED OTP LOGIC
   // ========================================================================
 
-  private sendOtp(purpose: 'LOGIN' | 'FORGOT_PASSWORD') {
+  private sendOtp(purpose: 'LOGIN' | 'FORGOT_REG' | 'FORGOT_PWD') {
     let payload: any = {};
 
     if (purpose === 'LOGIN') {
-      payload = {
-        mobile_no: this.verifiedUserData.mobile_no,
-        email_id: this.verifiedUserData.email_id,
-        registration_no: this.verifiedUserData.registration_no,
-        purpose: 'LOGIN',
-        action_remark: 'Login OTP'
-      };
-    } else {
-      payload = {
-        mobile_no: this.forgotPasswordUserData.mobile_no, // ✅ Use fetched mobile
-        registration_no: this.forgotPasswordUserData.registration_no,
-        purpose: 'FORGOT_PASSWORD',
-        action_remark: 'Password Reset OTP'
-      };
-    }
-
-    // No need to call showLoading again if it's already active from previous steps
-    if (purpose === 'LOGIN') {
+      payload = { mobile_no: this.verifiedUserData.mobile_no, email_id: this.verifiedUserData.email_id, registration_no: this.verifiedUserData.registration_no, purpose: 'LOGIN', action_remark: 'Login OTP' };
       this.alertService.showLoading('Please wait...', 'Sending OTP');
+    } else if (purpose === 'FORGOT_REG') {
+      payload = { mobile_no: this.forgotRegForm.value.mobile_no, registration_no: this.fetchedRegData.registration_no, purpose: 'FORGOT_REGISTRATION', action_remark: 'Forgot Registration OTP' };
+    } else if (purpose === 'FORGOT_PWD') {
+      payload = { mobile_no: this.forgotPwdUserData.mobile_no, registration_no: this.forgotPwdUserData.registration_no, purpose: 'FORGOT_PASSWORD', action_remark: 'Password Reset OTP' };
     }
 
     this.httpService.postData('/publicapi/post/saveRecruitmentOtpVerification', payload, 'recruitement').subscribe({
@@ -539,11 +709,11 @@ export class LoginComponent implements OnInit {
 
         const resString = (typeof res === 'string') ? res : JSON.stringify(res);
         if (resString.includes('GEN016') || resString.includes('User not registered')) {
-          this.handleOtpError(resString);
+          this.handleOtpError(resString, purpose);
           return;
         }
         if (res?.body?.error) {
-          this.handleOtpError(res.body.error);
+          this.handleOtpError(res.body.error, purpose);
           return;
         }
 
@@ -553,28 +723,29 @@ export class LoginComponent implements OnInit {
         if (purpose === 'LOGIN') {
           this.otpSent = true;
           this.isLoggingIn = false;
-        } else {
-          this.forgotPasswordStep = 2;
-          this.isProcessingForgotPw = false;
+        } else if (purpose === 'FORGOT_REG') {
+          this.forgotRegStep = 3;
+          this.isProcessingForgotReg = false;
+        } else if (purpose === 'FORGOT_PWD') {
+          this.forgotPwdStep = 2;
+          this.isProcessingForgotPwd = false;
         }
       },
       error: (err: any) => {
         this.alertService.closeAlert();
         const errorData = err?.error?.error || err?.error || err?.message || JSON.stringify(err);
-        this.handleOtpError(errorData);
+        this.handleOtpError(errorData, purpose);
       }
     });
   }
 
-  private handleOtpError(errorData: any) {
+  private handleOtpError(errorData: any, purpose: string) {
     this.isLoggingIn = false;
-    this.isProcessingForgotPw = false;
+    this.isProcessingForgotReg = false;
+    this.isProcessingForgotPwd = false;
 
-    if (this.isForgotPasswordMode && this.forgotPasswordStep === 2) {
-      this.forgotPasswordStep = 1; // Kick back to step 1
-    } else {
-      this.otpSent = false;
-    }
+    if (purpose === 'LOGIN') this.otpSent = false;
+    else if (purpose === 'FORGOT_PWD' && this.forgotPwdStep === 2) this.forgotPwdStep = 1;
 
     const errString = typeof errorData === 'string' ? errorData : JSON.stringify(errorData);
 
@@ -592,97 +763,14 @@ export class LoginComponent implements OnInit {
     this.resendSeconds = 30;
     clearInterval(this.resendInterval);
     this.resendInterval = setInterval(() => {
-      if (this.resendSeconds > 0) {
-        this.resendSeconds--;
-      } else {
-        this.canResendOtp = true;
-        clearInterval(this.resendInterval);
-      }
+      if (this.resendSeconds > 0) this.resendSeconds--;
+      else { this.canResendOtp = true; clearInterval(this.resendInterval); }
     }, 1000);
   }
 
   resendOtp() {
     if (!this.canResendOtp) return;
-    this.sendOtp(this.isForgotPasswordMode ? 'FORGOT_PASSWORD' : 'LOGIN');
-  }
-
-  // ========================================================================
-  // UTILS
-  // ========================================================================
-
-  togglePasswordVisibility() { this.showPassword = !this.showPassword; }
-  toggleNewPasswordVisibility() { this.showNewPassword = !this.showNewPassword; }
-  toggleConfirmPasswordVisibility() { this.showConfirmPassword = !this.showConfirmPassword; }
-
-  private handleFailedVerification(message: string) {
-    this.isLoggingIn = false;
-    this.alertService.alertMessage('Login Unavailable', message,'info');
-    this.loginForm.patchValue({ captcha: '' });
-    this.getCaptcha();
-  }
-
-  logoutAllUserByUserId(userId: string) {
-    this.httpService.getData(`/logoutAllUserByUserId/${userId}`).subscribe({
-      next: (res: any) => {
-        if (res.body && !res.body.error) {
-          this.alertService.alert(false, 'Other sessions cleared. Logging you in automatically...', 2000);
-          this.onLogin();
-        } else {
-          this.alertService.alert(true, 'Could not log out other sessions. Please try again later.');
-          this.loginForm.patchValue({ password: '', captcha: '' });
-          this.getCaptcha();
-        }
-      },
-      error: (err) => {
-        this.alertService.alert(true, 'An error occurred while trying to log out other sessions.');
-        this.loginForm.patchValue({ password: '', captcha: '' });
-        this.getCaptcha();
-      },
-    });
-  }
-
-  private handleLoginError(error: any) {
-    this.isLoggingIn = false;
-    this.loginForm.enable();
-
-    if (error?.code) {
-      switch (error.code) {
-        case 'sc012':
-          this.alertService
-            .confirmAlert('Already Logged In', 'This user is already logged in elsewhere. Do you want to log out all other sessions and log in here?', 'warning')
-            .then((result: SweetAlertResult) => {
-              if (result.isConfirmed) {
-                this.logoutAllUserByUserId(this.loginForm.value.user_id);
-              } else {
-                this.loginForm.patchValue({ password: '', captcha: '' });
-                this.getCaptcha();
-              }
-            });
-          break;
-        case 'sc002':
-          this.loginError = 'Invalid Registration No. or Password.';
-          this.alertService.alert(true, this.loginError);
-          this.loginForm.patchValue({ password: '', captcha: '' });
-          this.getCaptcha();
-          break;
-        case 'sc001':
-          this.loginError = 'Invalid Registration No.';
-          this.alertService.alert(true, this.loginError);
-          this.loginForm.patchValue({ captcha: '' });
-          this.getCaptcha();
-          break;
-        default:
-          this.loginError = error.message || 'An unknown login error occurred.';
-          this.alertService.alert(true, this.loginError);
-          this.loginForm.patchValue({ captcha: '' });
-          this.getCaptcha();
-          break;
-      }
-    } else {
-      this.loginError = 'An unknown error occurred. Please try again.';
-      this.alertService.alert(true, this.loginError);
-      this.loginForm.patchValue({ captcha: '' });
-      this.getCaptcha();
-    }
+    const purpose = this.activeView === 'LOGIN' ? 'LOGIN' : (this.activeView === 'FORGOT_PWD' ? 'FORGOT_PWD' : 'FORGOT_REG');
+    this.sendOtp(purpose);
   }
 }

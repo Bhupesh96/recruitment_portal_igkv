@@ -211,7 +211,7 @@
                       <div>
                         <input
                           type="file"
-                          accept="application/pdf"
+
                           class="w-full text-sm text-gray-700 file:bg-blue-700 file:text-white file:border-none file:px-3 file:py-1.5 file:rounded-md file:cursor-pointer hover:file:bg-blue-800"
                           (change)="
                               onFileChange(
@@ -220,8 +220,11 @@
                                 param.normalizedKey
                               )
                             "
-                          accept=".pdf,.jpg,.jpeg,.png"
+                          accept=".pdf"
                         />
+                        <div class="mt-1 text-[11px] text-gray-900">
+                          PDF only • Size: 100 KB to {{ param.data_type_size }} KB
+                        </div>
                         <ng-container
                           *ngIf="
                               getFilePath(

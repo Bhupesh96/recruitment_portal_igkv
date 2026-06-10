@@ -558,6 +558,9 @@
                           "
                           class="mt-1 block w-full text-base text-gray-700 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer rounded-md"
                         />
+                        <div class="mt-1 text-sm fw-bold text-gray-900">
+                          Allowed: PDF • Size: 100 KB to {{ condition.data_type_size }} KB
+                        </div>
                         <div
                           *ngIf="
                             getAdditionalFilePath(
@@ -695,6 +698,9 @@
                           "
                           class="mt-1 block w-full text-base text-gray-700 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer rounded-md"
                         />
+                        <div class="mt-1 text-sm fw-bold text-gray-900">
+                          Allowed: PDF • Size: 100 KB to {{ condition.data_type_size }} KB
+                        </div>
                         <div
                           *ngIf="
                             getAdditionalFilePath(
@@ -1476,6 +1482,9 @@
               accept="image/*"
               class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer rounded-md"
             />
+            <div class="mt-1 text-sm fw-bold text-gray-900">
+              Allowed: JPG/JPEG/PNG • Size: 20 KB to 100 KB
+            </div>
             <div
               *ngIf="form.get('photo')?.invalid && form.get('photo')?.touched"
               class="text-red-700 text-sm mt-1"
@@ -1509,6 +1518,9 @@
               accept="image/*"
               class="mt-1 block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer rounded-md"
             />
+            <div class="mt-1 text-sm fw-bold text-gray-900">
+              Allowed: JPG/JPEG/PNG • Size: 10 KB to 100 KB
+            </div>
             <div
               *ngIf="
                 form.get('signature')?.invalid && form.get('signature')?.touched

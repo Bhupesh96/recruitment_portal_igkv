@@ -23,14 +23,8 @@
     @Input() activeSteps: any[] = [];
     formData: { [key: number]: { [key: string]: any } } = {};
 
-    // ✅ Fallback dictionary mapping Component IDs to titles
     stepNames: { [key: number]: string } = {
-      1: 'Personal Info',
-      2: 'Education',
-      3: 'Academics',
-      4: 'Publications',
-      5: 'Experience',
-      6: 'Performance'
+      1: 'Personal Info', 2: 'Education', 3: 'Academics', 4: 'Publications', 5: 'Experience', 6: 'Performance'
     };
 
     personalInfoExcludeKeys = new Set([
@@ -49,9 +43,7 @@
       'Permanent_State_Name', 'Permanent_District_Name', 'Current_Address1',
       'Current_City', 'Current_Pin_Code', 'Current_Country_Id', 'Current_State_Id',
       'Current_District_Id', 'Current_Country_Name', 'Current_State_Name',
-      'Current_District_Name',
-      'candidate_category_id',
-      'advertisment_no'
+      'Current_District_Name', 'candidate_category_id', 'advertisment_no'
     ]);
 
     private destroy$ = new Subject<void>();
@@ -67,6 +59,7 @@
     payLevel: string = '';
     advertisementNo: string = '—';
     ageCalculationDate: string = '';
+
     constructor(
       private sharedDataService: SharedDataService,
       private alertService: AlertService,
@@ -77,9 +70,14 @@
       private recruitmentState: RecruitmentStateService,
       private cdr: ChangeDetectorRef
     ) {
-      this.form = this.fb.group({
-        declaration: [false, Validators.requiredTrue],
-      });
+      this.form = this.fb.group({ declaration: [false, Validators.requiredTrue] });
+    }
+
+    toTitleCase(str: any): string {
+      if (!str) return '';
+      if (typeof str !== 'string') return String(str);
+      if (str.includes('@') && str.includes('.')) return str.toLowerCase();
+      return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
     }
 
     ngOnInit(): void {
@@ -87,8 +85,7 @@
         .pipe(takeUntil(this.destroy$))
         .subscribe((user: any) => {
           if (user) {
-            this.userData = user; // ✅ Assign the user data here
-
+            this.userData = user;
             if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
               this.isFinalDeclared = true;
               this.form.get('declaration')?.setValue(true, { emitEvent: false });
@@ -109,25 +106,17 @@
     }
 
     get activeSectionIds(): number[] {
-      // 1. If the parent Stepper passed the allowed steps, strictly enforce them!
       if (this.activeSteps && this.activeSteps.length > 0) {
-        return this.activeSteps
-          .map(step => step.compId)
-          .filter(id => id >= 2 && id <= 6 && this.formData[id]); // Only keep valid middle steps
+        return this.activeSteps.map(step => step.compId).filter(id => id >= 2 && id <= 6 && this.formData[id]);
       }
-
-      // 2. Fallback (Checks if the step actually has keys, not just an empty object)
       return [2, 3, 4, 5, 6].filter(id => {
         const data = this.formData[id];
         if (!data) return false;
-
-        // Ensure it has actual form fields filled out
         const keys = Object.keys(data).filter(k => k !== '_isValid');
         return keys.length > 0;
       });
     }
 
-    //  Safely resolves the section title based on API heading or fallback
     getStepName(compId: number): string {
       if (this.formData[compId]?.['heading']?.['score_field_title_name']) {
         return this.formData[compId]['heading']['score_field_title_name'];
@@ -142,7 +131,6 @@
         return;
       }
 
-      // NOTE: Changed parameter from a_rec_adv_main_id to adv_main_id to match your API
       const apiUrl = `/master/get/getLatestAdvertisement?adv_main_id=${a_rec_adv_main_id}`;
 
       this.http.getData(apiUrl, 'recruitement').subscribe({
@@ -151,21 +139,15 @@
           if (data) {
             this.ageCalculationDate = data.age_calculation_date || '';
             if (data.advertisement_declaration) {
-              this.declarationText = this.sanitizer.bypassSecurityTrustHtml(
-                data.advertisement_declaration
-              );
+              this.declarationText = this.sanitizer.bypassSecurityTrustHtml(data.advertisement_declaration);
             }
-
-            // ✅ Extract Pay Scale and Level here
             this.payScale = data.band_pay_scale || data.fixed_salary || '';
             this.advertisementNo = data.advertisment_no || data.uk_advertisment_no || '—';
             this.payLevel = data.pay_level || '';
           }
         },
         error: (err) => {
-          this.declarationText = this.sanitizer.bypassSecurityTrustHtml(
-            'Failed to load declaration. Please try again later.'
-          );
+          this.declarationText = this.sanitizer.bypassSecurityTrustHtml('Failed to load declaration. Please try again later.');
         },
       });
     }
@@ -176,9 +158,7 @@
     }
 
     private formatDateDDMMYYYY(dateString: string): string {
-      if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        return '—';
-      }
+      if (!dateString || !/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return '—';
       const [year, month, day] = dateString.split('-');
       return `${day}/${month}/${year}`;
     }
@@ -190,22 +170,17 @@
       const processedData: { key: string; value: string }[] = [];
 
       const fullNameE = [
-        info['Salutation_E_Name'],
-        info['Applicant_First_Name_E'],
-        info['Applicant_Middle_Name_E'],
-        info['Applicant_Last_Name_E'],
+        info['Salutation_E_Name'], info['Applicant_First_Name_E'],
+        info['Applicant_Middle_Name_E'], info['Applicant_Last_Name_E'],
       ].filter(Boolean).join(' ');
-
-      processedData.push({ key: 'Applicant Full Name (English)', value: fullNameE });
+      processedData.push({ key: 'Applicant Full Name (English)', value: this.toTitleCase(fullNameE) });
 
       const fullNameH = [
-        info['Salutation_H_Name'],
-        info['Applicant_First_Name_H'],
-        info['Applicant_Middle_Name_H'],
-        info['Applicant_Last_Name_H'],
+        info['Salutation_H_Name'], info['Applicant_First_Name_H'],
+        info['Applicant_Middle_Name_H'], info['Applicant_Last_Name_H'],
       ].filter(Boolean).join(' ');
-
       processedData.push({ key: 'Applicant Full Name (Hindi)', value: fullNameH });
+
       processedData.push({ key: 'Advertisement No', value: this.advertisementNo });
       processedData.push({ key: "Father's Name", value: this.formatValue(info['Applicant_Father_Name_E']) });
       processedData.push({ key: "Mother's Name", value: this.formatValue(info['Applicant_Mother_Name_E']) });
@@ -219,32 +194,24 @@
       processedData.push({ key: 'Gender', value: genderDisplay });
       processedData.push({ key: 'Date of Birth', value: this.formatDateDDMMYYYY(info['DOB']) });
 
-      // ✅ NEW: Calculate age using pure Year, Month, Day math to avoid Timezone shifts!
       let ageLabel = 'Age';
-      let calculatedAge = this.formatValue(info['age']); // Fallback
+      let calculatedAge = this.formatValue(info['age']);
 
       if (info['DOB']) {
-        // 1. Strip time/timezone and split into [YYYY, MM, DD]
         const targetDateStr = this.ageCalculationDate
           ? this.ageCalculationDate.split('T')[0]
           : new Date().toISOString().split('T')[0];
-
         const dobStr = info['DOB'].split('T')[0];
 
         const [tYear, tMonth, tDay] = targetDateStr.split('-').map(Number);
         const [dYear, dMonth, dDay] = dobStr.split('-').map(Number);
 
-        // 2. Calculate pure differences
         let years = tYear - dYear;
         let months = tMonth - dMonth;
         let days = tDay - dDay;
 
-        // 3. Adjust for negative days or months
         if (days < 0) {
           months--;
-          // Get number of days in the month PRECEDING the target date
-          // Note: JS Date month is 0-indexed, so tMonth - 1 is the previous calendar month.
-          // Day 0 returns the last day of that month.
           const prevMonthDays = new Date(tYear, tMonth - 1, 0).getDate();
           days += prevMonthDays;
         }
@@ -252,7 +219,6 @@
           years--;
           months += 12;
         }
-
         calculatedAge = `${years} Years, ${months} Months, ${days} Days`;
       }
 
@@ -262,50 +228,35 @@
         ageLabel = `Age as on ${day}-${month}-${year}`;
       }
 
-      processedData.push({
-        key: ageLabel,
-        value: calculatedAge
-      });
+      processedData.push({ key: ageLabel, value: calculatedAge });
 
       const birthPlace = [
         info['Birth_Place'], info['Birth_District_Name'],
         info['Birth_State_Name'], info['Birth_Country_Name'],
       ].filter(Boolean).join(', ');
-
-      processedData.push({ key: 'Birth Place', value: birthPlace });
+      processedData.push({ key: 'Birth Place', value: this.toTitleCase(birthPlace) });
 
       const permanentAddress = [
         info['Permanent_Address1'], info['Permanent_City'],
         info['Permanent_District_Name'], info['Permanent_State_Name'],
         info['Permanent_Country_Name'],
       ].filter(Boolean).join(', ') + (info['Permanent_Pin_Code'] ? ` - ${info['Permanent_Pin_Code']}` : '');
-
-      processedData.push({ key: 'Permanent Address', value: permanentAddress });
+      processedData.push({ key: 'Permanent Address', value: this.toTitleCase(permanentAddress) });
 
       if (info['presentSame']) {
-        processedData.push({ key: 'Current Address', value: permanentAddress });
+        processedData.push({ key: 'Current Address', value: this.toTitleCase(permanentAddress) });
       } else {
         const currentAddress = [
           info['Current_Address1'], info['Current_City'],
           info['Current_District_Name'], info['Current_State_Name'],
           info['Current_Country_Name'],
         ].filter(Boolean).join(', ') + (info['Current_Pin_Code'] ? ` - ${info['Current_Pin_Code']}` : '');
-        processedData.push({ key: 'Current Address', value: currentAddress });
+        processedData.push({ key: 'Current Address', value: this.toTitleCase(currentAddress) });
       }
 
       for (const key of this.getFormDataKeys(info)) {
-        if (
-          !this.personalInfoExcludeKeys.has(key) &&
-          info[key] &&
-          key !== 'languages' &&
-          !key.startsWith('question_') &&
-          !key.startsWith('condition_') &&
-          key !== 'additionalInfoDetails'
-        ) {
-          processedData.push({
-            key: this.formatKey(key),
-            value: this.formatValue(info[key]),
-          });
+        if (!this.personalInfoExcludeKeys.has(key) && info[key] && key !== 'languages' && !key.startsWith('question_') && !key.startsWith('condition_') && key !== 'additionalInfoDetails') {
+          processedData.push({ key: this.formatKey(key), value: this.formatValue(info[key]) });
         }
       }
 
@@ -317,67 +268,94 @@
       return /^\d+_\d+_\d+$/.test(key);
     }
 
-    onDownloadClicked() {
-      this.downloadPdf.emit();
-    }
+    onDownloadClicked() { this.downloadPdf.emit(); }
 
     detailBelongsToSubheading(detail: any, items: any[]): boolean {
       if (!detail || !Array.isArray(items)) return false;
       return items.some(item => item.m_rec_score_field_id.toString() === detail.type.toString());
     }
 
-    getFormDataKeys(dataObject: any): string[] {
-      return dataObject ? Object.keys(dataObject) : [];
-    }
+    getFormDataKeys(dataObject: any): string[] { return dataObject ? Object.keys(dataObject) : []; }
 
     formatKey(key: string): string {
-      return key
-        .replace(/([A-Z])/g, ' $1')
-        .trim()
-        .replace(/_/g, ' ')
-        .replace(/^\w/, (c) => c.toUpperCase());
+      const formatted = key.replace(/([A-Z])/g, ' $1').trim().replace(/_/g, ' ');
+      return this.toTitleCase(formatted);
     }
 
     isFileValue(value: any): boolean {
       if (value instanceof File) return true;
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) return true;
-      return typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED');
+      return typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED' || value === 'File Uploaded');
+    }
+
+    // ✅ New Method to Open / View Files
+    viewFile(value: any): void {
+      if (!value) return;
+
+      if (value instanceof File) {
+        const url = URL.createObjectURL(value);
+        window.open(url, '_blank');
+      } else if (typeof value === 'string') {
+        if (value === 'FILE_UPLOADED' || value === 'File Uploaded') {
+          this.alertService.alert(true, 'File preview is not available until the application is fully submitted/saved.');
+        } else {
+          const url = this.getFileUrl(value);
+          window.open(url, '_blank');
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        this.alertService.alert(true, 'File preview is not available for this local object.');
+      }
     }
 
     checkFilesForSubheading(sectionData: any, subheadKey: string): boolean {
       if (!sectionData) return false;
-
       const cleanSubheadKey = subheadKey.replace('qualifications', '');
-      if (
-        sectionData['filePaths'] &&
-        Object.keys(sectionData['filePaths']).some((filePathKey) =>
-          filePathKey.startsWith(cleanSubheadKey)
-        )
-      ) {
-        return true;
-      }
+      if (sectionData['filePaths'] && Object.keys(sectionData['filePaths']).some((filePathKey) => filePathKey.startsWith(cleanSubheadKey))) return true;
 
       const dataArray = sectionData[cleanSubheadKey];
       if (Array.isArray(dataArray) && dataArray.length > 0) {
-        return dataArray.some(
-          (item) =>
-            (item['Attachment'] && this.isFileValue(item['Attachment'])) ||
-            (item['attachment'] && this.isFileValue(item['attachment']))
-        );
+        return dataArray.some((item: any) => (item['Attachment'] && this.isFileValue(item['Attachment'])) || (item['attachment'] && this.isFileValue(item['attachment'])));
       }
       return false;
     }
 
-    formatValue(value: any): string {
+    getAppliedCategory(): string {
+      const info = this.formData[1];
+      if (!info) return '—';
+
+      if (info['additionalInfoDetails'] && Array.isArray(info['additionalInfoDetails'])) {
+        const categoryItem = info['additionalInfoDetails'].find((item: any) =>
+          item.question?.toLowerCase().includes('category')
+        );
+        if (categoryItem) {
+          return this.formatValue(categoryItem.answer, categoryItem.question);
+        }
+      }
+
+      if (info['candidate_category_id']) {
+        return this.formatValue(info['candidate_category_id'], 'category');
+      }
+
+      return '—';
+    }
+
+    formatValue(value: any, question?: string): string {
+      if (question?.toLowerCase().includes('category')) {
+        const categoryMap: any = {
+          UR: 'Unreserved (Ur)', OBC: 'Other Backward Class (Obc)', SC: 'Scheduled Caste (Sc)', ST: 'Scheduled Tribe (St)', EWS: 'Economically Weaker Section (Ews)', 'EWS ': 'Economically Weaker Section (Ews)',
+          1: 'Unreserved (Ur)', 2: 'Other Backward Class (Obc)', 3: 'Scheduled Caste (Sc)', 4: 'Scheduled Tribe (St)', 5: 'Economically Weaker Section (Ews)'
+        };
+        return categoryMap[value] || String(value);
+      }
+
       if (this.isFileValue(value)) return 'File Uploaded';
       if (value === null || value === undefined || value === '') return '—';
       if (Array.isArray(value)) {
-        return value.map((item) => typeof item === 'object' ? Object.values(item).join(', ') : item).join('; ');
+        return value.map((item) => typeof item === 'object' ? Object.values(item).join(', ') : this.toTitleCase(item)).join('; ');
       }
-      if (typeof value === 'object' && !(value instanceof File)) {
-        return JSON.stringify(value);
-      }
-      return String(value);
+      if (typeof value === 'object' && !(value instanceof File)) return JSON.stringify(value);
+
+      return this.toTitleCase(String(value));
     }
 
     getFileUrl(filePath: string): string {
@@ -445,7 +423,7 @@
     }
 
     submit(): Promise<void> {
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         if (this.form.invalid) {
           this.alertService.alert(true, 'You must accept the declaration to proceed.');
           return reject(new Error('Declaration not accepted.'));
@@ -458,7 +436,19 @@
           this.alertService.alert(true, 'Cannot submit. Registration number is missing.');
           return reject(new Error('Registration number missing.'));
         }
+        const result = await this.alertService.confirmAlert_custom(
+          'Final Submission Confirmation',
+          'After final submission, you will not be able to edit or modify any information in the application form. Please verify all details carefully before proceeding.',
+          'warning',
+          {
+            confirmText: 'Yes, Submit Finally',
+            cancelText: 'Review Again'
+          }
+        );
 
+        if (!result.isConfirmed) {
+          return reject(new Error('User cancelled final submission.'));
+        }
         this.loader.show();
         this.isSubmitted = true;
         this.form.disable();
@@ -657,9 +647,6 @@
             const snapshotPayload = {
               registration_no: this.formData[1]?.['registration_no'],
               advertisement_id: this.formData[1]?.['a_rec_adv_main_id'],
-
-              // ... (your existing snapshot metadata logic here) ...
-
               rawUserData: this.userData,
               applicationData: this.formData
             };
@@ -678,9 +665,8 @@
               responseData.message || 'Payment Verified Successfully!'
             );
 
-            this.getFeeStatus(); // This fetches the new status
+            this.getFeeStatus();
 
-            // ✅ NEW: Automatically trigger the PDF download 1.5 seconds after success
             setTimeout(() => {
               this.downloadPdf.emit();
             }, 1500);
@@ -706,14 +692,11 @@
       };
 
       this.http.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe((result: any) => {
-        // Safely assign the data
         if (!result.body.error && result.body.data && result.body.data.length > 0) {
           this.feeStatus = result.body.data[0];
         } else {
           this.feeStatus = {};
         }
-
-        // ✅ CRITICAL FIX: Tell Angular the background data changed so it swaps the buttons!
         this.cdr.detectChanges();
       });
     }
