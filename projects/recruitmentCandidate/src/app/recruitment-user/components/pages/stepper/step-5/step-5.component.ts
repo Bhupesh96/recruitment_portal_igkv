@@ -14,6 +14,7 @@
       Validators,
       ReactiveFormsModule,
       AbstractControl,
+      ValidationErrors
     } from '@angular/forms';
     import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
     import { CommonModule } from '@angular/common';
@@ -192,9 +193,20 @@
 
         this.subheadings.forEach((subheading, index) => {
           const key = this.getUniqueKey(subheading, index);
+
+          // ✅ FIX: Find the From/To keys dynamically to attach the array-level validator
+          const params = this.getParameters(subheading.m_rec_score_field_id, subheading.a_rec_adv_post_detail_id);
+          const dateParams = params.filter(p => p.control_type === 'DT' || p.isDatatype === 'date')
+            .sort((a, b) => a.parameter_display_order - b.parameter_display_order);
+
+          const fromParamName = dateParams.length > 0 ? dateParams[0].score_field_parameter_name : null;
+          const toParamName = dateParams.length > 1 ? dateParams[1].score_field_parameter_name : null;
+
+          // ✅ FIX: Apply the overlappingDatesValidator to the FormArray
           const formArray = this.fb.array([
             this.createQualificationGroup(subheading),
-          ]);
+          ], { validators: this.overlappingDatesValidator(fromParamName, toParamName) });
+
           this.form.addControl(key, formArray);
         });
       }
@@ -455,8 +467,14 @@
         group.addControl('calculated_experience', this.fb.control(0));
         group.addControl('is_deleted', this.fb.control(false));
 
-        let fromParamName: string | null = null;
-        let toParamName: string | null = null;
+        // ✅ ROBUST DATE FIELD IDENTIFICATION
+        const dateParams = params
+          .filter(p => p.control_type === 'DT' || p.isDatatype === 'date')
+          .sort((a, b) => a.parameter_display_order - b.parameter_display_order);
+
+        let fromParamName: string | null = dateParams.length > 0 ? dateParams[0].score_field_parameter_name : null;
+        let toParamName: string | null = dateParams.length > 1 ? dateParams[1].score_field_parameter_name : null;
+
 
         params.forEach((param) => {
           const validators: ValidatorFn[] =
@@ -465,15 +483,10 @@
               : [];
 
           if (param.control_type === 'T' && param.isDatatype === 'text') {
-            Validators.pattern('^[a-zA-Z ().,:&-]*$');
+            validators.push(Validators.pattern('^[a-zA-Z ().,:&-]*$')); // ✅ Use push, don't just call it
           }
 
-          if (param.m_parameter_master_id === 26)
-            fromParamName = param.score_field_parameter_name;
-          if (param.m_parameter_master_id === 27)
-            toParamName = param.score_field_parameter_name;
-
-          const isDropdownOrFile = ['A', 'DE', 'DY', 'DP', 'DC'].includes(
+          const isDropdownOrFile = ['A', 'DE', 'DY', 'DP', 'DC', 'D'].includes(
             param.control_type
           );
           group.addControl(
@@ -487,22 +500,34 @@
           );
         });
 
+        // ✅ ATTACH VALIDATOR IF BOTH FIELDS EXIST
         if (fromParamName && toParamName) {
           group.addValidators(this.dateRangeValidator(fromParamName, toParamName));
         }
 
         group.valueChanges.subscribe(() => {
           if (group.hasError('dateRangeInvalid')) {
-            if (group.dirty || group.touched) {
-              this.alertService.alert(
-                true,
-                "Period 'To' cannot be earlier than Period 'From'."
-              );
-              group.patchValue({ calculated_experience: 0 }, { emitEvent: false });
+            // Only alert if both fields have been touched by the user to prevent annoying popups on load
+            if (fromParamName && toParamName && group.get(fromParamName)?.touched && group.get(toParamName)?.touched) {
+              // Check if we haven't already alerted for this specific change
+              if (!group.get('_hasAlertedInvalidDate')?.value) {
+                this.alertService.alert(
+                  true,
+                  "Period 'To' cannot be earlier than Period 'From'."
+                );
+                // Flag that we alerted so we don't spam them
+                group.addControl('_hasAlertedInvalidDate', this.fb.control(true));
+              }
             }
+            group.patchValue({ calculated_experience: 0 }, { emitEvent: false });
+            this.updateTotalExperience(); // Ensure total is updated when error happens
           } else {
+            // Clear alert flag if it becomes valid
+            if (group.get('_hasAlertedInvalidDate')) {
+              group.removeControl('_hasAlertedInvalidDate');
+            }
             this.checkMandatorySubheadingsAndParameters();
-            this.recalculateExperience(group, sub);
+            this.recalculateExperience(group, sub, fromParamName, toParamName); // Pass names
           }
         });
 
@@ -511,49 +536,29 @@
 
       private recalculateExperience(
         group: FormGroup,
-        subheading: Subheading
+        subheading: Subheading,
+        fromParamName: string | null, // ✅ NEW: Passed in
+        toParamName: string | null    // ✅ NEW: Passed in
       ): void {
-        const toDateName = this.parameters
-          .filter((p) => p.isCalculationColumn === 'Y')
-          .sort(
-            (a, b) => a.parameter_display_order - b.parameter_display_order
-          )[1]?.score_field_parameter_name;
+
+        if (!fromParamName || !toParamName) {
+          return; // Nothing to calculate
+        }
 
         if (group.hasError('dateRangeInvalid')) {
-          if (toDateName && group.get(toDateName)?.touched) {
-            this.alertService.alert(
-              true,
-              "'Period To' date cannot be earlier than the 'Period From' date."
-            );
-          }
           group.get('calculated_experience')?.setValue(0, { emitEvent: false });
           this.updateTotalExperience();
           return;
         }
 
-        const calculationParams = this.parameters.filter(
-          (p) => p.isCalculationColumn === 'Y'
-        );
-
-        if (calculationParams.length < 2) {
-          return;
-        }
-
-        calculationParams.sort(
-          (a, b) => a.parameter_display_order - b.parameter_display_order
-        );
-
-        const fromDateFieldName = calculationParams[0].score_field_parameter_name;
-        const toDateFieldName = calculationParams[1].score_field_parameter_name;
-
-        const fromDate = group.get(fromDateFieldName)?.value;
-        const toDate = group.get(toDateFieldName)?.value;
+        const fromDate = group.get(fromParamName)?.value;
+        const toDate = group.get(toParamName)?.value;
 
         if (fromDate && toDate) {
           const experience = this.utils.calculateDuration(
             new Date(fromDate),
             new Date(toDate),
-            subheading.score_field_field_weightage,
+            subheading.score_field_field_weightage || 1, // Fallback to 1 if weightage is 0
             'decimalYears'
           );
 
@@ -562,9 +567,46 @@
             ?.setValue(experience, { emitEvent: false });
 
           this.updateTotalExperience();
+        } else {
+          // If either date is cleared, reset experience
+          group.get('calculated_experience')?.setValue(0, { emitEvent: false });
+          this.updateTotalExperience();
         }
       }
+// ✅ NEW: Custom Validator to check for overlapping dates across all rows in the FormArray
+      private overlappingDatesValidator(fromKey: string | null, toKey: string | null): ValidatorFn {
+        return (formArray: AbstractControl): ValidationErrors | null => {
+          if (!fromKey || !toKey) return null;
+          if (!(formArray instanceof FormArray)) return null;
 
+          // Extract all valid, non-deleted date ranges
+          const activeRows = formArray.controls
+            .filter(group => !group.get('is_deleted')?.value)
+            .map(group => {
+              const fromVal = group.get(fromKey)?.value;
+              const toVal = group.get(toKey)?.value;
+              return {
+                from: fromVal ? new Date(fromVal).getTime() : null,
+                to: toVal ? new Date(toVal).getTime() : null
+              };
+            })
+            .filter(row => row.from !== null && row.to !== null); // Only check complete rows
+
+          // Check every row against every other row for overlaps
+          for (let i = 0; i < activeRows.length; i++) {
+            for (let j = i + 1; j < activeRows.length; j++) {
+              const row1 = activeRows[i];
+              const row2 = activeRows[j];
+
+              // Condition for overlap: Start A <= End B AND End A >= Start B
+              if (row1.from! <= row2.to! && row1.to! >= row2.from!) {
+                return { overlappingDates: true };
+              }
+            }
+          }
+          return null;
+        };
+      }
       private loadFormData(): Observable<void> {
         const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
         const a_rec_adv_post_detail_id = this.userData?.a_rec_adv_post_detail_id;
@@ -871,7 +913,21 @@
           );
           return Promise.reject(new Error('Invalid Date Range'));
         }
+        let hasOverlapError = false;
+        this.subheadings.forEach((sub, index) => {
+          const key = this.getUniqueKey(sub, index);
+          if (this.form.get(key)?.hasError('overlappingDates')) {
+            hasOverlapError = true;
+          }
+        });
 
+        if (hasOverlapError) {
+          this.alertService.alert(
+            true,
+            'Overlapping experience dates detected! You cannot hold two experiences simultaneously in this section. Please adjust your dates.'
+          );
+          return Promise.reject(new Error('Overlapping Dates'));
+        }
         // Temporarily disable empty placeholder rows so they don't block validation check rules
         const disabledGroups: AbstractControl[] = [];
         let hasAnyValidDataAtAll = false;

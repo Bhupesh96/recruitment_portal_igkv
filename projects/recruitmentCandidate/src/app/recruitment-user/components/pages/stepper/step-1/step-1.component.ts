@@ -48,7 +48,7 @@ export class Step1Component implements OnChanges, OnInit {
   @Output() formData = new EventEmitter<{ [key: string]: any }>();
   @Input() triggerValidation = false;
   private dropdownConfig = [
-    { propertyName: 'salutations', queryId: 111 },
+    { propertyName: 'salutations', queryId: 111, extraParams: { whereCon: true } },
     { propertyName: 'religionList', queryId: 112 },
     { propertyName: 'countryList', queryId: 113 },
     { propertyName: 'stateList', queryId: 114 }, // You can also put numbers directly
@@ -255,7 +255,7 @@ export class Step1Component implements OnChanges, OnInit {
 
     // 1. Automatically create API calls for all dropdowns from the configuration array
     const dropdownRequests = this.dropdownConfig.map((config) =>
-      this.getDropdownData(config.queryId)
+      this.getDropdownData(config.queryId, config.extraParams || {})
     );
 
     // 2. Define the remaining, non-dropdown API calls
