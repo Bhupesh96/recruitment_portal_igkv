@@ -12,7 +12,7 @@ import {HttpService, AuthService, AlertService} from 'shared';
 import {Router} from '@angular/router';
 import {environment} from 'environment';
 import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
-
+import {NotificationComponent} from './notification/notification.component';
 interface Advertisement {
   a_rec_adv_main_id: number;
   advertisment_no: string;
@@ -27,7 +27,7 @@ interface Post {
   a_rec_adv_post_detail_id: number;
   subjects: any[];
   selectedSubjectId: number | null;
-  activeTab: 'login' | 'signup' | 'notification' | 'complaint';
+  activeTab: 'login' | 'signup' | 'notification' | 'complaint' | null;
   expanded: boolean;
 }
 
@@ -43,6 +43,7 @@ interface Post {
     FooterComponent,
     LoginComponent,
     StepperComponent,
+    NotificationComponent
   ],
   templateUrl: './home.component.html',
 })
@@ -58,6 +59,14 @@ export class HomeComponent implements OnInit {
   marqueeItems: any[] = [];
   complaintProblems: any[] = [];
   selectedProblemId: number | null = null;
+  chatStep:
+    | 'PROBLEM'
+    | 'REGISTRATION'
+    | 'OTP'
+    | 'DESCRIPTION'
+    | 'ATTACHMENT'
+    | 'SUBMIT'
+    = 'PROBLEM';
   complaintRegistrationNo = '';
   complaintUserData: any = null;
   complaintProblemText = '';
@@ -67,7 +76,22 @@ export class HomeComponent implements OnInit {
     'notification',
     'complaint',
   ];
+  showComplaintChat = false;
+  newChatMessage = '';
   showMarqueeModal = false;
+  chatMessages = [
+    {
+      sender: 'ADMIN',
+      message: 'Welcome to Recruitment Support 👋',
+      time: new Date().toLocaleTimeString()
+    },
+    {
+      sender: 'ADMIN',
+      message: 'Please select your issue type below.',
+      time: new Date().toLocaleTimeString()
+    }
+  ];
+
   // ✅ New Object to track the active status and message for each tab
   linkStatuses: any = {
     signup: {active: false, message: 'Registration is currently closed.'},
@@ -79,6 +103,7 @@ export class HomeComponent implements OnInit {
   showLogin: boolean = false;
   showSignup: boolean = true;
   isLoggedIn = false;
+
 
   constructor(
     private HTTP: HttpService,
@@ -99,7 +124,142 @@ export class HomeComponent implements OnInit {
     this.checkViewport();
     window.addEventListener('resize', this.checkViewport.bind(this));
   }
+  sendChatMessage() {
 
+    if (!this.newChatMessage?.trim()) {
+      return;
+    }
+
+    const userText = this.newChatMessage.trim();
+
+    // Show user message
+    this.chatMessages.push({
+      sender: 'USER',
+      message: userText,
+      time: new Date().toLocaleTimeString()
+    });
+
+    // Clear input immediately
+    this.newChatMessage = '';
+
+    // STEP 1 : REGISTRATION VALIDATION
+    if (this.chatStep === 'REGISTRATION') {
+
+      this.HTTP.getData(
+        `/publicApi/get/getRegistration?registration_no=${userText}`,
+        'recruitement'
+      ).subscribe({
+
+        next: (res: any) => {
+
+          const data = res?.body?.data || [];
+
+          // Invalid Registration
+          if (!data.length) {
+
+            this.chatMessages.push({
+              sender: 'ADMIN',
+              message: 'Registration number not found. Please enter a valid registration number.',
+              time: new Date().toLocaleTimeString()
+            });
+
+            return;
+          }
+
+          // Save user details
+          this.complaintRegistrationNo = userText;
+          this.complaintUserData = data[0];
+
+          this.chatMessages.push({
+            sender: 'ADMIN',
+            message: `Welcome ${data[0].applicant_name}`,
+            time: new Date().toLocaleTimeString()
+          });
+
+          this.chatMessages.push({
+            sender: 'ADMIN',
+            message: 'Please describe your issue.',
+            time: new Date().toLocaleTimeString()
+          });
+
+          this.chatStep = 'DESCRIPTION';
+
+        },
+
+        error: () => {
+
+          this.chatMessages.push({
+            sender: 'ADMIN',
+            message: 'Unable to verify registration number. Please try again.',
+            time: new Date().toLocaleTimeString()
+          });
+
+        }
+
+      });
+
+      return;
+    }
+
+    // STEP 2 : ISSUE DESCRIPTION
+    if (this.chatStep === 'DESCRIPTION') {
+
+      this.complaintProblemText = userText;
+
+      this.chatMessages.push({
+        sender: 'ADMIN',
+        message: 'Thank you. Your complaint details are ready.',
+        time: new Date().toLocaleTimeString()
+      });
+
+      this.chatMessages.push({
+        sender: 'ADMIN',
+        message: 'Would you like to upload any screenshot or document? (Optional)',
+        time: new Date().toLocaleTimeString()
+      });
+
+      this.chatStep = 'ATTACHMENT';
+
+      return;
+    }
+
+  }
+  finishAttachmentStep() {
+
+    this.chatMessages.push({
+      sender: 'ADMIN',
+      message: this.complaintFile
+        ? 'Attachment added successfully.'
+        : 'No attachment added.',
+      time: new Date().toLocaleTimeString()
+    });
+
+    this.chatMessages.push({
+      sender: 'ADMIN',
+      message: 'Click Submit Complaint below to register your complaint.',
+      time: new Date().toLocaleTimeString()
+    });
+
+    this.chatStep = 'SUBMIT';
+  }
+  selectProblem(problem: any) {
+
+    this.selectedProblemId = problem.problem_id;
+
+    this.chatMessages.push({
+      sender: 'USER',
+      message: problem.problem_short_name,
+      time: new Date().toLocaleTimeString()
+    });
+
+    this.chatMessages.push({
+      sender: 'ADMIN',
+      message: 'Please enter your Registration Number.',
+      time: new Date().toLocaleTimeString()
+    });
+
+    this.chatStep = 'REGISTRATION';
+  }
   // Formatting Helper for Messages
   formatDateTime(d: Date): string {
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -360,7 +520,6 @@ export class HomeComponent implements OnInit {
         if (this.linkStatuses['signup'].active) defaultTab = 'signup';
         else if (this.linkStatuses['notification'].active) defaultTab = 'notification';
         else if (this.linkStatuses['complaint'].active) defaultTab = 'complaint';
-
         this.allPosts = postsList.map((post: any, index: number) => ({
           post_code: post.post_code,
           post_name: post.post_name,
@@ -368,8 +527,8 @@ export class HomeComponent implements OnInit {
           a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
           subjects: [],
           selectedSubjectId: null,
-          activeTab: defaultTab,
-          expanded: index === 0,
+          activeTab: null,        // <-- Start with NO tab selected
+          expanded: index === 0,  // <-- Keeps the first post expanded (change to 'true' to expand all)
         }));
 
         this.allPosts.forEach((post) => {

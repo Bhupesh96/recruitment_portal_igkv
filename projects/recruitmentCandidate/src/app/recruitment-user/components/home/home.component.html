@@ -109,13 +109,15 @@
 
                 <div class="flex flex-wrap gap-3 mb-6">
                   <button *ngFor="let tab of tabsWithoutLogin" (click)="setActiveTab(post, tab)"
-                          class="px-5 py-2 text-sm font-bold rounded-full transition-colors border"
-                          [ngClass]="post.activeTab === tab ? 'bg-blue-700 text-white border-blue-700 shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'">
+                          class="px-5 py-2.5 text-sm font-bold rounded-md transition-all duration-200 border shadow-sm hover:-translate-y-0.5 active:scale-95 cursor-pointer"
+                          [ngClass]="post.activeTab === tab
+                            ? 'bg-blue-700 text-white border-blue-700 shadow-md'
+                            : 'bg-gray-50 text-gray-800 border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-800'">
                     {{ tab === 'complaint' ? 'Online Complain' : (tab | titlecase) }}
                   </button>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
+                <div *ngIf="post.activeTab" class="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
                   <ng-container [ngSwitch]="post.activeTab">
 
                     <div *ngSwitchCase="'signup'">
@@ -289,8 +291,6 @@
 
         <div class="lg:col-span-2 mt-6">
           <div class="bg-white rounded-xl border border-gray-300 p-8 sticky top-24">
-<!--            <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Existing User?</h2>-->
-<!--            <p class="text-gray-600 text-base text-center mb-8">Log in to continue your application</p>-->
             <app-login (signupClicked)="showSignupForm()" (loginSuccess)="handleLoginSuccess()"></app-login>
             <app-stepper *ngIf="isLoggedIn"></app-stepper>
           </div>
@@ -409,13 +409,15 @@
 
               <div class="flex flex-wrap gap-2 mb-4">
                 <button *ngFor="let tab of tabsWithoutLogin" (click)="setActiveTab(post, tab)"
-                        class="px-4 py-2 text-sm font-medium rounded-full transition border"
-                        [ngClass]="post.activeTab === tab ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'">
+                        class="flex-1 px-4 py-2.5 text-sm font-bold rounded-md transition-all duration-200 border shadow-sm active:scale-95 cursor-pointer text-center"
+                        [ngClass]="post.activeTab === tab
+                          ? 'bg-blue-700 text-white border-blue-700 shadow-md'
+                          : 'bg-gray-50 text-gray-800 border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-800'">
                   {{ tab === 'complaint' ? 'Online Complain' : (tab | titlecase) }}
                 </button>
               </div>
 
-              <div class="bg-white p-4 rounded-md border border-gray-200 text-gray-700 shadow-sm">
+              <div *ngIf="post.activeTab" class="bg-white p-4 rounded-md border border-gray-200 text-gray-700 shadow-sm">
                 <ng-container [ngSwitch]="post.activeTab">
                   <div *ngSwitchCase="'signup'">
                     <div *ngIf="linkStatuses.signup.active; else mSignupClosed">
@@ -602,4 +604,6 @@
       </div>
     </div>
   </div>
+
+  <app-notification [isComplaintActive]="linkStatuses.complaint.active"></app-notification>
 </div>
