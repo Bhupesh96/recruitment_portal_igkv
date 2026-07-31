@@ -378,7 +378,6 @@ export class Step1Component implements OnChanges, OnInit {
       })
     );
   }
-//  REVISED: Locks Category logic
   private setupCustomLogicListeners(): void {
     const residentControl = this.form.get('question_3');
     const categoryControl = this.form.get('question_2');
@@ -388,10 +387,9 @@ export class Step1Component implements OnChanges, OnInit {
       return;
     }
 
-    // Grab the locked category id from the State Service
+    // Grab the initial category id from the State Service
     const initialUserData = this.recruitmentState.getCurrentUserData();
 
-    // ✅ FIX: Use bracket notation ['category_id'] to resolve the TS4111 error
     const lockedCategoryString = initialUserData?.['category_id']
       ? this.reverseCategoryMap[initialUserData['category_id']]
       : null;
@@ -405,16 +403,22 @@ export class Step1Component implements OnChanges, OnInit {
         if (categoryControl.value !== 'UR') {
           categoryControl.setValue('UR');
         }
+
+        // 🔒 Disable category selection if not a resident (forces UR)
+        categoryControl.disable({ emitEvent: false });
       } else {
-        // If they are a resident, show all options and strictly enforce their registered category
+        // If they are a resident, show all options
         this.filteredCategoryOptions = this.categoryQuestion.options;
-        if (lockedCategoryString && categoryControl.value !== lockedCategoryString) {
+
+        // ✅ Enable the control so the user can manually alter it
+        categoryControl.enable({ emitEvent: false });
+
+        // (Optional) Pre-fill with their registered category if they just switched
+        // back to 'Y' and the field was forced to 'UR'
+        if (lockedCategoryString && categoryControl.value === 'UR') {
           categoryControl.setValue(lockedCategoryString);
         }
       }
-
-      // 🔒 CRITICAL: Lock the category control so the user cannot manually alter it.
-      categoryControl.disable({ emitEvent: false });
 
       this.cdr.markForCheck();
     };
@@ -2110,7 +2114,29 @@ export class Step1Component implements OnChanges, OnInit {
       const mainPayloadForJson = { ...formValue };
       delete mainPayloadForJson.photo;
       delete mainPayloadForJson.signature;
+      const categoryValue = formValue['question_2'];
+      let realCategoryId = null; // Default or null if not selected
 
+      if (categoryValue) {
+        const cleanCategoryValue = typeof categoryValue === 'string' ? categoryValue.trim() : categoryValue;
+        const categoryMap: { [key: string]: number } = {
+          'UR': 1,
+          'OBC': 2,
+          'SC': 3,
+          'ST': 4,
+          'EWS': 5
+        };
+
+        if (categoryMap[cleanCategoryValue]) {
+          realCategoryId = categoryMap[cleanCategoryValue];
+        }
+      }
+
+      // Append candidate_category_id to the main payload object
+      mainPayloadForJson['candidate_category_id'] = realCategoryId;
+      // ==========================================
+
+      delete mainPayloadForJson.question_2;
       // --- 1. Handle Photo and Signature ---
       const photoControlValue = formValue.photo;
       const signatureControlValue = formValue.signature;

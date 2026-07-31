@@ -22,9 +22,9 @@
           {{ (formData[1]?.['action_date'] || userData?.['action_date']) | date:'dd-MM-yyyy' }}
         </div>
 
-        <div style="margin-bottom: 8px;">
+        <div *ngIf="formData[1]?.Subject_Name_E" style="margin-bottom: 8px;">
           <span class="label">Applied Subject:</span>
-          {{ (formData[1]?.Subject_Name_E || "-") | titlecase }}
+          {{ formData[1]?.Subject_Name_E | titlecase }}
         </div>
 
         <div style="margin-bottom: 8px;">
@@ -112,8 +112,8 @@
       <div class="details-flex" style="display: flex; flex-wrap: wrap; width: 100%; padding: 5px;">
         <ng-container *ngFor="let item of formData[1].additionalInfoDetails">
 
+          <!-- ✅ Removed the *ngIf that was hiding the category, now it prints on the PDF -->
           <div
-            *ngIf="!item.question.toLowerCase().includes('category')"
             class="detail-item"
             style="width: 33.33%; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column;"
           >

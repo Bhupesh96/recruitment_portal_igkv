@@ -320,8 +320,16 @@
     }
 
     getAppliedCategory(): string {
+      if (this.userData && this.userData['category_id']) {
+        return this.formatValue(this.userData['category_id'], 'category');
+      }
+
       const info = this.formData[1];
       if (!info) return '—';
+
+      if (info['candidate_category_id']) {
+        return this.formatValue(info['candidate_category_id'], 'category');
+      }
 
       if (info['additionalInfoDetails'] && Array.isArray(info['additionalInfoDetails'])) {
         const categoryItem = info['additionalInfoDetails'].find((item: any) =>
@@ -332,13 +340,8 @@
         }
       }
 
-      if (info['candidate_category_id']) {
-        return this.formatValue(info['candidate_category_id'], 'category');
-      }
-
       return '—';
     }
-
     formatValue(value: any, question?: string): string {
       if (question?.toLowerCase().includes('category')) {
         const categoryMap: any = {
@@ -490,10 +493,14 @@
 
     getTransactionAmountDetails() {
       if (!this.formData[1]) return;
+
+      // ✅ Get category ID from state service, fallback to form data
+      const categoryId = this.userData?.category_id;
+
       const params = {
         purpose_id: 19,
         advertisement_id: this.formData[1]["a_rec_adv_main_id"],
-        category_code: this.formData[1]["candidate_category_id"]
+        category_code: categoryId
       };
 
       this.http.getParam('/fee/get/getTransactionAmountDetails/', params, 'academic').subscribe((result: any) => {
@@ -501,7 +508,6 @@
         this.getFeeStatus();
       });
     }
-
     async onPayClicked() {
       const result = await this.alertService.confirmAlert_custom(
         'Proceed to Payment?',
@@ -522,14 +528,14 @@
     private payloadForPay() {
       const info = this.formData[1] || {};
       const payData = this.paymentData || {};
-
+      const categoryId = this.userData?.category_id;
       const payee_detail = {
         advertisement_id: info["a_rec_adv_main_id"],
         purpose_id: 19,
         fee_purpose_name: 'Recruitment Application Fee',
         payee_id: info["registration_no"],
         payee_name: info["Applicant_First_Name_E"],
-        category: info["candidate_category_id"],
+        category: categoryId,
         email: info["Email_Id"],
         mobile: info["Mobile_No"],
         paymentgatewayid: 5,

@@ -126,24 +126,28 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     return (typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED'));
   }
 
-  // ✅ New Method: Extract category directly from additionalInfoDetails based on JSON
   getAppliedCategory(): string {
+    // 1. Pull directly from Recruitment State Service (userData) using bracket notation
+    if (this.userData && this.userData['category_id']) {
+      return this.formatValue(this.userData['category_id'], 'category');
+    }
+
     const info = this.formData[1];
     if (!info) return '—';
 
-    // 1. Find it in additionalInfoDetails
-    if (info.additionalInfoDetails && Array.isArray(info.additionalInfoDetails)) {
-      const categoryItem = info.additionalInfoDetails.find((item: any) =>
+    // 2. Fallback to candidate_category_id from form payload
+    if (info['candidate_category_id']) {
+      return this.formatValue(info['candidate_category_id'], 'category');
+    }
+
+    // 3. Find it in additionalInfoDetails (Last resort fallback)
+    if (info['additionalInfoDetails'] && Array.isArray(info['additionalInfoDetails'])) {
+      const categoryItem = info['additionalInfoDetails'].find((item: any) =>
         item.question?.toLowerCase().includes('category')
       );
       if (categoryItem) {
         return this.formatValue(categoryItem.answer, categoryItem.question);
       }
-    }
-
-    // 2. Fallback to candidate_category_id
-    if (info.candidate_category_id) {
-      return this.formatValue(info.candidate_category_id, 'category');
     }
 
     return '—';

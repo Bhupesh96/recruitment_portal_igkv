@@ -26,7 +26,7 @@
             <p><span class="font-medium">Registration Date:</span> {{ (formData[1]["action_date"] || userData?.action_date) | date:'dd-MM-yyyy' }}</p>
             <p><span class="font-medium">Applied Post:</span> {{ formData[1]["post_name"] | titlecase }}</p>
             <p><span class="font-medium">Applied Category:</span> {{ getAppliedCategory() }}</p>
-            <p><span class="font-medium">Applied Subject:</span> {{ formData[1]["Subject_Name_E"] | titlecase }}</p>
+            <p *ngIf="formData[1]['Subject_Name_E']"><span class="font-medium">Applied Subject:</span> {{ formData[1]["Subject_Name_E"] | titlecase }}</p>
 
           </div>
         </div>
@@ -82,15 +82,20 @@
             Additional Information
           </h6>
           <div class="grid md:grid-cols-3 text-md pt-4 border-t border-gray-300 gap-y-6 gap-x-4">
+            <!-- ✅ Removed the *ngIf that was hiding the category, now everything shows -->
             <ng-container *ngFor="let item of formData[1]['additionalInfoDetails']">
-              <div *ngIf="!item.question.toLowerCase().includes('category')">
+              <div>
                 <p class="text-md font-semibold text-gray-600 uppercase tracking-widest mb-1">{{ item.question | titlecase }}</p>
                 <ng-container *ngIf="item.answer === 'File Uploaded' || isFileValue(item.answer); else standardInfo">
-                  <!-- ✅ CLICKABLE FILE UPLOAD -->
-                  <button type="button" (click)="viewFile(item.answer)" class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1.5 rounded-full mt-1 transition-colors cursor-pointer border border-blue-200 shadow-sm">
+
+                  <!-- ✅ Passes the ACTUAL file data from the form (condition_X) instead of the hardcoded "File Uploaded" text -->
+                  <button type="button"
+                          (click)="viewFile(item.condition_id ? formData[1]['condition_' + item.condition_id] : item.answer)"
+                          class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1.5 rounded-full mt-1 transition-colors cursor-pointer border border-blue-200 shadow-sm">
                     <span>✓ File Uploaded</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                   </button>
+
                 </ng-container>
                 <ng-template #standardInfo>
                   <p class="text-gray-900 font-medium break-words">{{ formatValue(item.answer, item.question) }}</p>
