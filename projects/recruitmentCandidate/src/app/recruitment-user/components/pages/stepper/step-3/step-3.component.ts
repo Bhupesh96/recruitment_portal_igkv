@@ -151,6 +151,32 @@ export class Step3Component implements OnInit {
       this.cdr.detectChanges();
     });
   }
+  addRow(subHeadingId: number, item: any): void {
+    if (!this.isEditing) {
+      return;
+    }
+
+    const maxRows = item.score_field_no_of_rows;
+    const currentCount = this.getExistingRowCount(item);
+
+    // If max rows reached, show alert and block addition
+    if (currentCount >= maxRows) {
+      this.alertService.alert(
+        true,
+        `You are allowed to add a maximum of ${maxRows} rows only.`
+      );
+      return;
+    }
+
+    // Increment the count value programmatically
+    const countControl = this.form.get(
+      `subHeadings.${subHeadingId}.${item.normalizedKey}.count`
+    );
+
+    if (countControl) {
+      countControl.setValue((currentCount + 1).toString());
+    }
+  }
   /**
    * Generates a SHA-256 hash for a given File using CryptoJS.
    */
