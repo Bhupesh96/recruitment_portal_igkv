@@ -37,10 +37,12 @@ import { AlertService } from 'shared';
 import { LoaderService } from 'shared';
 import { environment } from 'environment';
 import * as CryptoJS from 'crypto-js';
+import { NgSelectModule } from '@ng-select/ng-select';
+import {AppSelectComponent} from '../../../../../components/app-select/app-select.component';
 @Component({
   selector: 'app-step-1',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, HttpClientModule, SharedModule,AppSelectComponent],
   templateUrl: './step-1.component.html',
   styleUrls: ['./step-1.component.scss'],
 })

@@ -1,0 +1,36 @@
+/* Disabled container */
+:host ::ng-deep .ng-select.ng-select-disabled .ng-select-container {
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+}
+
+/* Selected value */
+:host ::ng-deep .ng-select.ng-select-disabled .ng-value-container {
+  color: #6b7280 !important;
+}
+
+:host ::ng-deep .ng-select.ng-select-disabled .ng-value {
+  color: #6b7280 !important;
+}
+
+/* Input */
+:host ::ng-deep .ng-select.ng-select-disabled input {
+  cursor: not-allowed !important;
+}
+
+/* Arrow */
+:host ::ng-deep .ng-select.ng-select-disabled .ng-arrow {
+  border-top-color: #9ca3af !important;
+}
+
+/* Arrow wrapper */
+:host ::ng-deep .ng-select.ng-select-disabled .ng-arrow-wrapper {
+  opacity: .45;
+}
+
+/* Placeholder */
+:host ::ng-deep .ng-select.ng-select-disabled .ng-placeholder {
+  color: #6b7280 !important;
+}
