@@ -166,104 +166,70 @@
                         *ngSwitchCase="'DT'"
                         appInputTooltip
                         type="date"
+                        [max]="maxDateToday"
                         [formControlName]="param.score_field_parameter_name"
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
                       />
 
-                      <select
+                      <!-- ✅ UPDATED: Dropdown (DC) -->
+                      <app-select
                         *ngSwitchCase="'DC'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full min-w-[150px] border border-gray-300 rounded-md px-3 py-2 text-base focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
-                      >
-                        <option value="">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
+                        [items]="dropdownData.get(param.isQuery_id) || []"
+                        bindLabel="data_name"
+                        bindValue="data_id"
+                        [placeholder]="'Select ' + param.score_field_parameter_name"
+                        class="block w-full min-w-[150px]"
+                      ></app-select>
 
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_id"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-                      <select
+                      <!-- ✅ UPDATED: Dropdown (DP) -->
+                      <app-select
                         *ngSwitchCase="'DP'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_id"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
+                        [items]="dropdownData.get(param.isQuery_id) || []"
+                        bindLabel="data_name"
+                        bindValue="data_id"
+                        [placeholder]="'Select ' + param.score_field_parameter_name"
+                        class="block w-full"
+                      ></app-select>
 
-                      <select
+                      <!-- ✅ UPDATED: Year Dropdown (DY) -->
+                      <app-select
                         *ngSwitchCase="'DY'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_id"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
+                        [items]="dropdownData.get(param.isQuery_id) || []"
+                        bindLabel="data_name"
+                        bindValue="data_id"
+                        [placeholder]="'Select ' + param.score_field_parameter_name"
+                        class="block w-full"
+                      ></app-select>
 
-                      <select
+                      <!-- ✅ UPDATED: Dropdown (DE) -->
+                      <app-select
                         *ngSwitchCase="'DE'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option [ngValue]="null">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_id"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
-                      <select
+                        [items]="dropdownData.get(param.isQuery_id) || []"
+                        bindLabel="data_name"
+                        bindValue="data_id"
+                        [placeholder]="'Select ' + param.score_field_parameter_name"
+                        class="block w-full"
+                      ></app-select>
+
+                      <!-- ✅ UPDATED: Dropdown (D) -->
+                      <app-select
                         *ngSwitchCase="'D'"
                         appInputTooltip
                         [formControlName]="param.score_field_parameter_name"
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-base bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-600"
-                      >
-                        <option value="">
-                          Select {{ param.score_field_parameter_name }}
-                        </option>
-
-                        <option
-                          *ngFor="
-                            let option of dropdownData.get(param.isQuery_id)
-                          "
-                          [value]="option.data_id"
-                        >
-                          {{ option.data_name }}
-                        </option>
-                      </select>
+                        [items]="dropdownData.get(param.isQuery_id) || []"
+                        bindLabel="data_name"
+                        bindValue="data_id"
+                        [placeholder]="'Select ' + param.score_field_parameter_name"
+                        class="block w-full"
+                      ></app-select>
 
                       <ng-container *ngSwitchCase="'A'">
                         <input

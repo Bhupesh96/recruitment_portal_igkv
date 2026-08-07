@@ -29,6 +29,7 @@ import {
 } from '../../recruitment-state.service';
 import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 import { environment } from 'environment';
+import {AppSelectComponent} from '../../../../../components/app-select/app-select.component';
 import * as CryptoJS from 'crypto-js';
 interface DetailFormGroup {
   type: FormControl<string | null>;
@@ -89,6 +90,7 @@ interface Parameter {
     FormsModule,
     HttpClientModule,
     InputTooltipDirective,
+    AppSelectComponent
   ],
   templateUrl: './step-3.component.html',
   styleUrls: ['./step-3.component.scss'],
@@ -150,6 +152,9 @@ export class Step3Component implements OnInit {
       this.checkMandatorySubheadingsAndParameters();
       this.cdr.detectChanges();
     });
+  }
+  get maxDateToday(): string {
+    return new Date().toISOString().split('T')[0];
   }
   addRow(subHeadingId: number, item: any): void {
     if (!this.isEditing) {

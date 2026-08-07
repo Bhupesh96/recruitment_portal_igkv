@@ -91,9 +91,12 @@
                   <!-- ✅ Passes the ACTUAL file data from the form (condition_X) instead of the hardcoded "File Uploaded" text -->
                   <button type="button"
                           (click)="viewFile(item.condition_id ? formData[1]['condition_' + item.condition_id] : item.answer)"
-                          class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1.5 rounded-full mt-1 transition-colors cursor-pointer border border-blue-200 shadow-sm">
-                    <span>✓ File Uploaded</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          class="inline-flex items-center justify-center  !bg-red-700 hover:bg-red-700 text-white p-2 rounded shadow-sm transition-colors cursor-pointer"
+                          title="View PDF">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .954.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+                    </svg>
                   </button>
 
                 </ng-container>
@@ -173,9 +176,15 @@
                           <tr *ngFor="let item of formData[i][key]" class="bg-white hover:bg-blue-50 transition-colors duration-200">
                             <td *ngFor="let dataKey of getDisplayableKeys(item)" class="px-4 py-2 border border-gray-300">
                               <!-- ✅ CLICKABLE FILE UPLOAD -->
-                              <button type="button" *ngIf="isFileValue(item[dataKey])" (click)="viewFile(item[dataKey])" class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1 rounded-full transition-colors cursor-pointer border border-blue-200 shadow-sm">
-                                <span>✓ File Uploaded</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                              <button type="button"
+                                      *ngIf="isFileValue(item[dataKey])"
+                                      (click)="viewFile(item[dataKey])"
+                                      class="inline-flex items-center justify-center !bg-red-700 hover:bg-red-700 text-white p-2 rounded transition-colors cursor-pointer shadow-sm"
+                                      title="View PDF">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .954.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+                                </svg>
                               </button>
                               <ng-container *ngIf="!isFileValue(item[dataKey])">{{ formatValue(item[dataKey]) }}</ng-container>
                             </td>
@@ -210,9 +219,15 @@
                               <ng-container *ngIf="dataKey.toLowerCase().includes('attachment') || dataKey.toLowerCase().includes('document'); else regularData">
 
                                 <!-- ✅ CLICKABLE FILE UPLOAD -->
-                                <button type="button" *ngIf="checkFilesForSubheading(formData[i], key) || isFileValue(item[dataKey])" (click)="viewFile(item[dataKey] || item['Attachment'] || item['attachment'])" class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1 rounded-full transition-colors cursor-pointer border border-blue-200 shadow-sm">
-                                  <span>✓ File Uploaded</span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                <button type="button"
+                                        *ngIf="checkFilesForSubheading(formData[i], key) || isFileValue(item[dataKey])"
+                                        (click)="viewFile(item[dataKey] || item['Attachment'] || item['attachment'])"
+                                        class="inline-flex items-center justify-center !bg-red-700 hover:bg-red-700 text-white p-2 rounded transition-colors cursor-pointer shadow-sm"
+                                        title="View PDF">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .954.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+                                  </svg>
                                 </button>
 
                                 <span *ngIf="!checkFilesForSubheading(formData[i], key) && !isFileValue(item[dataKey])" class="text-gray-400 italic">
@@ -275,11 +290,12 @@
                   <ng-template #standardCell>
 
                     <!-- ✅ CLICKABLE FILE UPLOAD -->
-                    <button type="button" *ngIf="isFileValue(detail[dataKey])" (click)="viewFile(detail[dataKey])" class="inline-flex items-center gap-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold px-3 py-1 rounded-full transition-colors cursor-pointer border border-blue-200 shadow-sm">
-                      <span>✓ File Uploaded</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    <button type="button" *ngIf="isFileValue(detail[dataKey])" (click)="viewFile(detail[dataKey])" class="inline-flex items-center justify-center !bg-red-700 hover:bg-red-700 text-white p-2 rounded transition-colors cursor-pointer shadow-sm" title="View PDF">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z"/>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .954.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"/>
+                      </svg>
                     </button>
-
                     <ng-container *ngIf="!isFileValue(detail[dataKey])">
                       {{ formatValue(detail[dataKey]) }}
                     </ng-container>

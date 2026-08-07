@@ -28,6 +28,7 @@
   import * as CryptoJS from 'crypto-js';
   import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
   import { environment } from 'environment';
+  import {AppSelectComponent} from '../../../../../components/app-select/app-select.component';
   interface Heading {
     a_rec_adv_main_id: number;
     a_rec_adv_post_detail_id: number;
@@ -103,6 +104,7 @@
       ReactiveFormsModule,
       SharedModule,
       InputTooltipDirective,
+      AppSelectComponent
     ],
     templateUrl: './step-2.component.html',
     styleUrls: ['./step-2.component.scss'],
@@ -154,6 +156,9 @@
           this.cdr.markForCheck();
         },
       });
+    }
+    get maxDateToday(): string {
+      return new Date().toISOString().split('T')[0];
     }
     private getDropdownData(queryId: number): Observable<any[]> {
       if (!queryId || queryId === 0) {

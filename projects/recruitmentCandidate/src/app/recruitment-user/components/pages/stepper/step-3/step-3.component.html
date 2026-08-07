@@ -73,54 +73,60 @@
               </div>
 
               <!-- TABLE (Appears dynamically below the buttons when rows exist) -->
-              <div *ngIf="hasSubHeadingRows(subHeading.m_rec_score_field_id)" class="overflow-x-auto ring-1 ring-gray-300 rounded-md">
-                <table class="w-full bg-white table-auto">
+              <div *ngIf="hasSubHeadingRows(subHeading.m_rec_score_field_id)" class="overflow-x-auto ring-1 ring-gray-300 rounded-md w-full">
+
+                <table class="w-full bg-white table-auto min-w-max">
                   <thead class="bg-blue-700 text-white">
                   <tr>
-                    <th class="px-4 py-3 text-left text-sm font-semibold tracking-wide">S.No.</th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold tracking-wide">Item Name</th>
-                    <th *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)" class="px-4 py-3 text-left text-sm font-semibold tracking-wide">
+                    <!-- ✅ Reduced padding (px-2) and spacing -->
+                    <th class="px-2 py-2 text-left text-sm font-semibold tracking-wide w-[50px]">S.No.</th>
+
+                    <!-- ✅ Forced width (w-[200px]) so the text is forced to wrap -->
+                    <th class="px-2 py-2 text-left text-sm font-semibold tracking-wide whitespace-normal break-words w-[200px]">Item Name</th>
+
+                    <th *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)" class="px-2 py-2 text-left text-sm font-semibold tracking-wide whitespace-normal break-words min-w-[150px]">
                       {{ param.score_field_parameter_name }}
                       <span *ngIf="param.is_mandatory === 'Y'" class="text-red-100">*</span>
                     </th>
-                    <th class="px-4 py-3 text-left text-sm font-semibold tracking-wide">Action</th>
+                    <th class="px-2 py-2 text-left text-sm font-semibold tracking-wide w-[60px]">Action</th>
                   </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-200">
                   <tr
                     *ngFor="let detailForm of getRowsForSubHeading(subHeading.m_rec_score_field_id); let i = index"
                     [formGroup]="detailForm"
-                    class="hover:bg-blue-50/50 transition"
+                    class="hover:bg-blue-50/50 transition align-top"
                   >
-                    <td class="px-4 py-3 text-base font-medium text-gray-700">{{ i + 1 }}</td>
-                    <td class="px-4 py-3 text-base">
-                      <input
-                        type="text"
+                    <td class="px-2 py-2 text-sm font-medium text-gray-700 whitespace-normal">{{ i + 1 }}</td>
+
+                    <td class="px-2 py-2 text-sm whitespace-normal break-words align-top w-[200px]">
+                      <!-- ✅ Changed to whitespace-normal and leading-snug for better wrapping -->
+                      <div
                         appInputTooltip
-                        class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-base bg-blue-50 text-gray-700 cursor-not-allowed"
-                        [value]="getCheckboxName(detailForm)"
-                        readonly
-                      />
+                        class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-blue-50 text-gray-700 cursor-not-allowed min-h-[36px] whitespace-normal break-words leading-snug"
+                      >
+                        {{ getCheckboxName(detailForm) }}
+                      </div>
                     </td>
 
-                    <td *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)" class="px-4 py-3 text-base">
-                      <!-- KEEP YOUR EXISTING SWITCH STATEMENT EXACTLY AS IS -->
+                    <td *ngFor="let param of getParametersForSubHeading(subHeading.m_rec_score_field_id)" class="px-2 py-2 text-sm whitespace-normal break-words align-top">
+
                       <ng-container [ngSwitch]="param.control_type">
 
                         <ng-container *ngSwitchCase="'A'">
                           <div>
                             <input
                               type="file"
-                              class="w-full text-sm text-gray-700 file:bg-blue-700 file:text-white file:border-none file:px-3 file:py-1.5 file:rounded-md file:cursor-pointer hover:file:bg-blue-800"
+                              class="w-full text-xs text-gray-700 file:bg-blue-700 file:text-white file:border-none file:px-2 file:py-1 file:rounded-md file:cursor-pointer hover:file:bg-blue-800"
                               (change)="onFileChange($event, detailForm, param.normalizedKey)"
                               accept=".pdf"
                             />
-                            <div class="mt-1 text-[11px] text-gray-900">
+                            <div class="mt-1 text-[11px] text-gray-900 leading-tight">
                               PDF only • Size: 100 KB to {{ param.data_type_size }} KB
                             </div>
                             <ng-container *ngIf="getFilePath(detailForm, param.m_rec_score_field_parameter_new_id, subHeading.m_rec_score_field_id) as filePath">
-                              <a [href]="sanitizeFileUrl(filePath)" target="_blank" rel="noopener noreferrer" class="text-sm !text-green-700 hover:underline flex items-center mt-2 font-medium">
-                                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <a [href]="sanitizeFileUrl(filePath)" target="_blank" rel="noopener noreferrer" class="text-xs !text-green-700 hover:underline flex items-center mt-2 font-medium break-words">
+                                <svg class="h-3 w-3 mr-1 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 View Uploaded File
@@ -129,39 +135,60 @@
                           </div>
                         </ng-container>
 
-                        <textarea *ngSwitchCase="'TR'" appInputTooltip [formControlName]="param.normalizedKey" [placeholder]="'Enter ' + param.score_field_parameter_name" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"></textarea>
+                        <textarea *ngSwitchCase="'TR'" appInputTooltip [formControlName]="param.normalizedKey" [placeholder]="'Enter ' + param.score_field_parameter_name" rows="2" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white min-w-[150px]"></textarea>
 
-                        <select *ngSwitchCase="'DC'" appInputTooltip [formControlName]="param.normalizedKey" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white">
-                          <option value="">Select {{ param.score_field_parameter_name }}</option>
-                          <option *ngFor="let option of dropdownData.get(param.isQuery_id)" [value]="option.data_id">{{ option.data_name }}</option>
-                        </select>
+                        <!-- ✅ Reduced min-width on dropdowns to 150px -->
+                        <app-select
+                          *ngSwitchCase="'DC'"
+                          appInputTooltip
+                          [formControlName]="param.normalizedKey"
+                          [items]="dropdownData.get(param.isQuery_id) || []"
+                          bindLabel="data_name"
+                          bindValue="data_id"
+                          [placeholder]="'Select ' + param.score_field_parameter_name"
+                          class="block w-full min-w-[150px]"
+                        ></app-select>
 
-                        <select *ngSwitchCase="'D'" appInputTooltip [formControlName]="param.normalizedKey" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white">
-                          <option value="">Select {{ param.score_field_parameter_name }}</option>
-                          <option *ngFor="let option of dropdownData.get(param.isQuery_id)" [value]="option.data_id">{{ option.data_name }}</option>
-                        </select>
+                        <app-select
+                          *ngSwitchCase="'D'"
+                          appInputTooltip
+                          [formControlName]="param.normalizedKey"
+                          [items]="dropdownData.get(param.isQuery_id) || []"
+                          bindLabel="data_name"
+                          bindValue="data_id"
+                          [placeholder]="'Select ' + param.score_field_parameter_name"
+                          class="block w-full min-w-[150px]"
+                        ></app-select>
 
-                        <select *ngSwitchCase="'DY'" appInputTooltip class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white" [formControlName]="param.normalizedKey">
-                          <option value="">Select {{ param.score_field_parameter_name }}</option>
-                          <option *ngFor="let option of dropdownData.get(param.isQuery_id)" [value]="option.data_id">{{ option.data_name }}</option>
-                        </select>
+                        <app-select
+                          *ngSwitchCase="'DY'"
+                          appInputTooltip
+                          [formControlName]="param.normalizedKey"
+                          [items]="dropdownData.get(param.isQuery_id) || []"
+                          bindLabel="data_name"
+                          bindValue="data_id"
+                          [placeholder]="'Select ' + param.score_field_parameter_name"
+                          class="block w-full min-w-[150px]"
+                        ></app-select>
 
-                        <input *ngSwitchCase="'DT'" type="date" appInputTooltip [formControlName]="param.normalizedKey" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white" />
+                        <!-- ✅ Reduced min-width on inputs to 140px -->
+                        <input *ngSwitchCase="'DT'" type="date" appInputTooltip [formControlName]="param.normalizedKey" [max]="maxDateToday" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white min-w-[140px]" />
 
-                        <input *ngSwitchDefault appInputTooltip [type]="param.isDatatype === 'number' ? 'number' : 'text'" class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white" [formControlName]="param.normalizedKey" [placeholder]="param.score_field_parameter_name" [attr.min]="param.isDatatype === 'number' ? 0 : null" [attr.pattern]="param.control_type === 'T' && param.isDatatype === 'text' ? '^[a-zA-Z ()]*$' : null" (keydown)="allowAlphabetsOnly($event, param)" />
+                        <input *ngSwitchDefault appInputTooltip [type]="param.isDatatype === 'number' ? 'number' : 'text'" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white min-w-[140px]" [formControlName]="param.normalizedKey" [placeholder]="param.score_field_parameter_name" [attr.min]="param.isDatatype === 'number' ? 0 : null" [attr.pattern]="param.control_type === 'T' && param.isDatatype === 'text' ? '^[a-zA-Z ()]*$' : null" (keydown)="allowAlphabetsOnly($event, param)" />
 
                       </ng-container>
 
-                      <div *ngIf="detailForm.get(param.normalizedKey)?.touched && detailForm.get(param.normalizedKey)?.invalid" class="text-red-700 text-sm mt-1.5">
+                      <!-- Validation Errors -->
+                      <div *ngIf="detailForm.get(param.normalizedKey)?.touched && detailForm.get(param.normalizedKey)?.invalid" class="text-red-700 text-[11px] mt-1 leading-tight">
                         <div *ngIf="detailForm.get(param.normalizedKey)?.hasError('required')">{{ param.score_field_parameter_name }} is required.</div>
                         <div *ngIf="detailForm.get(param.normalizedKey)?.hasError('pattern')">Only letters and () are allowed.</div>
                         <div *ngIf="detailForm.get(param.normalizedKey)?.hasError('min')">Value cannot be negative.</div>
                       </div>
                     </td>
 
-                    <td class="px-4 py-3 text-base">
-                      <button type="button" (click)="removeRow(detailForm)" class="p-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 hover:text-red-900 transition-colors duration-150" title="Remove Row">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <td class="px-2 py-2 text-sm whitespace-normal align-top">
+                      <button type="button" (click)="removeRow(detailForm)" class="p-1.5 bg-red-100 text-red-700 rounded-full hover:bg-red-200 hover:text-red-900 transition-colors duration-150" title="Remove Row">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>

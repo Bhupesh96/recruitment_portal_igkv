@@ -55,7 +55,7 @@ export class Step1Component implements OnChanges, OnInit {
     { propertyName: 'countryList', queryId: 113 },
     { propertyName: 'stateList', queryId: 114 }, // You can also put numbers directly
     { propertyName: 'languageTypes', queryId: 116 },
-    { propertyName: 'languages', queryId: 117 },
+    // { propertyName: 'languages', queryId: 117 },
     { propertyName: 'languageSkills', queryId: 118 },
     { propertyName: 'advertisementList', queryId: 108 },
   ];
@@ -80,6 +80,7 @@ export class Step1Component implements OnChanges, OnInit {
   languageTypes: any[] = [];
   languages: any[] = [];
   languageSkills: any[] = [];
+  languagesList: any[][] = [[]];
   postList: {
     post_code: number;
     post_name: string;
@@ -457,7 +458,19 @@ export class Step1Component implements OnChanges, OnInit {
     this.form.get('post_code')?.valueChanges.subscribe((postCode) => {
       if (postCode) this.fetchSubjectsByPost(postCode);
     });
-
+// Listen for Country changes to hide/show dependencies
+    this.form.get('Permanent_Country_Id')?.valueChanges.subscribe((val) => {
+      this.toggleCountryDependentFields('Permanent', val);
+      this.cdr.markForCheck();
+    });
+    this.form.get('Current_Country_Id')?.valueChanges.subscribe((val) => {
+      this.toggleCountryDependentFields('Current', val);
+      this.cdr.markForCheck();
+    });
+    this.form.get('Birth_Country_Id')?.valueChanges.subscribe((val) => {
+      this.toggleCountryDependentFields('Birth', val);
+      this.cdr.markForCheck();
+    });
     this.form.get('Permanent_State_Id')?.valueChanges.subscribe((stateId) => {
       this.permanentDistrictList = []; // Clear previous districts
       this.form.get('Permanent_District_Id')?.setValue(null); // Reset selection
@@ -518,7 +531,7 @@ export class Step1Component implements OnChanges, OnInit {
             },
             { emitEvent: false }
           ); // Use emitEvent: false to be safe
-
+          this.toggleCountryDependentFields('Current', permanentValues.countryId);
           // 4. If a state was selected, fetch its districts.
           if (permanentValues.stateId) {
             this.getDistrictsByState(permanentValues.stateId).subscribe(
@@ -624,15 +637,9 @@ export class Step1Component implements OnChanges, OnInit {
     );
   }
 
-  private saveAdditionalInfo(formData: FormData): Observable<any> {
-    return this.HTTP.postForm(
-      '/candidate/postFile/saveOrUpdateAdditionalInformation',
-      formData,
-      'recruitement'
-    );
-  }
 
-  // --- Form & UI Event Handlers ---
+
+
 
   private patchUserData(data: any): void {
     // --- 1. Handle File Previews (Sync operations) ---
@@ -766,7 +773,9 @@ export class Step1Component implements OnChanges, OnInit {
         if (dobValue) {
           this.calculateAge(dobValue);
         }
-
+        this.toggleCountryDependentFields('Permanent', data.Permanent_Country_Id);
+        this.toggleCountryDependentFields('Current', data.Current_Country_Id);
+        this.toggleCountryDependentFields('Birth', data.Birth_Country_Id);
         // C. Trigger UI Update
         this.cdr.markForCheck();
         this.emitFormData();
@@ -790,27 +799,31 @@ export class Step1Component implements OnChanges, OnInit {
   private patchUserLanguages(langData: any[]): void {
     const langFormArray = this.form.get('languages') as FormArray;
     langFormArray.clear();
+    this.languagesList = [];
+
     if (langData.length === 0) {
-      langFormArray.push(this.createLanguageGroup()); // Add one empty row if none saved
+      langFormArray.push(this.createLanguageGroup());
+      this.languagesList.push([]);
       return;
     }
-    langData.forEach((lang: any) => {
-      langFormArray.push(
-        this.fb.group({
-          a_rec_app_language_detail_id: [
-            lang.a_rec_app_language_detail_id || null,
-          ],
-          m_rec_language_type_id: [
-            lang.m_rec_language_type_id,
-            Validators.required,
-          ],
-          m_rec_language_id: [lang.m_rec_language_id, Validators.required],
-          m_rec_language_skill_id: [
-            lang.m_rec_language_skill_id,
-            Validators.required,
-          ],
-        })
-      );
+
+    langData.forEach((lang: any, index: number) => {
+      const group = this.createLanguageGroup();
+      group.patchValue({
+        m_rec_language_type_id: lang.m_rec_language_type_id,
+        m_rec_language_id: lang.m_rec_language_id,
+        m_rec_language_skill_id: lang.m_rec_language_skill_id,
+      }, { emitEvent: false });
+      langFormArray.push(group);
+
+      // Direct call to populate the dropdown for this specific row
+      this.languagesList[index] = [];
+      if (lang.m_rec_language_type_id) {
+        this.getDropdownData(117, { m_rec_language_id: lang.m_rec_language_type_id }).subscribe(data => {
+          this.languagesList[index] = data;
+          this.cdr.markForCheck();
+        });
+      }
     });
   }
 
@@ -866,7 +879,6 @@ export class Step1Component implements OnChanges, OnInit {
       return;
     }
 
-    // 1. Strip time/timezone and split into [YYYY, MM, DD]
     const targetDateStr = this.advertisementDetails?.age_calculation_date
       ? this.advertisementDetails.age_calculation_date.split('T')[0]
       : new Date().toISOString().split('T')[0];
@@ -876,15 +888,12 @@ export class Step1Component implements OnChanges, OnInit {
     const [tYear, tMonth, tDay] = targetDateStr.split('-').map(Number);
     const [dYear, dMonth, dDay] = dobStr.split('-').map(Number);
 
-    // 2. Calculate pure differences
     let years = tYear - dYear;
     let months = tMonth - dMonth;
     let days = tDay - dDay;
 
-    // 3. Adjust for negative days or months
     if (days < 0) {
       months--;
-      // Get number of days in the month PRECEDING the target date
       const prevMonthDays = new Date(tYear, tMonth - 1, 0).getDate();
       days += prevMonthDays;
     }
@@ -896,13 +905,29 @@ export class Step1Component implements OnChanges, OnInit {
     const ageString = `${years} years, ${months} months, ${days} days`;
     this.form.get('age')?.setValue(ageString, { emitEvent: false });
 
-    if (years < 18) {
-      this.form.get('age')?.setErrors({ underage: true });
+    const ageControl = this.form.get('age');
+    const dobControl = this.form.get('DOB'); // ✅ Get the active DOB control
+
+    if (years < 18 || years > 65) {
+      // ✅ Set the error on the DOB control to invalidate the form
+      dobControl?.setErrors({ ...dobControl?.errors, invalidAge: true });
+      ageControl?.setErrors({ invalidAge: true });
+
+      this.alert.alertMessage(
+        'Invalid Age',
+        'Candidate age must be between <b>18</b> and <b>65</b> years.',
+        'error'
+      );
     } else {
-      this.form.get('age')?.setErrors(null);
+      // ✅ Safely clear ONLY the invalidAge error from the DOB control
+      if (dobControl?.hasError('invalidAge')) {
+        const errors = { ...dobControl.errors };
+        delete errors['invalidAge'];
+        dobControl.setErrors(Object.keys(errors).length > 0 ? errors : null);
+      }
+      ageControl?.setErrors(null);
     }
 
-    // Force UI refresh so the label updates
     this.cdr.detectChanges();
   }
   getFileUrl(fileName: string): string {
@@ -1511,8 +1536,9 @@ export class Step1Component implements OnChanges, OnInit {
           errors.push(`${displayName} must be a valid email address.`);
         } else if (control.errors?.['pattern'] && key === 'Mobile_No') {
           errors.push(`${displayName} must be a valid 10-digit Indian number.`);
-        } else if (control.errors?.['underage']) {
-          errors.push(`You must be at least 18 years old for ${displayName}.`);
+        } else if (control.errors?.['invalidAge']) {
+          // ✅ Catch the invalid age error when clicking submit
+          errors.push(`Candidate age must be between 18 and 65 years.`);
         }
       }
     });
@@ -1522,6 +1548,9 @@ export class Step1Component implements OnChanges, OnInit {
    * Generates a SHA-256 hash for a given File using CryptoJS.
    * This works on both HTTP and HTTPS connections.
    */
+  get maxDateToday(): string {
+    return new Date().toISOString().split('T')[0];
+  }
   private calculateFileHash(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2006,7 +2035,19 @@ export class Step1Component implements OnChanges, OnInit {
     emitData['candidate_category_id'] = realCategoryId;
     this.formData.emit(emitData);
   }
+  onLanguageTypeChange(index: number, typeId: any): void {
+    const langControl = this.languagesArray.at(index).get('m_rec_language_id');
+    langControl?.setValue(null); // Clear the dependent dropdown
+    this.languagesList[index] = []; // Clear old options
 
+    if (typeId) {
+      // Direct API call passing the exact parameter you requested
+      this.getDropdownData(117, { m_rec_language_id: typeId }).subscribe(data => {
+        this.languagesList[index] = data;
+        this.cdr.markForCheck();
+      });
+    }
+  }
   createLanguageGroup(): FormGroup {
     return this.fb.group({
       m_rec_language_type_id: ['', Validators.required],
@@ -2018,14 +2059,15 @@ export class Step1Component implements OnChanges, OnInit {
   get languagesArray(): FormArray {
     return this.form.get('languages') as FormArray;
   }
-
   addLanguage(): void {
     this.languagesArray.push(this.createLanguageGroup());
+    this.languagesList.push([]); // Add empty options list for the new row
   }
 
   removeLanguage(index: number): void {
     if (this.languagesArray.length > 1) {
       this.languagesArray.removeAt(index);
+      this.languagesList.splice(index, 1); // Remove options list for deleted row
     }
   }
 
@@ -2094,7 +2136,36 @@ export class Step1Component implements OnChanges, OnInit {
       })
     );
   }
+// Helper to toggle validators and reset values based on Country selection
+  private toggleCountryDependentFields(prefix: 'Permanent' | 'Current' | 'Birth', countryId: any): void {
+    const stateCtrl = this.form.get(`${prefix}_State_Id`);
+    const districtCtrl = this.form.get(`${prefix}_District_Id`);
+    const pinCtrl = prefix !== 'Birth' ? this.form.get(`${prefix}_Pin_Code`) : null;
 
+    // "1" is India
+    if (String(countryId) === '1') {
+      stateCtrl?.setValidators([Validators.required]);
+      districtCtrl?.setValidators([Validators.required]);
+      if (pinCtrl) {
+        pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{6}$/)]);
+      }
+    } else {
+      stateCtrl?.clearValidators();
+      districtCtrl?.clearValidators();
+      if (pinCtrl) {
+        pinCtrl.clearValidators();
+      }
+
+      // Reset values if they are changing away from India
+      if (stateCtrl?.value !== null) stateCtrl?.setValue(null, { emitEvent: false });
+      if (districtCtrl?.value !== null) districtCtrl?.setValue(null, { emitEvent: false });
+      if (pinCtrl && pinCtrl.value !== '') pinCtrl.setValue('', { emitEvent: false });
+    }
+
+    stateCtrl?.updateValueAndValidity({ emitEvent: false });
+    districtCtrl?.updateValueAndValidity({ emitEvent: false });
+    if (pinCtrl) pinCtrl.updateValueAndValidity({ emitEvent: false });
+  }
   async submitForm(): Promise<void> {
     this.emitFormData();
     this.markFormGroupTouched(this.form);

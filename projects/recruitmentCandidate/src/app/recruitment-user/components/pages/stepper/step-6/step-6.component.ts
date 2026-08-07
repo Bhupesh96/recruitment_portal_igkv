@@ -30,6 +30,7 @@ import {
 import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
 import { environment } from 'environment';
 import * as CryptoJS from 'crypto-js';
+import {AppSelectComponent} from '../../../../../components/app-select/app-select.component';
 interface DetailFormGroup {
   type: FormControl<string | null>;
   _rowIndex: FormControl<number | null>; // Explicitly define _rowIndex
@@ -89,6 +90,7 @@ interface Parameter {
     FormsModule,
     HttpClientModule,
     InputTooltipDirective,
+    AppSelectComponent,
   ],
   templateUrl: './step-6.component.html',
   styleUrls: ['./step-6.component.scss'],
@@ -150,6 +152,9 @@ export class Step6Component implements OnInit {
       this.checkMandatorySubheadingsAndParameters();
       this.cdr.detectChanges();
     });
+  }
+  get maxDateToday(): string {
+    return new Date().toISOString().split('T')[0];
   }
   addRow(subHeadingId: number, item: any): void {
     if (!this.isEditing) {

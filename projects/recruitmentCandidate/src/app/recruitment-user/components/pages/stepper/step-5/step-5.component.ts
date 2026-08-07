@@ -30,6 +30,7 @@
     } from '../../recruitment-state.service';
     import { InputTooltipDirective } from '../../../../../directives/input-tooltip.directive';
     import { environment } from 'environment';
+    import {AppSelectComponent} from '../../../../../components/app-select/app-select.component';
     import * as CryptoJS from 'crypto-js';
     interface Heading {
       a_rec_adv_main_id: number;
@@ -92,6 +93,7 @@
         ReactiveFormsModule,
         SharedModule,
         InputTooltipDirective,
+        AppSelectComponent
       ],
       templateUrl: './step-5.component.html',
       styleUrls: ['./step-5.component.scss'],
@@ -143,7 +145,9 @@
           }
         });
       }
-
+      get maxDateToday(): string {
+        return new Date().toISOString().split('T')[0];
+      }
       private dateRangeValidator(fromKey: string, toKey: string): ValidatorFn {
         return (group: AbstractControl): { [key: string]: any } | null => {
           const fromControl = group.get(fromKey);

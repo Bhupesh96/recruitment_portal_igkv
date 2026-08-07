@@ -130,7 +130,6 @@
         </div>
         <div>
           <label class="block mb-1.5 text-gray-800 text-base font-medium">Post<span class="text-red-700 ml-1">*</span></label>
-          <!-- Note: bindLabel is 'post_name'. If you want it combined like the old template, map it in your TS file before passing it here -->
           <app-select
             formControlName="post_code"
             [items]="postList"
@@ -176,6 +175,7 @@
           <input
             type="date"
             formControlName="DOB"
+            [max]="maxDateToday"
             (change)="onDobChange($event)"
             [class.border-red-600]="form.get('DOB')?.invalid && form.get('DOB')?.touched"
             class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
@@ -381,6 +381,7 @@
                     <input
                       *ngSwitchCase="'date'"
                       type="date"
+                      [max]="maxDateToday"
                       [formControlName]="'condition_' + condition.condition_id"
                       (change)="condition.condition_id === 1 && onMarriageDateChange($event)"
                       class="w-full border border-gray-300 rounded-md px-3 py-2 text-base text-gray-900 focus:ring-1 focus:ring-gray-400 focus:border-gray-400 bg-white"
@@ -505,7 +506,7 @@
             Country is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Permanent_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">State<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Permanent_State_Id"
@@ -518,7 +519,7 @@
             State is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Permanent_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">District<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Permanent_District_Id"
@@ -531,7 +532,7 @@
             District is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Permanent_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">Pincode<span class="text-red-700 ml-1">*</span></label>
           <input
             type="text"
@@ -610,7 +611,7 @@
             Country is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Current_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">State<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Current_State_Id"
@@ -623,7 +624,7 @@
             State is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Current_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">District<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Current_District_Id"
@@ -636,7 +637,7 @@
             District is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Current_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">Pincode<span class="text-red-700 ml-1">*</span></label>
           <input
             type="text"
@@ -739,7 +740,7 @@
             Country is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Birth_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">State<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Birth_State_Id"
@@ -752,7 +753,7 @@
             State is required
           </div>
         </div>
-        <div>
+        <div *ngIf="form.get('Birth_Country_Id')?.value == 1">
           <label class="block mb-1.5 text-gray-800 text-base font-medium">District<span class="text-red-700 ml-1">*</span></label>
           <app-select
             formControlName="Birth_District_Id"
@@ -835,7 +836,7 @@
         Language Details
       </h6>
 
-      <div formArrayName="languages" class="overflow-x-auto rounded-md ring-1 ring-gray-300 mt-2">
+      <div formArrayName="languages" class="overflow-visible rounded-md ring-1 ring-gray-300 mt-2">
         <table class="min-w-full text-base text-left">
           <thead class="bg-blue-700 text-white font-semibold">
           <tr>
@@ -855,19 +856,21 @@
                 [items]="languageTypes"
                 bindLabel="data_name"
                 bindValue="data_id"
-                placeholder="Select Type">
+                placeholder="Select Type"
+                (ngModelChange)="onLanguageTypeChange(i, $event)"> <!-- ✅ Added Change Event -->
               </app-select>
               <div *ngIf="lang.get('m_rec_language_type_id')?.invalid && lang.get('m_rec_language_type_id')?.touched" class="text-red-700 text-sm mt-1">
                 Language type is required
               </div>
             </td>
+
             <td class="px-4 py-3">
               <app-select
                 formControlName="m_rec_language_id"
-                [items]="languages"
-                bindLabel="data_name"
-                bindValue="data_id"
-                placeholder="Select Language">
+                [items]="languagesList[i]"
+              bindLabel="data_name"
+              bindValue="data_id"
+              placeholder="Select Language">
               </app-select>
               <div *ngIf="lang.get('m_rec_language_id')?.invalid && lang.get('m_rec_language_id')?.touched" class="text-red-700 text-sm mt-1">
                 Language is required
