@@ -374,9 +374,9 @@ export class Step4Component implements OnInit {
       .get('firstMissedMandatory')
       ?.setValue(
         firstMissedMandatory ||
-          (firstMissedParameter
-            ? `${firstMissedParameter} under ${firstMissedSubheading} is missing`
-            : ''),
+        (firstMissedParameter
+          ? `${firstMissedParameter} under ${firstMissedSubheading} is missing`
+          : ''),
         { emitEvent: false }
       );
   }
@@ -1263,7 +1263,7 @@ export class Step4Component implements OnInit {
                 processedRow[key] = value; // Fallback
               }
             }
-            // ✅ END: DROPDOWN LOGIC
+              // ✅ END: DROPDOWN LOGIC
 
             // FILE LOGIC (Consistent with Step 2)
             else if (param.control_type === 'A') {
@@ -1346,7 +1346,7 @@ export class Step4Component implements OnInit {
       reader.readAsArrayBuffer(file);
     });
   }
-  saveToDatabase(): Promise<void> {
+  async saveToDatabase(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       this.loader.showLoader();
 
@@ -1356,23 +1356,29 @@ export class Step4Component implements OnInit {
         const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
         if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
-          throw new Error('User identification is missing. Cannot save data.');
+          throw new Error(
+            'User identification is missing. Cannot save data.'
+          );
         }
 
         const formData = new FormData();
         const finalDetailList: any[] = [];
         const finalParameterList: any[] = [];
 
-        // STEP 1: Create Summary Detail Records (One per item type)
+        // ============================================================
+        // STEP 1: CREATE SUMMARY DETAIL RECORDS
+        // ============================================================
+
         const rowsGroupedByType = new Map<string, any[]>();
 
-        // (Using standard for loop instead of forEach for consistency/safety)
         for (const control of this.detailsArray.controls) {
           const typeValue = control.get('type')?.value;
+
           if (typeValue) {
             if (!rowsGroupedByType.has(typeValue)) {
               rowsGroupedByType.set(typeValue, []);
             }
+
             rowsGroupedByType.get(typeValue)!.push(control);
           }
         }
@@ -1380,144 +1386,588 @@ export class Step4Component implements OnInit {
         for (const [typeValue, rowControls] of rowsGroupedByType.entries()) {
           const scoreFieldId = Number(typeValue);
           const totalCount = rowControls.length;
+
           const subHeading = this.subHeadings.find((sub) =>
-            sub.items.some((item: any) => item.m_rec_score_field_id === scoreFieldId)
+            sub.items.some(
+              (item: any) =>
+                Number(item.m_rec_score_field_id) === scoreFieldId
+            )
           );
 
-          if (!subHeading) continue;
+          if (!subHeading) {
+            continue;
+          }
 
-          const subHeadingId = subHeading.m_rec_score_field_id;
-          const item = subHeading.items.find((i: any) => i.m_rec_score_field_id === scoreFieldId)!;
-          const detailKey = `${subHeadingId}_${scoreFieldId}`;
-          const existingDetailId = this.existingDetailIds.get(detailKey);
+          const subHeadingId =
+            Number(subHeading.m_rec_score_field_id);
 
-          const scoreResult = this.utils.calculateScore(
-            3,
-            {
-              quantityInputs: [
-                {
-                  scoreFieldId: item.m_rec_score_field_id,
-                  quantity: totalCount,
-                  weightage: item.score_field_field_weightage || 0,
-                  scoreFieldMarks: item.score_field_field_marks || 0,
-                },
-              ],
-            },
-            item.score_field_field_marks || 0
+          const item = subHeading.items.find(
+            (i: any) =>
+              Number(i.m_rec_score_field_id) === scoreFieldId
           );
+
+          if (!item) {
+            continue;
+          }
+
+          const detailKey =
+            `${subHeadingId}_${scoreFieldId}`;
+
+          const existingDetailId =
+            this.existingDetailIds.get(detailKey);
+
+          const methodId =
+            Number(item.m_rec_score_field_method_id) ||
+            Number(subHeading.m_rec_score_field_method_id) ||
+            0;
+
+          let scoreResult: any;
+
+          // ============================================================
+          // METHOD 1
+          // ============================================================
+          //
+          // Method 1 takes the numeric value from the PARAMETER
+          // belonging to the current SUB-HEADING.
+          //
+          // Example:
+          //
+          // Parent/Sub-heading:
+          //     3181 = Credit Taught
+          //
+          // Detail/Item:
+          //     3221 = Marks for each credit taught per semester
+          //
+          // Parameter:
+          //     m_rec_score_field_id = 3181
+          //     Credits = 20
+          //
+          // Therefore parameter matching MUST use:
+          //
+          //     param.m_rec_score_field_id === subHeadingId
+          //
+          // NOT:
+          //
+          //     param.m_rec_score_field_id === scoreFieldId
+          //
+          // ============================================================
+
+          if (methodId === 1) {
+            let totalInputValue = 0;
+
+            const subHeadingParameters =
+              this.subHeadingParameters[
+                subHeadingId.toString()
+                ] || [];
+
+            // ----------------------------------------------------------
+            // Find numeric parameter values
+            // ----------------------------------------------------------
+
+            for (const rowControl of rowControls) {
+              const rawRow = rowControl.getRawValue();
+
+              const numericParameters =
+                subHeadingParameters.filter(
+                  (param: any) =>
+                    Number(param.m_rec_score_field_id) === subHeadingId &&
+                    (
+                      param.isDatatype === 'number' ||
+                      param.isDatatype === 'double' ||
+                      Number(param.m_datatype_master_id) === 9 ||
+                      Number(param.m_datatype_master_id) === 4
+                    )
+                );
+
+              for (const param of numericParameters) {
+                const rawValue =
+                  rawRow[param.normalizedKey];
+
+                if (
+                  rawValue !== null &&
+                  rawValue !== undefined &&
+                  rawValue !== ''
+                ) {
+                  const numericValue = Number(rawValue);
+
+                  if (!Number.isNaN(numericValue)) {
+                    totalInputValue += numericValue;
+                  }
+                }
+              }
+            }
+
+            // ----------------------------------------------------------
+            // Get weightage FROM API CONFIGURATION
+            // ----------------------------------------------------------
+            //
+            // First use the item's configured weightage.
+            //
+            // If the item doesn't contain it, use the sub-heading's
+            // configured weightage.
+            //
+            // NO HARDCODED WEIGHTAGE.
+            //
+            // ----------------------------------------------------------
+
+            const itemWeightage =
+              Number(item.score_field_field_weightage);
+
+            const subHeadingWeightage =
+              Number(subHeading.score_field_field_weightage);
+
+            const weightage =
+              Number.isFinite(itemWeightage) &&
+              itemWeightage > 0
+                ? itemWeightage
+                : (
+                  Number.isFinite(subHeadingWeightage) &&
+                  subHeadingWeightage > 0
+                    ? subHeadingWeightage
+                    : 0
+                );
+
+            // ----------------------------------------------------------
+            // Get field marks FROM API CONFIGURATION
+            // ----------------------------------------------------------
+
+            const itemFieldMarks =
+              Number(item.score_field_field_marks);
+
+            const subHeadingFieldMarks =
+              Number(subHeading.score_field_field_marks);
+
+            const fieldMarks =
+              Number.isFinite(itemFieldMarks) &&
+              itemFieldMarks > 0
+                ? itemFieldMarks
+                : (
+                  Number.isFinite(subHeadingFieldMarks) &&
+                  subHeadingFieldMarks > 0
+                    ? subHeadingFieldMarks
+                    : 0
+                );
+
+            // ----------------------------------------------------------
+            // CALCULATION
+            // ----------------------------------------------------------
+            //
+            // Credits = 20
+            // Weightage = API value 0.1
+            //
+            // Actual = 20 × 0.1 = 2
+            //
+            // Field maximum = API value 3
+            //
+            // Calculated = MIN(2, 3) = 2
+            //
+            // ----------------------------------------------------------
+
+            const actualValue =
+              +(totalInputValue * weightage).toFixed(4);
+
+            const calculatedValue =
+              Math.min(actualValue, fieldMarks);
+
+            scoreResult = {
+              score_field_value:
+                +totalInputValue.toFixed(4),
+
+              score_field_actual_value:
+              actualValue,
+
+              score_field_calculated_value:
+                +calculatedValue.toFixed(4),
+            };
+
+            // ----------------------------------------------------------
+            // DEBUG
+            // ----------------------------------------------------------
+
+            console.log(
+              '========== METHOD 1 CALCULATION =========='
+            );
+
+            console.log(
+              'Sub Heading ID:',
+              subHeadingId
+            );
+
+            console.log(
+              'Score Field ID:',
+              scoreFieldId
+            );
+
+            console.log(
+              'Score Field:',
+              item.score_field_title_name ||
+              item.score_field_name_e
+            );
+
+            console.log(
+              'Numeric Parameters Found:',
+              subHeadingParameters.filter(
+                (param: any) =>
+                  Number(param.m_rec_score_field_id) === subHeadingId &&
+                  (
+                    param.isDatatype === 'number' ||
+                    param.isDatatype === 'double' ||
+                    Number(param.m_datatype_master_id) === 9 ||
+                    Number(param.m_datatype_master_id) === 4
+                  )
+              )
+            );
+
+            console.log(
+              'Input Value:',
+              totalInputValue
+            );
+
+            console.log(
+              'Weightage From API:',
+              weightage
+            );
+
+            console.log(
+              'Field Marks From API:',
+              fieldMarks
+            );
+
+            console.log(
+              'Actual Value:',
+              actualValue
+            );
+
+            console.log(
+              'Calculated Value:',
+              calculatedValue
+            );
+
+            console.log(
+              '=========================================='
+            );
+          }
+
+            // ============================================================
+            // METHOD 2
+          // ============================================================
+
+          else if (methodId === 2) {
+            scoreResult = this.utils.calculateScore(
+              methodId,
+              {
+                experiences: [],
+              },
+              Number(item.score_field_field_marks) || 0
+            );
+          }
+
+            // ============================================================
+            // METHOD 3
+          // ============================================================
+
+          else if (methodId === 3) {
+            scoreResult = this.utils.calculateScore(
+              methodId,
+              {
+                quantityInputs: [
+                  {
+                    scoreFieldId:
+                      Number(item.m_rec_score_field_id),
+
+                    quantity:
+                    totalCount,
+
+                    weightage:
+                      Number(item.score_field_field_weightage) || 0,
+
+                    scoreFieldMarks:
+                      Number(item.score_field_field_marks) || 0,
+                  },
+                ],
+              },
+              Number(item.score_field_field_marks) || 0
+            );
+          }
+
+            // ============================================================
+            // UNKNOWN METHOD
+          // ============================================================
+
+          else {
+            scoreResult = {
+              score_field_value: 0,
+              score_field_actual_value: 0,
+              score_field_calculated_value: 0,
+            };
+          }
+
+          // ============================================================
+          // CREATE DETAIL RECORD
+          // ============================================================
 
           const detailRecord = {
-            ...(existingDetailId && { a_rec_app_score_field_detail_id: existingDetailId }),
-            registration_no: registrationNo,
-            a_rec_app_main_id: a_rec_app_main_id,
-            a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
-            score_field_parent_id: subHeadingId,
-            m_rec_score_field_id: scoreFieldId,
+            ...(existingDetailId && {
+              a_rec_app_score_field_detail_id:
+              existingDetailId,
+            }),
+
+            registration_no:
+            registrationNo,
+
+            a_rec_app_main_id:
+            a_rec_app_main_id,
+
+            a_rec_adv_post_detail_id:
+            subHeading.a_rec_adv_post_detail_id,
+
+            score_field_parent_id:
+            subHeadingId,
+
+            m_rec_score_field_id:
+            scoreFieldId,
+
             m_rec_score_field_method_id:
-              item.m_rec_score_field_method_id ||
-              subHeading.m_rec_score_field_method_id ||
-              this.heading?.m_rec_score_field_method_id ||
-              3,
-            score_field_value: totalCount,
-            score_field_actual_value: scoreResult.score_field_actual_value,
-            score_field_calculated_value: scoreResult.score_field_calculated_value,
-            field_marks: item.score_field_field_marks || 0,
-            field_weightage: item.score_field_field_weightage || 0,
-            verify_remark: 'Not Verified',
-            active_status: 'Y',
-            delete_flag: 'N',
-            action_type: existingDetailId ? 'U' : 'C',
-            action_date: new Date().toISOString(),
-            action_remark: existingDetailId ? 'data updated' : 'data inserted',
-            action_by: 1,
+            methodId,
+
+            // Method 1 = entered numeric value
+            // Method 3 = number of rows
+            score_field_value:
+              methodId === 1
+                ? scoreResult.score_field_value
+                : totalCount,
+
+            score_field_actual_value:
+            scoreResult.score_field_actual_value,
+
+            score_field_calculated_value:
+            scoreResult.score_field_calculated_value,
+
+            field_marks:
+              Number(item.score_field_field_marks) ||
+              Number(subHeading.score_field_field_marks) ||
+              0,
+
+            field_weightage:
+              Number(item.score_field_field_weightage) ||
+              Number(subHeading.score_field_field_weightage) ||
+              0,
+
+            verify_remark:
+              'Not Verified',
+
+            active_status:
+              'Y',
+
+            delete_flag:
+              'N',
+
+            action_type:
+              existingDetailId ? 'U' : 'C',
+
+            action_date:
+              new Date().toISOString(),
+
+            action_remark:
+              existingDetailId
+                ? 'data updated'
+                : 'data inserted',
+
+            action_by:
+              1,
           };
 
           finalDetailList.push(detailRecord);
         }
 
-        // STEP 2: Create Granular Parameter Records for each UI row
-        // 🚨 CRITICAL: Use for...of loop here to allow 'await' for file hashing
+        // ============================================================
+        // STEP 2: CREATE GRANULAR PARAMETER RECORDS
+        // ============================================================
+
         for (const rowControl of this.detailsArray.controls) {
-          const typeValue = rowControl.get('type')?.value;
-          if (!typeValue) continue;
+          const typeValue =
+            rowControl.get('type')?.value;
 
-          const scoreFieldId = Number(typeValue);
-          const subHeading = this.subHeadings.find((sub) =>
-            sub.items.some((item: any) => item.m_rec_score_field_id === scoreFieldId)
-          );
-
-          if (!subHeading) continue;
-
-          const subHeadingId = subHeading.m_rec_score_field_id;
-          const detailKey = `${subHeadingId}_${scoreFieldId}`;
-          const detailRecordFk = this.existingDetailIds.get(detailKey);
-          const rowIndex = rowControl.get('_rowIndex')?.value;
-
-          if (rowIndex === null || rowIndex === undefined) {
-            console.warn('Skipping a row because it has no rowIndex.');
+          if (!typeValue) {
             continue;
           }
 
-          const subHeadingParameters = this.subHeadingParameters[subHeadingId.toString()] || [];
+          const scoreFieldId =
+            Number(typeValue);
 
-          // 🚨 CRITICAL: Use for...of loop here to allow 'await' for file hashing
+          const subHeading =
+            this.subHeadings.find((sub) =>
+              sub.items.some(
+                (item: any) =>
+                  Number(item.m_rec_score_field_id) ===
+                  scoreFieldId
+              )
+            );
+
+          if (!subHeading) {
+            continue;
+          }
+
+          const subHeadingId =
+            Number(subHeading.m_rec_score_field_id);
+
+          const detailKey =
+            `${subHeadingId}_${scoreFieldId}`;
+
+          const detailRecordFk =
+            this.existingDetailIds.get(detailKey);
+
+          const rowIndex =
+            rowControl.get('_rowIndex')?.value;
+
+          if (
+            rowIndex === null ||
+            rowIndex === undefined
+          ) {
+            console.warn(
+              'Skipping a row because it has no rowIndex.'
+            );
+
+            continue;
+          }
+
+          const subHeadingParameters =
+            this.subHeadingParameters[
+              subHeadingId.toString()
+              ] || [];
+
           for (const param of subHeadingParameters) {
-            const paramValue = rowControl.getRawValue()[param.normalizedKey];
-            const isFile = paramValue instanceof File;
-            const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
-            const existingParamId = this.existingParameterIds.get(paramKey);
-            const existingFilePath = this.filePaths.get(paramKey);
+            const paramValue =
+              rowControl.getRawValue()[
+                param.normalizedKey
+                ];
+
+            const isFile =
+              paramValue instanceof File;
+
+            const paramKey =
+              `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
+
+            const existingParamId =
+              this.existingParameterIds.get(paramKey);
+
+            const existingFilePath =
+              this.filePaths.get(paramKey);
 
             if (paramValue || existingParamId) {
-
               let finalParameterValue = '';
 
+              // ========================================================
+              // FILE
+              // ========================================================
+
               if (isFile) {
-                // ✅ 1. Empty File Check
                 if (paramValue.size === 0) {
-                  throw new Error(`The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`);
+                  throw new Error(
+                    `The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`
+                  );
                 }
 
-                finalParameterValue = this.generateFilePath(
-                  registrationNo,
+                finalParameterValue =
+                  this.generateFilePath(
+                    registrationNo,
+                    paramValue,
+                    scoreFieldId,
+                    param.m_rec_score_field_parameter_new_id,
+                    rowIndex,
+                    subHeadingId
+                  );
+
+                const fileControlName =
+                  `file_${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${rowIndex}`;
+
+                formData.append(
+                  fileControlName,
                   paramValue,
-                  scoreFieldId,
-                  param.m_rec_score_field_parameter_new_id,
-                  rowIndex,
-                  subHeadingId
+                  paramValue.name
                 );
 
-                const fileControlName = `file_${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${rowIndex}`;
+                const fileHash =
+                  await this.calculateFileHash(
+                    paramValue
+                  );
 
-                formData.append(fileControlName, paramValue, paramValue.name);
-
-                // ✅ 2. Generate and Append Hash
-                const fileHash = await this.calculateFileHash(paramValue);
-                formData.append(`${fileControlName}_hash`, fileHash);
-
-              } else {
-                finalParameterValue = paramValue === 'FILE_UPLOADED' && existingFilePath
-                  ? existingFilePath
-                  : String(paramValue ?? '');
+                formData.append(
+                  `${fileControlName}_hash`,
+                  fileHash
+                );
               }
 
+                // ========================================================
+                // NORMAL PARAMETER
+              // ========================================================
+
+              else {
+                finalParameterValue =
+                  paramValue === 'FILE_UPLOADED' &&
+                  existingFilePath
+                    ? existingFilePath
+                    : String(paramValue ?? '');
+              }
+
+              // ========================================================
+              // PARAMETER RECORD
+              // ========================================================
+
               const parameter = {
-                ...(existingParamId && { a_rec_app_score_field_parameter_detail_id: existingParamId }),
-                ...(detailRecordFk && { a_rec_app_score_field_detail_id: detailRecordFk }),
-                registration_no: registrationNo,
-                score_field_parent_id: subHeadingId,
-                m_rec_score_field_id: scoreFieldId,
-                m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
-                parameter_value: finalParameterValue,
-                parameter_row_index: rowIndex,
-                parameter_display_order: param.parameter_display_order || 0,
-                verify_remark: 'Not Verified',
-                active_status: 'Y',
-                delete_flag: 'N',
-                action_type: existingParamId ? 'U' : 'C',
-                action_date: new Date().toISOString(),
-                action_remark: existingParamId ? 'parameter updated' : 'parameter inserted',
-                action_by: 1,
+                ...(existingParamId && {
+                  a_rec_app_score_field_parameter_detail_id:
+                  existingParamId,
+                }),
+
+                ...(detailRecordFk && {
+                  a_rec_app_score_field_detail_id:
+                  detailRecordFk,
+                }),
+
+                registration_no:
+                registrationNo,
+
+                score_field_parent_id:
+                subHeadingId,
+
+                m_rec_score_field_id:
+                scoreFieldId,
+
+                m_rec_score_field_parameter_new_id:
+                param.m_rec_score_field_parameter_new_id,
+
+                parameter_value:
+                finalParameterValue,
+
+                parameter_row_index:
+                rowIndex,
+
+                parameter_display_order:
+                  param.parameter_display_order || 0,
+
+                verify_remark:
+                  'Not Verified',
+
+                active_status:
+                  'Y',
+
+                delete_flag:
+                  'N',
+
+                action_type:
+                  existingParamId ? 'U' : 'C',
+
+                action_date:
+                  new Date().toISOString(),
+
+                action_remark:
+                  existingParamId
+                    ? 'parameter updated'
+                    : 'parameter inserted',
+
+                action_by:
+                  1,
               };
 
               finalParameterList.push(parameter);
@@ -1525,23 +1975,95 @@ export class Step4Component implements OnInit {
           }
         }
 
-        // STEP 3: Append the list of parameter IDs to be DELETED.
+        // ============================================================
+        // STEP 3: DELETE PARAMETERS
+        // ============================================================
+
         if (this.parameterIdsToDelete.length > 0) {
-          formData.append('parameterIdsToDelete', JSON.stringify(this.parameterIdsToDelete));
+          formData.append(
+            'parameterIdsToDelete',
+            JSON.stringify(
+              this.parameterIdsToDelete
+            )
+          );
         }
 
-        // STEP 4: Create the Parent Record
-        const parentRecord = this.createParentRecord(registrationNo, a_rec_app_main_id);
+        // ============================================================
+        // STEP 4: PARENT RECORD
+        // ============================================================
+
+        const parentRecord =
+          this.createParentRecord(
+            registrationNo,
+            a_rec_app_main_id
+          );
+
         if (parentRecord) {
-          formData.append('parentScore', JSON.stringify(parentRecord));
+          formData.append(
+            'parentScore',
+            JSON.stringify(parentRecord)
+          );
         }
 
-        // STEP 5: Append final lists and make the API call
-        formData.append('registration_no', registrationNo.toString());
-        formData.append('scoreFieldDetailList', JSON.stringify(finalDetailList));
-        formData.append('scoreFieldParameterList', JSON.stringify(finalParameterList));
+        // ============================================================
+        // STEP 5: FINAL FORM DATA
+        // ============================================================
 
-        // STEP 6: Call the API Endpoint
+        formData.append(
+          'registration_no',
+          registrationNo.toString()
+        );
+
+        formData.append(
+          'scoreFieldDetailList',
+          JSON.stringify(
+            finalDetailList
+          )
+        );
+
+        formData.append(
+          'scoreFieldParameterList',
+          JSON.stringify(
+            finalParameterList
+          )
+        );
+
+        // ============================================================
+        // DEBUG - CHECK WHAT IS ACTUALLY BEING SENT
+        // ============================================================
+
+        console.log(
+          '========== FINAL DETAIL LIST =========='
+        );
+
+        console.log(
+          JSON.stringify(
+            finalDetailList,
+            null,
+            2
+          )
+        );
+
+        console.log(
+          '========== FINAL PARAMETER LIST =========='
+        );
+
+        console.log(
+          JSON.stringify(
+            finalParameterList,
+            null,
+            2
+          )
+        );
+
+        console.log(
+          '=========================================='
+        );
+
+        // ============================================================
+        // STEP 6: SAVE API
+        // ============================================================
+
         this.HTTP.postForm(
           '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
           formData,
@@ -1549,32 +2071,66 @@ export class Step4Component implements OnInit {
         ).subscribe({
           next: async (res) => {
             if (res?.body?.error) {
-              this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
+              this.alertService.alert(
+                true,
+                res.body.error.message ||
+                'An error occurred on the server.'
+              );
+
               this.loader.hideLoader();
-              reject(new Error(res.body.error.message));
+
+              reject(
+                new Error(
+                  res.body.error.message
+                )
+              );
+
               return;
             }
 
             this.loader.hideLoader();
-            await this.alertService.alert(false, 'Data saved successfully!');
+
+            await this.alertService.alert(
+              false,
+              'Data saved successfully!'
+            );
 
             this.parameterIdsToDelete = [];
+
             this.getParameterValuesAndPatch();
+
             this.cdr.markForCheck();
+
             resolve();
           },
+
           error: (err) => {
-            this.alertService.alert(true, 'Error saving records: ' + (err.error?.message || err.message));
+            this.alertService.alert(
+              true,
+              'Error saving records: ' +
+              (
+                err.error?.message ||
+                err.message
+              )
+            );
+
             this.cdr.markForCheck();
+
             this.loader.hideLoader();
+
             reject(err);
           },
         });
 
       } catch (error: any) {
-        // ✅ CATCH ANY SYNCHRONOUS ERRORS (LIKE HASHING FAILURES) AND STOP THE LOADER
         this.loader.hideLoader();
-        this.alertService.alert(true, error.message || 'An error occurred while preparing your files.');
+
+        this.alertService.alert(
+          true,
+          error.message ||
+          'An error occurred while preparing your files.'
+        );
+
         reject(error);
       }
     });
