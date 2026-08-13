@@ -10,6 +10,7 @@
     [class.ng-select-disabled]="disabled"
     [style.pointer-events]="disabled ? 'none' : 'auto'"
     [ngModel]="value"
-    (ngModelChange)="change($event)">
+    (ngModelChange)="change($event)"
+    appendTo="body">
   </ng-select>
 </div>

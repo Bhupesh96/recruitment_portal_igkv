@@ -34,3 +34,6 @@
 :host ::ng-deep .ng-select.ng-select-disabled .ng-placeholder {
   color: #6b7280 !important;
 }
+:host ::ng-deep .ng-dropdown-panel {
+  z-index: 99999 !important;
+}

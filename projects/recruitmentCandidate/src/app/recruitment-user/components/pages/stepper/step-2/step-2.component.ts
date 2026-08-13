@@ -866,203 +866,584 @@
     async submitForm(): Promise<void> {
       this.form.markAllAsTouched();
       this.checkMandatorySubheadingsAndParameters();
-      this.emitFormData(); // Emit data so the stepper can check validity
+      this.emitFormData();
 
       if (this.form.invalid) {
         const firstMissed = this.form.get('firstMissedMandatory')?.value;
+
         this.alertService.alert(
           true,
           firstMissed
             ? `${firstMissed} is mandatory. Please provide the required information.`
             : 'Please fill all mandatory fields.'
         );
+
         return Promise.reject(new Error('Form is invalid'));
       }
 
-      // ✅ START LOADER AFTER VALIDATION PASSES
+      // Start loader only after validation succeeds
       this.loader.showLoader();
 
       try {
+        // Always get the latest user data
         const freshUserData = this.recruitmentState.getCurrentUserData();
         this.userData = freshUserData;
+
         const registrationNo = this.userData?.registration_no;
         const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
         const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
-        if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
-          throw new Error('User identification is missing. Cannot submit.');
+        if (
+          !registrationNo ||
+          !a_rec_adv_main_id ||
+          !a_rec_app_main_id
+        ) {
+          throw new Error(
+            'User identification is missing. Cannot submit.'
+          );
         }
 
         const formData = new FormData();
+
         const allDetails: any[] = [];
         const allParameters: any[] = [];
+
         let parentCalculatedValue = 0;
 
-        // STEP 1: Loop through all subheadings using a standard for loop (Required for async/await)
+        // ============================================================
+        // STEP 1:
+        // Process every qualification/subheading
+        // ============================================================
+
         for (let i = 0; i < this.subheadings.length; i++) {
           const sub = this.subheadings[i];
+
           const key = this.getUniqueKey(sub, i);
-          const isSelected = this.form.get(`is${key}Selected`)?.value;
-          const formArray = this.form.get(`qualifications${key}`) as FormArray;
+
+          const isSelected =
+            this.form.get(`is${key}Selected`)?.value;
+
+          const formArray = this.form.get(
+            `qualifications${key}`
+          ) as FormArray;
+
+          if (!formArray) {
+            continue;
+          }
+
           const group = formArray.at(0) as FormGroup;
 
-          if (!group) continue;
+          if (!group) {
+            continue;
+          }
 
-          const existingDetailId = group.get('a_rec_app_score_field_detail_id')?.value;
+          const existingDetailId =
+            group.get('a_rec_app_score_field_detail_id')?.value;
+
+          // ============================================================
+          // SELECTED QUALIFICATION
+          // ============================================================
 
           if (isSelected) {
-            // --- LOGIC FOR CREATE / UPDATE ---
             const formValues = group.getRawValue();
-            const percentage = +group.get('Percentage Obtained')?.value || 0;
+
+            // ------------------------------------------------------------
+            // Get parameters belonging ONLY to this subheading
+            // ------------------------------------------------------------
+
+            const paramsList = this.getParameters(
+              sub.m_rec_score_field_id,
+              sub.a_rec_adv_post_detail_id
+            );
+
+            // ------------------------------------------------------------
+            // IMPORTANT:
+            // Find the calculation parameter from API metadata.
+            //
+            // We DO NOT hard-code "Percentage Obtained".
+            // We use isCalculationColumn === 'Y'.
+            // ------------------------------------------------------------
+
+            const calculationParams = paramsList.filter(
+              (param) => param.isCalculationColumn === 'Y'
+            );
+
+            let scoreValue = 0;
+
+            if (calculationParams.length > 0) {
+              /*
+               * Normally there should be one calculation parameter
+               * for this education qualification.
+               *
+               * We take the first valid calculation parameter.
+               */
+
+              const calculationParam = calculationParams[0];
+
+              const calculationParameterName =
+                calculationParam.score_field_parameter_name;
+
+              const rawCalculationValue =
+                formValues[calculationParameterName];
+
+              scoreValue = Number(rawCalculationValue);
+
+              if (!Number.isFinite(scoreValue)) {
+                scoreValue = 0;
+              }
+            }
+
+            // ------------------------------------------------------------
+            // Calculate score using universal UtilsService
+            // ------------------------------------------------------------
 
             const scoreResult = this.utils.calculateScore(
-              1,
+              sub.m_rec_score_field_method_id,
               {
                 educations: [
                   {
                     scoreFieldId: sub.m_rec_score_field_id,
-                    weight: sub.score_field_field_weightage,
-                    inputValue: percentage,
-                    maxValue: sub.score_field_field_marks,
+
+                    weight: Number(
+                      sub.score_field_field_weightage || 0
+                    ),
+
+                    inputValue: scoreValue,
+
+                    maxValue: Number(
+                      sub.score_field_field_marks || 0
+                    ),
                   },
                 ],
               },
-              this.heading?.score_field_field_marks || 60
+              Number(
+                this.heading?.score_field_field_marks || 0
+              )
             );
-            parentCalculatedValue += scoreResult.score_field_calculated_value;
+
+            // ------------------------------------------------------------
+            // Add this qualification's calculated score to parent
+            // ------------------------------------------------------------
+
+            parentCalculatedValue += Number(
+              scoreResult.score_field_calculated_value || 0
+            );
+
+            // ------------------------------------------------------------
+            // Create / Update detail record
+            // ------------------------------------------------------------
 
             const detail = {
-              a_rec_app_score_field_detail_id: existingDetailId || undefined,
+              a_rec_app_score_field_detail_id:
+                existingDetailId || undefined,
+
               registration_no: registrationNo,
-              a_rec_app_main_id: a_rec_app_main_id,
-              a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-              score_field_parent_id: sub.score_field_parent_id,
-              m_rec_score_field_id: sub.m_rec_score_field_id,
-              m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
-              score_field_value: percentage,
-              score_field_actual_value: scoreResult.score_field_actual_value,
-              score_field_calculated_value: scoreResult.score_field_calculated_value,
-              field_marks: sub.score_field_field_marks || 0,
-              field_weightage: sub.score_field_field_weightage || 0,
-              verify_remark: 'Not Verified',
-              action_type: existingDetailId ? 'U' : 'C',
-              action_date: new Date().toISOString(),
-              action_remark: 'data inserted/updated',
+
+              a_rec_app_main_id:
+              a_rec_app_main_id,
+
+              a_rec_adv_post_detail_id:
+              sub.a_rec_adv_post_detail_id,
+
+              score_field_parent_id:
+              sub.score_field_parent_id,
+
+              m_rec_score_field_id:
+              sub.m_rec_score_field_id,
+
+              m_rec_score_field_method_id:
+              sub.m_rec_score_field_method_id,
+
+              /*
+               * score_field_value = actual input entered by candidate.
+               *
+               * For this Step-2 education section this is the
+               * calculation-column value obtained from metadata.
+               */
+              score_field_value:
+              scoreValue,
+
+              score_field_actual_value:
+              scoreResult.score_field_actual_value,
+
+              score_field_calculated_value:
+              scoreResult.score_field_calculated_value,
+
+              field_marks:
+                Number(
+                  sub.score_field_field_marks || 0
+                ),
+
+              field_weightage:
+                Number(
+                  sub.score_field_field_weightage || 0
+                ),
+
+              verify_remark:
+                'Not Verified',
+
+              action_type:
+                existingDetailId ? 'U' : 'C',
+
+              action_date:
+                new Date().toISOString(),
+
+              action_remark:
+                existingDetailId
+                  ? 'data updated'
+                  : 'data inserted',
+
               action_by: 1,
+
               score_field_row_index: 1,
+
               delete_flag: 'N',
             };
+
             allDetails.push(detail);
 
-            const paramsList = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
+            // ============================================================
+            // PROCESS PARAMETERS
+            // ============================================================
 
-            // Loop through parameters using for...of (Required for async/await)
             for (const param of paramsList) {
-              const paramName = param.score_field_parameter_name;
-              const paramValue = formValues[paramName];
-              const isFile = paramValue instanceof File;
-              const existingParamId = group.get(`param_${param.m_rec_score_field_parameter_new_id}_id`)?.value;
+              const paramName =
+                param.score_field_parameter_name;
 
-              if (paramValue) {
+              const paramValue =
+                formValues[paramName];
+
+              const isFile =
+                paramValue instanceof File;
+
+              const existingParamId =
+                group.get(
+                  `param_${param.m_rec_score_field_parameter_new_id}_id`
+                )?.value;
+
+              // ----------------------------------------------------------
+              // Only save parameters that actually have a value
+              // ----------------------------------------------------------
+
+              if (
+                paramValue !== null &&
+                paramValue !== undefined &&
+                paramValue !== ''
+              ) {
                 let finalParameterValue = '';
 
+                // ========================================================
+                // FILE
+                // ========================================================
+
                 if (isFile) {
-                  // ✅ 1. Check for 0-byte corrupted files
+                  // Check corrupted/empty file
                   if (paramValue.size === 0) {
-                    throw new Error(`The selected file for "${paramName}" is empty or corrupted locally.`);
+                    throw new Error(
+                      `The selected file for "${paramName}" is empty or corrupted locally.`
+                    );
                   }
 
-                  finalParameterValue = this.generateFilePath(
-                    registrationNo,
+                  // Generate actual backend file path
+                  finalParameterValue =
+                    this.generateFilePath(
+                      registrationNo,
+                      paramValue,
+                      sub.score_field_parent_id,
+                      sub.m_rec_score_field_id,
+                      param.m_rec_score_field_parameter_new_id,
+                      1
+                    );
+
+                  // File control name expected by backend
+                  const fileControlName =
+                    `file_${sub.score_field_parent_id}_` +
+                    `${sub.m_rec_score_field_id}_` +
+                    `${param.m_rec_score_field_parameter_new_id}_` +
+                    `${param.parameter_display_order || 0}_1`;
+
+                  // Append actual file
+                  formData.append(
+                    fileControlName,
                     paramValue,
-                    sub.score_field_parent_id,
-                    sub.m_rec_score_field_id,
-                    param.m_rec_score_field_parameter_new_id,
-                    1
+                    paramValue.name
                   );
 
-                  const fileControlName = `file_${sub.score_field_parent_id}_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_1`;
-                  formData.append(fileControlName, paramValue, paramValue.name);
+                  // Calculate file hash
+                  const fileHash =
+                    await this.calculateFileHash(
+                      paramValue
+                    );
 
-                  // ✅ 2. Generate and append Hash
-                  const fileHash = await this.calculateFileHash(paramValue);
-                  formData.append(`${fileControlName}_hash`, fileHash);
-
-                } else {
-                  finalParameterValue = String(paramValue ?? '');
+                  formData.append(
+                    `${fileControlName}_hash`,
+                    fileHash
+                  );
                 }
 
+                  // ========================================================
+                  // NON FILE
+                // ========================================================
+
+                else {
+                  finalParameterValue =
+                    String(paramValue ?? '');
+                }
+
+                // ========================================================
+                // Parameter record
+                // ========================================================
+
                 const parameter = {
-                  a_rec_app_score_field_parameter_detail_id: existingParamId || undefined,
-                  registration_no: registrationNo,
-                  a_rec_app_score_field_detail_id: existingDetailId || undefined,
-                  score_field_parent_id: sub.score_field_parent_id,
-                  m_rec_score_field_id: sub.m_rec_score_field_id,
-                  m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
-                  parameter_value: finalParameterValue,
+                  a_rec_app_score_field_parameter_detail_id:
+                    existingParamId || undefined,
+
+                  registration_no:
+                  registrationNo,
+
+                  a_rec_app_score_field_detail_id:
+                    existingDetailId || undefined,
+
+                  score_field_parent_id:
+                  sub.score_field_parent_id,
+
+                  m_rec_score_field_id:
+                  sub.m_rec_score_field_id,
+
+                  m_rec_score_field_parameter_new_id:
+                  param.m_rec_score_field_parameter_new_id,
+
+                  parameter_value:
+                  finalParameterValue,
+
                   parameter_row_index: 1,
-                  parameter_display_no: param.parameter_display_order,
-                  verify_remark: 'Not Verified',
-                  active_status: 'Y',
-                  action_type: existingParamId ? 'U' : 'C',
-                  action_date: new Date().toISOString(),
-                  action_remark: 'parameter inserted/updated',
+
+                  parameter_display_no:
+                  param.parameter_display_order,
+
+                  verify_remark:
+                    'Not Verified',
+
+                  active_status:
+                    'Y',
+
+                  action_type:
+                    existingParamId ? 'U' : 'C',
+
+                  action_date:
+                    new Date().toISOString(),
+
+                  action_remark:
+                    existingParamId
+                      ? 'parameter updated'
+                      : 'parameter inserted',
+
                   action_by: 1,
-                  delete_flag: 'N',
+
+                  delete_flag:
+                    'N',
                 };
+
                 allParameters.push(parameter);
               }
             }
-          } else if (!isSelected && existingDetailId) {
-            // --- LOGIC FOR DELETION ---
+          }
+
+            // ============================================================
+            // NOT SELECTED + EXISTING RECORD
+            // Mark existing record for deletion
+          // ============================================================
+
+          else if (
+            !isSelected &&
+            existingDetailId
+          ) {
             const detailToDelete = {
-              a_rec_app_score_field_detail_id: existingDetailId,
-              registration_no: registrationNo,
-              a_rec_app_main_id: a_rec_app_main_id,
-              a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
-              score_field_parent_id: sub.score_field_parent_id,
-              m_rec_score_field_id: sub.m_rec_score_field_id,
-              delete_flag: 'Y',
-              action_type: 'U',
+              a_rec_app_score_field_detail_id:
+              existingDetailId,
+
+              registration_no:
+              registrationNo,
+
+              a_rec_app_main_id:
+              a_rec_app_main_id,
+
+              a_rec_adv_post_detail_id:
+              sub.a_rec_adv_post_detail_id,
+
+              score_field_parent_id:
+              sub.score_field_parent_id,
+
+              m_rec_score_field_id:
+              sub.m_rec_score_field_id,
+
+              delete_flag:
+                'Y',
+
+              action_type:
+                'U',
             };
+
             allDetails.push(detailToDelete);
           }
         }
 
-        // STEP 2: Create Parent Record
+        // ============================================================
+        // STEP 2:
+        // CREATE / UPDATE PARENT RECORD
+        // ============================================================
+
+        const headingMarks = Number(
+          this.heading?.score_field_field_marks || 0
+        );
+
+        const headingWeightage = Number(
+          this.heading?.score_field_field_weightage || 0
+        );
+
+        const finalParentCalculatedValue =
+          Math.min(
+            parentCalculatedValue,
+            headingMarks
+          );
+
         const parentRecord = {
           ...(this.existingParentDetailId && {
-            a_rec_app_score_field_detail_id: this.existingParentDetailId,
+            a_rec_app_score_field_detail_id:
+            this.existingParentDetailId,
           }),
-          registration_no: registrationNo,
-          a_rec_app_main_id: a_rec_app_main_id,
-          a_rec_adv_post_detail_id: this.heading?.a_rec_adv_post_detail_id || 252,
-          score_field_parent_id: 0,
-          m_rec_score_field_id: this.heading?.m_rec_score_field_id,
-          m_rec_score_field_method_id: this.heading?.m_rec_score_field_method_id,
-          score_field_value: this.heading?.score_field_field_marks || 60,
-          score_field_actual_value: parentCalculatedValue,
-          score_field_calculated_value: Math.min(
-            parentCalculatedValue,
-            this.heading?.score_field_field_marks || 60
-          ),
-          field_marks: this.heading?.score_field_field_marks || 60,
-          field_weightage: this.heading?.score_field_field_weightage || 0,
-          verify_remark: 'Not Verified',
-          action_type: 'U',
-          action_date: new Date().toISOString(),
-          action_remark: 'parent data updated from recruitment form',
-          action_by: 1,
-          delete_flag: 'N',
+
+          registration_no:
+          registrationNo,
+
+          a_rec_app_main_id:
+          a_rec_app_main_id,
+
+          a_rec_adv_post_detail_id:
+          this.heading?.a_rec_adv_post_detail_id,
+
+          score_field_parent_id:
+            0,
+
+          m_rec_score_field_id:
+          this.heading?.m_rec_score_field_id,
+
+          m_rec_score_field_method_id:
+          this.heading?.m_rec_score_field_method_id,
+
+          score_field_value:
+          headingMarks,
+
+          score_field_actual_value:
+            Number(
+              parentCalculatedValue.toFixed(4)
+            ),
+
+          score_field_calculated_value:
+            Number(
+              finalParentCalculatedValue.toFixed(4)
+            ),
+
+          field_marks:
+          headingMarks,
+
+          field_weightage:
+          headingWeightage,
+
+          verify_remark:
+            'Not Verified',
+
+          action_type:
+            this.existingParentDetailId
+              ? 'U'
+              : 'C',
+
+          action_date:
+            new Date().toISOString(),
+
+          action_remark:
+            this.existingParentDetailId
+              ? 'parent data updated from recruitment form'
+              : 'parent data inserted from recruitment form',
+
+          action_by:
+            1,
+
+          delete_flag:
+            'N',
         };
 
-        // STEP 3: Append all data to FormData
-        formData.append('parentScore', JSON.stringify(parentRecord));
-        formData.append('registration_no', registrationNo.toString());
-        formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
-        formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
+        // ============================================================
+        // STEP 3:
+        // APPEND DATA TO FORMDATA
+        // ============================================================
 
-        // STEP 4: Make the SINGLE API call
+        formData.append(
+          'parentScore',
+          JSON.stringify(parentRecord)
+        );
+
+        formData.append(
+          'registration_no',
+          registrationNo.toString()
+        );
+
+        formData.append(
+          'scoreFieldDetailList',
+          JSON.stringify(allDetails)
+        );
+
+        formData.append(
+          'scoreFieldParameterList',
+          JSON.stringify(allParameters)
+        );
+
+        // ============================================================
+        // DEBUG
+        // ============================================================
+
+        console.log(
+          '============================================'
+        );
+
+        console.log(
+          'STEP-2 CALCULATION'
+        );
+
+        console.log(
+          'Parent calculated value:',
+          parentCalculatedValue
+        );
+
+        console.log(
+          'Parent final calculated value:',
+          finalParentCalculatedValue
+        );
+
+        console.log(
+          'Detail records:',
+          allDetails
+        );
+
+        console.log(
+          'Parameter records:',
+          allParameters
+        );
+
+        console.log(
+          'Parent record:',
+          parentRecord
+        );
+
+        console.log(
+          '============================================'
+        );
+
+        // ============================================================
+        // STEP 4:
+        // SINGLE API CALL
+        // ============================================================
+
         return new Promise((resolve, reject) => {
           this.HTTP.postForm(
             '/candidate/postFile/saveOrUpdateCandidateScoreCard',
@@ -1072,30 +1453,61 @@
             next: async (res) => {
               if (res?.body?.error) {
                 this.loader.hideLoader();
-                this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
-                return reject(new Error(res.body.error.message));
+
+                this.alertService.alert(
+                  true,
+                  res.body.error.message ||
+                  'An error occurred on the server.'
+                );
+
+                reject(
+                  new Error(
+                    res.body.error.message ||
+                    'An error occurred on the server.'
+                  )
+                );
+
+                return;
               }
 
               this.loader.hideLoader();
-              await this.alertService.alert(false, 'Data saved successfully!');
 
+              await this.alertService.alert(
+                false,
+                'Data saved successfully!'
+              );
+
+              // Reload saved values from server
               this.getParameterValuesAndPatch();
+
               this.cdr.markForCheck();
+
               resolve();
             },
+
             error: (err) => {
               this.loader.hideLoader();
-              this.alertService.alert(true, `Error saving data: ${err.message}`);
+
+              this.alertService.alert(
+                true,
+                `Error saving data: ${err.message}`
+              );
+
               this.cdr.markForCheck();
+
               reject(err);
             },
           });
         });
-
       } catch (error: any) {
-        // ✅ Catch hashing failures or 0-byte file errors and hide the loader
         this.loader.hideLoader();
-        this.alertService.alert(true, error.message || 'An error occurred while preparing your files.');
+
+        this.alertService.alert(
+          true,
+          error?.message ||
+          'An error occurred while preparing your files.'
+        );
+
         return Promise.reject(error);
       }
     }
