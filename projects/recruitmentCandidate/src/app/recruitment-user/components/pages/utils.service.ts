@@ -25,6 +25,11 @@ export class UtilsService {
           data.quantityInputs,
           parentMaxValue
         );
+      case 5: // Full Marks Based
+        return this.calculateFullMarksScore(
+          data.educations,
+          parentMaxValue
+        );
       default:
         return {
           score_field_value: 0,
@@ -217,6 +222,53 @@ export class UtilsService {
       details,
     };
   }
+
+  private calculateFullMarksScore(
+    educations: {
+      scoreFieldId: number;
+      weight: number;
+      inputValue: any;
+      maxValue?: number;
+    }[],
+    parentFieldMarks: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    let totalActualValue = 0;
+    let totalCalculatedValue = 0;
+
+    const details = educations.map((edu) => {
+      // Method 5 always gives the qualification its full marks.
+      const fullMarks = Number(edu.maxValue || 0);
+
+      totalActualValue += fullMarks;
+      totalCalculatedValue += fullMarks;
+
+      return {
+        scoreFieldId: edu.scoreFieldId,
+        weight: edu.weight,
+        inputValue: edu.inputValue,
+        score_field_actual_value: fullMarks,
+        score_field_calculated_value: fullMarks,
+      };
+    });
+
+    // Do not allow the total to exceed the parent maximum.
+    const finalCalculatedValue = Math.min(
+      totalCalculatedValue,
+      parentFieldMarks
+    );
+
+    return {
+      score_field_value: totalActualValue,
+      score_field_actual_value: totalActualValue,
+      score_field_calculated_value: finalCalculatedValue,
+      details,
+    };
+  }
   // Corrected calculateQuantityBasedScore in UtilsService
   calculateQuantityBasedScore(
     quantityScoreInput: {
@@ -227,7 +279,7 @@ export class UtilsService {
     }[],
     parentScoreFieldMarks: number
   ): {
-    
+
     score_field_value: number; // Sum of quantities
     score_field_actual_value: number; // Sum of uncapped calculated marks
     score_field_calculated_value: number; // Sum of capped final marks, then capped at parent level
