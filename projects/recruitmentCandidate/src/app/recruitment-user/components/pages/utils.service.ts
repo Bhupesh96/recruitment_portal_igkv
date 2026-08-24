@@ -25,9 +25,23 @@ export class UtilsService {
           data.quantityInputs,
           parentMaxValue
         );
+      case 4: // 6 Month Fellowship Based
+        return this.calculateMonthBasedScore(
+          data.months,
+          6,
+          data.weightage,
+          parentMaxValue
+        );
       case 5: // Full Marks Based
         return this.calculateFullMarksScore(
           data.educations,
+          parentMaxValue
+        );
+      case 6: // 3 Month Fellowship Based
+        return this.calculateMonthBasedScore(
+          data.months,
+          3,
+          data.weightage,
           parentMaxValue
         );
       default:
@@ -316,6 +330,65 @@ export class UtilsService {
       score_field_actual_value: +totalCalculatedMarks.toFixed(2),
       score_field_calculated_value: +cappedFinal.toFixed(2),
       details,
+    };
+  }
+  private calculateMonthBasedScore(
+    months: number,
+    monthsPerUnit: number,
+    weightage: number,
+    parentMaxValue: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    const totalMonths = Number(months) || 0;
+    const configuredWeightage = Number(weightage) || 0;
+
+    let actualValue = 0;
+
+    // Minimum qualifying duration is 3 or 6 months
+    if (totalMonths >= monthsPerUnit) {
+      const units = totalMonths / monthsPerUnit;
+
+      actualValue = +(
+        units * configuredWeightage
+      ).toFixed(4);
+    }
+
+    const calculatedValue = Math.min(
+      actualValue,
+      parentMaxValue
+    );
+
+    return {
+      score_field_value:
+        +totalMonths.toFixed(4),
+
+      score_field_actual_value:
+      actualValue,
+
+      score_field_calculated_value:
+        +calculatedValue.toFixed(4),
+
+      details: [
+        {
+          months:
+            +totalMonths.toFixed(4),
+
+          monthsPerUnit,
+
+          weightage:
+          configuredWeightage,
+
+          score_field_actual_value:
+          actualValue,
+
+          score_field_calculated_value:
+            +calculatedValue.toFixed(4),
+        },
+      ],
     };
   }
 }
