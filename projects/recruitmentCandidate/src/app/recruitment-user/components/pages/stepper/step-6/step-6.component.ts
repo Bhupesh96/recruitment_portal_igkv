@@ -1346,866 +1346,244 @@ export class Step6Component implements OnInit {
       reader.readAsArrayBuffer(file);
     });
   }
-  async saveToDatabase(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      this.loader.showLoader();
+async saveToDatabase(): Promise<void> {
+    this.loader.showLoader();
 
-      try {
-        const registrationNo = this.userData?.registration_no;
-        const a_rec_adv_main_id =
-          this.userData?.a_rec_adv_main_id;
-        const a_rec_app_main_id =
-          this.userData?.a_rec_app_main_id;
+    try {
+      const registrationNo = this.userData?.registration_no;
+      const a_rec_adv_main_id = this.userData?.a_rec_adv_main_id;
+      const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
-        if (
-          !registrationNo ||
-          !a_rec_adv_main_id ||
-          !a_rec_app_main_id
-        ) {
-          throw new Error(
-            'User identification is missing. Cannot save data.'
-          );
+      if (!registrationNo || !a_rec_adv_main_id || !a_rec_app_main_id) {
+        throw new Error('User identification is missing. Cannot save data.');
+      }
+
+      const formData = new FormData();
+      const finalDetailList: any[] = [];
+      const finalParameterList: any[] = [];
+      let parentCalculatedValue = 0;
+
+      const rowsGroupedByType = new Map<string, any[]>();
+      for (const control of this.detailsArray.controls) {
+        const typeValue = control.get('type')?.value;
+        if (!typeValue) continue;
+
+        if (!rowsGroupedByType.has(typeValue)) {
+          rowsGroupedByType.set(typeValue, []);
+        }
+        rowsGroupedByType.get(typeValue)!.push(control);
+      }
+
+      for (const [typeValue, rowControls] of rowsGroupedByType.entries()) {
+        const scoreFieldId = Number(typeValue);
+        const totalCount = rowControls.length;
+
+        const subHeading = this.subHeadings.find((sub: any) =>
+          sub.items?.some((item: any) => Number(item.m_rec_score_field_id) === scoreFieldId)
+        );
+        if (!subHeading) continue;
+
+        const subHeadingId = Number(subHeading.m_rec_score_field_id);
+        const item = subHeading.items.find(
+          (i: any) => Number(i.m_rec_score_field_id) === scoreFieldId
+        );
+        if (!item) continue;
+
+        const detailKey = `${subHeadingId}_${scoreFieldId}`;
+        const existingDetailId = this.existingDetailIds.get(detailKey);
+
+        const calculationMethod =
+          Number(item.m_rec_score_field_method_id) ||
+          Number(subHeading.m_rec_score_field_method_id) ||
+          Number(this.heading?.m_rec_score_field_method_id) || 0;
+
+        let fieldWeightage = Number(item.score_field_field_weightage) || 0;
+        if (fieldWeightage === 0) {
+          fieldWeightage = Number(subHeading.score_field_field_weightage) || 0;
         }
 
-        const formData = new FormData();
+        const fieldMarks =
+          Number(item.score_field_field_marks) ||
+          Number(subHeading.score_field_field_marks) || 0;
 
-        const finalDetailList: any[] = [];
-        const finalParameterList: any[] = [];
+        const subHeadingParameters = this.subHeadingParameters[subHeadingId.toString()] || [];
+        const statusParam = subHeadingParameters.find(
+          (p: any) => Number(p.m_parameter_master_id) === 68
+        );
+        const remarkParam = subHeadingParameters.find(
+          (p: any) => Number(p.m_parameter_master_id) === 69
+        );
 
-        // ============================================================
-        // STEP 1: CREATE SCORE FIELD DETAIL RECORDS
-        // ============================================================
+        const allStatuses = statusParam
+          ? rowControls.map((rowControl: any) => rowControl.getRawValue()[statusParam.normalizedKey])
+          : [];
 
-        const rowsGroupedByType = new Map<string, any[]>();
-
-        for (const control of this.detailsArray.controls) {
-          const typeValue =
-            control.get('type')?.value;
-
-          if (typeValue) {
-            if (!rowsGroupedByType.has(typeValue)) {
-              rowsGroupedByType.set(typeValue, []);
-            }
-
-            rowsGroupedByType
-              .get(typeValue)!
-              .push(control);
-          }
+        let validRowCount = totalCount;
+        if (statusParam) {
+          validRowCount = allStatuses.filter((status: any) => Number(status) !== 2).length;
         }
 
-        for (
-          const [typeValue, rowControls]
-          of rowsGroupedByType.entries()
-          ) {
-          const scoreFieldId =
-            Number(typeValue);
+        let scoreResult: {
+          score_field_value: number;
+          score_field_actual_value: number;
+          score_field_calculated_value: number;
+          details?: any[];
+        } = {
+          score_field_value: 0,
+          score_field_actual_value: 0,
+          score_field_calculated_value: 0,
+        };
 
-          const totalCount =
-            rowControls.length;
+        let summaryStatusId: number | null = null;
+        let summaryRemarkId: number | null = null;
 
-          // ==========================================================
-          // FIND SUB HEADING
-          // ==========================================================
-
-          const subHeading =
-            this.subHeadings.find(
-              (sub) =>
-                sub.items.some(
-                  (item: any) =>
-                    Number(
-                      item.m_rec_score_field_id
-                    ) === scoreFieldId
-                )
-            );
-
-          if (!subHeading) {
-            continue;
-          }
-
-          const subHeadingId =
-            Number(
-              subHeading.m_rec_score_field_id
-            );
-
-          // ==========================================================
-          // FIND CURRENT SCORE FIELD ITEM
-          // ==========================================================
-
-          const item =
-            subHeading.items.find(
-              (i: any) =>
-                Number(
-                  i.m_rec_score_field_id
-                ) === scoreFieldId
-            );
-
-          if (!item) {
-            continue;
-          }
-
-          // ==========================================================
-          // EXISTING DETAIL ID
-          // ==========================================================
-
-          const detailKey =
-            `${subHeadingId}_${scoreFieldId}`;
-
-          const existingDetailId =
-            this.existingDetailIds.get(
-              detailKey
-            );
-
-          // ==========================================================
-          // GET CALCULATION METHOD FROM API
-          // ==========================================================
-
-          const methodId =
-            Number(
-              item.m_rec_score_field_method_id
-            ) ||
-            Number(
-              subHeading.m_rec_score_field_method_id
-            ) ||
-            0;
-
-          let scoreResult: {
-            score_field_value: number;
-            score_field_actual_value: number;
-            score_field_calculated_value: number;
-            details?: any[];
-          } = {
+        if (statusParam && validRowCount === 0 && totalCount > 0) {
+          scoreResult = {
             score_field_value: 0,
             score_field_actual_value: 0,
             score_field_calculated_value: 0,
           };
-
-          // ==========================================================
-          // METHOD 1
-          // MARKS / EDUCATION BASED
-          // ==========================================================
-
-          if (methodId === 1) {
-            const subHeadingParameters =
-              this.subHeadingParameters[
-                subHeadingId.toString()
-                ] || [];
-
+          summaryStatusId = 2;
+          if (remarkParam) {
+            const firstRejectedRow = rowControls.find(
+              (rowControl: any) => Number(rowControl.getRawValue()[statusParam.normalizedKey]) === 2
+            );
+            if (firstRejectedRow) {
+              summaryRemarkId = firstRejectedRow.getRawValue()[remarkParam.normalizedKey] || null;
+            }
+          }
+        } else {
+          if (calculationMethod === 1) {
             let totalInputValue = 0;
+            const numericParameters = subHeadingParameters.filter(
+              (param: any) =>
+                param.isCalculationColumn === 'Y' &&
+                (param.isDatatype === 'number' ||
+                  param.isDatatype === 'double' ||
+                  Number(param.m_datatype_master_id) === 9 ||
+                  Number(param.m_datatype_master_id) === 4)
+            );
 
-            // --------------------------------------------------------
-            // FIND NUMERIC PARAMETERS
-            // --------------------------------------------------------
+            for (const rowControl of rowControls) {
+              const rawRow = rowControl.getRawValue();
+              const rowVerificationStatus = statusParam ? rawRow[statusParam.normalizedKey] : null;
+              if (statusParam && Number(rowVerificationStatus) === 2) continue;
 
-            for (
-              const rowControl
-              of rowControls
-              ) {
-              const rawRow =
-                rowControl.getRawValue();
-
-              const numericParameters =
-                subHeadingParameters.filter(
-                  (param: any) =>
-                    Number(
-                      param.m_rec_score_field_id
-                    ) === subHeadingId &&
-                    (
-                      param.isDatatype === 'number' ||
-                      param.isDatatype === 'double' ||
-                      Number(
-                        param.m_datatype_master_id
-                      ) === 9 ||
-                      Number(
-                        param.m_datatype_master_id
-                      ) === 4
-                    )
-                );
-
-              for (
-                const param
-                of numericParameters
-                ) {
-                const rawValue =
-                  rawRow[
-                    param.normalizedKey
-                    ];
-
-                if (
-                  rawValue !== null &&
-                  rawValue !== undefined &&
-                  rawValue !== ''
-                ) {
-                  const numericValue =
-                    Number(rawValue);
-
-                  if (
-                    !Number.isNaN(
-                      numericValue
-                    )
-                  ) {
-                    totalInputValue +=
-                      numericValue;
+              for (const param of numericParameters) {
+                const rawValue = rawRow[param.normalizedKey];
+                if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                  const numericValue = Number(rawValue);
+                  if (!Number.isNaN(numericValue)) {
+                    totalInputValue += numericValue;
                   }
                 }
               }
             }
 
-            // --------------------------------------------------------
-            // API WEIGHTAGE
-            // --------------------------------------------------------
-
-            const itemWeightage =
-              Number(
-                item.score_field_field_weightage
-              );
-
-            const subHeadingWeightage =
-              Number(
-                subHeading.score_field_field_weightage
-              );
-
-            const weightage =
-              Number.isFinite(
-                itemWeightage
-              ) &&
-              itemWeightage > 0
-                ? itemWeightage
-                : (
-                  Number.isFinite(
-                    subHeadingWeightage
-                  ) &&
-                  subHeadingWeightage > 0
-                    ? subHeadingWeightage
-                    : 0
-                );
-
-            // --------------------------------------------------------
-            // API FIELD MARKS
-            // --------------------------------------------------------
-
-            const itemFieldMarks =
-              Number(
-                item.score_field_field_marks
-              );
-
-            const subHeadingFieldMarks =
-              Number(
-                subHeading.score_field_field_marks
-              );
-
-            const fieldMarks =
-              Number.isFinite(
-                itemFieldMarks
-              ) &&
-              itemFieldMarks > 0
-                ? itemFieldMarks
-                : (
-                  Number.isFinite(
-                    subHeadingFieldMarks
-                  ) &&
-                  subHeadingFieldMarks > 0
-                    ? subHeadingFieldMarks
-                    : 0
-                );
-
-            // --------------------------------------------------------
-            // CALCULATION
-            // --------------------------------------------------------
-
-            const actualValue =
-              +(
-                totalInputValue *
-                weightage
-              ).toFixed(4);
-
-            const calculatedValue =
-              Math.min(
-                actualValue,
-                fieldMarks
-              );
-
+            const actualValue = +(totalInputValue * fieldWeightage).toFixed(4);
+            const calculatedValue = Math.min(actualValue, fieldMarks);
             scoreResult = {
-              score_field_value:
-                +totalInputValue.toFixed(4),
-
-              score_field_actual_value:
-              actualValue,
-
-              score_field_calculated_value:
-                +calculatedValue.toFixed(4),
+              score_field_value: +totalInputValue.toFixed(4),
+              score_field_actual_value: actualValue,
+              score_field_calculated_value: +calculatedValue.toFixed(4),
             };
-
-            console.log(
-              '========== METHOD 1 =========='
-            );
-
-            console.log(
-              'Score Field ID:',
-              scoreFieldId
-            );
-
-            console.log(
-              'Input Value:',
-              totalInputValue
-            );
-
-            console.log(
-              'Weightage:',
-              weightage
-            );
-
-            console.log(
-              'Field Marks:',
+          } else if (calculationMethod === 2) {
+            scoreResult = this.utils.calculateScore(
+              calculationMethod,
+              { experiences: [] },
               fieldMarks
             );
-
-            console.log(
-              'Actual:',
-              actualValue
+          } else if (calculationMethod === 3) {
+            scoreResult = this.utils.calculateScore(
+              calculationMethod,
+              {
+                quantityInputs: [
+                  {
+                    scoreFieldId: scoreFieldId,
+                    quantity: validRowCount,
+                    weightage: fieldWeightage,
+                    scoreFieldMarks: fieldMarks,
+                  },
+                ],
+              },
+              fieldMarks
             );
-
-            console.log(
-              'Calculated:',
-              calculatedValue
+          } else if (calculationMethod === 4 || calculationMethod === 6) {
+            const dateParameters = subHeadingParameters.filter(
+              (param: any) =>
+                Number(param.m_parameter_master_id) === 26 && param.isCalculationColumn === 'Y'
             );
-
-            console.log(
-              '================================'
-            );
-          }
-
-            // ==========================================================
-            // METHOD 2
-            // EXPERIENCE
-          // ==========================================================
-
-          else if (methodId === 2) {
-            scoreResult =
-              this.utils.calculateScore(
-                methodId,
-                {
-                  experiences: [],
-                },
-                Number(
-                  item.score_field_field_marks
-                ) || 0
-              );
-          }
-
-            // ==========================================================
-            // METHOD 3
-            // QUANTITY BASED
-          // ==========================================================
-
-          else if (methodId === 3) {
-            scoreResult =
-              this.utils.calculateScore(
-                methodId,
-                {
-                  quantityInputs: [
-                    {
-                      scoreFieldId:
-                        Number(
-                          item.m_rec_score_field_id
-                        ),
-
-                      quantity:
-                      totalCount,
-
-                      weightage:
-                        Number(
-                          item.score_field_field_weightage
-                        ) || 0,
-
-                      scoreFieldMarks:
-                        Number(
-                          item.score_field_field_marks
-                        ) || 0,
-                    },
-                  ],
-                },
-                Number(
-                  item.score_field_field_marks
-                ) || 0
-              );
-          }
-
-            // ==========================================================
-            // METHOD 4 / METHOD 6
-            //
-            // DATE RANGE BASED FELLOWSHIP
-            //
-            // m_parameter_master_id = 26
-            //
-            // IMPORTANT:
-            // EACH ROW IS CALCULATED SEPARATELY.
-            //
-            // Example:
-            //
-            // Row 1 = 6 months -> 2 marks
-            // Row 2 = 5 months -> 0 marks
-            //
-            // Total = 2 marks
-          // ==========================================================
-
-          else if (
-            methodId === 4 ||
-            methodId === 6
-          ) {
-            const subHeadingParameters =
-              this.subHeadingParameters[
-                subHeadingId.toString()
-                ] || [];
-
-            // --------------------------------------------------------
-            // FIND DATE PARAMETERS
-            //
-            // No display order.
-            // No parameter name.
-            // No parameter ID.
-            //
-            // Only:
-            // m_parameter_master_id = 26
-            // isCalculationColumn = Y
-            // --------------------------------------------------------
-
-            const dateParameters =
-              subHeadingParameters.filter(
-                (param: any) =>
-                  Number(
-                    param.m_rec_score_field_id
-                  ) === subHeadingId &&
-                  Number(
-                    param.m_parameter_master_id
-                  ) === 26 &&
-                  param.isCalculationColumn === 'Y'
-              );
-
-            // --------------------------------------------------------
-            // METHOD 4 = 6 MONTH BASIS
-            // METHOD 6 = 3 MONTH BASIS
-            // --------------------------------------------------------
-
-            const monthsPerUnit =
-              methodId === 4
-                ? 6
-                : 3;
-
-            // --------------------------------------------------------
-            // API WEIGHTAGE
-            // --------------------------------------------------------
-
-            const weightage =
-              Number(
-                item.score_field_field_weightage
-              ) || 0;
-
-            // --------------------------------------------------------
-            // API MAXIMUM FIELD MARKS
-            // --------------------------------------------------------
-
-            const fieldMarks =
-              Number(
-                item.score_field_field_marks
-              ) ||
-              Number(
-                subHeading.score_field_field_marks
-              ) ||
-              0;
-
-            // --------------------------------------------------------
-            // TOTALS
-            //
-            // Months are totalled only for score_field_value.
-            //
-            // Actual/calculated score is calculated row-by-row.
-            // --------------------------------------------------------
+            const monthsPerUnit = calculationMethod === 4 ? 6 : 3;
 
             let totalMonths = 0;
             let totalActualValue = 0;
             let totalCalculatedValue = 0;
-
             const details: any[] = [];
 
-            // ========================================================
-            // PROCESS EACH ROW SEPARATELY
-            // ========================================================
-
-            for (
-              const rowControl
-              of rowControls
-              ) {
-              const rawRow =
-                rowControl.getRawValue();
+            for (const rowControl of rowControls) {
+              const rawRow = rowControl.getRawValue();
+              const rowVerificationStatus = statusParam ? rawRow[statusParam.normalizedKey] : null;
+              if (statusParam && Number(rowVerificationStatus) === 2) continue;
 
               const dates: Date[] = [];
-
-              // ------------------------------------------------------
-              // GET BOTH DATE VALUES
-              // ------------------------------------------------------
-
-              for (
-                const param
-                of dateParameters
-                ) {
-                const rawValue =
-                  rawRow[
-                    param.normalizedKey
-                    ];
-
-                if (
-                  rawValue !== null &&
-                  rawValue !== undefined &&
-                  rawValue !== ''
-                ) {
-                  const date =
-                    new Date(rawValue);
-
-                  if (
-                    !Number.isNaN(
-                      date.getTime()
-                    )
-                  ) {
-                    dates.push(date);
-                  }
+              for (const param of dateParameters) {
+                const rawValue = rawRow[param.normalizedKey];
+                if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+                  const date = new Date(rawValue);
+                  if (!Number.isNaN(date.getTime())) dates.push(date);
                 }
               }
 
-              // ------------------------------------------------------
-              // TWO VALID DATES REQUIRED
-              // ------------------------------------------------------
+              if (dates.length < 2) continue;
 
-              if (dates.length < 2) {
-                continue;
-              }
-
-              const date1 =
-                dates[0];
-
-              const date2 =
-                dates[1];
-
-              // ------------------------------------------------------
-              // FIND EARLIER AND LATER DATE
-              //
-              // We don't care which one is From or To.
-              // ------------------------------------------------------
-
-              const startDate =
-                date1.getTime() <=
-                date2.getTime()
-                  ? date1
-                  : date2;
-
-              const endDate =
-                date1.getTime() <=
-                date2.getTime()
-                  ? date2
-                  : date1;
-
-              // ------------------------------------------------------
-              // CALCULATE COMPLETE CALENDAR MONTHS
-              // ------------------------------------------------------
+              const date1 = dates[0];
+              const date2 = dates[1];
+              const startDate = date1.getTime() <= date2.getTime() ? date1 : date2;
+              const endDate = date1.getTime() <= date2.getTime() ? date2 : date1;
 
               let rowMonths =
-                (
-                  endDate.getFullYear() -
-                  startDate.getFullYear()
-                ) *
-                12 +
-                (
-                  endDate.getMonth() -
-                  startDate.getMonth()
-                );
-
-              // If ending day is before starting day,
-              // the final month is incomplete.
-              if (
-                endDate.getDate() <
-                startDate.getDate()
-              ) {
-                rowMonths--;
-              }
-
-              rowMonths =
-                Math.max(
-                  0,
-                  rowMonths
-                );
-
-              // ------------------------------------------------------
-              // ADD MONTHS TO RAW FIELD VALUE
-              // ------------------------------------------------------
-
-              totalMonths +=
-                rowMonths;
-
-              // ------------------------------------------------------
-              // CALCULATE THIS ROW'S SCORE
-              //
-              // Below minimum:
-              // 0 marks
-              //
-              // At/above minimum:
-              // months / monthsPerUnit × weightage
-              // ------------------------------------------------------
+                (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                (endDate.getMonth() - startDate.getMonth());
+              if (endDate.getDate() < startDate.getDate()) rowMonths--;
+              rowMonths = Math.max(0, rowMonths);
+              totalMonths += rowMonths;
 
               let rowActualValue = 0;
-
-              if (
-                rowMonths >=
-                monthsPerUnit
-              ) {
-                const units =
-                  rowMonths /
-                  monthsPerUnit;
-
-                rowActualValue =
-                  +(
-                    units *
-                    weightage
-                  ).toFixed(4);
+              if (rowMonths >= monthsPerUnit) {
+                const units = rowMonths / monthsPerUnit;
+                rowActualValue = +(units * fieldWeightage).toFixed(4);
               }
 
-              // ------------------------------------------------------
-              // CAP INDIVIDUAL ROW AT FIELD MARKS
-              // ------------------------------------------------------
-
-              const rowCalculatedValue =
-                Math.min(
-                  rowActualValue,
-                  fieldMarks
-                );
-
-              // ------------------------------------------------------
-              // ADD ROW SCORE TO TOTAL
-              // ------------------------------------------------------
-
-              totalActualValue +=
-                rowActualValue;
-
-              totalCalculatedValue +=
-                rowCalculatedValue;
-
-              // ------------------------------------------------------
-              // DETAILS
-              // ------------------------------------------------------
+              const rowCalculatedValue = Math.min(rowActualValue, fieldMarks);
+              totalActualValue += rowActualValue;
+              totalCalculatedValue += rowCalculatedValue;
 
               details.push({
-                from:
-                  startDate
-                    .toISOString()
-                    .split('T')[0],
-
-                to:
-                  endDate
-                    .toISOString()
-                    .split('T')[0],
-
-                months:
-                rowMonths,
-
-                monthsPerUnit:
-                monthsPerUnit,
-
-                weightage:
-                weightage,
-
-                score_field_actual_value:
-                rowActualValue,
-
-                score_field_calculated_value:
-                rowCalculatedValue,
+                rowIndex: rowControl.get('_rowIndex')?.value,
+                from: startDate.toISOString().split('T')[0],
+                to: endDate.toISOString().split('T')[0],
+                months: rowMonths,
+                monthsPerUnit: monthsPerUnit,
+                weightage: fieldWeightage,
+                score_field_actual_value: rowActualValue,
+                score_field_calculated_value: rowCalculatedValue,
               });
-
-              // ------------------------------------------------------
-              // DEBUG
-              // ------------------------------------------------------
-
-              console.log(
-                `========== METHOD ${methodId} ROW CALCULATION ==========`
-              );
-
-              console.log(
-                'From:',
-                startDate
-              );
-
-              console.log(
-                'To:',
-                endDate
-              );
-
-              console.log(
-                'Completed Months:',
-                rowMonths
-              );
-
-              console.log(
-                'Minimum Months:',
-                monthsPerUnit
-              );
-
-              console.log(
-                'Weightage:',
-                weightage
-              );
-
-              console.log(
-                'Row Actual Score:',
-                rowActualValue
-              );
-
-              console.log(
-                'Row Calculated Score:',
-                rowCalculatedValue
-              );
-
-              console.log(
-                '========================================================'
-              );
             }
 
-            // --------------------------------------------------------
-            // CAP TOTAL AT FIELD MAXIMUM
-            // --------------------------------------------------------
-
-            const finalCalculatedValue =
-              Math.min(
-                totalCalculatedValue,
-                fieldMarks
-              );
-
-            // --------------------------------------------------------
-            // FINAL RESULT
-            // --------------------------------------------------------
-
+            const finalCalculatedValue = Math.min(totalCalculatedValue, fieldMarks);
             scoreResult = {
-              // Total completed months across rows
-              score_field_value:
-                +totalMonths.toFixed(4),
-
-              // Sum of each row's actual score
-              score_field_actual_value:
-                +totalActualValue.toFixed(4),
-
-              // Sum of each row's calculated score
-              // capped at field marks
-              score_field_calculated_value:
-                +finalCalculatedValue.toFixed(4),
-
+              score_field_value: +totalMonths.toFixed(4),
+              score_field_actual_value: +totalActualValue.toFixed(4),
+              score_field_calculated_value: +finalCalculatedValue.toFixed(4),
               details,
             };
-
-            console.log(
-              `========== METHOD ${methodId} FINAL CALCULATION ==========`
-            );
-
-            console.log(
-              'Total Months:',
-              totalMonths
-            );
-
-            console.log(
-              'Total Actual Score:',
-              totalActualValue
-            );
-
-            console.log(
-              'Final Calculated Score:',
-              finalCalculatedValue
-            );
-
-            console.log(
-              'Details:',
-              details
-            );
-
-            console.log(
-              '=========================================================='
-            );
-          }
-
-            // ==========================================================
-            // METHOD 5
-            //
-            // WITHOUT PERCENTAGE
-            //
-            // YES = FULL MARKS
-            // NO  = FULL MARKS
-          // ==========================================================
-
-          else if (methodId === 5) {
-            const fieldMarks =
-              Number(
-                item.score_field_field_marks
-              ) ||
-              Number(
-                subHeading.score_field_field_marks
-              ) ||
-              0;
-
-            scoreResult =
-              this.utils.calculateScore(
-                methodId,
-                {
-                  educations: [
-                    {
-                      scoreFieldId:
-                        Number(
-                          item.m_rec_score_field_id
-                        ),
-
-                      weight:
-                        Number(
-                          item.score_field_field_weightage
-                        ) || 0,
-
-                      inputValue:
-                        1,
-
-                      maxValue:
-                      fieldMarks,
-                    },
-                  ],
-                },
-                fieldMarks
-              );
-
-            console.log(
-              '========== METHOD 5 FULL MARKS =========='
-            );
-
-            console.log(
-              'Score Field ID:',
-              scoreFieldId
-            );
-
-            console.log(
-              'Field Marks:',
-              fieldMarks
-            );
-
-            console.log(
-              'Score Result:',
-              scoreResult
-            );
-
-            console.log(
-              '=========================================='
-            );
-          }
-
-            // ==========================================================
-            // UNKNOWN METHOD
-          // ==========================================================
-
-          else {
-            console.warn(
-              'Unknown score calculation method:',
-              methodId
-            );
-
+          } else if (calculationMethod === 5) {
+            scoreResult = {
+              score_field_value: fieldMarks,
+              score_field_actual_value: fieldMarks,
+              score_field_calculated_value: fieldMarks,
+            };
+          } else {
             scoreResult = {
               score_field_value: 0,
               score_field_actual_value: 0,
@@ -2213,538 +1591,194 @@ export class Step6Component implements OnInit {
             };
           }
 
-          // ==========================================================
-          // CREATE DETAIL RECORD
-          // ==========================================================
-
-          const detailRecord = {
-            ...(existingDetailId && {
-              a_rec_app_score_field_detail_id:
-              existingDetailId,
-            }),
-
-            registration_no:
-            registrationNo,
-
-            a_rec_app_main_id:
-            a_rec_app_main_id,
-
-            a_rec_adv_post_detail_id:
-            subHeading.a_rec_adv_post_detail_id,
-
-            score_field_parent_id:
-            subHeadingId,
-
-            m_rec_score_field_id:
-            scoreFieldId,
-
-            m_rec_score_field_method_id:
-            methodId,
-
-            // --------------------------------------------------------
-            // METHOD 1 / 4 / 5 / 6
-            // USE CALCULATED SCORE FIELD VALUE
-            //
-            // METHOD 3
-            // USE NUMBER OF ROWS
-            // --------------------------------------------------------
-
-            score_field_value:
-              methodId === 1 ||
-              methodId === 4 ||
-              methodId === 5 ||
-              methodId === 6
-                ? scoreResult.score_field_value
-                : totalCount,
-
-            score_field_actual_value:
-            scoreResult.score_field_actual_value,
-
-            score_field_calculated_value:
-            scoreResult.score_field_calculated_value,
-
-            field_marks:
-              Number(
-                item.score_field_field_marks
-              ) ||
-              Number(
-                subHeading.score_field_field_marks
-              ) ||
-              0,
-
-            field_weightage:
-              Number(
-                item.score_field_field_weightage
-              ) ||
-              Number(
-                subHeading.score_field_field_weightage
-              ) ||
-              0,
-
-            verify_remark:
-              'Not Verified',
-
-            active_status:
-              'Y',
-
-            delete_flag:
-              'N',
-
-            action_type:
-              existingDetailId
-                ? 'U'
-                : 'C',
-
-            action_date:
-              new Date().toISOString(),
-
-            action_remark:
-              existingDetailId
-                ? 'data updated'
-                : 'data inserted',
-
-            action_by:
-              1,
-          };
-
-          finalDetailList.push(
-            detailRecord
-          );
-        }
-
-        // ============================================================
-        // STEP 2: CREATE GRANULAR PARAMETER RECORDS
-        // ============================================================
-
-        for (
-          const rowControl
-          of this.detailsArray.controls
-          ) {
-          const typeValue =
-            rowControl.get('type')?.value;
-
-          if (!typeValue) {
-            continue;
-          }
-
-          const scoreFieldId =
-            Number(typeValue);
-
-          const subHeading =
-            this.subHeadings.find(
-              (sub) =>
-                sub.items.some(
-                  (item: any) =>
-                    Number(
-                      item.m_rec_score_field_id
-                    ) === scoreFieldId
-                )
-            );
-
-          if (!subHeading) {
-            continue;
-          }
-
-          const subHeadingId =
-            Number(
-              subHeading.m_rec_score_field_id
-            );
-
-          const detailKey =
-            `${subHeadingId}_${scoreFieldId}`;
-
-          const detailRecordFk =
-            this.existingDetailIds.get(
-              detailKey
-            );
-
-          const rowIndex =
-            rowControl.get(
-              '_rowIndex'
-            )?.value;
-
-          if (
-            rowIndex === null ||
-            rowIndex === undefined
-          ) {
-            console.warn(
-              'Skipping a row because it has no rowIndex.'
-            );
-
-            continue;
-          }
-
-          const subHeadingParameters =
-            this.subHeadingParameters[
-              subHeadingId.toString()
-              ] || [];
-
-          for (
-            const param
-            of subHeadingParameters
-            ) {
-            const paramValue =
-              rowControl.getRawValue()[
-                param.normalizedKey
-                ];
-
-            const isFile =
-              paramValue instanceof File;
-
-            const paramKey =
-              `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
-
-            const existingParamId =
-              this.existingParameterIds.get(
-                paramKey
-              );
-
-            const existingFilePath =
-              this.filePaths.get(
-                paramKey
-              );
-
-            // --------------------------------------------------------
-            // SAVE ONLY IF VALUE EXISTS
-            // OR EXISTING RECORD EXISTS
-            // --------------------------------------------------------
-
-            if (
-              paramValue ||
-              existingParamId
-            ) {
-              let finalParameterValue =
-                '';
-
-              // ======================================================
-              // FILE
-              // ======================================================
-
-              if (isFile) {
-                if (
-                  paramValue.size === 0
-                ) {
-                  throw new Error(
-                    `The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`
-                  );
-                }
-
-                finalParameterValue =
-                  this.generateFilePath(
-                    registrationNo,
-                    paramValue,
-                    scoreFieldId,
-                    param.m_rec_score_field_parameter_new_id,
-                    rowIndex,
-                    subHeadingId
-                  );
-
-                const fileControlName =
-                  `file_${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${rowIndex}`;
-
-                formData.append(
-                  fileControlName,
-                  paramValue,
-                  paramValue.name
-                );
-
-                const fileHash =
-                  await this.calculateFileHash(
-                    paramValue
-                  );
-
-                formData.append(
-                  `${fileControlName}_hash`,
-                  fileHash
-                );
-              }
-
-                // ======================================================
-                // NORMAL PARAMETER
-              // ======================================================
-
-              else {
-                finalParameterValue =
-                  paramValue ===
-                  'FILE_UPLOADED' &&
-                  existingFilePath
-                    ? existingFilePath
-                    : String(
-                      paramValue ?? ''
-                    );
-              }
-
-              // ======================================================
-              // PARAMETER RECORD
-              // ======================================================
-
-              const parameter = {
-                ...(existingParamId && {
-                  a_rec_app_score_field_parameter_detail_id:
-                  existingParamId,
-                }),
-
-                ...(detailRecordFk && {
-                  a_rec_app_score_field_detail_id:
-                  detailRecordFk,
-                }),
-
-                registration_no:
-                registrationNo,
-
-                score_field_parent_id:
-                subHeadingId,
-
-                m_rec_score_field_id:
-                scoreFieldId,
-
-                m_rec_score_field_parameter_new_id:
-                param.m_rec_score_field_parameter_new_id,
-
-                parameter_value:
-                finalParameterValue,
-
-                parameter_row_index:
-                rowIndex,
-
-                parameter_display_order:
-                  param.parameter_display_order ||
-                  0,
-
-                verify_remark:
-                  'Not Verified',
-
-                active_status:
-                  'Y',
-
-                delete_flag:
-                  'N',
-
-                action_type:
-                  existingParamId
-                    ? 'U'
-                    : 'C',
-
-                action_date:
-                  new Date().toISOString(),
-
-                action_remark:
-                  existingParamId
-                    ? 'parameter updated'
-                    : 'parameter inserted',
-
-                action_by:
-                  1,
-              };
-
-              finalParameterList.push(
-                parameter
-              );
-            }
+          const hasVerified = allStatuses.some((status: any) => Number(status) === 1);
+          if (hasVerified) {
+            summaryStatusId = 1;
           }
         }
 
-        // ============================================================
-        // STEP 3: DELETE PARAMETERS
-        // ============================================================
+        const detailRecord = {
+          ...(existingDetailId && { a_rec_app_score_field_detail_id: existingDetailId }),
+          registration_no: registrationNo,
+          a_rec_app_main_id: a_rec_app_main_id,
+          a_rec_adv_post_detail_id: subHeading.a_rec_adv_post_detail_id,
+          score_field_parent_id: subHeadingId,
+          m_rec_score_field_id: scoreFieldId,
+          m_rec_score_field_method_id: calculationMethod,
+          score_field_value:
+            calculationMethod === 1 ||
+            calculationMethod === 4 ||
+            calculationMethod === 5 ||
+            calculationMethod === 6
+              ? Number(scoreResult.score_field_value) || 0
+              : validRowCount,
+          score_field_actual_value: Number(scoreResult.score_field_actual_value) || 0,
+          score_field_calculated_value: Number(scoreResult.score_field_calculated_value) || 0,
+          field_marks: fieldMarks,
+          field_weightage: fieldWeightage,
+          Document_Status_Flag_Id: summaryStatusId,
+          Document_Status_Remark_Id: summaryRemarkId,
+          verify_remark: 'Not Verified',
+          active_status: 'Y',
+          delete_flag: 'N',
+          action_type: existingDetailId ? 'U' : 'C',
+          action_date: new Date().toISOString(),
+          action_remark: existingDetailId ? 'data updated' : 'data inserted',
+          action_by: 1,
+        };
 
-        if (
-          this.parameterIdsToDelete.length > 0
-        ) {
-          formData.append(
-            'parameterIdsToDelete',
-            JSON.stringify(
-              this.parameterIdsToDelete
-            )
-          );
-        }
-
-        // ============================================================
-        // STEP 4: PARENT RECORD
-        // ============================================================
-
-        const parentRecord =
-          this.createParentRecord(
-            registrationNo,
-            a_rec_app_main_id
-          );
-
-        if (parentRecord) {
-          formData.append(
-            'parentScore',
-            JSON.stringify(
-              parentRecord
-            )
-          );
-        }
-
-        // ============================================================
-        // STEP 5: FINAL FORM DATA
-        // ============================================================
-
-        formData.append(
-          'registration_no',
-          registrationNo.toString()
-        );
-
-        formData.append(
-          'scoreFieldDetailList',
-          JSON.stringify(
-            finalDetailList
-          )
-        );
-
-        formData.append(
-          'scoreFieldParameterList',
-          JSON.stringify(
-            finalParameterList
-          )
-        );
-
-        // ============================================================
-        // DEBUG
-        // ============================================================
-
-        console.log(
-          '========== FINAL DETAIL LIST =========='
-        );
-
-        console.log(
-          JSON.stringify(
-            finalDetailList,
-            null,
-            2
-          )
-        );
-
-        console.log(
-          '========== FINAL PARAMETER LIST =========='
-        );
-
-        console.log(
-          JSON.stringify(
-            finalParameterList,
-            null,
-            2
-          )
-        );
-
-        console.log(
-          '=========================================='
-        );
-
-        // ============================================================
-        // STEP 6: SAVE API
-        // ============================================================
-
-        this.HTTP.postForm(
-          '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
-          formData,
-          'recruitement'
-        ).subscribe({
-          next: async (res) => {
-            if (res?.body?.error) {
-              this.alertService.alert(
-                true,
-                res.body.error.message ||
-                'An error occurred on the server.'
-              );
-
-              this.loader.hideLoader();
-
-              reject(
-                new Error(
-                  res.body.error.message
-                )
-              );
-
-              return;
-            }
-
-            this.loader.hideLoader();
-
-            await this.alertService.alert(
-              false,
-              'Data saved successfully!'
-            );
-
-            this.parameterIdsToDelete = [];
-
-            this.getParameterValuesAndPatch();
-
-            this.cdr.markForCheck();
-
-            resolve();
-          },
-
-          error: (err) => {
-            this.alertService.alert(
-              true,
-              'Error saving records: ' +
-              (
-                err.error?.message ||
-                err.message
-              )
-            );
-
-            this.cdr.markForCheck();
-
-            this.loader.hideLoader();
-
-            reject(err);
-          },
-        });
-      } catch (error: any) {
-        this.loader.hideLoader();
-
-        this.alertService.alert(
-          true,
-          error.message ||
-          'An error occurred while preparing your files.'
-        );
-
-        reject(error);
+        finalDetailList.push(detailRecord);
+        parentCalculatedValue += Number(detailRecord.score_field_calculated_value) || 0;
       }
-    });
+
+      for (const rowControl of this.detailsArray.controls) {
+        const typeValue = rowControl.get('type')?.value;
+        if (!typeValue) continue;
+
+        const scoreFieldId = Number(typeValue);
+        const subHeading = this.subHeadings.find((sub) =>
+          sub.items.some((item: any) => Number(item.m_rec_score_field_id) === scoreFieldId)
+        );
+        if (!subHeading) continue;
+
+        const subHeadingId = Number(subHeading.m_rec_score_field_id);
+        const detailKey = `${subHeadingId}_${scoreFieldId}`;
+        const detailRecordFk = this.existingDetailIds.get(detailKey);
+        const rowIndex = rowControl.get('_rowIndex')?.value;
+        if (rowIndex === null || rowIndex === undefined) continue;
+
+        const subHeadingParameters = this.subHeadingParameters[subHeadingId.toString()] || [];
+
+        for (const param of subHeadingParameters) {
+          const paramValue = rowControl.getRawValue()[param.normalizedKey];
+          const isFile = paramValue instanceof File;
+          const paramKey = `${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${rowIndex}`;
+          const existingParamId = this.existingParameterIds.get(paramKey);
+          const existingFilePath = this.filePaths.get(paramKey);
+
+          if (paramValue || existingParamId) {
+            let finalParameterValue = '';
+
+            if (isFile) {
+              if (paramValue.size === 0) {
+                throw new Error(`The selected file for "${param.score_field_parameter_name}" is empty.`);
+              }
+              const generatedPath = this.generateFilePath(
+                registrationNo,
+                paramValue,
+                scoreFieldId,
+                param.m_rec_score_field_parameter_new_id,
+                rowIndex,
+                subHeadingId
+              );
+              finalParameterValue = generatedPath;
+              formData.append(
+                `file_${subHeadingId}_${scoreFieldId}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${rowIndex}`,
+                paramValue,
+                paramValue.name
+              );
+            } else {
+              if (param.control_type === 'A') {
+                finalParameterValue =
+                  paramValue === 'FILE_UPLOADED'
+                    ? existingFilePath || ''
+                    : paramValue !== null && paramValue !== undefined
+                    ? String(paramValue)
+                    : existingFilePath || '';
+              } else {
+                finalParameterValue =
+                  paramValue !== null && paramValue !== undefined ? String(paramValue) : '';
+              }
+            }
+
+            const parameter = {
+              ...(existingParamId && { a_rec_app_score_field_parameter_detail_id: existingParamId }),
+              a_rec_app_score_field_detail_id: detailRecordFk,
+              registration_no: registrationNo,
+              a_rec_app_main_id: a_rec_app_main_id,
+              score_field_parent_id: subHeadingId,
+              m_rec_score_field_id: scoreFieldId,
+              m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
+              parameter_value: finalParameterValue,
+              parameter_row_index: rowIndex,
+              parameter_display_order: param.parameter_display_order || 0,
+              active_status: 'Y',
+              delete_flag: 'N',
+              action_type: existingParamId ? 'U' : 'C',
+              action_date: new Date().toISOString(),
+              action_remark: existingParamId ? 'parameter updated' : 'parameter inserted',
+              action_by: 1,
+              Document_Status_Flag_Id: paramValue ? Number(param.document_status_flag_id) || null : null,
+              Document_Status_Remark_Id: paramValue ? Number(param.document_status_remark_id) || null : null,
+            };
+
+            finalParameterList.push(parameter);
+          }
+        }
+      }
+
+      if (this.parameterIdsToDelete.length > 0) {
+        formData.append('parameterIdsToDelete', JSON.stringify(this.parameterIdsToDelete));
+      }
+
+      // ============================================================
+      // +++ FIX: Pass parentCalculatedValue to correctly accumulate children!
+      // ============================================================
+      const parentRecord = this.createParentRecord(
+        registrationNo,
+        a_rec_app_main_id,
+        parentCalculatedValue 
+      );
+
+      if (parentRecord) {
+        formData.append('parentScore', JSON.stringify(parentRecord));
+      }
+
+      formData.append('registration_no', registrationNo.toString());
+      formData.append('scoreFieldDetailList', JSON.stringify(finalDetailList));
+      formData.append('scoreFieldParameterList', JSON.stringify(finalParameterList));
+
+      this.HTTP.postForm(
+        '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
+        formData,
+        'recruitement'
+      ).subscribe({
+        next: async (res) => {
+          if (res?.body?.error) {
+            this.alertService.alert(true, res.body.error.message || 'An error occurred on the server.');
+            this.loader.hideLoader();
+            return;
+          }
+          this.loader.hideLoader();
+          await this.alertService.alert(false, 'Data saved successfully!');
+          this.parameterIdsToDelete = [];
+          this.getParameterValuesAndPatch();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.alertService.alert(true, 'Error saving records: ' + (err.error?.message || err.message));
+          this.cdr.markForCheck();
+          this.loader.hideLoader();
+        },
+      });
+    } catch (error: any) {
+      this.alertService.alert(true, error?.message || 'Unable to save screening data.');
+      this.loader.hideLoader();
+    }
   }
 
-// You might need a helper function for the parent record to avoid duplicating code
+  // ============================================================
+  // +++ FIX: COMPLETELY REWRITTEN TO USE parentCalculatedValue 
+  // INSTEAD OF FLAWED utils.calculateScore OVERRIDE
+  // ============================================================
   private createParentRecord(
     registrationNo: number,
-    a_rec_app_main_id: number
+    a_rec_app_main_id: number,
+    parentCalculatedValue: number 
   ): any {
     if (!this.heading) return null;
 
-    const quantityInputs: any[] = [];
-    this.subHeadings.forEach((subHeading) => {
-      const groupName = subHeading.m_rec_score_field_id.toString();
-      const subGroupRaw =
-        (
-          this.form.get(['subHeadings', groupName]) as FormGroup
-        )?.getRawValue() || {};
-      subHeading.items.forEach((item: any) => {
-        const key = item.normalizedKey;
-        const count = parseInt(subGroupRaw[key]?.count, 10) || 0;
-        if (count > 0) {
-          quantityInputs.push({
-            scoreFieldId: item.m_rec_score_field_id,
-            quantity: count,
-            weightage:
-              item.score_field_field_weightage ||
-              subHeading.score_field_field_weightage ||
-              0,
-            scoreFieldMarks: item.score_field_field_marks || 0,
-          });
-        }
-      });
-    });
-
-    const parentMaxMarks = this.heading.score_field_field_marks || 20;
-    const scoreResult = this.utils.calculateScore(
-      3,
-      { quantityInputs },
-      parentMaxMarks
-    );
+    const parentMaxMarks = Number(this.heading.score_field_field_marks) || 0;
 
     return {
       ...(this.existingParentDetailId && {
@@ -2755,17 +1789,19 @@ export class Step6Component implements OnInit {
       a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
-
-      // ✅ FIX: Added the || 3 fallback here to prevent the Foreign Key crash on the parent record
       m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id || 3,
-
-      score_field_value: scoreResult.score_field_value,
-      score_field_actual_value: scoreResult.score_field_actual_value,
-      score_field_calculated_value: scoreResult.score_field_calculated_value,
+      
+      score_field_value: parentMaxMarks, 
+      score_field_actual_value: parentCalculatedValue,
+      score_field_calculated_value: Math.min(
+        parentCalculatedValue,
+        parentMaxMarks
+      ),
+      
       field_marks: parentMaxMarks,
       field_weightage: this.heading.score_field_field_weightage || 0,
       verify_remark: 'Not Verified',
-      action_type: 'U',
+      action_type: this.existingParentDetailId ? 'U' : 'C',
       action_date: new Date().toISOString(),
       action_remark: 'parent data updated from recruitment form',
       action_by: 1,
