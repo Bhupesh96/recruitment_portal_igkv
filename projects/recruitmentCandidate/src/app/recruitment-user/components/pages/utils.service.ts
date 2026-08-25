@@ -25,6 +25,25 @@ export class UtilsService {
           data.quantityInputs,
           parentMaxValue
         );
+      case 4: // 6 Month Fellowship Based
+        return this.calculateMonthBasedScore(
+          data.months,
+          6,
+          data.weightage,
+          parentMaxValue
+        );
+      case 5: // Full Marks Based
+        return this.calculateFullMarksScore(
+          data.educations,
+          parentMaxValue
+        );
+      case 6: // 3 Month Fellowship Based
+        return this.calculateMonthBasedScore(
+          data.months,
+          3,
+          data.weightage,
+          parentMaxValue
+        );
       default:
         return {
           score_field_value: 0,
@@ -217,6 +236,53 @@ export class UtilsService {
       details,
     };
   }
+
+  private calculateFullMarksScore(
+    educations: {
+      scoreFieldId: number;
+      weight: number;
+      inputValue: any;
+      maxValue?: number;
+    }[],
+    parentFieldMarks: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    let totalActualValue = 0;
+    let totalCalculatedValue = 0;
+
+    const details = educations.map((edu) => {
+      // Method 5 always gives the qualification its full marks.
+      const fullMarks = Number(edu.maxValue || 0);
+
+      totalActualValue += fullMarks;
+      totalCalculatedValue += fullMarks;
+
+      return {
+        scoreFieldId: edu.scoreFieldId,
+        weight: edu.weight,
+        inputValue: edu.inputValue,
+        score_field_actual_value: fullMarks,
+        score_field_calculated_value: fullMarks,
+      };
+    });
+
+    // Do not allow the total to exceed the parent maximum.
+    const finalCalculatedValue = Math.min(
+      totalCalculatedValue,
+      parentFieldMarks
+    );
+
+    return {
+      score_field_value: totalActualValue,
+      score_field_actual_value: totalActualValue,
+      score_field_calculated_value: finalCalculatedValue,
+      details,
+    };
+  }
   // Corrected calculateQuantityBasedScore in UtilsService
   calculateQuantityBasedScore(
     quantityScoreInput: {
@@ -227,7 +293,7 @@ export class UtilsService {
     }[],
     parentScoreFieldMarks: number
   ): {
-    
+
     score_field_value: number; // Sum of quantities
     score_field_actual_value: number; // Sum of uncapped calculated marks
     score_field_calculated_value: number; // Sum of capped final marks, then capped at parent level
@@ -264,6 +330,65 @@ export class UtilsService {
       score_field_actual_value: +totalCalculatedMarks.toFixed(2),
       score_field_calculated_value: +cappedFinal.toFixed(2),
       details,
+    };
+  }
+  private calculateMonthBasedScore(
+    months: number,
+    monthsPerUnit: number,
+    weightage: number,
+    parentMaxValue: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    const totalMonths = Number(months) || 0;
+    const configuredWeightage = Number(weightage) || 0;
+
+    let actualValue = 0;
+
+    // Minimum qualifying duration is 3 or 6 months
+    if (totalMonths >= monthsPerUnit) {
+      const units = totalMonths / monthsPerUnit;
+
+      actualValue = +(
+        units * configuredWeightage
+      ).toFixed(4);
+    }
+
+    const calculatedValue = Math.min(
+      actualValue,
+      parentMaxValue
+    );
+
+    return {
+      score_field_value:
+        +totalMonths.toFixed(4),
+
+      score_field_actual_value:
+      actualValue,
+
+      score_field_calculated_value:
+        +calculatedValue.toFixed(4),
+
+      details: [
+        {
+          months:
+            +totalMonths.toFixed(4),
+
+          monthsPerUnit,
+
+          weightage:
+          configuredWeightage,
+
+          score_field_actual_value:
+          actualValue,
+
+          score_field_calculated_value:
+            +calculatedValue.toFixed(4),
+        },
+      ],
     };
   }
 }
