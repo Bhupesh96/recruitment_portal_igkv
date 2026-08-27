@@ -28,12 +28,14 @@
           <ng-container *ngIf="subHeadingsFormGroup.get(subHeading.m_rec_score_field_id.toString()) as subGroup">
             <div [formGroupName]="subHeading.m_rec_score_field_id.toString()">
 
-              <!-- Subheading Title -->
+            
+             <!-- Subheading Title -->
               <h6 class="mb-4 text-blue-900 text-lg font-semibold flex items-center gap-2 border-b pb-2">
                 <svg class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {{ subHeading.score_field_name_e }}
+                <!-- ✅ FIX: Changed to score_field_title_name -->
+                {{ subHeading.score_field_title_name || subHeading.score_field_name_e }}
                 <span *ngIf="subHeading.score_field_is_mandatory === '1'" class="text-red-600">*</span>
               </h6>
 
@@ -49,14 +51,14 @@
 
                   <div class="flex flex-col">
                     <label class="text-gray-800 text-base font-medium">
-                      {{ item.score_field_name_e }}
+                      <!-- FIX: Changed to score_field_title_name -->
+                      {{ item.score_field_title_name || item.score_field_name_e }}
                       <span *ngIf="item.is_mandatory === '1'" class="text-red-600">*</span>
                     </label>
                     <span class="text-xs text-gray-500 mt-0.5">
                       Added: <span class="font-semibold text-gray-700">{{ getExistingRowCount(item) }}</span> / {{ item.score_field_no_of_rows || 10 }}
                     </span>
                   </div>
-
                   <button
                     type="button"
                     (click)="addRow(subHeading.m_rec_score_field_id, item)"

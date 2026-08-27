@@ -708,10 +708,12 @@ export class Step3Component implements OnInit {
           next: (subHeadingResponse: any) => {
             const subHeadingData = subHeadingResponse.body?.data || [];
 
-            this.subHeadings = subHeadingData.map((sub: any) => ({
-              ...sub,
-              items: [], // Initialize items array
-            }));
+           this.subHeadings = subHeadingData
+              .sort((a: any, b: any) => (a.score_field_display_no || 0) - (b.score_field_display_no || 0))
+              .map((sub: any) => ({
+                ...sub,
+                items: [], // Initialize items array
+              }));
 
             this.subHeadings.forEach((sub) => {
               const key = sub.m_rec_score_field_id.toString();
@@ -738,15 +740,15 @@ export class Step3Component implements OnInit {
                 switchMap(([itemResponses, paramResponses]) => {
                   itemResponses.forEach((res, index) => {
                     const itemData = res.body?.data || [];
-                    this.subHeadings[index].items = itemData.map(
-                      (item: any) => ({
+                   this.subHeadings[index].items = itemData
+                      .sort((a: any, b: any) => (a.score_field_display_no || 0) - (b.score_field_display_no || 0))
+                      .map((item: any) => ({
                         ...item,
                         normalizedKey: this.normalizeControlName(
                           item.score_field_name_e
                         ),
                         is_mandatory: item.score_field_is_mandatory || 'N',
-                      })
-                    );
+                      }));
                     this.setupSubHeadingForm(this.subHeadings[index]);
                   });
 

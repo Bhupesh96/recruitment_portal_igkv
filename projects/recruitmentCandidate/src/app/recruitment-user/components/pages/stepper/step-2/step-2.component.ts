@@ -626,7 +626,10 @@
             'recruitement'
           ).pipe(
             switchMap((subheadingResponse) => {
-              this.subheadings = subheadingResponse.body?.data || [];
+             const rawSubheadings = subheadingResponse.body?.data || [];
+              this.subheadings = rawSubheadings.sort((a: Subheading, b: Subheading) => 
+                (a.score_field_display_no || 0) - (b.score_field_display_no || 0)
+              );
 
               const parameterRequests = this.subheadings.map((sub) =>
                 this.HTTP.getParam(
