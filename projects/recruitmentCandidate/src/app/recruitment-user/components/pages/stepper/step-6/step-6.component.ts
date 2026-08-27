@@ -1214,8 +1214,7 @@ export class Step6Component implements OnInit {
     }
   }
 
-  // Helper method to prepare form data for emission (optional, to avoid duplication)
-  // Helper method to prepare form data for emission
+// Helper method to prepare form data for emission
   private getFormData(): any {
     const formValue = this.form.getRawValue();
 
@@ -1248,6 +1247,9 @@ export class Step6Component implements OnInit {
           const param = parameters.find((p: any) => p.normalizedKey === key);
 
           if (param) {
+            // ✅ FIX 1: Use the untouched original string from the database!
+            const originalParamName = param.score_field_parameter_name;
+
             // ✅ START: DROPDOWN LOGIC (ID -> Name Conversion)
             if (
               ['D', 'DC', 'DY'].includes(param.control_type) &&
@@ -1260,31 +1262,31 @@ export class Step6Component implements OnInit {
               );
 
               if (selectedOption) {
-                processedRow[key] = selectedOption.data_name;
+                processedRow[originalParamName] = selectedOption.data_name;
               } else {
-                processedRow[key] = value; // Fallback
+                processedRow[originalParamName] = value; // Fallback
               }
             }
-              // ✅ END: DROPDOWN LOGIC
+            // ✅ END: DROPDOWN LOGIC
 
             // FILE LOGIC (Consistent with Step 2)
             else if (param.control_type === 'A') {
               if (value instanceof File) {
-                processedRow[key] = value;
+                processedRow[originalParamName] = value;
               } else {
                 // Reconstruct key to check existing file path
                 const paramKey = `${subHeading.m_rec_score_field_id}_${typeValue}_${param.m_rec_score_field_parameter_new_id}_${_rowIndex}`;
                 const existingFilePath = this.filePaths.get(paramKey);
                 if (existingFilePath) {
-                  processedRow[key] = existingFilePath;
+                  processedRow[originalParamName] = existingFilePath;
                 } else {
-                  processedRow[key] = null;
+                  processedRow[originalParamName] = null;
                 }
               }
             }
             // STANDARD TEXT/NUMBER
             else {
-              processedRow[key] = value;
+              processedRow[originalParamName] = value;
             }
           } else {
             // If it's not a mapped parameter (e.g., hidden ID fields), keep as is
@@ -1303,10 +1305,12 @@ export class Step6Component implements OnInit {
       acc[sub.m_rec_score_field_id] = {
         m_rec_score_field_id: sub.m_rec_score_field_id,
         score_field_name_e: sub.score_field_name_e,
+        score_field_title_name: sub.score_field_title_name, // ✅ FIX 2: Pass down title
         a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
         items: sub.items.map((item: any) => ({
           m_rec_score_field_id: item.m_rec_score_field_id,
           score_field_name_e: item.score_field_name_e,
+          score_field_title_name: item.score_field_title_name, // ✅ FIX 2: Pass down title
           normalizedKey: item.normalizedKey,
         })),
       };
@@ -1324,7 +1328,6 @@ export class Step6Component implements OnInit {
       subheadings: subheadingsData,
     };
   }
-
   // in step-6.component.ts
   /**
    * Generates a SHA-256 hash for a given File using CryptoJS.

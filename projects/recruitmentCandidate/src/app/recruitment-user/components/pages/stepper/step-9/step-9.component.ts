@@ -73,11 +73,14 @@
       this.form = this.fb.group({ declaration: [false, Validators.requiredTrue] });
     }
 
-    toTitleCase(str: any): string {
+toTitleCase(str: any): string {
       if (!str) return '';
       if (typeof str !== 'string') return String(str);
+      // Only lowercase emails. Leave everything else EXACTLY as typed.
       if (str.includes('@') && str.includes('.')) return str.toLowerCase();
-      return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+      
+      // ✅ FIX: Do NOT use regex to capitalize every word. Just return the string.
+      return str; 
     }
 
     ngOnInit(): void {
@@ -277,11 +280,18 @@
 
     getFormDataKeys(dataObject: any): string[] { return dataObject ? Object.keys(dataObject) : []; }
 
-    formatKey(key: string): string {
-      const formatted = key.replace(/([A-Z])/g, ' $1').trim().replace(/_/g, ' ');
-      return this.toTitleCase(formatted);
-    }
+formatKey(key: string): string {
+      if (!key || typeof key !== 'string') return '';
+      
+      // ✅ FIX: If it already has spaces or slashes (like a DB string), return it untouched.
+      if (key.includes(' ') || key.includes('/')) return key;
 
+      // Only format raw snake_case database columns
+      const formatted = key.replace(/_/g, ' ').trim();
+      
+      // Capitalize ONLY the very first letter of the sentence
+      return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
     isFileValue(value: any): boolean {
       if (value instanceof File) return true;
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) return true;
@@ -342,23 +352,26 @@
 
       return '—';
     }
-    formatValue(value: any, question?: string): string {
+formatValue(value: any, question?: string): string {
       if (question?.toLowerCase().includes('category')) {
         const categoryMap: any = {
-          UR: 'Unreserved (Ur)', OBC: 'Other Backward Class (Obc)', SC: 'Scheduled Caste (Sc)', ST: 'Scheduled Tribe (St)', EWS: 'Economically Weaker Section (Ews)', 'EWS ': 'Economically Weaker Section (Ews)',
-          1: 'Unreserved (Ur)', 2: 'Other Backward Class (Obc)', 3: 'Scheduled Caste (Sc)', 4: 'Scheduled Tribe (St)', 5: 'Economically Weaker Section (Ews)'
+          UR: 'Unreserved (UR)', OBC: 'Other Backward Class (OBC)', SC: 'Scheduled Caste (SC)', ST: 'Scheduled Tribe (ST)', EWS: 'Economically Weaker Section (EWS)', 'EWS ': 'Economically Weaker Section (EWS)',
+          1: 'Unreserved (UR)', 2: 'Other Backward Class (OBC)', 3: 'Scheduled Caste (SC)', 4: 'Scheduled Tribe (ST)', 5: 'Economically Weaker Section (EWS)'
         };
         return categoryMap[value] || String(value);
       }
 
       if (this.isFileValue(value)) return 'File Uploaded';
       if (value === null || value === undefined || value === '') return '—';
+      
       if (Array.isArray(value)) {
-        return value.map((item) => typeof item === 'object' ? Object.values(item).join(', ') : this.toTitleCase(item)).join('; ');
+        return value.map((item) => typeof item === 'object' ? Object.values(item).join(', ') : String(item)).join('; ');
       }
+      
       if (typeof value === 'object' && !(value instanceof File)) return JSON.stringify(value);
 
-      return this.toTitleCase(String(value));
+      // ✅ FIX: Just return the string. Do NOT wrap it in this.toTitleCase()
+      return String(value);
     }
 
     getFileUrl(filePath: string): string {
@@ -366,7 +379,7 @@
       return `${environment.recruitmentFileBaseUrl}/${filePath.replace(/\\/g, '/')}`;
     }
 
-    getDetailItemName(step: number, detailType: string): string {
+getDetailItemName(step: number, detailType: string): string {
       const stepData = this.formData[step];
       if (!stepData || !stepData['subheadings']) return 'Detail';
 
@@ -377,7 +390,8 @@
             (item: any) => item.m_rec_score_field_id.toString() === detailType.toString()
           );
           if (foundItem) {
-            return foundItem.score_field_name_e;
+            // FIX: Return title_name first, fallback to name_e
+            return foundItem.score_field_title_name || foundItem.score_field_name_e;
           }
         }
       }

@@ -65,13 +65,35 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
   }
-
-  toTitleCase(str: any): string {
+toTitleCase(str: any): string {
     if (!str) return '';
     if (typeof str !== 'string') return String(str);
     if (str.includes('@') && str.includes('.')) return str.toLowerCase();
 
-    return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+    // Avoid lowercasing the entire string first to preserve acronyms like "UG/PG/Ph.D"
+    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  formatKey(key: string): string {
+    if (!key || typeof key !== 'string') return '';
+    
+    // If it already has spaces or slashes, it's likely a pre-formatted string from the API.
+    if (key.includes(' ') || key.includes('/')) return key;
+
+    // Only apply split logic to camelCase or snake_case database keys
+    const formatted = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+    return this.toTitleCase(formatted);
+  }
+
+  formatHeader(key: string): string {
+    if (!key || typeof key !== 'string') return '';
+    
+    // If it already has spaces or slashes, it's likely a pre-formatted string from the API.
+    if (key.includes(' ') || key.includes('/')) return key;
+
+    // Only apply split logic to camelCase or snake_case database keys
+    const formatted = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+    return this.toTitleCase(formatted);
   }
 
   ngOnInit(): void {
@@ -201,7 +223,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     }
   }
 
-  private generatePdfDocument(): void {
+private generatePdfDocument(): void {
     if (!this.printContentRef) {
       this.loader.hideLoader();
       return;
@@ -224,9 +246,9 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
           body { font-family: Arial, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 0; background: #fff; }
           .a4-container { width: 100%; max-width: 800px; margin: 0 auto; }
           .header-section { text-align: center; margin-bottom: 20px; }
-          .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; text-transform: capitalize; }
+          .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; } 
           .bordered-section { border: 1px solid #000; margin-bottom: 15px; page-break-inside: avoid; }
-          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; text-transform: capitalize; }
+          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; } 
           .sub-section-heading-bar { background-color: #f5f5f5; padding: 6px 10px; font-weight: bold; border-bottom: 1px solid #000; border-top: 1px solid #000; }
           table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
           tr { page-break-inside: avoid; page-break-after: auto; }
@@ -252,15 +274,9 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       this.loader.hideLoader();
     });
   }
-
   getFileUrl(filePath: string | null): string {
     if (!filePath || typeof filePath !== 'string') return '';
     return `${environment.recruitmentFileBaseUrl}/${filePath.replace(/\\/g, '/')}`;
-  }
-
-  formatHeader(key: string): string {
-    const formatted = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
-    return this.toTitleCase(formatted);
   }
 
   loadDeclaration(): void {
@@ -303,10 +319,6 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     return dataObject ? Object.keys(dataObject) : [];
   }
 
-  formatKey(key: string): string {
-    const formatted = key.replace(/([A-Z])/g, ' $1').trim().replace(/_/g, ' ');
-    return this.toTitleCase(formatted);
-  }
 
   getProcessedPersonalInfo(): { key: string; value: string }[] {
     const info = this.formData[1];
