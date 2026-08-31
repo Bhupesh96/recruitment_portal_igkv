@@ -1,10 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { SharedDataService } from '../shared-data.service';
 import { Subscription, take } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpService, LoaderService } from 'shared';
-import { RecruitmentStateService, UserRecruitmentData } from '../recruitment-state.service';
+import {
+  RecruitmentStateService,
+  UserRecruitmentData,
+} from '../recruitment-state.service';
 import { environment } from 'environment';
 
 @Component({
@@ -24,7 +34,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
 
   public userData: UserRecruitmentData | null = null;
   feeStatus: any = null;
-
+  stepDisplayOrderMap = new Map<number, number>();
   payScale: string = '';
   payLevel: string = '';
   advertisementNo: string = '—';
@@ -50,9 +60,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     'Permanent_State_Name', 'Permanent_District_Name', 'Current_Address1',
     'Current_City', 'Current_Pin_Code', 'Current_Country_Id', 'Current_State_Id',
     'Current_District_Id', 'Current_Country_Name', 'Current_State_Name',
-    'Current_District_Name',
-    'candidate_category_id',
-    'advertisment_no'
+    'Current_District_Name', 'candidate_category_id', 'advertisment_no',
   ]);
 
   constructor(
@@ -61,53 +69,83 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     private httpService: HttpService,
     private recruitmentState: RecruitmentStateService,
     private loader: LoaderService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
   }
-toTitleCase(str: any): string {
+
+  toTitleCase(str: any): string {
     if (!str) return '';
     if (typeof str !== 'string') return String(str);
     if (str.includes('@') && str.includes('.')) return str.toLowerCase();
-
-    // Avoid lowercasing the entire string first to preserve acronyms like "UG/PG/Ph.D"
-    return str.replace(/\b\w/g, (char) => char.toUpperCase());
+    return str;
   }
 
   formatKey(key: string): string {
     if (!key || typeof key !== 'string') return '';
-    
-    // If it already has spaces or slashes, it's likely a pre-formatted string from the API.
     if (key.includes(' ') || key.includes('/')) return key;
-
-    // Only apply split logic to camelCase or snake_case database keys
-    const formatted = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
-    return this.toTitleCase(formatted);
+    const formatted = key.replace(/_/g, ' ').trim();
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
   formatHeader(key: string): string {
-    if (!key || typeof key !== 'string') return '';
-    
-    // If it already has spaces or slashes, it's likely a pre-formatted string from the API.
-    if (key.includes(' ') || key.includes('/')) return key;
-
-    // Only apply split logic to camelCase or snake_case database keys
-    const formatted = key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
-    return this.toTitleCase(formatted);
+    return this.formatKey(key);
   }
 
   ngOnInit(): void {
-    this.dataSubscription = this.sharedDataService.formData$.subscribe((data) => {
-      if (data && Object.keys(data).length > 0) {
-        this.formData = JSON.parse(JSON.stringify(data));
-        if (this.formData[1]?.languages && Array.isArray(this.formData[1].languages)) {
-          this.formData[1].languages = this.getUniqueLanguages(this.formData[1].languages);
+    this.dataSubscription = this.sharedDataService.formData$.subscribe(
+      (data) => {
+        if (data && Object.keys(data).length > 0) {
+          this.formData = JSON.parse(JSON.stringify(data));
+          if (
+            this.formData[1]?.languages &&
+            Array.isArray(this.formData[1].languages)
+          ) {
+            this.formData[1].languages = this.getUniqueLanguages(
+              this.formData[1].languages,
+            );
+          }
+          this.processedPersonalInfo = this.getProcessedPersonalInfo();
+          this.processAllDataForView();
+          this.fetchStepDisplayOrder();
+          this.isDataLoaded = true;
+          this.loadDeclaration();
+          this.getFeeStatus();
         }
-        this.processedPersonalInfo = this.getProcessedPersonalInfo();
+      },
+    );
+  }
+
+  fetchStepDisplayOrder() {
+    const info = this.formData[1];
+    if (!info) return;
+
+    const params: any = {
+      a_rec_adv_main_id: info.a_rec_adv_main_id,
+      post_code: info.post_code,
+      m_rec_es_master_id: 4 
+    };
+    if (info.subject_id) {
+      params.subject_id = info.subject_id;
+    }
+
+    this.httpService.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
+      next: (res: any) => {
+        const steps = res?.body?.data || [];
+        this.stepDisplayOrderMap.clear();
+        
+        steps.forEach((step: any) => {
+          // ✅ FIX: Force strict Number to avoid Map lookup failures
+          this.stepDisplayOrderMap.set(Number(step.m_rec_score_field_id), Number(step.display_order));
+        });
+        
         this.processAllDataForView();
-        this.isDataLoaded = true;
-        this.loadDeclaration();
-        this.getFeeStatus();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load step order sequence', err);
+        this.processAllDataForView();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -116,16 +154,18 @@ toTitleCase(str: any): string {
     if (!this.formData[1]) return;
     const params = {
       recruitment: true,
-      payee_id: this.formData[1]["registration_no"],
-      advertisement_id: this.formData[1]["a_rec_adv_main_id"]
+      payee_id: this.formData[1]['registration_no'],
+      advertisement_id: this.formData[1]['a_rec_adv_main_id'],
     };
-    this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
-      next: (result: any) => {
-        this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error('Failed to load fee status for PDF', err)
-    });
+    this.httpService
+      .getParam('/fee/get/getFeeStatus/', params, 'academic')
+      .subscribe({
+        next: (result: any) => {
+          this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error('Failed to load fee status for PDF', err),
+      });
   }
 
   ngOnDestroy(): void {
@@ -144,53 +184,56 @@ toTitleCase(str: any): string {
 
   isFileValue(value: any): boolean {
     if (value instanceof File) return true;
-    if (typeof value === 'object' && value !== null && (value.name || value.size) && !Array.isArray(value)) return true;
-    return (typeof value === 'string' && (value.startsWith('recruitment/') || value === 'FILE_UPLOADED'));
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      (value.name || value.size) &&
+      !Array.isArray(value)
+    )
+      return true;
+    return (
+      typeof value === 'string' &&
+      (value.startsWith('recruitment/') || value === 'FILE_UPLOADED')
+    );
   }
 
   getAppliedCategory(): string {
-    // 1. Pull directly from Recruitment State Service (userData) using bracket notation
     if (this.userData && this.userData['category_id']) {
       return this.formatValue(this.userData['category_id'], 'category');
     }
-
     const info = this.formData[1];
     if (!info) return '—';
 
-    // 2. Fallback to candidate_category_id from form payload
     if (info['candidate_category_id']) {
       return this.formatValue(info['candidate_category_id'], 'category');
     }
 
-    // 3. Find it in additionalInfoDetails (Last resort fallback)
     if (info['additionalInfoDetails'] && Array.isArray(info['additionalInfoDetails'])) {
       const categoryItem = info['additionalInfoDetails'].find((item: any) =>
-        item.question?.toLowerCase().includes('category')
+        item.question?.toLowerCase().includes('category'),
       );
       if (categoryItem) {
         return this.formatValue(categoryItem.answer, categoryItem.question);
       }
     }
-
     return '—';
   }
 
   formatValue(value: any, question?: string): string {
     if (question?.toLowerCase().includes('category')) {
-      // Adjusted map to strictly match your JSON options (including the 'EWS ' with space)
       const categoryMap: any = {
         UR: 'Unreserved (UR)', OBC: 'Other Backward Class (OBC)', SC: 'Scheduled Caste (SC)', ST: 'Scheduled Tribe (ST)', EWS: 'Economically Weaker Section (EWS)', 'EWS ': 'Economically Weaker Section (EWS)',
-        1: 'Unreserved (UR)', 2: 'Other Backward Class (OBC)', 3: 'Scheduled Caste (SC)', 4: 'Scheduled Tribe (ST)', 5: 'Economically Weaker Section (EWS)'
+        1: 'Unreserved (UR)', 2: 'Other Backward Class (OBC)', 3: 'Scheduled Caste (SC)', 4: 'Scheduled Tribe (ST)', 5: 'Economically Weaker Section (EWS)',
       };
       return categoryMap[value] || String(value || '');
     }
 
     if (this.isFileValue(value)) return '✓ File Uploaded';
     if (value === null || value === undefined || value === '') return '—';
-    if (Array.isArray(value)) return value.map(v => this.toTitleCase(String(v))).join(', ');
+    if (Array.isArray(value)) return value.map((v) => typeof v === 'object' ? Object.values(v).join(', ') : String(v)).join(', ');
     if (typeof value === 'object') return '';
 
-    return this.toTitleCase(String(value));
+    return String(value);
   }
 
   private processAllDataForView(): void {
@@ -205,25 +248,37 @@ toTitleCase(str: any): string {
 
   public downloadAsPdf(): void {
     this.loader.showLoader();
+    
+    // ✅ FIX: Force the arrays to update and trigger Angular to render the view BEFORE printing!
+    this.processAllDataForView();
+    this.cdr.detectChanges();
+
     if (this.formData[1]) {
-      const params = { recruitment: true, payee_id: this.formData[1]["registration_no"], advertisement_id: this.formData[1]["a_rec_adv_main_id"] };
-      this.httpService.getParam('/fee/get/getFeeStatus/', params, 'academic').subscribe({
-        next: (result: any) => {
-          this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
-          this.cdr.detectChanges();
-          this.generatePdfDocument();
-        },
-        error: (err) => {
-          console.error('Failed to load fee status for PDF', err);
-          this.generatePdfDocument();
-        }
-      });
+      const params = {
+        recruitment: true,
+        payee_id: this.formData[1]['registration_no'],
+        advertisement_id: this.formData[1]['a_rec_adv_main_id'],
+      };
+      this.httpService
+        .getParam('/fee/get/getFeeStatus/', params, 'academic')
+        .subscribe({
+          next: (result: any) => {
+            this.feeStatus = !result.body?.error ? result.body?.data[0] : null;
+            this.cdr.detectChanges();
+            // ✅ FIX: Wait 500ms for Angular to finish painting the sorted DOM!
+            setTimeout(() => this.generatePdfDocument(), 500); 
+          },
+          error: (err) => {
+            console.error('Failed to load fee status for PDF', err);
+            setTimeout(() => this.generatePdfDocument(), 500);
+          },
+        });
     } else {
-      this.generatePdfDocument();
+      setTimeout(() => this.generatePdfDocument(), 500);
     }
   }
 
-private generatePdfDocument(): void {
+  private generatePdfDocument(): void {
     if (!this.printContentRef) {
       this.loader.hideLoader();
       return;
@@ -231,7 +286,9 @@ private generatePdfDocument(): void {
 
     const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
     let stylesHtml = '';
-    styleNodes.forEach((node) => { stylesHtml += node.outerHTML; });
+    styleNodes.forEach((node) => {
+      stylesHtml += node.outerHTML;
+    });
 
     let contentHtml = this.printContentRef.nativeElement.outerHTML;
     const baseUrl = window.location.origin;
@@ -267,13 +324,23 @@ private generatePdfDocument(): void {
   `;
 
     const apiUrl = '/file/post/htmltoPdf';
-    const payload = { html: fullHtmlPayload, old_header: true, office_name: false, border: false, university_id : 2 };
+    const payload = {
+      html: fullHtmlPayload,
+      old_header: true,
+      office_name: false,
+      border: false,
+      university_id: 2,
+    };
     let fileName = `Application_Form_${this.formData[1]?.registration_no}.pdf`;
 
-    this.httpService.postBlob(apiUrl, payload, fileName, "common").pipe(take(1)).subscribe(() => {
-      this.loader.hideLoader();
-    });
+    this.httpService
+      .postBlob(apiUrl, payload, fileName, 'common')
+      .pipe(take(1))
+      .subscribe(() => {
+        this.loader.hideLoader();
+      });
   }
+
   getFileUrl(filePath: string | null): string {
     if (!filePath || typeof filePath !== 'string') return '';
     return `${environment.recruitmentFileBaseUrl}/${filePath.replace(/\\/g, '/')}`;
@@ -319,7 +386,6 @@ private generatePdfDocument(): void {
     return dataObject ? Object.keys(dataObject) : [];
   }
 
-
   getProcessedPersonalInfo(): { key: string; value: string }[] {
     const info = this.formData[1];
     if (!info) return [];
@@ -355,9 +421,7 @@ private generatePdfDocument(): void {
     let calculatedAge = this.formatValue(info['age']);
 
     if (info['DOB']) {
-      const targetDateStr = this.ageCalculationDate
-        ? this.ageCalculationDate.split('T')[0]
-        : new Date().toISOString().split('T')[0];
+      const targetDateStr = this.ageCalculationDate ? this.ageCalculationDate.split('T')[0] : new Date().toISOString().split('T')[0];
       const dobStr = info['DOB'].split('T')[0];
 
       const [tYear, tMonth, tDay] = targetDateStr.split('-').map(Number);
@@ -420,93 +484,162 @@ private generatePdfDocument(): void {
         !key.startsWith('condition_') &&
         key !== 'additionalInfoDetails'
       ) {
-        processedData.push({
-          key: this.formatKey(key),
-          value: this.formatValue(info[key]),
-        });
+        processedData.push({ key: this.formatKey(key), value: this.formatValue(info[key]) });
       }
     }
 
     return processedData;
   }
 
+  isInServiceCandidate(): boolean {
+    const info = this.formData[1];
+    if (!info || !Array.isArray(info['additionalInfoDetails'])) return false;
+
+    const inServiceQuestion = info['additionalInfoDetails'].find((item: any) =>
+      item.question_id === 6 || (item.question && item.question.toLowerCase().includes('in-service'))
+    );
+
+    if (inServiceQuestion && inServiceQuestion.answer) {
+      const answer = String(inServiceQuestion.answer).toLowerCase();
+      return answer === 'yes' || answer === 'y';
+    }
+    return false;
+  }
+
   private getProcessedSteps(): any[] {
-    return Object.keys(this.formData).map(Number).filter((key) => key > 1).sort((a, b) => a - b).map((key) => {
-      const stepData = this.formData[key];
-      if (stepData.languages && stepData.languages.length > 0) return null;
+    return Object.keys(this.formData)
+      .map(Number)
+      .filter((key) => key > 1)
+      .sort((a, b) => {
+        // ✅ FIX: Safely parse Map lookup keys as absolute Numbers
+        const idA = Number(this.formData[a]?.['heading']?.['m_rec_score_field_id']);
+        const idB = Number(this.formData[b]?.['heading']?.['m_rec_score_field_id']);
+        const orderA = this.stepDisplayOrderMap.get(idA) ?? 999;
+        const orderB = this.stepDisplayOrderMap.get(idB) ?? 999;
+        return orderA - orderB;
+      })
+      .map((key) => {
+        const stepData = this.formData[key];
+        if (stepData.languages && stepData.languages.length > 0) return null;
 
-      let stepType = '';
-      let sections: any[] = [];
+        let stepType = '';
+        let sections: any[] = [];
 
-      if (this.isQualificationStep(stepData)) {
-        stepType = 'qualification';
-        sections = this.getQualificationSections(stepData);
-      } else if (this.isExperienceStep(stepData)) {
-        stepType = 'experience';
-        sections = this.getExperienceSections(stepData);
-      } else if (this.isDetailsStep(stepData)) {
-        stepType = 'details';
-        sections = this.getSubheadingsWithDetails(stepData);
-      }
+        if (this.isQualificationStep(stepData)) {
+          stepType = 'qualification';
+          sections = this.getQualificationSections(stepData);
+        } else if (this.isExperienceStep(stepData)) {
+          stepType = 'experience';
+          sections = this.getExperienceSections(stepData);
+        } else if (this.isDetailsStep(stepData)) {
+          stepType = 'details';
+          sections = this.getSubheadingsWithDetails(stepData);
+        }
 
-      if (sections.length === 0 && !stepData.attachments) return null;
+        if (sections.length === 0 && !stepData.attachments) return null;
 
-      return { key, heading: stepData?.heading?.score_field_title_name || 'Details', type: stepType, sections };
-    }).filter((step) => step !== null);
+        return { 
+          key, 
+          heading: stepData?.['heading']?.['score_field_title_name'] || stepData?.['heading']?.['score_field_name_e'] || 'Details', 
+          type: stepType, 
+          sections 
+        };
+      }).filter((step) => step !== null);
   }
 
   private getDisplayableKeys(obj: any): string[] {
     if (!obj) return [];
-    return Object.keys(obj).filter((key) =>
-      !key.toLowerCase().includes('_id') &&
-      !key.toLowerCase().includes('a_rec_app') &&
-      !key.toLowerCase().includes('is_deleted') &&
-      !key.startsWith('param_') &&
-      key !== 'calculated_experience'
+    return Object.keys(obj).filter(
+      (key) =>
+        !key.toLowerCase().includes('_id') &&
+        !key.toLowerCase().includes('a_rec_app') &&
+        !key.toLowerCase().includes('is_deleted') &&
+        !key.startsWith('param_') &&
+        key !== 'calculated_experience',
     );
   }
 
-  private isQualificationStep(stepData: any): boolean { return stepData && Object.keys(stepData).some((key) => key.startsWith('qualifications')); }
-  private isExperienceStep(stepData: any): boolean { return stepData && Object.keys(stepData).some((key) => /^\d+_\d+_\d+$/.test(key)); }
-  private isDetailsStep(stepData: any): boolean { return stepData && Array.isArray(stepData.details) && stepData.subheadings; }
+  private isQualificationStep(stepData: any): boolean {
+    return stepData && Object.keys(stepData).some((key) => key.startsWith('qualifications'));
+  }
+  private isExperienceStep(stepData: any): boolean {
+    return stepData && Object.keys(stepData).some((key) => /^\d+_\d+_\d+$/.test(key));
+  }
+  private isDetailsStep(stepData: any): boolean {
+    return stepData && Array.isArray(stepData.details) && stepData.subheadings;
+  }
+
+  private getSortedSubheadingKeys(stepData: any): string[] {
+    if (!stepData || !stepData.subheadings) return [];
+    return Object.keys(stepData.subheadings).sort((a, b) => {
+      const orderA = stepData.subheadings[a]?.score_field_display_no || 0;
+      const orderB = stepData.subheadings[b]?.score_field_display_no || 0;
+      return orderA - orderB;
+    });
+  }
+
+  private getSortedExperienceKeys(stepData: any): string[] {
+    if (!stepData) return [];
+    const keys = Object.keys(stepData).filter((k) => /^\d+_\d+_\d+$/.test(k) && stepData[k]?.length > 0);
+    return keys.sort((a, b) => {
+      const orderA = stepData.subheadings?.[a]?.score_field_display_no || 0;
+      const orderB = stepData.subheadings?.[b]?.score_field_display_no || 0;
+      return orderA - orderB;
+    });
+  }
 
   private getQualificationSections(stepData: any): any[] {
     if (!stepData || !stepData.subheadings) return [];
-    return Object.keys(stepData.subheadings).map((key) => {
-      const qualifications = stepData[`qualifications${key}`] || [];
-      if (qualifications.length > 0) {
-        return { title: stepData.subheadings[key]?.score_field_title_name || 'Qualification', headers: this.getDisplayableKeys(qualifications[0]), qualifications: qualifications };
-      }
-      return null;
-    }).filter(Boolean);
+
+    return this.getSortedSubheadingKeys(stepData).map((key) => {
+        const qualifications = stepData[`qualifications${key}`] || [];
+        if (qualifications.length > 0) {
+          return {
+            title: stepData.subheadings[key]?.score_field_title_name || stepData.subheadings[key]?.score_field_name_e || 'Qualification',
+            headers: this.getDisplayableKeys(qualifications[0]),
+            qualifications: qualifications,
+          };
+        }
+        return null;
+      }).filter(Boolean);
   }
 
   private getSubheadingsWithDetails(stepData: any): any[] {
     if (!stepData || !stepData.subheadings || !stepData.details) return [];
-    return Object.keys(stepData.subheadings).map((key) => {
-      const subhead = stepData.subheadings[key];
-      const subheadItemIds = (subhead.items || []).map((item: any) => item.m_rec_score_field_id.toString());
-      const details = stepData.details.filter((detail: any) => subheadItemIds.includes(detail.type.toString())).map((detail: any) => ({
-        ...detail, type: this.getDetailItemName(stepData, detail.type)
-      }));
 
-      if (details.length > 0) {
-        return { title: subhead.score_field_name_e || 'Details', details: details, headers: this.getDisplayableKeys(details[0]) };
-      }
-      return null;
-    }).filter(Boolean);
+    return this.getSortedSubheadingKeys(stepData).map((key) => {
+        const subhead = stepData.subheadings[key];
+        const subheadItemIds = (subhead.items || []).map((item: any) => item.m_rec_score_field_id.toString());
+        const details = stepData.details.filter((detail: any) => subheadItemIds.includes(detail.type.toString())).map((detail: any) => ({
+            ...detail,
+            type: this.getDetailItemName(stepData, detail.type),
+          }));
+
+        if (details.length > 0) {
+          return {
+            title: subhead.score_field_title_name || subhead.score_field_name_e || 'Details',
+            details: details,
+            headers: this.getDisplayableKeys(details[0]),
+          };
+        }
+        return null;
+      }).filter(Boolean);
   }
 
   private getExperienceSections(stepData: any): any[] {
     if (!stepData || !stepData.subheadings) return [];
-    return Object.keys(stepData.subheadings).map((key) => {
-      if (!/^\d+_\d+_\d+$/.test(key)) return null;
-      const experiences = stepData[key] || [];
-      if (experiences.length > 0) {
-        return { title: stepData.subheadings[key]?.score_field_title_name || 'Experience', experiences: experiences, headers: this.getDisplayableKeys(experiences[0]) };
-      }
-      return null;
-    }).filter(Boolean);
+
+    return this.getSortedExperienceKeys(stepData).map((key) => {
+        const experiences = stepData[key] || [];
+        if (experiences.length > 0) {
+          return {
+            title: stepData.subheadings[key]?.score_field_title_name || stepData.subheadings[key]?.score_field_name_e || 'Experience',
+            experiences: experiences,
+            headers: this.getDisplayableKeys(experiences[0]),
+          };
+        }
+        return null;
+      }).filter(Boolean);
   }
 
   private getProcessedAttachments(): { type: string; remark: string }[] {
@@ -515,17 +648,18 @@ private generatePdfDocument(): void {
     const stepData = this.formData[Number(attachmentStepKey)];
     if (!stepData || !Array.isArray(stepData.attachments)) return [];
 
-    const subheadKeys = Object.keys(stepData.subheadings || {});
+    const subheadKeys = this.getSortedSubheadingKeys(stepData);
+
     return stepData.attachments.map((att: any, index: number) => {
-      if (att.remark && att.remark.trim() !== '') {
-        const key = subheadKeys[index];
-        if (key) {
-          const type = stepData.subheadings[key]?.score_field_title_name || `Attachment ${index + 1}`;
-          return { type, remark: att.remark };
+        if (att.remark && att.remark.trim() !== '') {
+          const key = subheadKeys[index];
+          if (key) {
+            const type = stepData.subheadings[key]?.score_field_title_name || stepData.subheadings[key]?.score_field_name_e || `Attachment ${index + 1}`;
+            return { type, remark: att.remark };
+          }
         }
-      }
-      return null;
-    }).filter((item: any): item is { type: string; remark: string } => item !== null);
+        return null;
+      }).filter((item: any): item is { type: string; remark: string } => item !== null);
   }
 
   private getDetailItemName(stepData: any, detailType: string): string {
@@ -534,7 +668,9 @@ private generatePdfDocument(): void {
       const subhead = stepData.subheadings[subheadKey];
       if (subhead && Array.isArray(subhead.items)) {
         const foundItem = subhead.items.find((item: any) => item.m_rec_score_field_id.toString() === detailType.toString());
-        if (foundItem) return foundItem.score_field_name_e;
+        if (foundItem) {
+          return foundItem.score_field_title_name || foundItem.score_field_name_e;
+        }
       }
     }
     return detailType;

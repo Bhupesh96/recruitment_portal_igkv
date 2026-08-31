@@ -1,9 +1,9 @@
 <div class="a4-container" #printSection [style.display]="isDataLoaded ? 'block' : 'none'">
 
   <div class="header-section">
-    <div class="form-title">Application Form For {{ (formData[1]?.post_name || "-") | titlecase }}</div>
+    <div class="form-title">Application Form For {{ formData[1]?.post_name || "-" }}</div>
     <div *ngIf="payScale || payLevel" style="font-size: 14px; font-weight: bold; color: #000; margin-top: 5px;">
-      (Pay Scale Rs. {{ payScale }}/- <ng-container *ngIf="payScale && payLevel"> </ng-container>{{ payLevel | titlecase }})
+      (Pay Scale Rs. {{ payScale }}/- <ng-container *ngIf="payScale && payLevel"> </ng-container>{{ payLevel }})
     </div>
   </div>
 
@@ -24,7 +24,7 @@
 
         <div *ngIf="formData[1]?.Subject_Name_E" style="margin-bottom: 8px;">
           <span class="label">Applied Subject:</span>
-          {{ formData[1]?.Subject_Name_E | titlecase }}
+          {{ formData[1]?.Subject_Name_E }}
         </div>
 
         <div style="margin-bottom: 8px;">
@@ -34,7 +34,7 @@
 
         <div>
           <span class="label">Applied Post:</span>
-          {{ (formData[1]?.post_name || "-") | titlecase }}
+          {{ formData[1]?.post_name || "-" }}
         </div>
       </div>
 
@@ -112,13 +112,12 @@
       <div class="details-flex" style="display: flex; flex-wrap: wrap; width: 100%; padding: 5px;">
         <ng-container *ngFor="let item of formData[1].additionalInfoDetails">
 
-          <!-- ✅ Removed the *ngIf that was hiding the category, now it prints on the PDF -->
           <div
             class="detail-item"
             style="width: 33.33%; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column;"
           >
             <div class="label" style="font-size: 11px; color: #555; margin-bottom: 3px; font-weight: bold;">
-              {{ item.question | titlecase }}
+              {{ item.question }}
             </div>
             <div style="font-size: 13px; font-weight: 500; color: #000; word-wrap: break-word;">
               {{ formatValue(item.answer, item.question) }}
@@ -144,9 +143,9 @@
       <tbody>
       <tr *ngFor="let lang of formData[1]?.languages; let i = index">
         <td style="text-align: center;">{{ i + 1 }}</td>
-        <td>{{ lang.language_type | titlecase }}</td>
-        <td>{{ lang.language_name | titlecase }}</td>
-        <td>{{ lang.language_skill | titlecase }}</td>
+        <td>{{ lang.language_type }}</td>
+        <td>{{ lang.language_name }}</td>
+        <td>{{ lang.language_skill }}</td>
       </tr>
       </tbody>
     </table>
@@ -154,7 +153,7 @@
 
   <ng-container *ngFor="let step of processedSteps; let i = index">
     <div class="bordered-section">
-      <div class="section-heading-bar">{{ step.heading | titlecase }}</div>
+      <div class="section-heading-bar">{{ step.heading }}</div>
       <ng-container [ngSwitch]="step.type">
         <ng-container *ngSwitchCase="'qualification'" [ngTemplateOutlet]="educationTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
         <ng-container *ngSwitchCase="'experience'" [ngTemplateOutlet]="experienceTemplate" [ngTemplateOutletContext]="{ sections: step.sections }"></ng-container>
@@ -176,8 +175,8 @@
       <tbody>
       <tr *ngFor="let attachment of processedAttachments; let i = index">
         <td style="text-align: center;">{{ i + 1 }}</td>
-        <td>{{ attachment.type | titlecase }}</td>
-        <td>{{ attachment.remark | titlecase }}</td>
+        <td>{{ attachment.type }}</td>
+        <td>{{ attachment.remark }}</td>
       </tr>
       </tbody>
     </table>
@@ -210,35 +209,39 @@
       </div>
     </div>
 
-    <div class="section-heading-bar" style="border-top: 1px solid #000;">Remarks Of The Present Employer</div>
-    <div class="declaration-content">
-      <div style="font-weight: bold; margin-bottom: 10px;">(In Case Of Those Who Are Already In Service)</div>
-      <p style="line-height: 1.6;">
-        The applicant <strong>{{ formData[1]?.Salutation_E_Name | titlecase }} {{ formData[1]?.Applicant_First_Name_E | titlecase }} {{ formData[1]?.Applicant_Middle_Name_E | titlecase }} {{ formData[1]?.Applicant_Last_Name_E | titlecase }}</strong>
-        is holding a permanent/temporary post of _______________________ in the scale of Rs. _______________________ per month.
-        His/Her application is forwarded and he/she will be relieved in case he/she is selected for the post applied for.
-      </p>
+<!-- ✅ FIX: Wrapped in an *ngIf to only show if they are In-Service -->
+    <ng-container *ngIf="isInServiceCandidate()">
+      <div class="section-heading-bar" style="border-top: 1px solid #000;">Remarks Of The Present Employer</div>
+      <div class="declaration-content">
+        <div style="font-weight: bold; margin-bottom: 10px;">(In Case Of Those Who Are Already In Service)</div>
+        <p style="line-height: 1.6;">
+          The applicant <strong>{{ formData[1]?.Salutation_E_Name }} {{ formData[1]?.Applicant_First_Name_E }} {{ formData[1]?.Applicant_Middle_Name_E }} {{ formData[1]?.Applicant_Last_Name_E }}</strong>
+          is holding a permanent/temporary post of _______________________ in the scale of Rs. _______________________ per month.
+          His/Her application is forwarded and he/she will be relieved in case he/she is selected for the post applied for.
+        </p>
 
-      <div class="signature-container" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding: 0 10px;">
-        <div class="place-date-box" style="flex: 1;">
-          <div style="margin-bottom: 8px;"><span class="label">Place:</span> ___________________</div>
-          <div><span class="label">Date:</span> ___________________</div>
-        </div>
+        <div class="signature-container" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding: 0 10px;">
+          <div class="place-date-box" style="flex: 1;">
+            <div style="margin-bottom: 8px;"><span class="label">Place:</span> ___________________</div>
+            <div><span class="label">Date:</span> ___________________</div>
+          </div>
 
-        <div class="signature-box" style="flex: 1; text-align: center;">
-          <div style="padding-top: 5px; display: inline-block;">
-            Signature & Designation Of Officer<br>(With Official Seal)
+          <div class="signature-box" style="flex: 1; text-align: center;">
+            <div style="padding-top: 5px; display: inline-block;">
+              Signature & Designation Of Officer<br>(With Official Seal)
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 </div>
 
 <ng-template #educationTemplate let-sections="sections">
   <ng-container *ngIf="sections.length > 0; else noDataTemplate">
     <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title | titlecase }}</div>
+      <!-- ✅ FIX: Removed | titlecase -->
+      <div class="sub-section-heading-bar">{{ section.title }}</div>
       <table>
         <thead>
         <tr>
@@ -258,7 +261,8 @@
 <ng-template #detailsTableTemplate let-sections="sections">
   <ng-container *ngIf="sections.length > 0; else noDataTemplate">
     <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title | titlecase }}</div>
+      <!-- ✅ FIX: Removed | titlecase -->
+      <div class="sub-section-heading-bar">{{ section.title }}</div>
       <table>
         <thead>
         <tr>
@@ -281,7 +285,8 @@
 <ng-template #experienceTemplate let-sections="sections">
   <ng-container *ngIf="sections.length > 0; else noDataTemplate">
     <ng-container *ngFor="let section of sections">
-      <div class="sub-section-heading-bar">{{ section.title | titlecase }}</div>
+      <!-- ✅ FIX: Removed | titlecase -->
+      <div class="sub-section-heading-bar">{{ section.title }}</div>
       <ng-container *ngIf="section.experiences.length > 0; else noDataTemplate">
         <table>
           <thead>

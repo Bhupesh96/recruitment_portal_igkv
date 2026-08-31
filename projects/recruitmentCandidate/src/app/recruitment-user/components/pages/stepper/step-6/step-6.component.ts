@@ -403,18 +403,19 @@ export class Step6Component implements OnInit {
   getCountOptions(maxRows: number = 10): number[] {
     return Array.from({ length: maxRows }, (_, i) => i + 1);
   }
-  getCheckboxName(detailForm: AbstractControl): string {
-    const typeValue = detailForm.get('type')?.value;
-    for (const subHeading of this.subHeadings) {
-      const item = subHeading.items.find(
-        (item: any) => item.m_rec_score_field_id.toString() === typeValue
-      );
-      if (item) {
-        return item.score_field_name_e || typeValue || '';
-      }
+getCheckboxName(detailForm: AbstractControl): string {
+  const typeValue = detailForm.get('type')?.value;
+  for (const subHeading of this.subHeadings) {
+    const item = subHeading.items.find(
+      (item: any) => item.m_rec_score_field_id.toString() === typeValue
+    );
+    if (item) {
+      // ✅ FIX: Prioritize score_field_title_name
+      return item.score_field_title_name || item.score_field_name_e || typeValue || '';
     }
-    return typeValue || '';
   }
+  return typeValue || '';
+}
 
   isRowType(detailForm: AbstractControl, subHeadingId: number): boolean {
     const typeValue = detailForm.get('type')?.value;
@@ -1305,12 +1306,14 @@ export class Step6Component implements OnInit {
       acc[sub.m_rec_score_field_id] = {
         m_rec_score_field_id: sub.m_rec_score_field_id,
         score_field_name_e: sub.score_field_name_e,
-        score_field_title_name: sub.score_field_title_name, // ✅ FIX 2: Pass down title
+        score_field_title_name: sub.score_field_title_name,
+        score_field_display_no: sub.score_field_display_no, // ✅ ADDED: Pass Display No to Step 9
         a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
         items: sub.items.map((item: any) => ({
           m_rec_score_field_id: item.m_rec_score_field_id,
           score_field_name_e: item.score_field_name_e,
-          score_field_title_name: item.score_field_title_name, // ✅ FIX 2: Pass down title
+          score_field_title_name: item.score_field_title_name,
+          score_field_display_no: item.score_field_display_no, // ✅ ADDED: Pass Display No to Step 9
           normalizedKey: item.normalizedKey,
         })),
       };
