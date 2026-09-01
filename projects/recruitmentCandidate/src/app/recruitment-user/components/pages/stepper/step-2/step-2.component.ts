@@ -793,19 +793,34 @@
                     emitEvent: false,
                   });
               }
-              const fieldName = this.parameters.find(
+             const paramDef = this.parameters.find(
                 (p) =>
                   p.m_rec_score_field_parameter_new_id ===
                   item.m_rec_score_field_parameter_new_id
-              )?.score_field_parameter_name;
+              );
+              const fieldName = paramDef?.score_field_parameter_name;
+
               if (fieldName && control.get(fieldName)) {
-                if (item.parameter_value.includes('.pdf')) {
+                if (item.parameter_value?.includes('.pdf')) {
                   control.get(fieldName)?.setValue(null, { emitEvent: false });
                 } else {
-                  control
-                    .get(fieldName)
-                    ?.setValue(item.parameter_value, { emitEvent: false });
+                  
+                  // ✅ FIX: Convert string IDs to Numbers for Dropdowns so they pre-fill correctly
+                  let valToSet: any = item.parameter_value;
+                  
+                  if (
+                    paramDef && 
+                    ['D', 'DC', 'DY'].includes(paramDef.control_type) && 
+                    item.parameter_value !== null &&
+                    item.parameter_value !== '' &&
+                    !isNaN(Number(item.parameter_value))
+                  ) {
+                    valToSet = Number(item.parameter_value);
+                  }
+
+                  control.get(fieldName)?.setValue(valToSet, { emitEvent: false });
                 }
+                
                 this.form
                   .get(`is${key}Selected`)
                   ?.setValue(true, { emitEvent: false });

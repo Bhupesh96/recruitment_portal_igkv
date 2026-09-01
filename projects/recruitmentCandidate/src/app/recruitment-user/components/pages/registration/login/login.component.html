@@ -4,44 +4,281 @@
     {{ activeView === 'FORGOT_REG' ? 'Forgot Registration No.' : (activeView === 'FORGOT_PWD' ? 'Reset Password' : 'Log In') }}
   </h3>
 
-  <!-- OTP Modal Helper (Remains unchanged) -->
-  <div *ngIf="showOtpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-    <div class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
-      <button type="button" (click)="showOtpModal = false" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-red-700 hover:bg-red-600 text-white hover:text-red-600 transition flex items-center justify-center rounded-2">✕</button>
-      <div class="bg-blue-100 border-b border-blue-200 px-6 py-5">
-        <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-900">Important OTP Requirement</h2>
-        <p class="text-gray-600 text-center mt-2 text-sm md:text-base">Please complete this step before proceeding</p>
+<!-- OTP / Sandes Information Modal -->
+<div
+  *ngIf="showOtpModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+>
+  <div
+    class="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-fadeIn"
+  >
+
+    <!-- Close Button -->
+    <button
+      type="button"
+      (click)="showOtpModal = false"
+      class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-red-700 hover:bg-red-600 text-white transition flex items-center justify-center"
+      aria-label="Close"
+    >
+      ✕
+    </button>
+
+    <!-- Header -->
+    <div class="bg-blue-100 border-b border-blue-200 px-6 py-5">
+      <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-900">
+        Important OTP Information
+      </h2>
+
+      <p class="text-gray-600 text-center mt-2 text-sm md:text-base">
+        Please read the following information before verifying your OTP
+      </p>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6 md:p-8">
+
+      <!-- Main Information -->
+      <div class="text-center mb-6">
+
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+
+          <span
+            class="font-bold text-green-700 text-sm uppercase tracking-wide"
+          >
+            OTP Verification
+          </span>
+        </div>
+
+        <h3 class="text-2xl font-bold text-gray-900 leading-snug mb-4">
+          OTP will be sent to your registered mobile number
+        </h3>
+
+        <p class="text-gray-700 leading-relaxed text-base">
+          Your OTP will be sent through the available
+          <span class="font-bold text-blue-700">SMS</span>
+          service.
+          If you do not receive the OTP through SMS, you can also receive it
+          through the
+          <span class="font-bold text-blue-700">Sandes App</span>.
+        </p>
       </div>
-      <div class="p-6 md:p-8">
-        <div class="flex flex-col md:flex-row items-center gap-8">
-          <div class="flex flex-col items-center">
-            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 shadow-md">
-              <img src="sandesh.svg" alt="Sandes QR" class="w-48 h-48 object-contain" />
-            </div>
-            <p class="mt-4 text-sm font-bold tracking-wide text-gray-500 uppercase">Scan To Download</p>
+
+      <!-- SMS Information -->
+      <div
+        class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4"
+      >
+        <div class="flex items-start gap-3">
+
+          <div
+            class="flex-shrink-0 w-9 h-9 rounded-full bg-green-100 flex items-center justify-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-green-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8 10h8M8 14h5m-9 6l3.5-3.5A8 8 0 1020 12a8 8 0 00-8-8 8 8 0 00-8 8c0 1.45.38 2.81 1.05 4L4 20z"
+              />
+            </svg>
           </div>
-          <div class="flex-1 text-center md:text-left">
-            <div class="flex items-center gap-2 justify-center md:justify-start mb-4">
-              <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-              <span class="font-bold text-green-700 text-sm uppercase tracking-wide">Mandatory Step</span>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 leading-snug mb-4">Install Sandes App To Receive OTP</h3>
-            <p class="text-gray-700 leading-relaxed text-base mb-5">
-              To receive your OTP successfully, you must install the <span class="font-bold text-blue-700">Sandes App</span> and log in using the <span class="font-bold text-gray-900">same mobile number</span>.
+
+          <div>
+            <h4 class="font-bold text-green-800">
+              Option 1: SMS
+            </h4>
+
+            <p class="text-sm text-gray-700 mt-1">
+              Check your registered mobile number for the OTP sent through SMS.
             </p>
-            <div class="flex items-center justify-center md:justify-start gap-3 flex-nowrap">
-              <a href="https://igkv.ac.in/__Manual/sandesAppInstallationManual.pdf" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 h-10 rounded-lg text-sm font-semibold shadow-sm transition-all whitespace-nowrap">
-                Installation Manual
-              </a>
-              <button type="button" (click)="showOtpModal = false" class="inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 h-10 rounded-lg text-sm font-semibold shadow-sm transition-all whitespace-nowrap">
-                Close
-              </button>
-            </div>
           </div>
+
         </div>
       </div>
+
+      <!-- Sandes Information -->
+      <div
+        class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6"
+      >
+        <div class="flex items-start gap-4">
+
+          <!-- QR -->
+          <div class="flex-shrink-0">
+
+            <div
+              class="bg-white border border-gray-200 rounded-xl p-2 shadow-sm"
+            >
+              <img
+                src="sandesh.svg"
+                alt="Sandes QR Code"
+                class="w-28 h-28 object-contain"
+              />
+            </div>
+
+            <p
+              class="text-xs font-semibold text-gray-500 text-center mt-2"
+            >
+              Scan to install
+            </p>
+
+          </div>
+
+          <!-- Sandes Content -->
+          <div class="flex-1">
+
+            <h4 class="font-bold text-blue-800 text-lg mb-2">
+              Option 2: Sandes App
+            </h4>
+
+            <p class="text-sm text-gray-700 leading-relaxed mb-3">
+              If you do not receive the OTP through SMS, you can use the
+              <span class="font-bold text-blue-700">Sandes App</span>
+              to receive your OTP.
+            </p>
+
+            <ul class="space-y-2 text-sm text-gray-700">
+
+              <li class="flex items-start gap-2">
+                <span class="text-green-600 font-bold">✓</span>
+                <span>
+                  Install the Sandes App on your mobile.
+                </span>
+              </li>
+
+              <li class="flex items-start gap-2">
+                <span class="text-green-600 font-bold">✓</span>
+                <span>
+                  Register Sandes using the same mobile number.
+                </span>
+              </li>
+
+              <li class="flex items-start gap-2">
+                <span class="text-green-600 font-bold">✓</span>
+                <span>
+                  Keep notification permission enabled.
+                </span>
+              </li>
+
+            </ul>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Important Note -->
+      <div
+        class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6"
+      >
+        <div class="flex items-start gap-3">
+
+          <div class="flex-shrink-0 text-yellow-600">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14A2 2 0 003.82 21h16.36a2 2 0 001.71-3.14l-8.18-14a2 2 0 00-3.42 0z"
+              />
+            </svg>
+          </div>
+
+          <p class="text-sm text-gray-700 leading-relaxed">
+            <span class="font-bold text-gray-900">Note:</span>
+            If you receive the OTP through SMS, you do not need to install
+            the Sandes App. Sandes can be used as an alternative if the SMS
+            is not received.
+          </p>
+
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div
+        class="flex flex-col sm:flex-row items-center justify-center gap-3"
+      >
+
+        <!-- Installation Manual -->
+        <a
+          href="https://igkv.ac.in/__Manual/sandesAppInstallationManual.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-5 h-11 rounded-lg text-sm font-semibold shadow-sm transition-all w-full sm:w-auto"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 20h9M12 4h9M12 12h9M3 4h.01M3 12h.01M3 20h.01"
+            />
+          </svg>
+
+          Sandes Installation Manual
+        </a>
+
+        <!-- Close -->
+        <button
+          type="button"
+          (click)="showOtpModal = false"
+          class="inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 px-5 h-11 rounded-lg text-sm font-semibold shadow-sm transition-all w-full sm:w-auto"
+        >
+          Continue
+        </button>
+
+      </div>
+
     </div>
   </div>
+</div>
+
+<!-- OTP Information Button -->
+<div class="flex justify-center mb-2">
+
+  <button
+    type="button"
+    (click)="showOtpModal = true"
+    class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 h-10 rounded-lg transition-all"
+  >
+
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="w-4 h-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+      />
+    </svg>
+
+    OTP / Sandes Information
+
+  </button>
+
+</div>
 
   <div class="flex justify-center mb-2">
     <button type="button" (click)="showOtpModal = true" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-4 h-10 rounded-lg transition-all">
