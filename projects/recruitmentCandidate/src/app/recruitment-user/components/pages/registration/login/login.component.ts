@@ -21,6 +21,7 @@ import { Router } from '@angular/router';
 import { environment } from 'environment';
 import CryptoJS from 'crypto-js';
 import { SweetAlertResult } from 'sweetalert2';
+import { CookieService } from 'ngx-cookie-service';
 
 @Component({
   selector: 'app-login',
@@ -98,6 +99,7 @@ export class LoginComponent implements OnInit {
     private authService: AuthService,
     private httpClient: HttpClient,
     private alertService: AlertService,
+    private cookieService: CookieService,
     private router: Router,
     private fb: FormBuilder
   ) {}
@@ -305,6 +307,18 @@ export class LoginComponent implements OnInit {
         this.isLoggingIn = false;
         this.loginForm.enable();
         if (response.body && !response.body.error) {
+          const accessToken = response.body.data?.[0]?.accessToken;
+          if (!accessToken) {
+            this.handleLoginError({ message: 'Login did not return an access token.' });
+            return;
+          }
+
+          this.authService.setToken({
+            accessToken,
+            refreshToken: response.body.data?.[0]?.refreshToken,
+          });
+          this.cookieService.set('token', accessToken, { path: '/' });
+          this.cookieService.set('session', accessToken, { path: '/' });
           this.alertService.alert(false, 'Login successful!', 2000);
           this.loginSuccess.emit();
         } else {

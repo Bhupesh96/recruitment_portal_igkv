@@ -61,7 +61,7 @@ export class SidenavComponent implements OnInit {
       return;
     }
 
-    const url = `/master/get/getRecruitmentLinkManagementList?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
+    const url = `/publicApi/get/getRecruitmentLinkManagementListPublic?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
 
     this.httpService.getData(url, 'recruitement').subscribe({
       next: (res: any) => {

@@ -12,24 +12,34 @@ import { catchError, finalize } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { moduleMapping } from "environment";
 import { CookieService } from "ngx-cookie-service";
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   // 1. Add a static flag to track if we are already handling a logout
   private static isLoggingOut = false;
 
-  constructor(private cookie: CookieService, private loaderService: LoaderService) {}
+  constructor(
+    private cookie: CookieService,
+    private auth: AuthService,
+    private loaderService: LoaderService
+  ) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<any>> {
     const designation_id = this.cookie.get('designation_id');
-    
-    // Safety check for the header
-    let modifiedRequest = request;
+    const token = this.auth.getToken || this.cookie.get('token') || localStorage.getItem('token');
+    const headers: Record<string, string> = {};
+
     if (designation_id) {
-      modifiedRequest = request.clone({
-        setHeaders: { 'x-designation-id': designation_id }
-      });
+      headers['x-designation-id'] = designation_id;
     }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const modifiedRequest = Object.keys(headers).length
+      ? request.clone({ setHeaders: headers })
+      : request;
 
     this.loaderService.show();
 

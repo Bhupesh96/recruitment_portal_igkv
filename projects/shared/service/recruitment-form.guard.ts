@@ -27,7 +27,7 @@ export class RecruitmentFormGuard implements CanActivate {
     const sessionId = user?.academic_session_id || user?.session_id;
 
     const url =
-      `/master/get/getRecruitmentLinkManagementList` +
+      `/publicApi/get/getRecruitmentLinkManagementListPublic` +
       `?list_adv_session_wise=true` +
       `&a_rec_adv_main_id=${advId}` +
       `&academic_session_id=${sessionId}`;

@@ -35,6 +35,9 @@ export class AuthService {
 
   private clearLocalSession(isManualLogout: boolean = false) {
     this.cookie.deleteAll('/');
+    localStorage.removeItem('n_access_token');
+    localStorage.removeItem('n_refresh_token');
+    localStorage.removeItem('n_user_token');
 
     const message = isManualLogout
       ? 'Logged out successfully.'
@@ -47,11 +50,23 @@ export class AuthService {
       });
   }
 isLoggedIn(): boolean {
+  if (this.getToken) return true;
+
   const session = this.cookie.get('session');
   const user = this.cookie.get('user');
 
   return !!session && !!user;
 }
+
+  setToken(token: { accessToken?: string; refreshToken?: string; user_data?: string }): void {
+    if (token.accessToken) localStorage.setItem('n_access_token', token.accessToken);
+    if (token.refreshToken) localStorage.setItem('n_refresh_token', token.refreshToken);
+    if (token.user_data) localStorage.setItem('n_user_token', token.user_data);
+  }
+
+  get getToken(): string | null {
+    return localStorage.getItem('n_access_token');
+  }
 
   decryptCookie(cookie: string) {
     try {
@@ -82,6 +97,14 @@ get currentUser() {
   } else {
     console.warn('⚠️ No cookies found!');
     console.groupEnd();
+  }
+  const userToken = localStorage.getItem('n_user_token');
+  if (userToken) {
+    try {
+      return this.es.decrypt(userToken);
+    } catch (err) {
+      console.error('Unable to decrypt stored user token:', err);
+    }
   }
   return null;
 }
