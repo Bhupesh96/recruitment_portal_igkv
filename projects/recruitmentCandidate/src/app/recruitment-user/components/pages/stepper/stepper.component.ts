@@ -134,44 +134,230 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.fetchDynamicSteps(user);
   }
 
-  fetchDynamicSteps(user: any) {
-    if (!user || !user.a_rec_adv_main_id) return;
+fetchDynamicSteps(user: any) {
+  if (!user || !user.a_rec_adv_main_id) return;
 
-    const params = {
-      a_rec_adv_main_id: user.a_rec_adv_main_id,
-      post_code: user.post_code,
-      subject_id: user.subject_id,
-      m_rec_es_master_id: 4
-    };
+  const params = {
+    a_rec_adv_main_id: user.a_rec_adv_main_id,
+    post_code: user.post_code,
+    subject_id: user.subject_id,
+    m_rec_es_master_id: 4
+  };
 
-    this.http.getParam('/master/get/getESCalculationSteps', params, 'recruitement').subscribe({
-      next: (res: any) => {
-        const apiData = res?.body?.data || res?.data || [];
-        const allowedFieldIds = apiData.map((item: any) => item.m_rec_score_field_id);
+  this.http.getParam(
+    '/master/get/getESCalculationSteps',
+    params,
+    'recruitement'
+  ).subscribe({
 
-        this.activeSteps = this.masterSteps.filter(step =>
-          step.isMandatory || (step.fieldId && allowedFieldIds.includes(step.fieldId))
+    next: (res: any) => {
+
+      const apiData = res?.body?.data || res?.data || [];
+
+      console.log('Calculation Steps API:', apiData);
+
+
+      // =====================================================
+      // CREATE MAP:
+      // m_rec_score_field_id -> display_order
+      // =====================================================
+
+      const displayOrderMap = new Map<number, number>();
+
+      apiData.forEach((item: any) => {
+
+        const fieldId = Number(item.m_rec_score_field_id);
+        const displayOrder = Number(item.display_order);
+
+        if (
+          fieldId > 0 &&
+          displayOrder > 0
+        ) {
+          displayOrderMap.set(
+            fieldId,
+            displayOrder
+          );
+        }
+
+      });
+
+
+      // =====================================================
+      // GET ALLOWED STEPS
+      // =====================================================
+
+      const dynamicSteps = this.masterSteps.filter(step =>
+
+        step.isMandatory ||
+        (
+          step.fieldId &&
+          apiData.some(
+            (item: any) =>
+              Number(item.m_rec_score_field_id) ===
+              Number(step.fieldId)
+          )
+        )
+
+      );
+
+
+      // =====================================================
+      // SORT ONLY DYNAMIC STEPS USING display_order
+      //
+      // Mandatory steps:
+      // Personal Info -> always first
+      // Preview & Submit -> always last
+      // =====================================================
+
+      const firstMandatoryStep = dynamicSteps.find(
+        step =>
+          step.compId === 1 &&
+          step.isMandatory
+      );
+
+      const lastMandatoryStep = dynamicSteps.find(
+        step =>
+          step.compId === 9 &&
+          step.isMandatory
+      );
+
+
+      // Remove mandatory steps before sorting
+
+      let mappedSteps = dynamicSteps.filter(
+        step => !step.isMandatory
+      );
+
+
+      // =====================================================
+      // SORT
+      // =====================================================
+
+      mappedSteps.sort((a, b) => {
+
+        const orderA =
+          a.fieldId !== undefined
+            ? displayOrderMap.get(a.fieldId) || 0
+            : 0;
+
+        const orderB =
+          b.fieldId !== undefined
+            ? displayOrderMap.get(b.fieldId) || 0
+            : 0;
+
+
+        // Both have display_order
+        if (orderA > 0 && orderB > 0) {
+          return orderA - orderB;
+        }
+
+
+        // A has display_order, B doesn't
+        if (orderA > 0 && orderB <= 0) {
+          return -1;
+        }
+
+
+        // B has display_order, A doesn't
+        if (orderA <= 0 && orderB > 0) {
+          return 1;
+        }
+
+
+        // Neither has display_order
+        // Keep original masterSteps order
+        return (
+          this.masterSteps.indexOf(a) -
+          this.masterSteps.indexOf(b)
         );
 
-        this.isLoadingSteps = false;
+      });
 
-        if (this.isFinalDeclared) {
-          this.currentStepIndex = this.activeSteps.length - 1;
 
-          // ✅ FIX: Eagerly mark ALL steps as visited so they fetch their data in the background
-          this.activeSteps.forEach((_, index) => this.markStepAsVisited(index));
-        } else {
-          // Normal flow: just mark the current step
-          this.markStepAsVisited(this.currentStepIndex);
-        }
-      },
-      error: (err) => {
-        console.error('Failed to load calculation steps', err);
-        this.isLoadingSteps = false;
+      // =====================================================
+      // BUILD FINAL STEPS
+      // =====================================================
+
+      this.activeSteps = [
+
+        // Personal Info
+        ...(firstMandatoryStep
+          ? [firstMandatoryStep]
+          : []),
+
+        // Dynamic steps
+        ...mappedSteps,
+
+        // Preview & Submit
+        ...(lastMandatoryStep
+          ? [lastMandatoryStep]
+          : [])
+
+      ];
+
+
+      console.log(
+        'Final Active Steps:',
+        this.activeSteps
+      );
+
+
+      console.log(
+        'Final Step Order:',
+        this.activeSteps.map(step => ({
+          compId: step.compId,
+          name: step.name,
+          fieldId: step.fieldId,
+          displayOrder:
+            step.fieldId
+              ? displayOrderMap.get(step.fieldId)
+              : null
+        }))
+      );
+
+
+      this.isLoadingSteps = false;
+
+
+      // =====================================================
+      // FINAL DECLARATION
+      // =====================================================
+
+      if (this.isFinalDeclared) {
+
+        this.currentStepIndex =
+          this.activeSteps.length - 1;
+
+        // Eagerly mark ALL steps as visited
+        this.activeSteps.forEach(
+          (_, index) =>
+            this.markStepAsVisited(index)
+        );
+
+      } else {
+
+        // Normal flow
+        this.markStepAsVisited(
+          this.currentStepIndex
+        );
+
       }
-    });
-  }
 
+    },
+
+    error: (err) => {
+
+      console.error(
+        'Failed to load calculation steps',
+        err
+      );
+
+      this.isLoadingSteps = false;
+
+    }
+
+  });
+}
   // ✅ Helper method to mark steps as visited
   markStepAsVisited(index: number) {
     if (this.activeSteps[index]) {
