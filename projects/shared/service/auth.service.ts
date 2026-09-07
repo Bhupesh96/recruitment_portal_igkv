@@ -49,14 +49,14 @@ export class AuthService {
         window.open(moduleMapping.loginModule, '_self');
       });
   }
-isLoggedIn(): boolean {
-  if (this.getToken) return true;
+  isLoggedIn(): boolean {
+    if (this.getToken) return true;
 
-  const session = this.cookie.get('session');
-  const user = this.cookie.get('user');
+    const session = this.cookie.get('session');
+    const user = this.cookie.get('user');
 
-  return !!session && !!user;
-}
+    return !!session && !!user;
+  }
 
   setToken(token: { accessToken?: string; refreshToken?: string; user_data?: string }): void {
     if (token.accessToken) localStorage.setItem('n_access_token', token.accessToken);
@@ -77,37 +77,37 @@ isLoggedIn(): boolean {
       console.log(e);
     }
   }
-get currentUser() {
+  get currentUser() {
 
-  const user_cookie = this.cookie.get('user');
-  const session_cookie = this.cookie.get('session');
+    const user_cookie = this.cookie.get('user');
+    const session_cookie = this.cookie.get('session');
 
 
-  if (user_cookie && session_cookie) {
-    try {
-      const decrypted = this.decryptCookie(user_cookie);
-      console.log('3. ✅ Decrypted User Object:', decrypted);
+    if (user_cookie && session_cookie) {
+      try {
+        const decrypted = this.decryptCookie(user_cookie);
+        console.log('3. ✅ Decrypted User Object:', decrypted);
+        console.groupEnd();
+        return decrypted;
+      } catch (err) {
+        console.error('❌ Decryption Failed:', err);
+        console.groupEnd();
+        return null;
+      }
+    } else {
+      console.warn('⚠️ No cookies found!');
       console.groupEnd();
-      return decrypted;
-    } catch (err) {
-      console.error('❌ Decryption Failed:', err);
-      console.groupEnd();
-      return null;
     }
-  } else {
-    console.warn('⚠️ No cookies found!');
-    console.groupEnd();
-  }
-  const userToken = localStorage.getItem('n_user_token');
-  if (userToken) {
-    try {
-      return this.es.decrypt(userToken);
-    } catch (err) {
-      console.error('Unable to decrypt stored user token:', err);
+    const userToken = localStorage.getItem('n_user_token');
+    if (userToken) {
+      try {
+        return this.es.decrypt(userToken);
+      } catch (err) {
+        console.error('Unable to decrypt stored user token:', err);
+      }
     }
+    return null;
   }
-  return null;
-}
 
   resetPassword(credentials: any): Observable<any> {
     return this.http.postData(

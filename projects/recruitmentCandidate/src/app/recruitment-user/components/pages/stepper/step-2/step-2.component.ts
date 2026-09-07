@@ -5,13 +5,13 @@
     ChangeDetectorRef,
   } from '@angular/core';
   import {
-    FormBuilder,
-    FormGroup,
-    FormArray,
-    ValidatorFn,
-    Validators,
-    ReactiveFormsModule,
-  } from '@angular/forms';
+  FormBuilder,
+  FormGroup,
+  FormArray,
+  ValidatorFn,
+  Validators,
+  ReactiveFormsModule, AbstractControl,
+} from '@angular/forms';
   import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
   import { CommonModule } from '@angular/common';
   import { HttpClient, HttpResponse } from '@angular/common/http';
@@ -173,6 +173,22 @@
         catchError(() => of([])) // On error, return an empty array
       );
     }
+    // HELPER: Determines if a parameter should be visible in the HTML
+    isParameterVisible(param: Parameter, group: AbstractControl, sub: Subheading): boolean {
+      // If the parameter is "Annexure - I" (Master ID 86)
+      if (param.m_parameter_master_id === 86) {
+        // Find the trigger parameter (Master ID 85)
+        const triggerParam = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id)
+          .find(p => p.m_parameter_master_id === 85);
+
+        if (triggerParam) {
+          const triggerValue = group.get(triggerParam.score_field_parameter_name)?.value;
+          // Show ONLY if the value is 1 or '1' ("Yes")
+          return triggerValue == 1 || triggerValue == '1';
+        }
+      }
+      return true; // All other fields are visible by default
+    }
     getUniqueKey(sub: Subheading, index: number): string {
       return `${sub.m_rec_score_field_id}_${sub.a_rec_adv_post_detail_id}_${index}`;
     }
@@ -321,6 +337,13 @@
 
             for (const group of formArray.controls) {
               for (const param of params) {
+
+                // ✅ ADD THIS BLOCK: If the field is hidden, skip the mandatory check completely!
+                if (!this.isParameterVisible(param, group, sub)) {
+                  continue;
+                }
+
+                // Original logic continues...
                 if (param.is_mandatory === 'Y') {
                   const control = (group as FormGroup).get(param.score_field_parameter_name);
                   const isFile = param.isDatatype === 'attachment' || param.control_type === 'A';
@@ -380,10 +403,10 @@
           )
         );
 
-        // ✅ --- START: MODIFIED LOGIC ---
         const selectionControl = this.form.get(`is${key}Selected`);
-        if (!selectionControl) return; // Safety check
+        if (!selectionControl) return;
 
+        // --- SECTION TOGGLE LOGIC ---
         selectionControl.valueChanges.subscribe((isSelected) => {
           const arrayName = `qualifications${key}`;
 
@@ -402,9 +425,7 @@
                   const formArray = this.form.get(arrayName) as FormArray;
                   if (formArray && formArray.at(0)) {
                     const group = formArray.at(0) as FormGroup;
-                    const detailId = group.get(
-                      'a_rec_app_score_field_detail_id'
-                    )?.value;
+                    const detailId = group.get('a_rec_app_score_field_detail_id')?.value;
                     group.reset({
                       a_rec_app_score_field_detail_id: detailId || '',
                     });
@@ -413,56 +434,84 @@
                   // User clicked "No": Re-check the box without triggering this event again.
                   selectionControl.setValue(true, { emitEvent: false });
                 }
-                // Update the overall form validity check after the user has made a choice.
                 this.checkMandatorySubheadingsAndParameters();
                 this.cdr.markForCheck();
               });
           } else {
             // If the user is CHECKING the box, just enable validators.
             this.toggleValidators(arrayName, subheading, true);
+
+            // Re-trigger the dropdown 85 logic in case it was already selected
+            const formArray = this.form.get(arrayName) as FormArray;
+            const triggerParam = params.find(p => p.m_parameter_master_id === 85);
+            if (triggerParam && formArray?.at(0)) {
+              formArray.at(0).get(triggerParam.score_field_parameter_name)?.updateValueAndValidity({ emitEvent: true });
+            }
+
             this.checkMandatorySubheadingsAndParameters();
             this.cdr.markForCheck();
           }
         });
-        // ✅ --- END: MODIFIED LOGIC ---
 
-        // (The rest of your existing logic in this loop remains the same)
         const formArray = this.form.get(`qualifications${key}`) as FormArray;
-        const percentageParam = params.find(
-          (p) => p.m_parameter_master_id === 17
-        );
+
+        // --- PERCENTAGE TO OGPA CALCULATION LOGIC ---
+        const percentageParam = params.find((p) => p.m_parameter_master_id === 17);
         const ogpaParam = params.find((p) => p.m_parameter_master_id === 18);
 
-        // 2. Only proceed if both exist in this subheading
         if (percentageParam && ogpaParam) {
           formArray.controls.forEach((control) => {
             const group = control as FormGroup;
-            const percentageCtrl = group.get(
-              percentageParam.score_field_parameter_name
-            );
+            const percentageCtrl = group.get(percentageParam.score_field_parameter_name);
             const ogpaCtrl = group.get(ogpaParam.score_field_parameter_name);
 
             if (percentageCtrl && ogpaCtrl) {
-              // 3. Subscribe to Percentage Changes
               percentageCtrl.valueChanges.subscribe((val) => {
                 const pctValue = parseFloat(val);
-
-                // Check if it is a valid number
                 if (!isNaN(pctValue)) {
-                  // 4. Perform Calculation (Assuming OGPA = Percentage / 10)
-                  // Adjust this formula if your university uses a different one (e.g., / 9.5)
                   const calculatedOgpa = (pctValue / 10).toFixed(2);
-
-                  // 5. Set OGPA value (emitEvent: false prevents infinite loops)
                   ogpaCtrl.setValue(calculatedOgpa, { emitEvent: false });
                 } else {
-                  // Clear OGPA if percentage is invalid/empty
                   ogpaCtrl.setValue('', { emitEvent: false });
                 }
               });
             }
           });
         }
+
+        // --- CONDITIONAL FIELD LOGIC (Master ID 85 triggers 86) ---
+        const phdTriggerParam = params.find(p => p.m_parameter_master_id === 85);
+        const annexureParam = params.find(p => p.m_parameter_master_id === 86);
+
+        if (phdTriggerParam && annexureParam) {
+          formArray.controls.forEach(control => {
+            const group = control as FormGroup;
+            const triggerCtrl = group.get(phdTriggerParam.score_field_parameter_name);
+            const targetCtrl = group.get(annexureParam.score_field_parameter_name);
+
+            if (triggerCtrl && targetCtrl) {
+              triggerCtrl.valueChanges.subscribe(val => {
+                if (val == 1 || val == '1') { // User selected 'Yes'
+                  if (this.form.get(`is${key}Selected`)?.value) {
+                    targetCtrl.setValidators([Validators.required]);
+                  }
+                } else { // User selected 'No' or cleared it
+                  targetCtrl.clearValidators();
+                  targetCtrl.setValue(null, { emitEvent: false });
+
+                  // Remove file from memory
+                  const fileKey = `${key}_${annexureParam.m_rec_score_field_parameter_new_id}_0`;
+                  this.filePaths.delete(fileKey);
+                }
+                targetCtrl.updateValueAndValidity({ emitEvent: false });
+                this.checkMandatorySubheadingsAndParameters();
+                this.cdr.markForCheck();
+              });
+            }
+          });
+        }
+
+        // --- GENERAL VALIDATION TRIGGER ---
         formArray.controls.forEach((control) => {
           const group = control as FormGroup;
           params.forEach((param) => {
@@ -478,43 +527,31 @@
       this.checkMandatorySubheadingsAndParameters();
     }
 
-    private createQualificationGroup(
-      sub: Subheading,
-      isSelected: boolean
-    ): FormGroup {
+    private createQualificationGroup(sub: Subheading, isSelected: boolean): FormGroup {
       const group = this.fb.group({});
-      const params = this.getParameters(
-        sub.m_rec_score_field_id,
-        sub.a_rec_adv_post_detail_id
-      );
+      const params = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
 
       params.forEach((param) => {
-        const validators: ValidatorFn[] =
-          isSelected && param.is_mandatory === 'Y' ? [Validators.required] : [];
+        let validators: ValidatorFn[] = (isSelected && param.is_mandatory === 'Y') ? [Validators.required] : [];
+
+        // CONDITIONAL LOGIC: Master ID 86 should not be required initially
+        if (param.m_parameter_master_id === 86) {
+          validators = [];
+        }
 
         // --- MODIFICATION START ---
+        // (Keep your existing validation logic for numbers/text here...)
         if (param.isCalculationColumn === 'Y') {
-          validators.push(
-            Validators.min(0),
-            Validators.max(100),
-            Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$')
-          );
+          validators.push(Validators.min(0), Validators.max(100), Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$'));
         } else if (param.isDatatype === 'number') {
           validators.push(Validators.min(0));
         } else if (param.isDatatype === 'text' && param.control_type === 'T') {
-          // ✅ FIX: Only apply to text inputs and allow more characters
-          Validators.pattern('^[a-zA-Z ().,:&-]*$');
+          validators.push(Validators.pattern('^[a-zA-Z ().,:&-]*$'));
         }
         // --- MODIFICATION END ---
 
-        group.addControl(
-          param.score_field_parameter_name,
-          this.fb.control('', validators)
-        );
-        group.addControl(
-          `param_${param.m_rec_score_field_parameter_new_id}_id`,
-          this.fb.control('')
-        );
+        group.addControl(param.score_field_parameter_name, this.fb.control('', validators));
+        group.addControl(`param_${param.m_rec_score_field_parameter_new_id}_id`, this.fb.control(''));
       });
 
       group.addControl('a_rec_app_score_field_detail_id', this.fb.control(''));
@@ -546,45 +583,37 @@
       }
     }
 
-    private toggleValidators(
-      arrayName: string,
-      sub: Subheading,
-      isSelected: boolean
-    ): void {
+    private toggleValidators(arrayName: string, sub: Subheading, isSelected: boolean): void {
       const formArray = this.form.get(arrayName) as FormArray;
       formArray.controls.forEach((control) => {
         const group = control as FormGroup;
-        const params = this.getParameters(
-          sub.m_rec_score_field_id,
-          sub.a_rec_adv_post_detail_id
-        );
+        const params = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
 
         params.forEach((param) => {
           const controlName = param.score_field_parameter_name;
           const ctrl = group.get(controlName);
           if (ctrl) {
-            const validators: ValidatorFn[] =
-              isSelected && param.is_mandatory === 'Y'
-                ? [Validators.required]
-                : [];
+            let validators: ValidatorFn[] = (isSelected && param.is_mandatory === 'Y') ? [Validators.required] : [];
 
-            // --- MODIFICATION START ---
+            // CONDITIONAL LOGIC: Check Master ID 85 before making 86 required
+            if (param.m_parameter_master_id === 86) {
+              const triggerParam = params.find(p => p.m_parameter_master_id === 85);
+              if (triggerParam) {
+                const triggerVal = group.get(triggerParam.score_field_parameter_name)?.value;
+                if (triggerVal != 1 && triggerVal != '1') {
+                  validators = []; // Remove required validator if not 'Yes'
+                }
+              }
+            }
+
+            // (Keep your existing validation logic for numbers/text here...)
             if (param.isCalculationColumn === 'Y') {
-              validators.push(
-                Validators.min(0),
-                Validators.max(100),
-                Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$')
-              );
+              validators.push(Validators.min(0), Validators.max(100), Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$'));
             } else if (param.isDatatype === 'number') {
               validators.push(Validators.min(0));
-            } else if (
-              param.isDatatype === 'text' &&
-              param.control_type === 'T'
-            ) {
-              // ✅ FIX: Only apply to text inputs and allow more characters
-              Validators.pattern('^[a-zA-Z ().,:&-]*$');
+            } else if (param.isDatatype === 'text' && param.control_type === 'T') {
+              validators.push(Validators.pattern('^[a-zA-Z ().,:&-]*$'));
             }
-            // --- MODIFICATION END ---
 
             ctrl.setValidators(validators);
             ctrl.updateValueAndValidity({ emitEvent: false });
@@ -627,7 +656,7 @@
           ).pipe(
             switchMap((subheadingResponse) => {
              const rawSubheadings = subheadingResponse.body?.data || [];
-              this.subheadings = rawSubheadings.sort((a: Subheading, b: Subheading) => 
+              this.subheadings = rawSubheadings.sort((a: Subheading, b: Subheading) =>
                 (a.score_field_display_no || 0) - (b.score_field_display_no || 0)
               );
 
@@ -724,7 +753,7 @@
           registration_no,
           a_rec_app_main_id,
           m_rec_score_field_id: this.heading.m_rec_score_field_id,
-          score_field_parent_id: 0, // Parent records have a parent_id of 0
+          score_field_parent_id: 0,
         },
         'recruitement'
       );
@@ -734,10 +763,9 @@
           const savedChildren = children.body?.data || [];
           const savedParent = parent.body?.data || [];
 
-          // ✅ STORE THE PARENT ID
+          // STORE THE PARENT ID
           if (savedParent.length > 0) {
-            this.existingParentDetailId =
-              savedParent[0].a_rec_app_score_field_detail_id;
+            this.existingParentDetailId = savedParent[0].a_rec_app_score_field_detail_id;
           }
 
           this.filePaths.clear();
@@ -752,14 +780,14 @@
                 s.m_rec_score_field_id === item.m_rec_score_field_id &&
                 s.a_rec_adv_post_detail_id === item.a_rec_adv_post_detail_id
             )}`;
-            const rowIndex = item.parameter_row_index
-              ? item.parameter_row_index - 1
-              : 0;
+
+            const rowIndex = item.parameter_row_index ? item.parameter_row_index - 1 : 0;
 
             this.existingDetailIds.set(
               `${item.m_rec_score_field_id}_${item.a_rec_adv_post_detail_id}`,
               item.a_rec_app_score_field_detail_id
             );
+
             this.existingParameterIds.set(
               `${item.m_rec_score_field_id}_${item.m_rec_score_field_parameter_new_id}_0`,
               item.a_rec_app_score_field_parameter_detail_id
@@ -782,6 +810,7 @@
                     emitEvent: false,
                   });
               }
+
               const paramIdControl = `param_${item.m_rec_score_field_parameter_new_id}_id`;
               if (
                 item.a_rec_app_score_field_parameter_detail_id &&
@@ -793,24 +822,25 @@
                     emitEvent: false,
                   });
               }
-             const paramDef = this.parameters.find(
+
+              const paramDef = this.parameters.find(
                 (p) =>
                   p.m_rec_score_field_parameter_new_id ===
                   item.m_rec_score_field_parameter_new_id
               );
+
               const fieldName = paramDef?.score_field_parameter_name;
 
               if (fieldName && control.get(fieldName)) {
                 if (item.parameter_value?.includes('.pdf')) {
                   control.get(fieldName)?.setValue(null, { emitEvent: false });
                 } else {
-                  
-                  // ✅ FIX: Convert string IDs to Numbers for Dropdowns so they pre-fill correctly
+                  // Convert string IDs to Numbers for Dropdowns so they pre-fill correctly
                   let valToSet: any = item.parameter_value;
-                  
+
                   if (
-                    paramDef && 
-                    ['D', 'DC', 'DY'].includes(paramDef.control_type) && 
+                    paramDef &&
+                    ['D', 'DC', 'DY'].includes(paramDef.control_type) &&
                     item.parameter_value !== null &&
                     item.parameter_value !== '' &&
                     !isNaN(Number(item.parameter_value))
@@ -820,10 +850,23 @@
 
                   control.get(fieldName)?.setValue(valToSet, { emitEvent: false });
                 }
-                
-                this.form
-                  .get(`is${key}Selected`)
-                  ?.setValue(true, { emitEvent: false });
+
+                this.form.get(`is${key}Selected`)?.setValue(true, { emitEvent: false });
+              }
+            }
+          });
+
+          // ✅ NEW: Force update on Trigger Controls (Master ID 85) to re-evaluate Annexure visibility
+          this.subheadings.forEach((sub, i) => {
+            const key = this.getUniqueKey(sub, i);
+            const params = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
+            const phdTriggerParam = params.find(p => p.m_parameter_master_id === 85);
+
+            if (phdTriggerParam && this.form.get(`is${key}Selected`)?.value) {
+              const formArray = this.form.get(`qualifications${key}`) as FormArray;
+              if (formArray?.at(0)) {
+                // Update validity with emitEvent: true so the listener we set in buildFormControls runs
+                formArray.at(0).get(phdTriggerParam.score_field_parameter_name)?.updateValueAndValidity({ emitEvent: true });
               }
             }
           });
@@ -836,7 +879,7 @@
         error: (err) => {
           this.errorMessage = 'Failed to load saved data: ' + err.message;
           this.alertService.alert(true, this.errorMessage);
-          this.cdr.markForCheck();
+          this.loader.hideLoader();
           this.cdr.markForCheck();
         },
       });

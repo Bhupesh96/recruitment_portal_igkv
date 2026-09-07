@@ -26,6 +26,9 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (request.url.includes('/google-api')) {
+      return next.handle(request);
+    }
     const designation_id = this.cookie.get('designation_id');
     const token = this.auth.getToken || this.cookie.get('token') || localStorage.getItem('token');
     const headers: Record<string, string> = {};
@@ -45,14 +48,14 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(modifiedRequest).pipe(
       catchError((err: HttpErrorResponse) => {
-        
+
         // 2. Handle 401 (Unauthorized) - Only execute if not already logging out
         if (err.status === 401) {
           if (!AuthInterceptor.isLoggingOut) {
             AuthInterceptor.isLoggingOut = true; // Lock the door
-            
+
             // Optional: Hide loader immediately so it doesn't get stuck
-            this.loaderService.hide(); 
+            this.loaderService.hide();
 
             Swal.fire({
               title: 'Session Expired',
@@ -65,9 +68,9 @@ export class AuthInterceptor implements HttpInterceptor {
               // Clear cookies and redirect
               this.cookie.deleteAll('/');
               window.open(moduleMapping.loginModule, '_self');
-              
+
               // Reset flag after redirect (though page reload usually clears it)
-              AuthInterceptor.isLoggingOut = false; 
+              AuthInterceptor.isLoggingOut = false;
             });
           }
           // If isLoggingOut is already true, we suppress subsequent 401 alerts

@@ -1,0 +1,11 @@
+{
+  "/google-api": {
+    "target": "https://inputtools.google.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/google-api": ""
+    },
+    "logLevel": "debug"
+  }
+}

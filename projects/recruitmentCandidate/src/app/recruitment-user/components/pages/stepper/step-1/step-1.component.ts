@@ -19,6 +19,7 @@ import {
   ValidatorFn,
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import Sanscript from '@indic-transliteration/sanscript';
 import {HttpClient, HttpClientModule} from '@angular/common/http';
 import {
   debounceTime,
@@ -600,7 +601,7 @@ export class Step1Component implements OnChanges, OnInit {
     return this.HTTP.getParam(
       '/master/get/getDistrictsByState',
       { state_id: stateId },
-      'recruitement'
+      'academic'
     );
   }
 
@@ -2113,25 +2114,19 @@ export class Step1Component implements OnChanges, OnInit {
       }
     });
   }
-
   translateToHindi(text: string): Observable<string | null> {
-    // 1. Point directly to Google's API
-    const url = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1`;
+    // Use the local Angular proxy path
+    const url = `/google-api/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1`;
 
-    // 2. Use Angular's standard `this.http` instead of your custom `this.HTTP` wrapper.
-    // This ensures no custom backend headers or base URLs are accidentally attached.
     return this.http.get(url).pipe(
       map((response: any) => {
-        // 3. Parse the specific array structure Google returns
         if (response && response[0] === 'SUCCESS') {
-          const transliteratedWord = response[1][0][1][0];
-          return transliteratedWord || null;
+          return response[1][0][1][0] || null;
         }
         return null;
       }),
       catchError((err) => {
-        // 4. If it fails (e.g., user loses internet), log it but don't break the form
-        console.error('Google Transliteration API error:', err);
+        console.error('Transliteration API error:', err);
         return of(null);
       })
     );

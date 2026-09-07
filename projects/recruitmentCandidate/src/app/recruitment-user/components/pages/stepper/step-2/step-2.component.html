@@ -136,7 +136,7 @@
               class="space-y-6"
             >
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div
+                <ng-container
                   *ngFor="
                     let param of getParameters(
                       subheading.m_rec_score_field_id,
@@ -144,6 +144,7 @@
                     )
                   "
                 >
+                  <div *ngIf="isParameterVisible(param, group, subheading)">
                   <!-- Hidden fields -->
                   <input
                     type="hidden"
@@ -462,6 +463,8 @@
                     Value cannot be negative.
                   </div>
                 </div>
+
+                </ng-container>
               </div>
             </div>
           </div>
