@@ -1578,163 +1578,7 @@ export class Step1Component implements OnChanges, OnInit {
       reader.readAsArrayBuffer(file);
     });
   }
-  async saveAdditionalInformation(): Promise<void> {
-    const formData = new FormData();
-    const registrationNo = this.form.get('registration_no')?.value;
-    formData.append('registration_no', registrationNo);
-    const additionalInfoPayload: any[] = [];
-    for (const question of this.additionalQuestions) {
-      const questionControlName = `question_${question.question_id}`;
-      const selectedOptionValue = this.form.get(questionControlName)?.value;
-      if (selectedOptionValue) {
-        const selectedOption = question.options.find(
-          (opt: any) => opt.option_value === selectedOptionValue
-        );
-        if (selectedOption) {
-          additionalInfoPayload.push({
-            question_id: question.question_id,
-            option_id: selectedOption.option_id,
-            condition_id: null,
-            input_field: null,
-          });
-          if (selectedOption.has_condition === 'Y') {
-            for (const condition of selectedOption.conditions) {
-              const conditionControlName = `condition_${condition.condition_id}`;
-              const conditionControl = this.form.get(conditionControlName);
-              const conditionValue = conditionControl?.value;
-              let inputFieldValue = null;
-              if (conditionValue instanceof File) {
-                const fileControlName = `additional_${question.question_id}_${selectedOption.option_id}_${condition.condition_id}`;
-                formData.append(
-                  fileControlName,
-                  conditionValue,
-                  conditionValue.name
-                );
-              } else {
-                inputFieldValue = conditionValue;
-              }
-              additionalInfoPayload.push({
-                question_id: question.question_id,
-                option_id: selectedOption.option_id,
-                condition_id: condition.condition_id,
-                input_field: inputFieldValue,
-              });
-            }
-          }
-        }
-      }
-    }
-    console.log(
-      '🔼 Frontend payload being sent:',
-      JSON.stringify(additionalInfoPayload, null, 2)
-    );
-    if (additionalInfoPayload.length === 0) {
-      console.warn('No additional info data to save.');
-      return Promise.resolve();
-    }
-    formData.append('additionalInfo', JSON.stringify(additionalInfoPayload));
-    // --- 6. Make the SINGLE API call with progress tracking ---
-    return new Promise((resolve, reject) => {
-      this.isUploading = true;
-      this.uploadProgress = 0;
 
-      this.HTTP.postFile(
-        '/candidate/postFile/saveOrUpdateFullCandidateProfile',
-        formData,
-        'recruitement'
-      ).subscribe({
-        next: async (event: any) => {
-          // Track upload progress
-          if (event?.type === 1 && event.total) {
-            // HttpEventType.UploadProgress = 1
-            this.uploadProgress = Math.round(100 * event.loaded / event.total);
-            this.cdr.markForCheck();
-            return; // Don't process further, wait for the final response
-          }
-
-          // HttpEventType.Response = 4 — this is the actual server response
-          if (event?.type !== 4) return;
-
-          this.isUploading = false;
-          const res = event; // postFile returns the event directly
-          const body = res?.body;
-
-          if (body?.error) {
-            this.loader.hideLoader();
-            this.alert.alert(true, body.error.message || 'An error occurred.');
-            reject(new Error(body.error.message));
-            return;
-          }
-
-          this.loader.hideLoader();
-          await this.alert.alert(false, 'All candidate details saved successfully!');
-
-          const responseRoot = body?.data;
-          const data = responseRoot?.data || {};
-
-          // ... rest of your existing success handler (no changes needed below here)
-          const serviceUpdatePayload: any = {};
-          if (data.a_rec_app_main_id) serviceUpdatePayload.a_rec_app_main_id = data.a_rec_app_main_id;
-          if (data.first_name_E) serviceUpdatePayload.Applicant_First_Name_E = data.first_name_E;
-          if (data.first_name_H) serviceUpdatePayload.Applicant_First_Name_H = data.first_name_H;
-          if (data.candidate_photo) serviceUpdatePayload.candidate_photo = data.candidate_photo;
-
-          if (Object.keys(serviceUpdatePayload).length > 0) {
-            this.recruitmentState.updateUserData(serviceUpdatePayload);
-          }
-
-          if (serviceUpdatePayload.a_rec_app_main_id) {
-            this.form.get('a_rec_app_main_id')?.setValue(serviceUpdatePayload.a_rec_app_main_id);
-          }
-          if (serviceUpdatePayload.Applicant_First_Name_E) {
-            this.form.get('Applicant_First_Name_E')?.setValue(serviceUpdatePayload.Applicant_First_Name_E, { emitEvent: false });
-          }
-          if (serviceUpdatePayload.Applicant_First_Name_H) {
-            this.form.get('Applicant_First_Name_H')?.setValue(serviceUpdatePayload.Applicant_First_Name_H, { emitEvent: false });
-          }
-
-          if (data.candidate_photo) {
-            this.filePaths.set('photo', data.candidate_photo);
-            this.photoPreview = this.getFileUrl(data.candidate_photo);
-            this.form.get('photo')?.setValue(data.candidate_photo, { emitEvent: false });
-            this.form.get('photo')?.clearValidators();
-            this.form.get('photo')?.updateValueAndValidity();
-          }
-
-          const registrationNo = this.form.get('registration_no')?.value;
-          if (registrationNo) {
-            this.getSavedAdditionalInfo(registrationNo).subscribe(response => {
-              this.savedAdditionalInfo = response?.body?.data || [];
-            });
-          }
-
-          if (body?.data?.photo_path) {
-            this.filePaths.set('photo', body.data.photo_path);
-            this.photoPreview = this.getFileUrl(body.data.photo_path);
-            this.form.get('photo')?.setValue(body.data.photo_path, { emitEvent: false });
-          }
-          if (body?.data?.signature_path) {
-            this.filePaths.set('signature', body.data.signature_path);
-            this.signaturePreview = this.getFileUrl(body.data.signature_path);
-            this.form.get('signature')?.setValue(body.data.signature_path, { emitEvent: false });
-          }
-
-          this.emitFormData();
-          this.cdr.markForCheck();
-          resolve();
-        },
-        error: (err: any) => {
-          this.isUploading = false;
-          this.uploadProgress = 0;
-          const errorMessage = err?.error?.details?.message || err?.error?.message || 'Failed to save details. Please try again.';
-          this.alert.alert(true, errorMessage);
-          this.loader.hideLoader();
-          reject(err);
-        },
-      });
-    });
-  }
-// --- Utility & Helper Methods ---
   onCharacterInput(event: Event): void {
     const input = event.target as HTMLInputElement;
     const initialValue = input.value;
@@ -2295,7 +2139,10 @@ export class Step1Component implements OnChanges, OnInit {
                     inputFieldValue = this.additionalFilePaths.get(conditionControlName) || null;
                   }
                 } else {
-                  inputFieldValue = conditionValue;
+                  inputFieldValue =
+                    conditionValue !== null && conditionValue !== undefined
+                      ? String(conditionValue)
+                      : null;
                 }
 
                 additionalInfoPayload.push({
