@@ -16,34 +16,58 @@ export class UtilsService {
     details?: any[];
   } {
     switch (methodId) {
-      case 1: // Marks based (Education)
-        return this.calculateEducationScore(data.educations, parentMaxValue);
-      case 2: // Calculation based (Experience)
-        return this.calculateTotalExperience(data.experiences, parentMaxValue);
-      case 3: // Quantity based
+      case 1:
+        return this.calculateEducationScore(
+          data.educations,
+          parentMaxValue
+        );
+
+      case 2:
+        return this.calculateTotalExperience(
+          data.experiences,
+          parentMaxValue
+        );
+
+      case 3:
         return this.calculateQuantityBasedScore(
           data.quantityInputs,
           parentMaxValue
         );
-      case 4: // 6 Month Fellowship Based
+
+      case 4:
         return this.calculateMonthBasedScore(
           data.months,
           6,
           data.weightage,
           parentMaxValue
         );
-      case 5: // Full Marks Based
+
+      case 5:
         return this.calculateFullMarksScore(
           data.educations,
           parentMaxValue
         );
-      case 6: // 3 Month Fellowship Based
+
+      case 6:
         return this.calculateMonthBasedScore(
           data.months,
           3,
           data.weightage,
           parentMaxValue
         );
+
+      case 7: // NAAS Rating Based
+        return this.calculateNaasRatingScore(
+          data.publications,
+          parentMaxValue
+        );
+
+      case 8: // JCR Impact Factor Based
+        return this.calculateJcrRatingScore(
+          data.publications,
+          parentMaxValue
+        );
+
       default:
         return {
           score_field_value: 0,
@@ -389,6 +413,78 @@ export class UtilsService {
             +calculatedValue.toFixed(4),
         },
       ],
+    };
+  }
+  private calculateNaasRatingScore(
+    publications: { rating: number }[],
+    parentMaxValue: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    const details = (publications || []).map((publication) => {
+      const rating = Number(publication.rating) || 0;
+
+      return {
+        rating,
+        calculatedValue: +(rating * 0.25).toFixed(4),
+      };
+    });
+
+    const totalRating = details.reduce(
+      (sum, item) => sum + item.rating,
+      0
+    );
+
+    const actualValue = +(totalRating * 0.25).toFixed(4);
+
+    return {
+      score_field_value: +totalRating.toFixed(4),
+      score_field_actual_value: actualValue,
+      score_field_calculated_value: Math.min(
+        actualValue,
+        parentMaxValue
+      ),
+      details,
+    };
+  }
+  private calculateJcrRatingScore(
+    publications: { rating: number }[],
+    parentMaxValue: number
+  ): {
+    score_field_value: number;
+    score_field_actual_value: number;
+    score_field_calculated_value: number;
+    details?: any[];
+  } {
+    const details = (publications || []).map((publication) => {
+      const impactFactor = Number(publication.rating) || 0;
+      const individualValue = impactFactor + 6;
+
+      return {
+        impactFactor,
+        individualValue,
+        calculatedValue: +(individualValue * 0.25).toFixed(4),
+      };
+    });
+
+    const totalIndividualValue = details.reduce(
+      (sum, item) => sum + item.individualValue,
+      0
+    );
+
+    const actualValue = +(totalIndividualValue * 0.25).toFixed(4);
+
+    return {
+      score_field_value: +totalIndividualValue.toFixed(4),
+      score_field_actual_value: actualValue,
+      score_field_calculated_value: Math.min(
+        actualValue,
+        parentMaxValue
+      ),
+      details,
     };
   }
 }

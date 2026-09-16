@@ -28,7 +28,7 @@
           <ng-container *ngIf="subHeadingsFormGroup.get(subHeading.m_rec_score_field_id.toString()) as subGroup">
             <div [formGroupName]="subHeading.m_rec_score_field_id.toString()">
 
-            
+
              <!-- Subheading Title -->
               <h6 class="mb-4 text-blue-900 text-lg font-semibold flex items-center gap-2 border-b pb-2">
                 <svg class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -349,32 +349,41 @@
                           *ngSwitchDefault
                           appInputTooltip
                           [type]="
-                param.isDatatype === 'number'
-                  ? 'number'
-                  : 'text'
-              "
+    ['number', 'double'].includes(param.isDatatype)
+      ? 'number'
+      : 'text'
+  "
                           class="w-full border border-gray-300
-                     rounded-md px-2 py-1.5 text-sm
-                     text-gray-900 focus:ring-1
-                     focus:ring-gray-400
-                     focus:border-gray-400
-                     bg-white min-w-[140px]"
+         rounded-md px-2 py-1.5 text-sm
+         text-gray-900 focus:ring-1
+         focus:ring-gray-400
+         focus:border-gray-400
+         bg-white min-w-[140px]"
                           [formControlName]="param.normalizedKey"
                           [placeholder]="param.score_field_parameter_name"
                           [attr.min]="
-                param.isDatatype === 'number'
-                  ? 0
-                  : null
-              "
+    ['number', 'double'].includes(param.isDatatype)
+      ? param.range_min ?? 0
+      : null
+  "
+                          [attr.max]="
+    ['number', 'double'].includes(param.isDatatype)
+      ? param.range_max
+      : null
+  "
+                          [attr.step]="
+    ['number', 'double'].includes(param.isDatatype)
+      ? '0.01'
+      : null
+  "
                           [attr.pattern]="
-                param.control_type === 'T' &&
-                param.isDatatype === 'text'
-                  ? '^[a-zA-Z ()]*$'
-                  : null
-              "
-                          (keydown)="
-                allowAlphabetsOnly($event, param)
-              "
+    param.control_type === 'T' &&
+    param.isDatatype === 'text'
+      ? '^[a-zA-Z ()]*$'
+      : null
+  "
+                          (keydown)="allowAlphabetsOnly($event, param)"
+                          (input)="validateRange($event, param, detailForm)"
                         />
 
 
