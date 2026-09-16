@@ -85,6 +85,8 @@
     isQuery_id: number;
     data_type_size: number;
     m_parameter_master_id: number;
+    range_min?: number | null;
+    range_max?: number | null;
   }
 
   interface Note {
@@ -541,12 +543,28 @@
 
         // --- MODIFICATION START ---
         // (Keep your existing validation logic for numbers/text here...)
-        if (param.isCalculationColumn === 'Y') {
-          validators.push(Validators.min(0), Validators.max(100), Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$'));
-        } else if (param.isDatatype === 'number') {
-          validators.push(Validators.min(0));
-        } else if (param.isDatatype === 'text' && param.control_type === 'T') {
-          validators.push(Validators.pattern('^[a-zA-Z ().,:&-]*$'));
+        if (param.isDatatype === 'number') {
+          // Apply API-defined minimum value
+          if (param.range_min !== null && param.range_min !== undefined) {
+            validators.push(Validators.min(Number(param.range_min)));
+          }
+
+          // Apply API-defined maximum value
+          if (param.range_max !== null && param.range_max !== undefined) {
+            validators.push(Validators.max(Number(param.range_max)));
+          }
+
+          // Maximum 2 decimal places
+          validators.push(
+            Validators.pattern(/^[0-9]+(\.[0-9]{1,2})?$/)
+          );
+        } else if (
+          param.isDatatype === 'text' &&
+          param.control_type === 'T'
+        ) {
+          validators.push(
+            Validators.pattern('^[a-zA-Z ().,:&-]*$')
+          );
         }
         // --- MODIFICATION END ---
 
@@ -582,7 +600,61 @@
         }
       }
     }
+    public validateRange(event: Event, param: Parameter): void {
+      if (param.isDatatype !== 'number') {
+        return;
+      }
 
+      const input = event.target as HTMLInputElement;
+      let value = input.value;
+
+      if (!value) {
+        return;
+      }
+
+      // Restrict to maximum 2 decimal places
+      if (value.includes('.')) {
+        const [integerPart, decimalPart] = value.split('.');
+
+        if (decimalPart.length > 2) {
+          value = `${integerPart}.${decimalPart.substring(0, 2)}`;
+          input.value = value;
+        }
+      }
+
+      const numericValue = Number(value);
+
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      // Apply minimum range
+      if (
+        param.range_min !== null &&
+        param.range_min !== undefined &&
+        numericValue < Number(param.range_min)
+      ) {
+        value = String(param.range_min);
+        input.value = value;
+      }
+
+      // Apply maximum range
+      if (
+        param.range_max !== null &&
+        param.range_max !== undefined &&
+        numericValue > Number(param.range_max)
+      ) {
+        value = String(param.range_max);
+        input.value = value;
+      }
+
+      // Keep Reactive FormControl synchronized
+      const control = this.form.get(param.score_field_parameter_name);
+
+      control?.setValue(value, {
+        emitEvent: false
+      });
+    }
     private toggleValidators(arrayName: string, sub: Subheading, isSelected: boolean): void {
       const formArray = this.form.get(arrayName) as FormArray;
       formArray.controls.forEach((control) => {
@@ -607,12 +679,28 @@
             }
 
             // (Keep your existing validation logic for numbers/text here...)
-            if (param.isCalculationColumn === 'Y') {
-              validators.push(Validators.min(0), Validators.max(100), Validators.pattern('^[0-9]+\\.?[0-9]{0,2}$'));
-            } else if (param.isDatatype === 'number') {
-              validators.push(Validators.min(0));
-            } else if (param.isDatatype === 'text' && param.control_type === 'T') {
-              validators.push(Validators.pattern('^[a-zA-Z ().,:&-]*$'));
+            if (param.isDatatype === 'number') {
+              // Apply API-defined minimum value
+              if (param.range_min !== null && param.range_min !== undefined) {
+                validators.push(Validators.min(Number(param.range_min)));
+              }
+
+              // Apply API-defined maximum value
+              if (param.range_max !== null && param.range_max !== undefined) {
+                validators.push(Validators.max(Number(param.range_max)));
+              }
+
+              // Maximum 2 decimal places
+              validators.push(
+                Validators.pattern(/^[0-9]+(\.[0-9]{1,2})?$/)
+              );
+            } else if (
+              param.isDatatype === 'text' &&
+              param.control_type === 'T'
+            ) {
+              validators.push(
+                Validators.pattern('^[a-zA-Z ().,:&-]*$')
+              );
             }
 
             ctrl.setValidators(validators);

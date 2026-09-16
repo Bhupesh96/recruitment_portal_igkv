@@ -80,6 +80,8 @@ interface Parameter {
   parameter_display_order: number;
   isQuery_id: number;
   isDatatype: string;
+  range_min?: number | null;
+  range_max?: number | null;
 }
 @Component({
   selector: 'app-step-3',
@@ -944,7 +946,17 @@ getCheckboxName(detailForm: AbstractControl): string {
       }
 
       if (param.control_type === 'T' && param.isDatatype === 'number') {
-        validators.push(Validators.min(0));
+        if (param.range_min !== null && param.range_min !== undefined) {
+          validators.push(Validators.min(Number(param.range_min)));
+        }
+
+        if (param.range_max !== null && param.range_max !== undefined) {
+          validators.push(Validators.max(Number(param.range_max)));
+        }
+
+        validators.push(
+          Validators.pattern(/^[0-9]+(\.[0-9]{1,2})?$/)
+        );
       }
 
       // ✅ ADD THIS CONDITION for text pattern validation
@@ -1352,6 +1364,64 @@ getCheckboxName(detailForm: AbstractControl): string {
       reader.onerror = (error) => reject(error);
       reader.readAsArrayBuffer(file);
     });
+  }
+  public validateRange(
+    event: Event,
+    param: Parameter,
+    detailForm?: AbstractControl
+  ): void {
+    if (param.isDatatype !== 'number') {
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+
+    if (!value) {
+      return;
+    }
+
+    // Restrict maximum 2 decimal places
+    if (value.includes('.')) {
+      const [integerPart, decimalPart] = value.split('.');
+
+      if (decimalPart.length > 2) {
+        value = `${integerPart}.${decimalPart.substring(0, 2)}`;
+        input.value = value;
+      }
+    }
+
+    let numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    // Apply API minimum range
+    if (
+      param.range_min !== null &&
+      param.range_min !== undefined &&
+      numericValue < Number(param.range_min)
+    ) {
+      value = String(param.range_min);
+      input.value = value;
+      numericValue = Number(value);
+    }
+
+    // Apply API maximum range
+    if (
+      param.range_max !== null &&
+      param.range_max !== undefined &&
+      numericValue > Number(param.range_max)
+    ) {
+      value = String(param.range_max);
+      input.value = value;
+    }
+
+    // Keep the correct row's FormControl synchronized
+    detailForm
+      ?.get(param.normalizedKey)
+      ?.setValue(value, { emitEvent: false });
   }
 async saveToDatabase(): Promise<void> {
     this.loader.showLoader();
@@ -2560,13 +2630,13 @@ async saveToDatabase(): Promise<void> {
   }
 
   // ============================================================
-  // +++ FIX: COMPLETELY REWRITTEN TO USE parentCalculatedValue 
+  // +++ FIX: COMPLETELY REWRITTEN TO USE parentCalculatedValue
   // INSTEAD OF FLAWED utils.calculateScore(3) OVERRIDE
   // ============================================================
   private createParentRecord(
     registrationNo: number,
     a_rec_app_main_id: number,
-    parentCalculatedValue: number 
+    parentCalculatedValue: number
   ): any {
     if (!this.heading) return null;
 
@@ -2582,19 +2652,19 @@ async saveToDatabase(): Promise<void> {
       score_field_parent_id: 0,
       m_rec_score_field_id: this.heading.m_rec_score_field_id,
       m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id || 3,
-      
+
       // Maximum allowed marks
-      score_field_value: parentMaxMarks, 
-      
+      score_field_value: parentMaxMarks,
+
       // Sum of valid children
       score_field_actual_value: parentCalculatedValue,
-      
+
       // Capped sum of children
       score_field_calculated_value: Math.min(
         parentCalculatedValue,
         parentMaxMarks
       ),
-      
+
       field_marks: parentMaxMarks,
       field_weightage: this.heading.score_field_field_weightage || 0,
       verify_remark: 'Not Verified',
