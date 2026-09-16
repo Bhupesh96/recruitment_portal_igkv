@@ -2558,60 +2558,41 @@ async saveToDatabase(): Promise<void> {
       // API CALL
       // ============================================================
 
-      this.HTTP.postForm(
-        '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
-        formData,
-        'recruitement'
-      ).subscribe({
-        next: async (res) => {
-
-          if (res?.body?.error) {
-
-            this.alertService.alert(
-              true,
-              res.body.error.message ||
-              'An error occurred on the server.'
-            );
-
-            this.loader.hideLoader();
-
-            return;
+      const response: any = await new Promise((resolve, reject) => {
+        this.HTTP.postForm(
+          '/candidate/postFile/saveOrUpdateQuantityBasedCandidateDetails',
+          formData,
+          'recruitement'
+        ).subscribe({
+          next: (res: any) => {
+            resolve(res);
+          },
+          error: (err: any) => {
+            reject(err);
           }
-
-          this.loader.hideLoader();
-
-          await this.alertService.alert(
-            false,
-            'Data saved successfully!'
-          );
-
-          this.parameterIdsToDelete = [];
-
-          this.getParameterValuesAndPatch();
-
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-
-          console.error(
-            'SCREENING SAVE ERROR:',
-            err
-          );
-
-          this.alertService.alert(
-            true,
-            'Error saving records: ' +
-            (
-              err.error?.message ||
-              err.message
-            )
-          );
-
-          this.cdr.markForCheck();
-
-          this.loader.hideLoader();
-        },
+        });
       });
+
+      if (response?.body?.error) {
+        const message =
+          response.body.error.message ||
+          'An error occurred on the server.';
+
+        await this.alertService.alert(true, message);
+
+        throw new Error(message);
+      }
+
+      this.parameterIdsToDelete = [];
+
+      this.getParameterValuesAndPatch();
+
+      this.cdr.markForCheck();
+
+      await this.alertService.alert(
+        false,
+        'Data saved successfully!'
+      );
 
     } catch (error: any) {
       console.error(
@@ -2619,13 +2600,22 @@ async saveToDatabase(): Promise<void> {
         error
       );
 
-      this.alertService.alert(
-        true,
+      const message =
+        error?.error?.message ||
         error?.message ||
-        'Unable to save screening data.'
+        'Unable to save screening data.';
+
+      await this.alertService.alert(
+        true,
+        message
       );
 
+      // Do not swallow the error
+      throw error;
+    }
+    finally {
       this.loader.hideLoader();
+      this.cdr.markForCheck();
     }
   }
 
