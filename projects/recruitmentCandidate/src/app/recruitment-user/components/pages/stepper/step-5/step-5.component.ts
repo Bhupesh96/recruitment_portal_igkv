@@ -890,66 +890,49 @@
         this.form.markAllAsTouched();
         this.checkMandatorySubheadingsAndParameters();
 
-        // Mandatory subheading/parameter validation
         if (!this.form.get('mandatorySubheadingsSelected')?.value) {
-          const firstMissed =
-            this.form.get('firstMissedMandatory')?.value ||
-            'Mandatory field is missing';
-
-          await this.alertService.alert(
+          const firstMissed = this.form.get('firstMissedMandatory')?.value;
+          this.alertService.alert(
             true,
             `${firstMissed}. Please provide the required information.`
           );
-
-          throw new Error('Mandatory field missing.');
+          return Promise.reject(new Error('Mandatory field missing.'));
         }
 
-        // Date range validation
         let hasDateError = false;
-
         this.subheadings.forEach((sub, index) => {
           const key = this.getUniqueKey(sub, index);
           const formArray = this.form.get(key) as FormArray;
-
           if (
-            formArray?.controls.some((group) =>
-              group.hasError('dateRangeInvalid')
-            )
+            formArray.controls.some((group) => group.hasError('dateRangeInvalid'))
           ) {
             hasDateError = true;
           }
         });
 
         if (hasDateError) {
-          await this.alertService.alert(
+          this.alertService.alert(
             true,
             'Invalid Date Range detected in Experience details. Please correct the dates before saving.'
           );
-
-          throw new Error('Invalid Date Range');
+          return Promise.reject(new Error('Invalid Date Range'));
         }
-
-        // Overlapping dates validation
         let hasOverlapError = false;
-
         this.subheadings.forEach((sub, index) => {
           const key = this.getUniqueKey(sub, index);
-
           if (this.form.get(key)?.hasError('overlappingDates')) {
             hasOverlapError = true;
           }
         });
 
         if (hasOverlapError) {
-          await this.alertService.alert(
+          this.alertService.alert(
             true,
             'Overlapping experience dates detected! You cannot hold two experiences simultaneously in this section. Please adjust your dates.'
           );
-
-          throw new Error('Overlapping Dates');
+          return Promise.reject(new Error('Overlapping Dates'));
         }
-
-        // Temporarily disable empty placeholder rows
+        // Temporarily disable empty placeholder rows so they don't block validation check rules
         const disabledGroups: AbstractControl[] = [];
         let hasAnyValidDataAtAll = false;
 
@@ -957,198 +940,110 @@
           const key = this.getUniqueKey(sub, subIndex);
           const formArray = this.form.get(key) as FormArray;
 
-          if (!formArray) {
-            return;
-          }
-
           formArray.controls.forEach((group, rawIndex) => {
             const formValues = group.getRawValue();
-
-            const existingDetailId =
-              formValues.a_rec_app_score_field_detail_id;
-
+            const existingDetailId = formValues.a_rec_app_score_field_detail_id;
             const isDeleted = formValues.is_deleted;
-
-            const hasUserEnteredData = this.hasValidData(
-              formValues,
-              rawIndex,
-              sub,
-              key
-            );
+            const hasUserEnteredData = this.hasValidData(formValues, rawIndex, sub, key);
 
             if (hasUserEnteredData) {
               hasAnyValidDataAtAll = true;
             }
 
-            if (
-              !hasUserEnteredData &&
-              !existingDetailId &&
-              !isDeleted
-            ) {
+            if (!hasUserEnteredData && !existingDetailId && !isDeleted) {
               group.disable({ emitEvent: false });
               disabledGroups.push(group);
             }
           });
         });
 
-        // Nothing to save
-        if (
-          !hasAnyValidDataAtAll &&
-          !this.existingParentDetailId &&
-          this.ghostDetailsToDelete.length === 0
-        ) {
-          disabledGroups.forEach((group) =>
-            group.enable({ emitEvent: false })
-          );
-
+        if (!hasAnyValidDataAtAll && !this.existingParentDetailId && this.ghostDetailsToDelete.length === 0) {
           this.emitFormData();
           return;
         }
 
-        // Final form validation
         if (this.form.invalid) {
-          await this.alertService.alert(
+          this.alertService.alert(
             true,
             'Please fill all required fields correctly.'
           );
-
-          disabledGroups.forEach((group) =>
-            group.enable({ emitEvent: false })
-          );
-
-          throw new Error('Form is invalid');
+          disabledGroups.forEach(g => g.enable({ emitEvent: false }));
+          return;
         }
 
+        // ✅ LOADER INITIALIZED
         this.loader.showLoader();
 
         try {
-          const freshUserData =
-            this.recruitmentState.getCurrentUserData();
-
+          const freshUserData = this.recruitmentState.getCurrentUserData();
           this.userData = freshUserData;
 
           const registrationNo = this.userData?.registration_no;
           const a_rec_app_main_id = this.userData?.a_rec_app_main_id;
 
           if (!registrationNo || !a_rec_app_main_id) {
-            throw new Error(
-              'Cannot submit, user identification is missing.'
-            );
+            throw new Error('Cannot submit, user identification is missing.');
           }
 
           const formData = new FormData();
-
           const allDetails: any[] = [];
           const allParameters: any[] = [];
-
           let totalCalculatedExperience = 0;
 
-          // ============================================================
-          // GHOST RECORDS TO DELETE
-          // ============================================================
-
-          this.ghostDetailsToDelete.forEach((ghost) => {
+          this.ghostDetailsToDelete.forEach(ghost => {
             allDetails.push({
-              a_rec_app_score_field_detail_id:
-              ghost.a_rec_app_score_field_detail_id,
-
+              a_rec_app_score_field_detail_id: ghost.a_rec_app_score_field_detail_id,
               registration_no: registrationNo,
               a_rec_app_main_id: a_rec_app_main_id,
-
-              a_rec_adv_post_detail_id:
-              ghost.a_rec_adv_post_detail_id,
-
-              score_field_parent_id:
-              ghost.score_field_parent_id,
-
-              m_rec_score_field_id:
-              ghost.m_rec_score_field_id,
-
-              m_rec_score_field_method_id:
-              ghost.m_rec_score_field_method_id,
-
+              a_rec_adv_post_detail_id: ghost.a_rec_adv_post_detail_id,
+              score_field_parent_id: ghost.score_field_parent_id,
+              m_rec_score_field_id: ghost.m_rec_score_field_id,
+              m_rec_score_field_method_id: ghost.m_rec_score_field_method_id,
               score_field_value: 0,
               score_field_actual_value: 0,
               score_field_calculated_value: 0,
-
               field_marks: ghost.field_marks || 0,
               field_weightage: ghost.field_weightage || 0,
-
               verify_remark: 'Not Verified',
               action_type: 'U',
               action_date: new Date().toISOString(),
               action_ip_address: '127.0.0.1',
               action_remark: 'Cleaning up ghost record',
               action_by: 1,
-
               score_field_row_index: 0,
               delete_flag: 'Y'
             });
           });
 
-          // ============================================================
-          // BUILD DETAIL AND PARAMETER PAYLOAD
-          // ============================================================
-
-          for (
-            let subIndex = 0;
-            subIndex < this.subheadings.length;
-            subIndex++
-          ) {
+          // 🚨 CRITICAL REFAC: Outer loop changed to standard sequential loop to avoid broken promise chains
+          for (let subIndex = 0; subIndex < this.subheadings.length; subIndex++) {
             const sub = this.subheadings[subIndex];
-
             const key = this.getUniqueKey(sub, subIndex);
             const formArray = this.form.get(key) as FormArray;
-
-            if (!formArray) {
-              continue;
-            }
+            if (!formArray) continue;
 
             let validRowIndex = 1;
-
             const rawControls = formArray.controls;
 
-            for (
-              let rawIndex = 0;
-              rawIndex < rawControls.length;
-              rawIndex++
-            ) {
+            for (let rawIndex = 0; rawIndex < rawControls.length; rawIndex++) {
               const formGroup = rawControls[rawIndex] as FormGroup;
               const formValues = formGroup.getRawValue();
 
-              const existingDetailId =
-                formValues.a_rec_app_score_field_detail_id;
-
+              const existingDetailId = formValues.a_rec_app_score_field_detail_id;
               let isDeleted = formValues.is_deleted;
-
-              const hasUserEnteredData = this.hasValidData(
-                formValues,
-                rawIndex,
-                sub,
-                key
-              );
+              const hasUserEnteredData = this.hasValidData(formValues, rawIndex, sub, key);
 
               if (!hasUserEnteredData && existingDetailId) {
                 isDeleted = true;
               }
 
-              if (
-                !hasUserEnteredData &&
-                !existingDetailId &&
-                !isDeleted
-              ) {
+              if (!hasUserEnteredData && !existingDetailId && !isDeleted) {
                 continue;
               }
 
-              // --------------------------------------------------------
-              // Calculate experience
-              // --------------------------------------------------------
-
               let currentExperience = 0;
-
               const fromDate = formValues['Period From'];
               const toDate = formValues['Period To'];
-
               if (fromDate && toDate) {
                 currentExperience = this.utils.calculateDuration(
                   new Date(fromDate),
@@ -1162,98 +1057,48 @@
                 totalCalculatedExperience += currentExperience;
               }
 
-              // --------------------------------------------------------
-              // Detail object
-              // --------------------------------------------------------
-
               const detail = {
-                a_rec_app_score_field_detail_id:
-                  existingDetailId || undefined,
-
+                a_rec_app_score_field_detail_id: existingDetailId || undefined,
                 registration_no: registrationNo,
                 a_rec_app_main_id: a_rec_app_main_id,
-
-                a_rec_adv_post_detail_id:
-                sub.a_rec_adv_post_detail_id,
-
-                score_field_parent_id:
-                sub.score_field_parent_id,
-
-                m_rec_score_field_id:
-                sub.m_rec_score_field_id,
-
-                m_rec_score_field_method_id:
-                sub.m_rec_score_field_method_id,
-
+                a_rec_adv_post_detail_id: sub.a_rec_adv_post_detail_id,
+                score_field_parent_id: sub.score_field_parent_id,
+                m_rec_score_field_id: sub.m_rec_score_field_id,
+                m_rec_score_field_method_id: sub.m_rec_score_field_method_id,
                 score_field_value: currentExperience,
                 score_field_actual_value: currentExperience,
                 score_field_calculated_value: currentExperience,
-
                 field_marks: sub.score_field_field_marks || 0,
                 field_weightage: sub.score_field_field_weightage || 0,
-
                 verify_remark: 'Not Verified',
                 active_status: 'Y',
-
                 delete_flag: isDeleted ? 'Y' : 'N',
                 action_type: existingDetailId ? 'U' : 'C',
-
                 action_date: new Date().toISOString(),
                 action_ip_address: '127.0.0.1',
                 action_remark: 'data inserted/updated',
                 action_by: 1,
-
-                score_field_row_index: validRowIndex
+                score_field_row_index: validRowIndex,
               };
-
               allDetails.push(detail);
 
-              // --------------------------------------------------------
-              // Parameter objects
-              // --------------------------------------------------------
+              if (!isDeleted || (isDeleted && existingDetailId)) {
+                const paramsList = this.getParameters(sub.m_rec_score_field_id, sub.a_rec_adv_post_detail_id);
 
-              if (
-                !isDeleted ||
-                (isDeleted && existingDetailId)
-              ) {
-                const paramsList = this.getParameters(
-                  sub.m_rec_score_field_id,
-                  sub.a_rec_adv_post_detail_id
-                );
-
+                // 🚨 CRITICAL REFAC: Inner loop changed to for...of loop to process hashes sequentially
                 for (const param of paramsList) {
-                  const paramName =
-                    param.score_field_parameter_name;
-
+                  const paramName = param.score_field_parameter_name;
                   const paramValue = formValues[paramName];
-
                   const isNewFile = paramValue instanceof File;
-
-                  const existingParamId =
-                    formGroup.get(
-                      `param_${param.m_rec_score_field_parameter_new_id}_id`
-                    )?.value;
-
-                  const existingFilePath =
-                    param.control_type === 'A'
-                      ? this.getFilePath(
-                        key,
-                        param.m_rec_score_field_parameter_new_id,
-                        rawIndex
-                      )
-                      : null;
+                  const existingParamId = formGroup.get(`param_${param.m_rec_score_field_parameter_new_id}_id`)?.value;
+                  const existingFilePath = param.control_type === 'A' ? this.getFilePath(key, param.m_rec_score_field_parameter_new_id, rawIndex) : null;
 
                   let finalParameterValue = '';
 
-                  // ----------------------------------------------------
-                  // New file
-                  // ----------------------------------------------------
-
                   if (isNewFile) {
+                    // ✅ Empty file validation guard
                     if (paramValue.size === 0) {
-                      throw new Error(
-                        `The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`
-                      );
+                      throw new Error(`The selected file for "${param.score_field_parameter_name}" is empty or corrupted locally.`);
                     }
 
                     const { fullPath } = this.generateFilePath(
@@ -1264,196 +1109,86 @@
                       param.m_rec_score_field_parameter_new_id,
                       validRowIndex
                     );
-
                     finalParameterValue = fullPath;
 
-                    const fileControlName =
-                      `${registrationNo}_` +
-                      `${sub.score_field_parent_id}_` +
-                      `${sub.m_rec_score_field_id}_` +
-                      `${param.m_rec_score_field_parameter_new_id}_` +
-                      `${param.parameter_display_order || 0}_` +
-                      `${validRowIndex}`;
+                    const fileControlName = `${registrationNo}_${sub.score_field_parent_id}_${sub.m_rec_score_field_id}_${param.m_rec_score_field_parameter_new_id}_${param.parameter_display_order || 0}_${validRowIndex}`;
 
-                    formData.append(
-                      fileControlName,
-                      paramValue,
-                      paramValue.name
-                    );
+                    formData.append(fileControlName, paramValue, paramValue.name);
 
-                    const fileHash =
-                      await this.calculateFileHash(paramValue);
+                    // ✅ Calculate block payload hash string and map to payload key structure
+                    const fileHash = await this.calculateFileHash(paramValue);
+                    formData.append(`${fileControlName}_hash`, fileHash);
 
-                    formData.append(
-                      `${fileControlName}_hash`,
-                      fileHash
-                    );
-                  }
-
-                    // ----------------------------------------------------
-                    // Existing file
-                  // ----------------------------------------------------
-
-                  else if (
-                    param.control_type === 'A' &&
-                    existingFilePath
-                  ) {
+                  } else if (param.control_type === 'A' && existingFilePath) {
                     finalParameterValue = existingFilePath;
-                  }
-
-                    // ----------------------------------------------------
-                    // Normal value
-                  // ----------------------------------------------------
-
-                  else if (
-                    param.control_type !== 'A' &&
-                    paramValue != null
-                  ) {
+                  } else if (param.control_type !== 'A' && paramValue != null) {
                     finalParameterValue = String(paramValue);
                   }
 
-                  // ----------------------------------------------------
-                  // Add parameter only if required
-                  // ----------------------------------------------------
-
-                  if (
-                    finalParameterValue !== '' ||
-                    existingParamId
-                  ) {
+                  if (finalParameterValue !== '' || existingParamId) {
                     const parameter = {
-                      a_rec_app_score_field_parameter_detail_id:
-                        existingParamId || undefined,
-
-                      a_rec_app_score_field_detail_id:
-                        existingDetailId || undefined,
-
+                      a_rec_app_score_field_parameter_detail_id: existingParamId || undefined,
+                      a_rec_app_score_field_detail_id: existingDetailId || undefined,
                       registration_no: registrationNo,
-
-                      score_field_parent_id:
-                      sub.score_field_parent_id,
-
-                      m_rec_score_field_id:
-                      sub.m_rec_score_field_id,
-
-                      m_rec_score_field_parameter_new_id:
-                      param.m_rec_score_field_parameter_new_id,
-
-                      parameter_value:
-                        finalParameterValue || '',
-
+                      score_field_parent_id: sub.score_field_parent_id,
+                      m_rec_score_field_id: sub.m_rec_score_field_id,
+                      m_rec_score_field_parameter_new_id: param.m_rec_score_field_parameter_new_id,
+                      parameter_value: finalParameterValue || '',
                       parameter_row_index: validRowIndex,
-
-                      parameter_display_no:
-                      param.parameter_display_order,
-
+                      parameter_display_no: param.parameter_display_order,
                       verify_remark: 'Not Verified',
                       active_status: 'Y',
-
                       delete_flag: isDeleted ? 'Y' : 'N',
                       action_type: existingParamId ? 'U' : 'C',
-
                       action_date: new Date().toISOString(),
-                      action_ip_address: '127.0.0.1',
                       action_remark: 'parameter inserted/updated',
-                      action_by: 1
+                      action_by: 1,
                     };
-
                     allParameters.push(parameter);
                   }
                 }
               }
-
               validRowIndex++;
             }
           }
 
-          // ============================================================
-          // PARENT RECORD
-          // ============================================================
-
           if (!this.heading) {
-            throw new Error(
-              'Cannot submit, heading information is missing.'
-            );
+            throw new Error('Cannot submit, heading information is missing.');
           }
 
           const parentRecord = {
             ...(this.existingParentDetailId && {
-              a_rec_app_score_field_detail_id:
-              this.existingParentDetailId
+              a_rec_app_score_field_detail_id: this.existingParentDetailId,
             }),
-
             registration_no: registrationNo,
             a_rec_app_main_id: a_rec_app_main_id,
-
-            a_rec_adv_post_detail_id:
-            this.heading.a_rec_adv_post_detail_id,
-
+            a_rec_adv_post_detail_id: this.heading.a_rec_adv_post_detail_id,
             score_field_parent_id: 0,
-
-            m_rec_score_field_id:
-            this.heading.m_rec_score_field_id,
-
-            m_rec_score_field_method_id:
-            this.heading.m_rec_score_field_method_id,
-
-            score_field_value:
-            this.heading.score_field_field_marks,
-
-            score_field_actual_value:
-            totalCalculatedExperience,
-
+            m_rec_score_field_id: this.heading.m_rec_score_field_id,
+            m_rec_score_field_method_id: this.heading.m_rec_score_field_method_id,
+            score_field_value: this.heading.score_field_field_marks,
+            score_field_actual_value: totalCalculatedExperience,
             score_field_calculated_value: Math.min(
               totalCalculatedExperience,
               this.heading.score_field_field_marks
             ),
-
-            field_marks:
-            this.heading.score_field_field_marks,
-
-            field_weightage:
-            this.heading.score_field_field_weightage,
-
+            field_marks: this.heading?.score_field_field_marks,
+            field_weightage: this.heading?.score_field_field_weightage,
             verify_remark: 'Not Verified',
             action_type: 'U',
-
             action_date: new Date().toISOString(),
-            action_ip_address: '127.0.0.1',
             action_remark: 'parent data updated from recruitment form',
             action_by: 1,
-
-            delete_flag: 'N'
+            delete_flag: 'N',
           };
 
-          // ============================================================
-          // APPEND FORM DATA
-          // ============================================================
+          formData.append('parentScore', JSON.stringify(parentRecord));
+          formData.append('registration_no', registrationNo.toString());
+          formData.append('scoreFieldDetailList', JSON.stringify(allDetails));
+          formData.append('scoreFieldParameterList', JSON.stringify(allParameters));
 
-          formData.append(
-            'parentScore',
-            JSON.stringify(parentRecord)
-          );
-
-          formData.append(
-            'registration_no',
-            registrationNo.toString()
-          );
-
-          formData.append(
-            'scoreFieldDetailList',
-            JSON.stringify(allDetails)
-          );
-
-          formData.append(
-            'scoreFieldParameterList',
-            JSON.stringify(allParameters)
-          );
-
-          // ============================================================
-          // WAIT FOR API RESPONSE
-          // ============================================================
-
-          const res: any = await lastValueFrom(
+          // STEP 6: Execute payload transmission over HTTP pipeline
+          const res = await lastValueFrom(
             this.HTTP.postForm(
               '/candidate/postFile/saveOrUpdateCandidateScoreCard',
               formData,
@@ -1461,63 +1196,25 @@
             )
           );
 
-          // ============================================================
-          // HANDLE API ERROR RESPONSE
-          // ============================================================
-
           if (res?.body?.error) {
-            throw new Error(
-              res.body.error.message ||
-              'An error occurred on the server.'
-            );
+            throw new Error(res.body.error.message || 'An error occurred on the server.');
           }
 
-          // ============================================================
-          // SUCCESS
-          // ============================================================
-
-          this.ghostDetailsToDelete = [];
-
-          disabledGroups.forEach((group) =>
-            group.enable({ emitEvent: false })
-          );
-
-          await this.alertService.alert(
-            false,
-            'Data saved successfully!'
-          );
+          this.loader.hideLoader();
+          disabledGroups.forEach(g => g.enable({ emitEvent: false }));
+          await this.alertService.alert(false, 'Data saved successfully!');
 
           this.getParameterValuesAndPatch();
           this.emitFormData();
           this.cdr.markForCheck();
 
         } catch (err: any) {
-          console.error(
-            'STEP 5 SAVE ERROR:',
-            err
-          );
-
-          disabledGroups.forEach((group) =>
-            group.enable({ emitEvent: false })
-          );
-
-          const errorMessage =
-            err?.error?.message ||
-            err?.message ||
-            'An unknown error occurred while saving.';
-
-          await this.alertService.alert(
-            true,
-            `Error: ${errorMessage}`
-          );
-
-          // Important: reject submitForm()
-          // so stepper cannot proceed
-          throw err;
-
-        } finally {
           this.loader.hideLoader();
+          disabledGroups.forEach(g => g.enable({ emitEvent: false }));
+          const errorMessage = err.error?.message || err.message || 'An unknown error occurred while saving.';
+          this.alertService.alert(true, `Error: ${errorMessage}`);
           this.cdr.markForCheck();
+          return Promise.reject(err);
         }
       }
 
