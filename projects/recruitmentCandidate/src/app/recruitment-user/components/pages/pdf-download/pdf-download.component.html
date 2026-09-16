@@ -1,9 +1,9 @@
 <div class="a4-container" #printSection [style.display]="isDataLoaded ? 'block' : 'none'">
 
   <div class="header-section">
-    <div class="form-title">Application Form For {{ formData[1]?.post_name || "-" }}</div>
+    <div class="form-title">Application Form For the Post of {{ formData[1]?.post_name || "-" }}</div>
     <div *ngIf="payScale || payLevel" style="font-size: 14px; font-weight: bold; color: #000; margin-top: 5px;">
-      (Pay Scale Rs. {{ payScale }}/- <ng-container *ngIf="payScale && payLevel"> </ng-container>{{ payLevel }})
+      (Pay Scale Rs. {{ payScale }}/- <ng-container *ngIf="payScale && payLevel"> </ng-container> Academic {{ payLevel }})
     </div>
   </div>
 
@@ -120,7 +120,13 @@
               {{ item.question }}
             </div>
             <div style="font-size: 13px; font-weight: 500; color: #000; word-wrap: break-word;">
-              {{ formatValue(item.answer, item.question) }}
+              {{
+                item.answer === 'Y'
+                  ? 'Yes'
+                  : item.answer === 'N'
+                    ? 'No'
+                    : formatValue(item.answer, item.question)
+              }}
             </div>
           </div>
 

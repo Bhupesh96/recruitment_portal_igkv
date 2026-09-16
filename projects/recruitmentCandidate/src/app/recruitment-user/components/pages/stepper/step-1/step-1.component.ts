@@ -56,7 +56,7 @@ export class Step1Component implements OnChanges, OnInit {
     { propertyName: 'countryList', queryId: 113 },
     { propertyName: 'stateList', queryId: 114 }, // You can also put numbers directly
     { propertyName: 'languageTypes', queryId: 116 },
-    // { propertyName: 'languages', queryId: 117 },
+    { propertyName: 'languages', queryId: 117 },
     { propertyName: 'languageSkills', queryId: 118 },
     { propertyName: 'advertisementList', queryId: 108 },
   ];
@@ -1776,19 +1776,27 @@ export class Step1Component implements OnChanges, OnInit {
           // Use the correct list
           (d: any) => d.district_id === Number(formValue.Birth_District_Id) // Add the 'any' type
         )?.district_name || '',
-      languages: formValue.languages.map((lang: any) => ({
+      languages: formValue.languages.map((lang: any, index: number) => ({
         ...lang,
+
         language_name:
-          this.languages.find((l) => l.id === Number(lang.m_rec_language_id))
-            ?.language_name || '',
+          this.languagesList[index]?.find(
+            (l: any) => l.id === Number(lang.m_rec_language_id)
+          )?.language_name ||
+          this.languagesList[index]?.find(
+            (l: any) => l.id === Number(lang.m_rec_language_id)
+          )?.name ||
+          '',
+
         language_type:
           this.languageTypes.find(
-            (t) =>
+            (t: any) =>
               t.m_rec_language_type_id === Number(lang.m_rec_language_type_id)
           )?.language_type || '',
+
         language_skill:
           this.languageSkills.find(
-            (s) =>
+            (s: any) =>
               s.m_rec_language_skill_id === Number(lang.m_rec_language_skill_id)
           )?.language_skill || '',
       })),
