@@ -426,14 +426,6 @@
         </select>
       </div>
 
-      <div *ngIf="forgotRegForm.get('academic_session_id')?.value">
-        <label class="block text-sm font-semibold text-gray-800 mb-1">Advertisement <span class="text-red-700">*</span></label>
-        <select formControlName="a_rec_adv_main_id" (change)="onAdvChange()" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none bg-white">
-          <option [ngValue]="null" disabled selected>Select Advertisement</option>
-          <option *ngFor="let adv of advList" [ngValue]="adv.a_rec_adv_main_id">{{ adv.advertisment_no }}</option>
-        </select>
-      </div>
-
       <div *ngIf="forgotRegForm.get('a_rec_adv_main_id')?.value">
         <label class="block text-sm font-semibold text-gray-800 mb-1">Post <span class="text-red-700">*</span></label>
         <select formControlName="post_code" (change)="onPostChange()" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm outline-none bg-white">

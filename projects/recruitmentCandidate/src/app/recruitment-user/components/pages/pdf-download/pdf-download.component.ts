@@ -10,7 +10,7 @@ import {
 import { SharedDataService } from '../shared-data.service';
 import { Subscription, take } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { HttpService, LoaderService } from 'shared';
+import { AlertService, HttpService, LoaderService } from 'shared';
 import {
   RecruitmentStateService,
   UserRecruitmentData,
@@ -70,6 +70,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     private recruitmentState: RecruitmentStateService,
     private loader: LoaderService,
     private cdr: ChangeDetectorRef,
+    private alertService: AlertService,
   ) {
     this.userData = this.recruitmentState.getCurrentUserData();
   }
@@ -278,7 +279,7 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
     }
   }
 
-  private generatePdfDocument(): void {
+  private async generatePdfDocument(): Promise<void> {
     if (!this.printContentRef) {
       this.loader.hideLoader();
       return;
@@ -290,9 +291,16 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       stylesHtml += node.outerHTML;
     });
 
-    let contentHtml = this.printContentRef.nativeElement.outerHTML;
-    const baseUrl = window.location.origin;
-    contentHtml = contentHtml.replace('src="igkv_logo.png"', `src="${baseUrl}igkv_logo.png"`);
+    const printableContent = this.printContentRef.nativeElement.cloneNode(true) as HTMLDivElement;
+    try {
+      await this.embedImages(printableContent);
+    } catch (error) {
+      console.error('Failed to embed PDF images', error);
+      this.loader.hideLoader();
+      this.alertService.alert(true, 'Unable to load the images required for the PDF.');
+      return;
+    }
+    const contentHtml = printableContent.outerHTML;
 
     const fullHtmlPayload = `
     <!DOCTYPE html>
@@ -300,7 +308,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       <head>
         <title>Application Form</title>
         <style>
-          body { font-family: Arial, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 0; background: #fff; }
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+          body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 0; background: #fff; }
           .a4-container { width: 100%; max-width: 800px; margin: 0 auto; }
           .header-section { text-align: center; margin-bottom: 20px; }
           .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; } 
@@ -338,7 +347,38 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       .pipe(take(1))
       .subscribe(() => {
         this.loader.hideLoader();
+      }, (error) => {
+        console.error('Failed to generate PDF', error);
+        this.loader.hideLoader();
+        this.alertService.alert(true, 'Unable to generate the PDF. Please try again.');
       });
+  }
+
+  private async embedImages(content: HTMLElement): Promise<void> {
+    const images = Array.from(content.querySelectorAll('img'));
+
+    await Promise.all(images.map(async (image) => {
+      const source = image.getAttribute('src');
+      if (!source || source.startsWith('data:')) {
+        return;
+      }
+
+      const response = await fetch(source);
+      if (!response.ok) {
+        throw new Error(`Unable to load PDF image: ${source}`);
+      }
+
+      image.setAttribute('src', await this.blobToDataUrl(await response.blob()));
+    }));
+  }
+
+  private blobToDataUrl(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
   }
 
   getFileUrl(filePath: string | null): string {

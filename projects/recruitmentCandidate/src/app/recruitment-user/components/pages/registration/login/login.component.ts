@@ -3,6 +3,7 @@ import {
   EventEmitter,
   Output,
   OnInit,
+  OnDestroy,
   ViewChild,
   ElementRef,
   Input,
@@ -22,6 +23,7 @@ import { environment } from 'environment';
 import CryptoJS from 'crypto-js';
 import { SweetAlertResult } from 'sweetalert2';
 import { CookieService } from 'ngx-cookie-service';
+import { LoginFormStateService } from './login-form-state.service';
 
 @Component({
   selector: 'app-login',
@@ -29,7 +31,7 @@ import { CookieService } from 'ngx-cookie-service';
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   // --- Context Inputs (Used for Login, but Forgot Reg fetches its own) ---
   @Input() academicSessionId: number | null = null;
   @Input() advertisementId: string | number = '';
@@ -89,7 +91,6 @@ export class LoginComponent implements OnInit {
 
   // --- Dropdown Lists for Forgot Registration ---
   sessionList: any[] = [];
-  advList: any[] = [];
   postList: any[] = [];
   subjectList: any[] = [];
   subjectsAvailable = false;
@@ -101,12 +102,32 @@ export class LoginComponent implements OnInit {
     private alertService: AlertService,
     private cookieService: CookieService,
     private router: Router,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private loginFormState: LoginFormStateService
   ) {}
 
   ngOnInit(): void {
     this.createForms();
-    this.getCaptcha();
+    const savedState = this.loginFormState.get();
+    if (savedState) {
+      this.loginForm.patchValue(savedState.values);
+      this.generatedCaptcha = savedState.captcha;
+      this.currentCaptchaSvg = savedState.captchaSvg;
+    } else {
+      this.getCaptcha();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.activeView !== 'LOGIN' || this.otpSent) {
+      return;
+    }
+
+    this.loginFormState.set({
+      captcha: this.generatedCaptcha,
+      captchaSvg: this.currentCaptchaSvg,
+      values: this.loginForm.getRawValue(),
+    });
   }
 
   createForms() {
@@ -319,6 +340,7 @@ export class LoginComponent implements OnInit {
           });
           this.cookieService.set('token', accessToken, { path: '/' });
           this.cookieService.set('session', accessToken, { path: '/' });
+          this.loginFormState.clear();
           this.alertService.alert(false, 'Login successful!', 2000);
           this.loginSuccess.emit();
         } else {
@@ -502,18 +524,28 @@ export class LoginComponent implements OnInit {
 
   onSessionChange() {
     this.forgotRegForm.patchValue({ a_rec_adv_main_id: null, post_code: null, subject_id: null });
-    this.advList = []; this.postList = []; this.subjectList = [];
+    this.postList = []; this.subjectList = [];
     this.subjectsAvailable = false;
 
     const sid = this.forgotRegForm.value.academic_session_id;
     if(sid) {
       this.httpService.getParam('/publicApi/get/getLatestAdvertisementForLogin', { academic_session_id: sid }, 'recruitement').subscribe({
-        next: (res: any) => { this.advList = res?.body?.data || []; }
+        next: (res: any) => {
+          const advertisement = res?.body?.data?.[0];
+          if (!advertisement) {
+            return;
+          }
+
+          this.forgotRegForm.patchValue({
+            a_rec_adv_main_id: advertisement.a_rec_adv_main_id,
+          });
+          this.loadPostsForSelectedAdvertisement();
+        }
       });
     }
   }
 
-  onAdvChange() {
+  private loadPostsForSelectedAdvertisement() {
     this.forgotRegForm.patchValue({ post_code: null, subject_id: null });
     this.postList = []; this.subjectList = [];
     this.subjectsAvailable = false;
@@ -521,7 +553,11 @@ export class LoginComponent implements OnInit {
     const advId = this.forgotRegForm.value.a_rec_adv_main_id;
     if(advId) {
       this.httpService.getParam('/publicApi/get/getPostByAdvertimentForLogin', { a_rec_adv_main_id: advId }, 'recruitement').subscribe({
-        next: (res: any) => { this.postList = res?.body?.data || []; }
+        next: (res: any) => {
+          if (this.forgotRegForm.value.a_rec_adv_main_id === advId) {
+            this.postList = res?.body?.data || [];
+          }
+        }
       });
     }
   }

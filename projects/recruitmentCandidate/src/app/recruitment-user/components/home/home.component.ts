@@ -15,12 +15,29 @@ import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
 import {NotificationComponent} from './notification/notification.component';
 interface Advertisement {
   a_rec_adv_main_id: number;
+  academic_session_id: number;
+  advertisment_name: string;
   advertisment_no: string;
   advertisement_order_copy?: string;
   score_card_order_copy?: string;
 }
 
+interface LinkStatus {
+  active: boolean;
+  message: string;
+}
+
+interface LinkStatuses {
+  signup: LinkStatus;
+  notification: LinkStatus;
+  complaint: LinkStatus;
+}
+
 interface Post {
+  advertisement: Advertisement;
+  advertisementId: string;
+  linkStatuses: LinkStatuses;
+  latestNotifications: any[];
   post_code: number;
   post_name: string;
   post_status_name: string;
@@ -50,12 +67,12 @@ interface Post {
 export class HomeComponent implements OnInit {
   selectedSession: string = '';
   selectedSessionId: number | null = null;
-  selectedAd: string = '';
   ads: Advertisement[] = [];
   allPosts: Post[] = [];
-  selectedAdDetails: Advertisement | null = null;
   sessions: any[] = [];
-  latestNotifications: any[] = [];
+  isLoadingRecruitments = false;
+  private recruitmentLoadId = 0;
+  private pendingAdvertisementLoads = 0;
   marqueeItems: any[] = [];
   complaintProblems: any[] = [];
   selectedProblemId: number | null = null;
@@ -91,13 +108,6 @@ export class HomeComponent implements OnInit {
       time: new Date().toLocaleTimeString()
     }
   ];
-
-  // ✅ New Object to track the active status and message for each tab
-  linkStatuses: any = {
-    signup: {active: false, message: 'Registration is currently closed.'},
-    notification: {active: false, message: 'Notifications are currently unavailable.'},
-    complaint: {active: false, message: 'Online Complaint is currently closed.'}
-  };
 
   isMobileView = false;
   showLogin: boolean = false;
@@ -303,11 +313,16 @@ export class HomeComponent implements OnInit {
   }
 
   getAcademicSession() {
+    this.isLoadingRecruitments = true;
     this.HTTP.getParam('/publicapi/get/getAcademicSessionForLogin/', {}, 'recruitementApi').subscribe((result: any): void => {
       this.sessions = result.body.data || [];
       if (this.sessions.length > 0) {
         this.findFirstSessionWithAds(0);
+      } else {
+        this.isLoadingRecruitments = false;
       }
+    }, () => {
+      this.isLoadingRecruitments = false;
     });
   }
   getComplaintProblems() {
@@ -344,6 +359,8 @@ export class HomeComponent implements OnInit {
       if (this.sessions.length > 0) {
         this.selectedSession = this.sessions[0].academic_session_id.toString();
         this.onSessionChange();
+      } else {
+        this.isLoadingRecruitments = false;
       }
       return;
     }
@@ -355,8 +372,7 @@ export class HomeComponent implements OnInit {
         this.selectedSession = sessionId.toString();
         this.selectedSessionId = sessionId;
         this.ads = fetchedAds;
-        this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
-        this.onAdChange();
+        this.loadSelectedAdvertisement();
       } else {
         this.findFirstSessionWithAds(index + 1);
       }
@@ -365,10 +381,15 @@ export class HomeComponent implements OnInit {
 
   getAdvertisement(academic_session_id: number) {
     this.HTTP.getParam('/publicapi/get/getLatestAdvertisementForLogin/', {academic_session_id}, 'recruitement').subscribe((result: any): void => {
+      if (this.selectedSessionId !== academic_session_id) {
+        return;
+      }
+
       this.ads = result.body.data || [];
-      if (this.ads.length > 0) {
-        this.selectedAd = this.ads[0].a_rec_adv_main_id.toString();
-        this.onAdChange();
+      this.loadSelectedAdvertisement();
+    }, () => {
+      if (this.selectedSessionId === academic_session_id) {
+        this.isLoadingRecruitments = false;
       }
     });
   }
@@ -378,40 +399,53 @@ export class HomeComponent implements OnInit {
   }
 
   onSessionChange() {
-    this.selectedAd = '';
+    this.recruitmentLoadId++;
+    this.pendingAdvertisementLoads = 0;
     this.allPosts = [];
     this.ads = [];
+    this.marqueeItems = [];
     this.selectedSessionId = this.selectedSession ? +this.selectedSession : null;
+    this.isLoadingRecruitments = !!this.selectedSessionId;
 
     if (this.selectedSessionId) {
       this.getAdvertisement(this.selectedSessionId);
     }
   }
 
-  onAdChange() {
-    if (this.selectedAd && this.selectedSessionId) {
-      this.allPosts = [];
-      this.selectedAdDetails = this.ads.find(ad => ad.a_rec_adv_main_id === +this.selectedAd) || null;
-
-      // Fetch Statuses first, then load the posts
-      this.fetchLinkManagementAndPosts(this.selectedAd, this.selectedSessionId);
+  private loadSelectedAdvertisement() {
+    if (!this.selectedSessionId) {
+      return;
     }
+
+    this.allPosts = [];
+    this.pendingAdvertisementLoads = this.ads.length;
+    this.isLoadingRecruitments = this.pendingAdvertisementLoads > 0;
+    const loadId = this.recruitmentLoadId;
+    this.ads.forEach((advertisement) =>
+      this.fetchLinkManagementAndPosts(advertisement, this.selectedSessionId!, loadId)
+    );
   }
 
-  // ✅ New method to build tab statuses
-  fetchLinkManagementAndPosts(advId: string, sessionId: number) {
+  private createLinkStatuses(): LinkStatuses {
+    return {
+      signup: {active: false, message: 'Registration configuration not found.'},
+      notification: {active: false, message: 'Notifications configuration not found.'},
+      complaint: {active: false, message: 'Online Complaint configuration not found.'}
+    };
+  }
+
+  fetchLinkManagementAndPosts(advertisement: Advertisement, sessionId: number, loadId: number) {
+    const advId = advertisement.a_rec_adv_main_id.toString();
     const linkUrl = `/publicApi/get/getRecruitmentLinkManagementListPublic?list_adv_session_wise=true&a_rec_adv_main_id=${advId}&academic_session_id=${sessionId}`;
 
     this.HTTP.getData(linkUrl, 'recruitement').subscribe({
       next: (res: any) => {
-        // Reset defaults
-        this.linkStatuses = {
-          signup: {active: false, message: 'Registration configuration not found.'},
-          notification: {active: false, message: 'Notifications configuration not found.'},
-          complaint: {active: false, message: 'Online Complaint configuration not found.'}
-        };
-        this.latestNotifications = [];
-        this.latestNotifications = [];
+        if (loadId !== this.recruitmentLoadId) {
+          return;
+        }
+
+        const linkStatuses = this.createLinkStatuses();
+        const latestNotifications: any[] = [];
         if (res?.body?.data) {
           const now = new Date();
 
@@ -434,7 +468,7 @@ export class HomeComponent implements OnInit {
 
               if (now >= startDate && now <= endDate) {
 
-                this.latestNotifications.push({
+                latestNotifications.push({
                   title: link.linkname,
                   file_path: link.file_path,
                   target_url: link.TargetUrl,
@@ -469,7 +503,7 @@ export class HomeComponent implements OnInit {
                 });
               }
             }
-            let key = '';
+            let key: keyof LinkStatuses | null = null;
 
             // Use system codes instead of dynamic names
             if (link.isHeadingYN === 'S') {
@@ -484,64 +518,89 @@ export class HomeComponent implements OnInit {
               const endDate = new Date(link.endDate.replace(' ', 'T'));
 
               if (link.Live_YN !== 'Y') {
-                this.linkStatuses[key].active = false;
-                this.linkStatuses[key].message = `${link.linkname} is currently disabled.`;
+                linkStatuses[key].active = false;
+                linkStatuses[key].message = `${link.linkname} is currently disabled.`;
               } else if (now < startDate) {
-                this.linkStatuses[key].active = false;
-                this.linkStatuses[key].message = `${link.linkname} will open on ${this.formatDateTime(startDate)}.`;
+                linkStatuses[key].active = false;
+                linkStatuses[key].message = `${link.linkname} will open on ${this.formatDateTime(startDate)}.`;
               } else if (now > endDate) {
-                this.linkStatuses[key].active = false;
-                this.linkStatuses[key].message = `${link.linkname} ended on ${this.formatDateTime(endDate)}.`;
+                linkStatuses[key].active = false;
+                linkStatuses[key].message = `${link.linkname} ended on ${this.formatDateTime(endDate)}.`;
               } else {
-                this.linkStatuses[key].active = true;
-                this.linkStatuses[key].message = '';
+                linkStatuses[key].active = true;
+                linkStatuses[key].message = '';
               }
             }
           });
         }
 
-        // Now fetch posts
-        this.fetchPostsByAdvertisement(advId);
+        this.fetchPostsByAdvertisement(advertisement, linkStatuses, latestNotifications, loadId);
       },
       error: (err) => {
         console.error('Error fetching link management', err);
-        this.fetchPostsByAdvertisement(advId);
+        if (loadId === this.recruitmentLoadId) {
+          this.fetchPostsByAdvertisement(advertisement, this.createLinkStatuses(), [], loadId);
+        }
       }
     });
   }
 
-  fetchPostsByAdvertisement(adId: string) {
+  fetchPostsByAdvertisement(
+    advertisement: Advertisement,
+    linkStatuses: LinkStatuses,
+    latestNotifications: any[],
+    loadId: number
+  ) {
+    const adId = advertisement.a_rec_adv_main_id.toString();
     this.HTTP.getParam('/publicapi/get/getPostByAdvertimentForLogin/', {a_rec_adv_main_id: adId}, 'recruitement').subscribe({
       next: (result: any) => {
-        const postsList = result.body.data || [];
+        if (
+          loadId !== this.recruitmentLoadId ||
+          this.selectedSessionId !== advertisement.academic_session_id
+        ) {
+          return;
+        }
 
-        // Default to the first tab that is actually active, or fallback to signup
-        let defaultTab: 'signup' | 'notification' | 'complaint' = 'signup';
-        if (this.linkStatuses['signup'].active) defaultTab = 'signup';
-        else if (this.linkStatuses['notification'].active) defaultTab = 'notification';
-        else if (this.linkStatuses['complaint'].active) defaultTab = 'complaint';
-        this.allPosts = postsList.map((post: any, index: number) => ({
+        const postsList = result.body.data || [];
+        const posts = postsList.map((post: any, index: number) => ({
+          advertisement,
+          advertisementId: adId,
+          linkStatuses,
+          latestNotifications,
           post_code: post.post_code,
           post_name: post.post_name,
           post_status_name: post.post_status_name,
           a_rec_adv_post_detail_id: post.a_rec_adv_post_detail_id,
           subjects: [],
           selectedSubjectId: null,
-          activeTab: null,        // <-- Start with NO tab selected
-          expanded: index === 0,  // <-- Keeps the first post expanded (change to 'true' to expand all)
+          activeTab: null,
+          expanded: index === 0,
         }));
 
-        this.allPosts.forEach((post) => {
+        this.allPosts = [...this.allPosts, ...posts];
+        posts.forEach((post: Post) => {
           if (post.a_rec_adv_post_detail_id) {
             this.fetchSubjectsForPost(post);
           }
         });
+        this.completeAdvertisementLoad(loadId);
       },
       error: (error) => {
         console.error('Error fetching posts:', error);
-        this.allPosts = [];
+        this.completeAdvertisementLoad(loadId);
       },
     });
+  }
+
+  private completeAdvertisementLoad(loadId: number): void {
+    if (loadId !== this.recruitmentLoadId) {
+      return;
+    }
+
+    this.pendingAdvertisementLoads--;
+    if (this.pendingAdvertisementLoads <= 0) {
+      this.isLoadingRecruitments = false;
+    }
   }
 
   fetchSubjectsForPost(post: Post) {
@@ -558,12 +617,12 @@ export class HomeComponent implements OnInit {
     return 0;
   }
 
-  get filteredAds(): Advertisement[] {
-    return this.ads;
+  get filteredPosts(): Post[] {
+    return this.allPosts.filter((post) => post.linkStatuses.signup.active);
   }
 
-  get filteredPosts(): Post[] {
-    return this.selectedAd ? this.allPosts : [];
+  get isComplaintActive(): boolean {
+    return this.allPosts.some((post) => post.linkStatuses.complaint.active);
   }
 
   setActiveTab(post: Post, tab: 'login' | 'signup' | 'notification' | 'complaint') {
