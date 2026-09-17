@@ -227,12 +227,20 @@ get activeSectionIds(): number[] {
 
     // ✅ FIX: Sort by the API mapping!
     return validIds.sort((a, b) => {
-      const idA = this.formData[a]?.['heading']?.['m_rec_score_field_id'];
-      const idB = this.formData[b]?.['heading']?.['m_rec_score_field_id'];
+      const idA = this.getScoreFieldId(a);
+      const idB = this.getScoreFieldId(b);
       const orderA = this.stepDisplayOrderMap.get(idA) ?? 999;
       const orderB = this.stepDisplayOrderMap.get(idB) ?? 999;
       return orderA - orderB;
     });
+  }
+
+  private getScoreFieldId(compId: number): number {
+    const activeStep = this.activeSteps.find((step) => step.compId === compId);
+    return Number(
+      activeStep?.fieldId ??
+      this.formData[compId]?.['heading']?.['m_rec_score_field_id']
+    );
   }
 
   getStepName(compId: number): string {

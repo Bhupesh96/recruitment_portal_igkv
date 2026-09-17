@@ -26,7 +26,10 @@ export class AuthInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (request.url.includes('/google-api')) {
+    if (
+      request.url.includes('/google-api') ||
+      request.url.includes('inputtools.google.com')
+    ) {
       return next.handle(request);
     }
     const designation_id = this.cookie.get('designation_id');

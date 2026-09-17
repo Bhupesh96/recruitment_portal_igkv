@@ -4,6 +4,7 @@ import {
   ElementRef,
   OnDestroy,
   OnInit,
+  Input,
   ViewChild,
   ChangeDetectorRef,
 } from '@angular/core';
@@ -26,6 +27,7 @@ import { environment } from 'environment';
 })
 export class PdfDownloadComponent implements OnInit, OnDestroy {
   @ViewChild('printSection') printContentRef!: ElementRef<HTMLDivElement>;
+  @Input() activeSteps: Array<{ compId: number; fieldId?: number }> = [];
 
   formData: { [key: number]: any } = {};
   isDataLoaded = false;
@@ -551,9 +553,8 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
       .map(Number)
       .filter((key) => key > 1)
       .sort((a, b) => {
-        // ✅ FIX: Safely parse Map lookup keys as absolute Numbers
-        const idA = Number(this.formData[a]?.['heading']?.['m_rec_score_field_id']);
-        const idB = Number(this.formData[b]?.['heading']?.['m_rec_score_field_id']);
+        const idA = this.getScoreFieldId(a);
+        const idB = this.getScoreFieldId(b);
         const orderA = this.stepDisplayOrderMap.get(idA) ?? 999;
         const orderB = this.stepDisplayOrderMap.get(idB) ?? 999;
         return orderA - orderB;
@@ -585,6 +586,14 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
           sections 
         };
       }).filter((step) => step !== null);
+  }
+
+  private getScoreFieldId(stepId: number): number {
+    const activeStep = this.activeSteps.find((step) => step.compId === stepId);
+    return Number(
+      activeStep?.fieldId ??
+      this.formData[stepId]?.['heading']?.['m_rec_score_field_id']
+    );
   }
 
   private getDisplayableKeys(obj: any): string[] {

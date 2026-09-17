@@ -1967,8 +1967,7 @@ export class Step1Component implements OnChanges, OnInit {
     });
   }
   translateToHindi(text: string): Observable<string | null> {
-    // Use the local Angular proxy path
-    const url = `/google-api/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1`;
+    const url = `https://inputtools.google.com/request?text=${encodeURIComponent(text)}&itc=hi-t-i0-und&num=1`;
 
     return this.http.get(url).pipe(
       map((response: any) => {
