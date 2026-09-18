@@ -123,7 +123,9 @@ export class Step9Component implements OnInit, OnDestroy {
   payLevel: string = '';
   advertisementNo: string = '—';
   ageCalculationDate: string = '';
-stepDisplayOrderMap = new Map<number, number>();
+  stepDisplayOrderMap = new Map<number, number>();
+  isPreviewLoading = true;
+  private previewLoadId = 0;
   constructor(
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
@@ -168,16 +170,35 @@ ngOnInit(): void {
       .subscribe((data: { [key: number]: any }) => {
         if (data && Object.keys(data).length > 0) {
           this.formData = data;
-          this.fetchStepDisplayOrder(); // ✅ Fetch order dynamically
-          this.loadDeclaration();
-          this.getTransactionAmountDetails();
-        }
-      });
-  }
+        this.loadPreviewData();
+      }
+    });
+}
 
-fetchStepDisplayOrder() {
-    const info = this.formData[1];
-    if (!info) return;
+private loadPreviewData(): void {
+  const loadId = ++this.previewLoadId;
+  let pendingRequests = 3;
+  this.isPreviewLoading = true;
+
+  const requestCompleted = () => {
+    pendingRequests--;
+    if (pendingRequests === 0 && loadId === this.previewLoadId) {
+      this.isPreviewLoading = false;
+      this.cdr.detectChanges();
+    }
+  };
+
+  this.fetchStepDisplayOrder(requestCompleted);
+  this.loadDeclaration(requestCompleted);
+  this.getTransactionAmountDetails(requestCompleted);
+}
+
+fetchStepDisplayOrder(onComplete?: () => void) {
+  const info = this.formData[1];
+  if (!info) {
+    onComplete?.();
+    return;
+  }
 
     // ✅ FIX: Use bracket notation to avoid TS4111
     const params: any = {
@@ -201,13 +222,15 @@ fetchStepDisplayOrder() {
         });
         
         // ✅ FIX 2: Removed `processAllDataForView()` entirely. Step 9 uses HTML getters!
-        this.cdr.detectChanges(); 
+        this.cdr.detectChanges();
+        onComplete?.();
       },
       // ✅ FIX 3: Added `: any` to `err`
       error: (err: any) => {
         console.error('Failed to load step order sequence', err);
         // ✅ FIX 2: Removed `processAllDataForView()`
         this.cdr.detectChanges();
+        onComplete?.();
       }
     });
   }
@@ -250,13 +273,14 @@ get activeSectionIds(): number[] {
     return this.stepNames[compId] || 'Section Details';
   }
 
-  loadDeclaration(): void {
+  loadDeclaration(onComplete?: () => void): void {
     const a_rec_adv_main_id =
       this.formData[1]?.['a_rec_adv_main_id'] ||
       this.userData?.a_rec_adv_main_id;
     if (!a_rec_adv_main_id) {
       this.declarationText =
         'Could not load declaration: Advertisement ID missing.';
+      onComplete?.();
       return;
     }
 
@@ -277,11 +301,13 @@ get activeSectionIds(): number[] {
             data.advertisment_no || data.uk_advertisment_no || '—';
           this.payLevel = data.pay_level || '';
         }
+        onComplete?.();
       },
       error: (err) => {
         this.declarationText = this.sanitizer.bypassSecurityTrustHtml(
           'Failed to load declaration. Please try again later.',
         );
+        onComplete?.();
       },
     });
   }
@@ -803,8 +829,11 @@ get activeSectionIds(): number[] {
     });
   }
 
-  getTransactionAmountDetails() {
-    if (!this.formData[1]) return;
+  getTransactionAmountDetails(onComplete?: () => void) {
+    if (!this.formData[1]) {
+      onComplete?.();
+      return;
+    }
 
     // ✅ Get category ID from state service, fallback to form data
     const categoryId = this.userData?.category_id;
@@ -817,9 +846,15 @@ get activeSectionIds(): number[] {
 
     this.http
       .getParam('/fee/get/getTransactionAmountDetails/', params, 'academic')
-      .subscribe((result: any) => {
-        this.paymentData = !result.body.error ? result.body.data[0] : [];
-        this.getFeeStatus();
+      .subscribe({
+        next: (result: any) => {
+          this.paymentData = !result.body.error ? result.body.data[0] : [];
+          this.getFeeStatus(onComplete);
+        },
+        error: () => {
+          this.paymentData = {};
+          onComplete?.();
+        },
       });
   }
   async onPayClicked() {
@@ -1028,8 +1063,11 @@ get activeSectionIds(): number[] {
       });
   }
 
-  getFeeStatus() {
-    if (!this.formData[1]) return;
+  getFeeStatus(onComplete?: () => void) {
+    if (!this.formData[1]) {
+      onComplete?.();
+      return;
+    }
 
     const params = {
       recruitment: true,
@@ -1039,17 +1077,24 @@ get activeSectionIds(): number[] {
 
     this.http
       .getParam('/fee/get/getFeeStatus/', params, 'academic')
-      .subscribe((result: any) => {
-        if (
-          !result.body.error &&
-          result.body.data &&
-          result.body.data.length > 0
-        ) {
-          this.feeStatus = result.body.data[0];
-        } else {
+      .subscribe({
+        next: (result: any) => {
+          if (
+            !result.body.error &&
+            result.body.data &&
+            result.body.data.length > 0
+          ) {
+            this.feeStatus = result.body.data[0];
+          } else {
+            this.feeStatus = {};
+          }
+          this.cdr.detectChanges();
+          onComplete?.();
+        },
+        error: () => {
           this.feeStatus = {};
-        }
-        this.cdr.detectChanges();
+          onComplete?.();
+        },
       });
   }
 }

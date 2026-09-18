@@ -1,8 +1,11 @@
 let host;
+let appOrigin;
 if (typeof window !== 'undefined') {
   host = window.location.protocol + '//' + window.location.hostname;
+  appOrigin = window.location.origin;
 } else {
   host = 'http://localhost'; // or whatever default you prefer
+  appOrigin = 'http://localhost:4390';
 }
 
 export const environment = {
@@ -13,7 +16,7 @@ export const environment = {
   sharedSecret: 'tg:D/|oP$:s2I[-8-Pc:|8/U7+?!r]g#',
   publicKey: "BLaV0kn22SFt30rA1H6lEX6dgTOzToFY3bVfCXzGwM0gg2CFEjILyLp4qoL8H_hNFaJhOYndp4vquNH6zYy5r2M",
   recruitmentFileBaseUrl: `${host}:3500/__Files`,
-  logoUrl: `${host}:4390/logo.png`
+  logoUrl: `${appOrigin}/logo.png`
 };
 
 export const reportConfig = {
@@ -50,4 +53,3 @@ export const apiPort: any = {
   academicApi: `${host}:3003/academicApi`,
   recruitementApi: `${host}:3500/recruitementApi`,
 };
-

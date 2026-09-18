@@ -1,4 +1,11 @@
-<div class="flex items-center justify-center">
+<div *ngIf="isPreviewLoading" class="flex min-h-64 items-center justify-center">
+  <div class="flex flex-col items-center gap-3 text-gray-600">
+    <div class="h-10 w-10 animate-spin rounded-full border-4 border-blue-700 border-t-transparent"></div>
+    <span>Loading application preview...</span>
+  </div>
+</div>
+
+<div *ngIf="!isPreviewLoading" class="flex items-center justify-center">
   <div class="w-full bg-white border border-gray-400 overflow-hidden">
 
     <div *ngIf="formData[1]" class="bg-blue-200 px-6 py-4 border-b border-gray-200 text-center">
@@ -330,7 +337,7 @@
   </div>
 </ng-template>
 
-<form [formGroup]="form" (ngSubmit)="submit()">
+<form *ngIf="!isPreviewLoading" [formGroup]="form" (ngSubmit)="submit()">
   <div class="p-8">
     <div class="border border-gray-400 rounded-md p-4 bg-white mb-8">
       <h4 class="mb-3 text-blue-800 text-md font-semibold flex items-center gap-1.5">

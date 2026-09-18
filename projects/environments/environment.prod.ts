@@ -13,7 +13,7 @@ export const environment = {
   publicKey: "BLaV0kn22SFt30rA1H6lEX6dgTOzToFY3bVfCXzGwM0gg2CFEjILyLp4qoL8H_hNFaJhOYndp4vquNH6zYy5r2M",
   sharedSecret: 'tg:D/|oP$:s2I[-8-Pc:|8/U7+?!r]g#',
   recruitmentFileBaseUrl: `${host}/mmis/__Files`,
-  logoUrl: `${host}/${prefix}/logo.png`
+  logoUrl: `${host}/${prefix}/recruitmentCandidate/logo.png`
 };
 
 export const reportConfig = {
@@ -41,4 +41,3 @@ export const apiPort: any = {
   academicApi: `${host}/${prefix}/academicApi`,
   recruitementApi: `${host}/${prefix}/recruitementApi`,
 }
-
