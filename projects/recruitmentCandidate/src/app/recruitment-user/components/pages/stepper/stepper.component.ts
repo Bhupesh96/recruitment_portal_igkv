@@ -5,7 +5,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { Subscription } from 'rxjs';
 
 import { SharedDataService } from '../shared-data.service';
-import { AlertService, HttpService } from 'shared';
+import {AlertService, AuditLoggerService, HttpService} from 'shared';
 import { RecruitmentStateService, UserRecruitmentData } from '../recruitment-state.service';
 
 import { Step1Component } from './step-1/step-1.component';
@@ -85,7 +85,8 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
     private sharedDataService: SharedDataService,
     private alertService: AlertService,
     private recruitmentStateService: RecruitmentStateService,
-    private http: HttpService
+    private http: HttpService,
+    private auditLogger: AuditLoggerService,
   ) {}
 
   ngOnInit(): void {
@@ -427,6 +428,7 @@ fetchDynamicSteps(user: any) {
         case 5: if (this.step5Component) await this.step5Component.submitForm(); break;
         case 6: if (this.step6Component) await this.step6Component.submit(); break;
       }
+      this.auditLogger.flushPendingChangesForSave();
 
       if (this.currentStepIndex < this.activeSteps.length - 1) {
         const nextCompId = this.activeSteps[this.currentStepIndex + 1].compId;
@@ -440,7 +442,35 @@ fetchDynamicSteps(user: any) {
       }
     } catch (error) {
       console.error(`Validation failed for component ${currentCompId}:`, error);
+      this.auditLogger.logError(
+        'VALIDATION_ERROR',
+        `${this.getStepAuditHeading(currentCompId)}: ${this.getFirstMissedMandatory(currentCompId) || 'Required fields are missing'}`,
+      );
     }
+  }
+
+  private getStepAuditHeading(compId: number): string {
+    const apiHeading = compId === 3 ? this.step3Component?.score_field_title_name
+      : compId === 4 ? this.step4Component?.score_field_title_name
+        : compId === 6 ? this.step6Component?.score_field_title_name
+          : undefined;
+
+    return apiHeading || this.activeSteps[this.currentStepIndex]?.name || 'Application form';
+  }
+
+  private getFirstMissedMandatory(compId: number): string | null {
+    if (compId === 1) {
+      return this.step1Component?.getFirstInvalidFieldLabel() || null;
+    }
+
+    const form = compId === 1 ? this.step1Component?.form
+      : compId === 2 ? this.step2Component?.form
+        : compId === 3 ? this.step3Component?.form
+          : compId === 4 ? this.step4Component?.form
+            : compId === 5 ? this.step5Component?.form
+              : compId === 6 ? this.step6Component?.form
+                : undefined;
+    return form?.get('firstMissedMandatory')?.value || null;
   }
 
   prevStep() {

@@ -17,7 +17,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { HttpService, AlertService, AuthService } from 'shared';
+import { HttpService, AlertService, AuthService, AuditLoggerService } from 'shared';
 import { Router } from '@angular/router';
 import { environment } from 'environment';
 import CryptoJS from 'crypto-js';
@@ -103,7 +103,8 @@ export class LoginComponent implements OnInit, OnDestroy {
     private cookieService: CookieService,
     private router: Router,
     private fb: FormBuilder,
-    private loginFormState: LoginFormStateService
+    private loginFormState: LoginFormStateService,
+    private auditLogger: AuditLoggerService,
   ) {}
 
   ngOnInit(): void {
@@ -375,6 +376,10 @@ export class LoginComponent implements OnInit, OnDestroy {
       });
     } else {
       this.loginError = code === 'sc001' ? 'Invalid Registration No.' : (code === 'sc002' ? 'Invalid Registration No. or Password.' : (error?.message || 'An error occurred.'));
+      this.auditLogger.logError('AUTHENTICATION_FAILURE', this.loginError, {
+        operation: 'candidate_login',
+        error_code: code || null,
+      });
       this.alertService.alert(true, this.loginError);
       this.loginForm.patchValue({ password: '', captcha: '' });
       this.getCaptcha();
@@ -416,7 +421,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.alertService.showLoading('Please wait...', 'Locating account details');
 
     const regNo = form.value.registration_no;
-    this.httpService.getParam('/publicApi/get/getRegistration', { registration_no: regNo }, 'recruitement').subscribe({
+    this.httpService.getParam('/publicApi/get/getForgotPassword', { registration_no: regNo }, 'recruitement').subscribe({
       next: (res: any) => {
         if (!res.body.error && res.body.data && res.body.data.length > 0) {
           this.forgotPwdUserData = res.body.data[0];

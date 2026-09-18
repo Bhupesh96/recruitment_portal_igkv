@@ -4,6 +4,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import {
   AuthInterceptor,
+  AuditHttpInterceptor,
   AuthService,
   HttpService,
   SharedModule,
@@ -56,6 +57,11 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuditHttpInterceptor,
       multi: true,
     },
   ],

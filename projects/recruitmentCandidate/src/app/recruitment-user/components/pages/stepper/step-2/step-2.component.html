@@ -15,7 +15,10 @@
     class="w-full font-['Source Sans Pro',sans-serif]"
   >
     <form [formGroup]="form" (ngSubmit)="submitForm()">
-      <div class="space-y-8 text-base text-blue-700">
+      <div
+        class="space-y-8 text-base text-blue-700"
+        [attr.data-audit-section]="heading?.score_field_title_name || 'Educational Qualification Detail'"
+      >
         <!-- Notes Section -->
         <div
           *ngIf="notes.length"
@@ -75,6 +78,7 @@
         <div
           *ngFor="let subheading of subheadings; let i = index"
           class="mt-8 bg-white rounded-lg border border-gray-200 shadow-sm p-6"
+          [attr.data-audit-group]="subheading.score_field_title_name"
         >
           <div class="flex items-center gap-2 mb-4">
             <input

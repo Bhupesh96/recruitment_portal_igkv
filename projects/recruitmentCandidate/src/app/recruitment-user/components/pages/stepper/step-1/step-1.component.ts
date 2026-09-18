@@ -144,6 +144,12 @@ export class Step1Component implements OnChanges, OnInit {
     signature: 'Signature',
   };
 
+  getFirstInvalidFieldLabel(): string | null {
+    const invalidControlName = Object.keys(this.form.controls)
+      .find((controlName) => this.form.get(controlName)?.invalid);
+    return invalidControlName ? this.fieldNameMap[invalidControlName] || invalidControlName : null;
+  }
+
   constructor(
     private fb: FormBuilder,
     private HTTP: HttpService, // Use HttpService directly

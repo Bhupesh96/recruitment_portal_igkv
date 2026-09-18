@@ -582,7 +582,7 @@
             //   Please save this number for login.`
             // );
             this.alertService.alertMessage(   `Registration successful!
-              Your Registration Number: ${registrationNo}`, 'Please save this number for login.', 'success');
+              Your Registration Number: ${registrationNo}`, 'Your registration number and password have also been sent to your registered mobile number.', 'success');
           },
           error: (err) => {
             console.error(err);

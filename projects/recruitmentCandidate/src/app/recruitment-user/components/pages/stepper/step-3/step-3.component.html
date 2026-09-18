@@ -1,6 +1,6 @@
 <section class="relative rounded-xl min-h-[200px]">
   <div class="relative bg-white/90 backdrop-blur-sm rounded-xl">
-    <form [formGroup]="form" (ngSubmit)="submit()">
+    <form [formGroup]="form" (ngSubmit)="submit()" [attr.data-audit-section]="score_field_title_name">
 
       <!-- Mandatory Validation Error -->
       <div
@@ -23,7 +23,7 @@
 
       <!-- SUBHEADINGS LOOP (Merged Layout) -->
       <div *ngIf="form.get('subHeadings') as subHeadingsFormGroup" [formGroupName]="'subHeadings'">
-        <div *ngFor="let subHeading of subHeadings" class="mt-6 mb-8 border border-gray-200 rounded-md p-4 bg-white shadow-sm">
+        <div *ngFor="let subHeading of subHeadings" class="mt-6 mb-8 border border-gray-200 rounded-md p-4 bg-white shadow-sm" [attr.data-audit-group]="subHeading.score_field_title_name || subHeading.score_field_name_e">
 
           <ng-container *ngIf="subHeadingsFormGroup.get(subHeading.m_rec_score_field_id.toString()) as subGroup">
             <div [formGroupName]="subHeading.m_rec_score_field_id.toString()">
@@ -46,6 +46,7 @@
                   *ngFor="let item of subHeading.items"
                   [formGroupName]="item.normalizedKey"
                   class="bg-blue-50/50 border border-blue-100 rounded-md p-3 flex items-center justify-between hover:bg-blue-50 transition"
+                  [attr.data-audit-subheading]="item.score_field_title_name || item.score_field_name_e"
                 >
                   <!-- Hidden input to keep form group binding intact -->
                   <input type="hidden" formControlName="count" />
