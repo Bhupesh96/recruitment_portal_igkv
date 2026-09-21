@@ -478,7 +478,56 @@
         this.onSignup();
       }
     }
+    private clearSignupForm(): void {
+      // Clear user inputs
+      this.mobile = '';
+      this.email = '';
+      this.password = '';
+      this.confirmPassword = '';
 
+      // Clear OTP state
+      this.otpMobile = '';
+      this.otpEmail = '';
+      this.enteredOtpMobile = '';
+      this.enteredOtpEmail = '';
+      this.otpSent = false;
+      this.isVerified = false;
+      this.resendCooldown = 0;
+
+      // Clear captcha
+      this.userAnswer = '';
+      this.getCaptcha();
+
+      // Clear category/security details
+      this.selectedCategory = null;
+      this.selectedSecurityQuestion = null;
+      this.securityAnswer = '';
+
+      // Clear validation/status messages
+      this.mobileError = '';
+      this.emailError = '';
+      this.otpError = '';
+      this.otpSuccess = '';
+      this.signupError = '';
+      this.signupSuccess = '';
+
+      // Clear password validation
+      this.passwordValidationMessage = '';
+      this.confirmPasswordMessage = '';
+      this.isPasswordStrong = false;
+
+      this.passwordErrors = {
+        capital: false,
+        lowercase: false,
+        number: false,
+        special: false,
+        length: false
+      };
+
+      // Stop resend timer
+      clearInterval(this.cooldownInterval);
+      this.cooldownInterval = null;
+    }
     onSignup() {
       this.signupError = '';
       this.signupSuccess = '';
@@ -583,6 +632,7 @@
             // );
             this.alertService.alertMessage(   `Registration successful!
               Your Registration Number: ${registrationNo}`, 'Your registration number and password have also been sent to your registered mobile number.', 'success');
+            this.clearSignupForm();
           },
           error: (err) => {
             console.error(err);
