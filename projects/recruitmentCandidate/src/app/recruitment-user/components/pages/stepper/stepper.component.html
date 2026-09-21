@@ -95,17 +95,17 @@
       <div class="w-full mt-8">
         <div class="space-y-6">
 
-          <app-step-1 *ngIf="hasVisited(1)" [hidden]="activeSteps[currentStepIndex]?.compId !== 1" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(1, $event)"></app-step-1>
-          <app-step-2 *ngIf="hasVisited(2)" [hidden]="activeSteps[currentStepIndex]?.compId !== 2" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(2, $event)"></app-step-2>
-          <app-step-3 *ngIf="hasVisited(3)" [hidden]="activeSteps[currentStepIndex]?.compId !== 3" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(3, $event)"></app-step-3>
-          <app-step-4 *ngIf="hasVisited(4)" [hidden]="activeSteps[currentStepIndex]?.compId !== 4" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(4, $event)"></app-step-4>
-          <app-step-5 *ngIf="hasVisited(5)" [hidden]="activeSteps[currentStepIndex]?.compId !== 5" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(5, $event)"></app-step-5>
-          <app-step-6 *ngIf="hasVisited(6)" [hidden]="activeSteps[currentStepIndex]?.compId !== 6" [attr.data-audit-section]="activeSteps[currentStepIndex]?.name" (formData)="updateFormData(6, $event)"></app-step-6>
+          <app-step-1 *ngIf="hasVisited(1)" [hidden]="activeSteps[currentStepIndex].compId !== 1" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(1, $event)"></app-step-1>
+          <app-step-2 *ngIf="hasVisited(2)" [hidden]="activeSteps[currentStepIndex].compId !== 2" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(2, $event)"></app-step-2>
+          <app-step-3 *ngIf="hasVisited(3)" [hidden]="activeSteps[currentStepIndex].compId !== 3" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(3, $event)"></app-step-3>
+          <app-step-4 *ngIf="hasVisited(4)" [hidden]="activeSteps[currentStepIndex].compId !== 4" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(4, $event)"></app-step-4>
+          <app-step-5 *ngIf="hasVisited(5)" [hidden]="activeSteps[currentStepIndex].compId !== 5" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(5, $event)"></app-step-5>
+          <app-step-6 *ngIf="hasVisited(6)" [hidden]="activeSteps[currentStepIndex].compId !== 6" [attr.data-audit-section]="activeSteps[currentStepIndex].name" (formData)="updateFormData(6, $event)"></app-step-6>
 
           <app-step-9
             *ngIf="hasVisited(9)"
-            [hidden]="activeSteps[currentStepIndex]?.compId !== 9"
-            [attr.data-audit-section]="activeSteps[currentStepIndex]?.name"
+            [hidden]="activeSteps[currentStepIndex].compId !== 9"
+            [attr.data-audit-section]="activeSteps[currentStepIndex].name"
             [activeSteps]="activeSteps"
             (finalSubmitSuccess)="onFinalSubmitSuccess()"
             (downloadPdf)="triggerManualDownload()">
@@ -123,7 +123,7 @@
               class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200"
               (click)="nextStep()"
             >
-              {{ activeSteps[currentStepIndex]?.compId === 9 ? "Final Submit" : "Save & Continue" }}
+              {{ activeSteps[currentStepIndex].compId === 9 ? "Final Submit" : "Save & Continue" }}
             </button>
           </div>
 

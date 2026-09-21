@@ -128,7 +128,7 @@
                         <app-signup (loginClicked)="switchToLogin()" [academicSessionId]="selectedSessionId"
                                     [advertisementId]="post.advertisementId" [postCode]="post.post_code"
                                     [subjectId]="getSubjectIdForPost(post)"
-                                    [subjectsAvailable]="(post.subjects?.length ?? 0) > 0"></app-signup>
+                                    [subjectsAvailable]="post.subjects.length > 0"></app-signup>
                       </div>
                       <ng-template #signupClosed>
                         <div class="p-4 bg-yellow-50 text-yellow-800 font-bold border border-yellow-200 rounded">
@@ -435,7 +435,7 @@
                       <app-signup (loginClicked)="showLoginForm()" [academicSessionId]="selectedSessionId"
                                   [advertisementId]="post.advertisementId" [postCode]="post.post_code"
                                   [subjectId]="getSubjectIdForPost(post)"
-                                  [subjectsAvailable]="(post.subjects?.length ?? 0) > 0"></app-signup>
+                                  [subjectsAvailable]="post.subjects.length > 0"></app-signup>
                     </div>
                     <ng-template #mSignupClosed>
                       <div class="p-3 bg-yellow-50 text-yellow-800 text-sm font-bold border border-yellow-200 rounded">

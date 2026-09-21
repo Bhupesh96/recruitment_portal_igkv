@@ -261,7 +261,7 @@ export class Step4Component implements OnInit {
 
           // --- Remove the row and update the UI ---
           this.detailsArray.removeAt(globalIndex);
-
+          this.reindexRemainingRows();
           const item = subHeading?.items.find(
             (i: any) => i.m_rec_score_field_id.toString() === typeValue
           );
@@ -314,7 +314,7 @@ export class Step4Component implements OnInit {
             : 0;
 
           if (count <= 0) {
-            firstMissedMandatory = `${sub.score_field_name_e} - ${item.score_field_name_e}`;
+            firstMissedMandatory = `${sub.score_field_title_name} - ${item.score_field_title_name}`;
             aMandatoryItemWasMissed = true;
             break mainLoop; // Found the first error, exit all loops.
           }
@@ -358,7 +358,7 @@ export class Step4Component implements OnInit {
 
               if (isControlInvalid) {
                 firstMissedParameter = param.score_field_parameter_name;
-                firstMissedSubheading = item.score_field_name_e;
+                firstMissedSubheading = item.score_field_title_name;
                 break rowLoop;
               }
             }
@@ -413,7 +413,7 @@ getCheckboxName(detailForm: AbstractControl): string {
     );
     if (item) {
       // ✅ FIX: Prioritize score_field_title_name
-      return item.score_field_title_name || item.score_field_name_e || typeValue || '';
+      return item.score_field_title_name || item.score_field_title_name || typeValue || '';
     }
   }
   return typeValue || '';
@@ -747,7 +747,7 @@ getCheckboxName(detailForm: AbstractControl): string {
                       .map((item: any) => ({
                         ...item,
                         normalizedKey: this.normalizeControlName(
-                          item.score_field_name_e
+                          item.score_field_title_name
                         ),
                         is_mandatory: item.score_field_is_mandatory || 'N',
                       }));
@@ -1149,23 +1149,83 @@ getCheckboxName(detailForm: AbstractControl): string {
     this.cdr.markForCheck();
   }
 
-  private logFormData(title: string, formData: FormData) {
-    for (const [key, value] of formData.entries()) {
-      if (
-        key === 'scoreFieldDetailList' ||
-        key === 'scoreFieldParameterList' ||
-        key === 'parentScore'
-      ) {
-        try {
-          const parsedValue = JSON.parse(value as string);
-        } catch (e) {}
-      } else if (key.startsWith('file_')) {
-      } else {
-      }
-    }
-  }
+  private reindexRemainingRows(): void {
+    const counters = new Map<string, number>();
 
-  private logExistingIds() {}
+    const oldParameterIds = new Map(this.existingParameterIds);
+    const oldFilePaths = new Map(this.filePaths);
+
+    this.existingParameterIds.clear();
+    this.filePaths.clear();
+
+    this.detailsArray.controls.forEach((row) => {
+      const scoreFieldId = Number(row.get('type')?.value);
+
+      const subHeading = this.subHeadings.find((sub) =>
+        sub.items.some(
+          (item: any) =>
+            Number(item.m_rec_score_field_id) === scoreFieldId
+        )
+      );
+
+      if (!subHeading) {
+        return;
+      }
+
+      const subHeadingId = subHeading.m_rec_score_field_id;
+
+      const counterKey = `${subHeadingId}_${scoreFieldId}`;
+
+      const newRowIndex =
+        (counters.get(counterKey) || 0) + 1;
+
+      counters.set(counterKey, newRowIndex);
+
+      const oldRowIndex = row.get('_rowIndex')?.value;
+
+      // Update row index
+      row.get('_rowIndex')?.setValue(newRowIndex, {
+        emitEvent: false
+      });
+
+      const params =
+        this.getParametersForSubHeading(subHeadingId);
+
+      params.forEach((param: any) => {
+
+        const paramId =
+          param.m_rec_score_field_parameter_new_id;
+
+        const oldKey =
+          `${subHeadingId}_${scoreFieldId}_${paramId}_${oldRowIndex}`;
+
+        const newKey =
+          `${subHeadingId}_${scoreFieldId}_${paramId}_${newRowIndex}`;
+
+        // Move existing parameter ID
+        if (oldParameterIds.has(oldKey)) {
+          this.existingParameterIds.set(
+            newKey,
+            oldParameterIds.get(oldKey)!
+          );
+        }
+
+        // Move uploaded file path
+        if (oldFilePaths.has(oldKey)) {
+          this.filePaths.set(
+            newKey,
+            oldFilePaths.get(oldKey)!
+          );
+        }
+      });
+    });
+
+    this.highestRowIndexMap.clear();
+
+    counters.forEach((value, key) => {
+      this.highestRowIndexMap.set(key, value);
+    });
+  }
 
   private generateFilePath(
     registrationNo: number,
@@ -2125,12 +2185,63 @@ async saveToDatabase(): Promise<void> {
             // UNKNOWN METHOD
           // ========================================================
 
-          else {
-            scoreResult = {
-              score_field_value: 0,
-              score_field_actual_value: 0,
-              score_field_calculated_value: 0,
-            };
+          else if (
+            calculationMethod === 7 ||
+            calculationMethod === 8
+          ) {
+            // Find the parameter configured as the calculation column
+            const calculationParam = subHeadingParameters.find(
+              (param: any) => param.isCalculationColumn === 'Y'
+            );
+
+            if (!calculationParam) {
+              console.warn(
+                `No calculation column found for method ${calculationMethod}`
+              );
+
+              scoreResult = {
+                score_field_value: 0,
+                score_field_actual_value: 0,
+                score_field_calculated_value: 0,
+              };
+            } else {
+
+              const publications = rowControls
+                .filter((rowControl: any) => {
+                  const rawRow = rowControl.getRawValue();
+
+                  // Ignore rejected rows if status parameter exists
+                  const status = statusParam
+                    ? rawRow[statusParam.normalizedKey]
+                    : null;
+
+                  if (statusParam && Number(status) === 2) {
+                    return false;
+                  }
+
+                  return true;
+                })
+                .map((rowControl: any) => {
+                  const rawRow = rowControl.getRawValue();
+
+                  // Get value from the parameter marked isCalculationColumn = Y
+                  const value = Number(
+                    rawRow[calculationParam.normalizedKey]
+                  ) || 0;
+
+                  return {
+                    rating: value,
+                  };
+                });
+
+              scoreResult = this.utils.calculateScore(
+                calculationMethod,
+                {
+                  publications,
+                },
+                fieldMarks
+              );
+            }
           }
 
           const hasVerified =
@@ -2177,10 +2288,10 @@ async saveToDatabase(): Promise<void> {
             calculationMethod === 1 ||
             calculationMethod === 4 ||
             calculationMethod === 5 ||
-            calculationMethod === 6
-              ? Number(
-              scoreResult.score_field_value
-            ) || 0
+            calculationMethod === 6 ||
+            calculationMethod === 7 ||
+            calculationMethod === 8
+              ? Number(scoreResult.score_field_value) || 0
               : validRowCount,
 
           score_field_actual_value:
