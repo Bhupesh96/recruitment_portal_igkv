@@ -12,6 +12,7 @@ import { filter } from 'rxjs/operators';
 import {AuthService, HttpService} from 'shared';
 import {environment} from 'environment';
 import {DomSanitizer, SafeUrl} from '@angular/platform-browser';
+import { SharedDataService } from '../../shared-data.service';
 @Component({
   selector: 'app-dawapatti-home',
   standalone: true,
@@ -52,8 +53,19 @@ export class DawapattiHomeComponent implements OnInit {
     private router: Router,
     private http: HttpService,
     private sanitizer: DomSanitizer,
-    private authService: AuthService
+    private authService: AuthService,
+    private sharedDataService: SharedDataService,
   ) {}
+  handleViewChange(view: string): void {
+    if (view === 'download-pdf') {
+      this.activeView = 'recruitment-form';
+      this.router.navigate(['/recruitment/recruitment-form']);
+      this.sharedDataService.requestLatestPdfDownload();
+      return;
+    }
+
+    this.activeView = view;
+  }
   // ✅This state tracks which component to show.
   // 'recruitment-form' is the default view on login.
   activeView: string = 'recruitment-form';

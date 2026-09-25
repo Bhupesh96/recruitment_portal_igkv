@@ -81,7 +81,7 @@
   <div class="flex flex-1 overflow-hidden">
 
     <!-- ✅ Sidebar: Listen for the (viewChanged) event -->
-    <app-sidenav (viewChanged)="activeView = $event"></app-sidenav>
+    <app-sidenav (viewChanged)="handleViewChange($event)"></app-sidenav>
 
     <!-- Main Content Wrapper -->
     <main class="flex-1 bg-gray-200 p-6 overflow-y-auto">

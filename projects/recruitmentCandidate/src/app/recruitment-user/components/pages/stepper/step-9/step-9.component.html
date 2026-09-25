@@ -171,8 +171,8 @@
 
               <ng-container *ngSwitchCase="2">
                 <div class="space-y-8">
-        <ng-container *ngFor="let key of getSortedExperienceKeys(i)">
-  <div *ngIf="formData[i][key]?.length > 0">
+                  <ng-container *ngFor="let key of getSortedExperienceKeys(i)">
+                    <div *ngIf="formData[i][key]?.length > 0">
                       <h6 class="font-semibold text-blue-800 mb-3 text-lg">
                         {{ formData[i]["subheadings"][key]["score_field_title_name"] || formData[i]["subheadings"][key]["score_field_name_e"] }}
                       </h6>
@@ -213,8 +213,8 @@
 
               <ng-container *ngSwitchCase="5">
                 <div class="space-y-8">
-             <ng-container *ngFor="let key of getSortedExperienceKeys(i)">
-  <div *ngIf="formData[i][key]?.length > 0">
+                  <ng-container *ngFor="let key of getSortedExperienceKeys(i)">
+                    <div *ngIf="formData[i][key]?.length > 0">
                       <h6 class="font-semibold text-blue-800 mb-3 text-lg">
                         {{ formData[i]["subheadings"][key]["score_field_title_name"] || formData[i]["subheadings"][key]["score_field_name_e"] }}
                       </h6>

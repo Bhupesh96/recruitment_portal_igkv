@@ -13,16 +13,57 @@
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 6mm 6mm;
+  }
+
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
   .a4-container {
     max-width: none;
+    width: 100%;
     padding: 0;
     margin: 0;
   }
+
   .page-break-before {
     page-break-before: always;
+    break-before: page;
   }
+
   .bordered-section {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .section-heading-bar,
+  .sub-section-heading-bar {
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
     page-break-inside: avoid;
+    break-inside: avoid-page;
+  }
+
+  .detail-item {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 }
 
@@ -93,26 +134,31 @@
 /* Bordered Sections */
 .bordered-section {
   border: 1px solid #000;
+  border-left: 0;
   margin-bottom: 15px;
   background: #fff;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-heading-bar {
   background-color: #e8e8e8;
-  border-bottom: 1px solid #000;
+  border: 1px solid #000;
   padding: 6px 10px;
   font-size: 13px;
   font-weight: bold;
   text-transform: uppercase;
+  box-sizing: border-box;
 }
 
 .sub-section-heading-bar {
   background-color: #f5f5f5;
-  border-bottom: 1px solid #000;
-  border-top: 1px solid #000;
+  border: 1px solid #000;
   padding: 5px 10px;
   font-size: 12px;
   font-weight: bold;
+  box-sizing: border-box;
 }
 
 /* Details 2-Column Grid (Flex fallback for PDF) */
@@ -137,7 +183,9 @@
 /* Data Tables */
 table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   margin-bottom: 0;
 }
 
@@ -148,6 +196,7 @@ th, td {
   font-size: 11px;
   vertical-align: top;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 th {

@@ -311,16 +311,21 @@ export class PdfDownloadComponent implements OnInit, OnDestroy {
         <title>Application Form</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
-          body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 13px; color: #000; margin: 0; padding: 0; background: #fff; }
-          .a4-container { width: 100%; max-width: 800px; margin: 0 auto; }
+          @page { size: A4; margin: 12mm 10mm; }
+          html, body { width: 100%; margin: 0; padding: 0; }
+          body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 13px; color: #000; background: #fff; }
+          .a4-container { width: 100%; max-width: none; margin: 0; padding: 0; box-sizing: border-box; }
           .header-section { text-align: center; margin-bottom: 20px; }
           .form-title { font-size: 18px; font-weight: bold; text-decoration: underline; } 
-          .bordered-section { border: 1px solid #000; margin-bottom: 15px; page-break-inside: avoid; }
-          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border-bottom: 1px solid #000; } 
-          .sub-section-heading-bar { background-color: #f5f5f5; padding: 6px 10px; font-weight: bold; border-bottom: 1px solid #000; border-top: 1px solid #000; }
-          table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
-          tr { page-break-inside: avoid; page-break-after: auto; }
-          th, td { border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: middle; font-size: 13px; }
+          .bordered-section { border: 1px solid #000; border-left: 0; margin-bottom: 15px; width: 100%; max-width: 100%; box-sizing: border-box; page-break-inside: auto; break-inside: auto; }
+          .section-heading-bar, .sub-section-heading-bar { page-break-after: avoid; break-after: avoid-page; }
+          .section-heading-bar { background-color: #e0e0e0; padding: 6px 10px; font-weight: bold; font-size: 14px; border: 1px solid #000; box-sizing: border-box; } 
+          .sub-section-heading-bar { background-color: #f5f5f5; padding: 6px 10px; font-weight: bold; border: 1px solid #000; box-sizing: border-box; }
+          table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; break-inside: auto; }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; break-inside: avoid-page; page-break-after: auto; }
+          .detail-item { page-break-inside: avoid; break-inside: avoid-page; }
+          th, td { border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: middle; font-size: 13px; word-break: break-word; overflow-wrap: anywhere; }
           th { background-color: #f0f0f0; font-weight: bold; }
           .label { font-weight: bold; }
           .declaration-content { padding: 15px; text-align: justify; line-height: 1.5; }

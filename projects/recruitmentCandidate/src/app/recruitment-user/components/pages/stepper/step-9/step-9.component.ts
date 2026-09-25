@@ -151,7 +151,7 @@ export class Step9Component implements OnInit, OnDestroy {
     return str;
   }
 
-ngOnInit(): void {
+  ngOnInit(): void {
     this.recruitmentState.userData$
       .pipe(takeUntil(this.destroy$))
       .subscribe((user: any) => {
@@ -170,43 +170,43 @@ ngOnInit(): void {
       .subscribe((data: { [key: number]: any }) => {
         if (data && Object.keys(data).length > 0) {
           this.formData = data;
-        this.loadPreviewData();
-      }
-    });
-}
-
-private loadPreviewData(): void {
-  const loadId = ++this.previewLoadId;
-  let pendingRequests = 3;
-  this.isPreviewLoading = true;
-
-  const requestCompleted = () => {
-    pendingRequests--;
-    if (pendingRequests === 0 && loadId === this.previewLoadId) {
-      this.isPreviewLoading = false;
-      this.cdr.detectChanges();
-    }
-  };
-
-  this.fetchStepDisplayOrder(requestCompleted);
-  this.loadDeclaration(requestCompleted);
-  this.getTransactionAmountDetails(requestCompleted);
-}
-
-fetchStepDisplayOrder(onComplete?: () => void) {
-  const info = this.formData[1];
-  if (!info) {
-    onComplete?.();
-    return;
+          this.loadPreviewData();
+        }
+      });
   }
+
+  private loadPreviewData(): void {
+    const loadId = ++this.previewLoadId;
+    let pendingRequests = 3;
+    this.isPreviewLoading = true;
+
+    const requestCompleted = () => {
+      pendingRequests--;
+      if (pendingRequests === 0 && loadId === this.previewLoadId) {
+        this.isPreviewLoading = false;
+        this.cdr.detectChanges();
+      }
+    };
+
+    this.fetchStepDisplayOrder(requestCompleted);
+    this.loadDeclaration(requestCompleted);
+    this.getTransactionAmountDetails(requestCompleted);
+  }
+
+  fetchStepDisplayOrder(onComplete?: () => void) {
+    const info = this.formData[1];
+    if (!info) {
+      onComplete?.();
+      return;
+    }
 
     // ✅ FIX: Use bracket notation to avoid TS4111
     const params: any = {
       a_rec_adv_main_id: info['a_rec_adv_main_id'],
       post_code: info['post_code'],
-      m_rec_es_master_id: 4 
+      m_rec_es_master_id: 4
     };
-    
+
     if (info['subject_id']) {
       params.subject_id = info['subject_id'];
     }
@@ -216,11 +216,11 @@ fetchStepDisplayOrder(onComplete?: () => void) {
       next: (res: any) => {
         const steps = res?.body?.data || [];
         this.stepDisplayOrderMap.clear();
-        
+
         steps.forEach((step: any) => {
           this.stepDisplayOrderMap.set(Number(step.m_rec_score_field_id), Number(step.display_order));
         });
-        
+
         // ✅ FIX 2: Removed `processAllDataForView()` entirely. Step 9 uses HTML getters!
         this.cdr.detectChanges();
         onComplete?.();
@@ -234,7 +234,7 @@ fetchStepDisplayOrder(onComplete?: () => void) {
       }
     });
   }
-get activeSectionIds(): number[] {
+  get activeSectionIds(): number[] {
     let validIds: number[] = [];
 
     if (this.activeSteps && this.activeSteps.length > 0) {

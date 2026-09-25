@@ -27,6 +27,46 @@
       </a>
     </li>
 
+
+    <!-- Download Latest PDF -->
+    <li *ngIf="latestUpdatedDate">
+      <a
+        (click)="downloadLatestPdf()"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 cursor-pointer no-underline"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-6 h-6 flex-shrink-0 text-blue-500 group-hover:text-blue-700"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 16v-8m0 8-3-3m3 3 3-3m5 3v1a2 2 0 01-2 2H6a2 2 0 01-2-2v-1"
+          />
+        </svg>
+
+        <span
+          class="whitespace-nowrap transition-all duration-200 overflow-hidden"
+          [class.opacity-0]="!isExpanded"
+          [class.w-0]="!isExpanded"
+          [class.ml-0]="!isExpanded"
+          [class.ml-2]="isExpanded"
+        >
+      Form Updated On:
+      <br />
+
+      <small class="text-xs font-normal">
+        {{ latestUpdatedDate | date:'dd-MM-yyyy hh:mm a' }}
+      </small>
+    </span>
+      </a>
+    </li>
+
+
     <!-- Score Card -->
     <li *ngIf="showScoreCard">
       <a

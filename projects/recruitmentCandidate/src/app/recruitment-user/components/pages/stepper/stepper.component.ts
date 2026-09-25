@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit, OnDestroy, AfterViewChecked } from '@angular/core';
+  import { Component, ViewChild, OnInit, OnDestroy, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -76,9 +76,14 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   formData: { [key: number]: { [key: string]: any } } = {};
   private printTriggered = false;
+  private consumePdfDownloadRequest = false;
+  private areDynamicStepsLoaded = false;
   isFinalDeclared = false;
   private userSub!: Subscription;
+  private pdfDownloadSub!: Subscription;
   private dbCheckDone = false;
+  private pdfPreparing = false;
+  private pdfPrepareAttempts = 0;
   isLoadingSteps = true; // Prevents UI from rendering until API maps steps
 
   constructor(
@@ -105,16 +110,126 @@ export class StepperComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.handleUserReady(user);
       }
     });
-
+    this.pdfDownloadSub = this.sharedDataService.pdfDownloadRequested$.subscribe(
+      (requested) => {
+        if (requested) {
+          this.prepareAndDownloadPdf();
+        }
+      }
+    );
     // 3. Fallback: If 5 seconds pass and we STILL haven't loaded steps, abort the spinner
     setTimeout(() => {
       if (this.isLoadingSteps) {
         console.warn("User data took too long to load. Aborting spinner.");
         this.isLoadingSteps = false;
+        this.areDynamicStepsLoaded = true;
       }
     }, 5000);
   }
+  private prepareAndDownloadPdf(): void {
+    if (this.pdfPreparing) {
+      return;
+    }
 
+    if (!this.areDynamicStepsLoaded || !this.activeSteps.length) {
+      return;
+    }
+
+    this.pdfPreparing = true;
+    this.pdfPrepareAttempts = 0;
+
+    // IMPORTANT:
+    // Load every active step, not only the current/visited step.
+    this.activeSteps.forEach((_, index) => {
+      this.markStepAsVisited(index);
+    });
+
+    // Give Angular time to create all step components.
+    setTimeout(() => {
+      this.waitForAllStepDataAndDownload();
+    }, 100);
+  }
+  private waitForAllStepDataAndDownload(): void {
+    this.pdfPrepareAttempts++;
+
+    const requiredSteps = this.activeSteps.filter(
+      step => step.compId !== 9
+    );
+
+    const allStepComponentsLoaded =
+      requiredSteps.every(step => {
+        switch (step.compId) {
+          case 1:
+            return !!this.step1Component;
+
+          case 2:
+            return !!this.step2Component;
+
+          case 3:
+            return !!this.step3Component;
+
+          case 4:
+            return !!this.step4Component;
+
+          case 5:
+            return !!this.step5Component;
+
+          case 6:
+            return !!this.step6Component;
+
+          default:
+            return true;
+        }
+      });
+
+    const allStepDataLoaded =
+      requiredSteps.every(step => {
+        const data = this.formData[step.compId];
+
+        return data && Object.keys(data).length > 0;
+      });
+
+    if (
+      allStepComponentsLoaded &&
+      allStepDataLoaded
+    ) {
+      this.sharedDataService.setFormData(this.formData);
+
+      setTimeout(() => {
+        if (this.pdfDownloadComponent) {
+          this.pdfDownloadComponent.formData =
+            JSON.parse(JSON.stringify(this.formData));
+
+          this.pdfDownloadComponent.downloadAsPdf();
+        }
+
+        this.pdfPreparing = false;
+        this.sharedDataService.completeLatestPdfDownloadRequest();
+      }, 200);
+
+      return;
+    }
+
+    // Wait for step components/API data.
+    if (this.pdfPrepareAttempts < 50) {
+      setTimeout(() => {
+        this.waitForAllStepDataAndDownload();
+      }, 200);
+
+      return;
+    }
+
+    console.error(
+      'PDF download stopped: all step data was not loaded.',
+      {
+        activeSteps: this.activeSteps,
+        formData: this.formData
+      }
+    );
+
+    this.pdfPreparing = false;
+    this.sharedDataService.completeLatestPdfDownloadRequest();
+  }
   private handleUserReady(user: any) {
     // 1. ALWAYS evaluate the Final Declaration lock status FIRST
     if (user['Is_Final_Decl_YN'] === 'Y' || user['is_final_decl_yn'] === 'Y') {
@@ -318,6 +433,7 @@ fetchDynamicSteps(user: any) {
 
 
       this.isLoadingSteps = false;
+      this.areDynamicStepsLoaded = true;
 
 
       // =====================================================
@@ -354,6 +470,7 @@ fetchDynamicSteps(user: any) {
       );
 
       this.isLoadingSteps = false;
+      this.areDynamicStepsLoaded = true;
 
     }
 
@@ -390,24 +507,17 @@ fetchDynamicSteps(user: any) {
 
   ngOnDestroy(): void {
     if (this.userSub) this.userSub.unsubscribe();
+    if (this.pdfDownloadSub) this.pdfDownloadSub.unsubscribe();
   }
 
   ngAfterViewChecked(): void {
-    if (this.printTriggered && this.pdfDownloadComponent) {
-      this.pdfDownloadComponent.downloadAsPdf();
-      this.printTriggered = false;
-    }
+    // PDF download is now handled by prepareAndDownloadPdf()
   }
 
   updateFormData(compId: number, data: { [key: string]: any }) {
     this.formData[compId] = { ...data };
-
-    // ✅ FIX: Share data with Step 9 if the form is declared OR if the user is currently on Step 9
-    const isCurrentlyOnStep9 = this.activeSteps[this.currentStepIndex]?.compId === 9;
-
-    if (this.isFinalDeclared || isCurrentlyOnStep9) {
-      this.sharedDataService.setFormData(this.formData);
-    }
+    this.sharedDataService.setFormData(this.formData);
+    this.updateLatestPdfAvailability();
   }
   async nextStep() {
     if (this.isFinalDeclared) return;
@@ -429,6 +539,8 @@ fetchDynamicSteps(user: any) {
         case 6: if (this.step6Component) await this.step6Component.submit(); break;
       }
       this.auditLogger.flushPendingChangesForSave();
+      this.sharedDataService.setFormData(this.formData);
+      this.updateLatestPdfAvailability();
 
       if (this.currentStepIndex < this.activeSteps.length - 1) {
         const nextCompId = this.activeSteps[this.currentStepIndex + 1].compId;
@@ -439,6 +551,7 @@ fetchDynamicSteps(user: any) {
 
         // ✅ Mark the newly reached step as visited to lazy-load it
         this.markStepAsVisited(this.currentStepIndex);
+        this.sharedDataService.notifyStepChanged();
       }
     } catch (error) {
       console.error(`Validation failed for component ${currentCompId}:`, error);
@@ -501,6 +614,17 @@ fetchDynamicSteps(user: any) {
     const compId = this.activeSteps[index].compId;
     const stepData = this.formData[compId];
     return !!(stepData && stepData['_isValid']);
+  }
+
+  private updateLatestPdfAvailability(): void {
+    const requiredSteps = this.activeSteps.filter((step) => step.compId !== 9);
+    const isApplicationComplete =
+      requiredSteps.length > 0 &&
+      requiredSteps.every((step) => this.formData[step.compId]?.['_isValid']);
+
+    if (isApplicationComplete) {
+      this.sharedDataService.markLatestPdfAvailable();
+    }
   }
 
   onFinalSubmitSuccess() {
