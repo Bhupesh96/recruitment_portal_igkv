@@ -32,7 +32,8 @@
     <li *ngIf="latestUpdatedDate">
       <a
         (click)="downloadLatestPdf()"
-        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 font-medium transition-all duration-200 cursor-pointer no-underline"
+        title="Download Latest PDF"
+        class="group flex items-center gap-3 p-3 rounded-lg text-gray-700 bg-gray-100 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 cursor-pointer no-underline"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -56,16 +57,20 @@
           [class.ml-0]="!isExpanded"
           [class.ml-2]="isExpanded"
         >
-      Form Updated On:
-      <br />
+      <span class="block text-sm font-semibold text-gray-700">
+        Application Updated On
+      </span>
 
-      <small class="text-xs font-normal">
-        {{ latestUpdatedDate | date:'dd-MM-yyyy hh:mm a' }}
-      </small>
+      <span
+        class="block mt-1 text-sm font-bold text-gray-900"
+      >
+        {{ latestUpdatedDate | date:'dd-MM-yyyy' }}
+        <span class="mx-1 text-gray-400">•</span>
+        {{ latestUpdatedDate | date:'hh:mm a' }}
+      </span>
     </span>
       </a>
     </li>
-
 
     <!-- Score Card -->
     <li *ngIf="showScoreCard">
